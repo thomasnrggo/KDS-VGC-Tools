@@ -112,7 +112,7 @@ export function OpponentCard({
 
       <div className={COLUMN_CLASSES}>
         {!hasMyTeam ? (
-          <p className="max-w-[12rem] text-sm text-amber-600 dark:text-amber-400">
+          <p className="max-w-48 text-sm text-amber-600 dark:text-amber-400">
             Add your own team above to pick lead/back Pokémon.
           </p>
         ) : (
