@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VGC Match Planner
 
-## Getting Started
+A personal tool for planning Pokémon VGC matchups. Paste your team once (Pokémon Showdown export
+format), then build up a list of opponent teams — each with sprite art and one or more named game
+plans covering lead/back picks and notes.
 
-First, run the development server:
+See [PLANNING.md](./PLANNING.md) for the full project plan: data model, the Showdown-paste parsing
+spec, how species names resolve to sprite images, and the current roadmap. That file is the source of
+truth for scope and design decisions — keep it in sync as the project evolves.
+
+This is a [Next.js](https://nextjs.org) app (App Router, TypeScript, Tailwind CSS v4). Data is stored
+entirely in the browser (IndexedDB) — there is no backend or account system.
+
+## Getting started
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` — start the dev server
+- `npm run build` — production build
+- `npm run start` — run a production build locally
+- `npm run lint` — ESLint
+- `npm test` — run the unit test suite (Vitest)
+- `npm run generate:species` — regenerate `src/data/species.json` from PokeAPI (one-off, not run per-request)
 
-## Learn More
+## Deploying
 
-To learn more about Next.js, take a look at the following resources:
+This is a standard Next.js App Router project — it deploys to [Vercel](https://vercel.com/) with no
+extra configuration. Connect the repo and Vercel will detect the framework, run `npm run build`, and
+serve it. There's no backend, database, or environment variables to configure — all data lives in the
+visitor's browser (IndexedDB).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Credits
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Team paste format: [Pokémon Showdown](https://pokemonshowdown.com/)
+- Sprites: [HybridShivam/Pokemon](https://github.com/HybridShivam/Pokemon)
+- Species/form data: [PokeAPI](https://pokeapi.co/)
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+[MIT](./LICENSE)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Pokémon and all related names, sprites, and imagery are trademarks of Nintendo, Game Freak, and The
+Pokémon Company. This is an unofficial, fan-made tool with no affiliation to or endorsement by those
+companies.
