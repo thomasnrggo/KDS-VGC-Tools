@@ -63,7 +63,7 @@ Jolly Nature
 
 describe("parseTeam", () => {
   it("parses a full Showdown export into species + item pairs", () => {
-    expect(parseTeam(SAMPLE_PASTE)).toEqual([
+    expect(parseTeam(SAMPLE_PASTE).map(({ species, item }) => ({ species, item }))).toEqual([
       { species: "Grimmsnarl", item: "Light Clay" },
       { species: "Swampert", item: "Swampertite" },
       { species: "Pelipper", item: "Sitrus Berry" },
@@ -71,6 +71,14 @@ describe("parseTeam", () => {
       { species: "Sinistcha", item: "Colbur Berry" },
       { species: "Metagross", item: "Metagrossite" },
     ]);
+  });
+
+  it("also captures ability, moves, nature, and EVs for each Pokémon", () => {
+    const [grimmsnarl] = parseTeam(SAMPLE_PASTE);
+    expect(grimmsnarl.ability).toBe("Prankster");
+    expect(grimmsnarl.nature).toBe("Calm");
+    expect(grimmsnarl.evs).toBe("32 HP / 20 Def / 14 SpD");
+    expect(grimmsnarl.moves).toEqual(["Foul Play", "Parting Shot", "Reflect", "Light Screen"]);
   });
 
   it("ignores a leading === [format] Title === header block", () => {
@@ -83,6 +91,7 @@ describe("parsePokemonBlock", () => {
   it("parses a species with no item", () => {
     expect(parsePokemonBlock("Ditto\nAbility: Imposter")).toEqual({
       species: "Ditto",
+      ability: "Imposter",
     });
   });
 
@@ -118,6 +127,43 @@ describe("parsePokemonBlock", () => {
     expect(parsePokemonBlock("Landorus-Therian @ Choice Scarf")).toEqual({
       species: "Landorus-Therian",
       item: "Choice Scarf",
+    });
+  });
+
+  it("parses ability, EVs, nature, and moves from the rest of the block", () => {
+    expect(
+      parsePokemonBlock(
+        "Grimmsnarl @ Light Clay\nAbility: Prankster\nEVs: 32 HP / 20 Def / 14 SpD\nCalm Nature\n- Foul Play\n- Parting Shot",
+      ),
+    ).toEqual({
+      species: "Grimmsnarl",
+      item: "Light Clay",
+      ability: "Prankster",
+      evs: "32 HP / 20 Def / 14 SpD",
+      nature: "Calm",
+      moves: ["Foul Play", "Parting Shot"],
+    });
+  });
+
+  it("ignores an IVs line if present — Pokémon Champions removed IVs, always 31", () => {
+    expect(
+      parsePokemonBlock(
+        "Sinistcha @ Colbur Berry\nAbility: Hospitality\nEVs: 32 HP / 4 Def / 32 SpD\nIVs: 0 Spe\nBold Nature\n- Trick Room",
+      ),
+    ).toEqual({
+      species: "Sinistcha",
+      item: "Colbur Berry",
+      ability: "Hospitality",
+      evs: "32 HP / 4 Def / 32 SpD",
+      nature: "Bold",
+      moves: ["Trick Room"],
+    });
+  });
+
+  it("omits ability/moves/nature/evs when the block doesn't have them", () => {
+    expect(parsePokemonBlock("Grimmsnarl @ Light Clay")).toEqual({
+      species: "Grimmsnarl",
+      item: "Light Clay",
     });
   });
 });

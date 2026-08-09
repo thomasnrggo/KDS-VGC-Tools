@@ -38,7 +38,7 @@ visitor's browser (IndexedDB).
 ## Credits
 
 - Team paste format: [Pokémon Showdown](https://pokemonshowdown.com/)
-- Sprites: [HybridShivam/Pokemon](https://github.com/HybridShivam/Pokemon)
+- Sprites: [HybridShivam/Pokemon](https://github.com/HybridShivam/Pokemon), self-hosted locally
 - Species/form data: [PokeAPI](https://pokeapi.co/)
 
 ## License

@@ -1,0 +1,1 @@
+export { TeamPasteForm } from "./TeamPasteForm";

@@ -1,0 +1,1 @@
+export { OpponentForm } from "./OpponentForm";

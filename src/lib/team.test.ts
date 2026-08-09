@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import { createTeam, validateTeamSize } from "./team";
 
 describe("createTeam", () => {
-  it("wraps parseTeam output with an id, rawPaste, and updatedAt", () => {
-    const team = createTeam("Ditto @ Choice Scarf\nAbility: Imposter");
+  it("wraps parseTeam output with an id, name, rawPaste, and updatedAt", () => {
+    const team = createTeam("Ditto @ Choice Scarf\nAbility: Imposter", "Team 1");
 
     expect(team.id).toMatch(/^[0-9a-f-]{36}$/);
+    expect(team.name).toBe("Team 1");
     expect(team.rawPaste).toBe("Ditto @ Choice Scarf\nAbility: Imposter");
-    expect(team.pokemon).toEqual([{ species: "Ditto", item: "Choice Scarf" }]);
+    expect(team.pokemon).toEqual([
+      { species: "Ditto", item: "Choice Scarf", ability: "Imposter" },
+    ]);
     expect(() => new Date(team.updatedAt).toISOString()).not.toThrow();
   });
 });

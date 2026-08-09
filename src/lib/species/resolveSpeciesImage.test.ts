@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveSpeciesImage } from "./resolveSpeciesImage";
 
-const IMAGE_BASE = "https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images";
+const IMAGE_BASE = "/pokemon-sprites/thumbnails-compressed";
 
 describe("resolveSpeciesImage", () => {
   it("resolves a base-form species with no item", () => {

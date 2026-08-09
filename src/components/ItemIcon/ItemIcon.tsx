@@ -1,0 +1,43 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { resolveItemImage } from "@/lib/items/resolveItemImage";
+
+interface ItemIconProps {
+  item: string;
+  size?: number;
+}
+
+export function ItemIcon({ item, size = 24 }: ItemIconProps) {
+  const [failed, setFailed] = useState(false);
+  const resolved = resolveItemImage(item);
+
+  if (!resolved || failed) {
+    return (
+      <div
+        role="img"
+        aria-label={item}
+        title={item}
+        className="flex shrink-0 items-center justify-center rounded bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+        style={{ width: size, height: size }}
+      >
+        <span aria-hidden="true" className="text-[8px]">
+          ?
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={resolved.imageUrl}
+      alt={item}
+      title={item}
+      width={size}
+      height={size}
+      className="shrink-0 object-contain"
+      onError={() => setFailed(true)}
+    />
+  );
+}

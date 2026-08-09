@@ -1,0 +1,1 @@
+export { MyTeamHeader } from "./MyTeamHeader";

@@ -1,15 +1,10 @@
-import { parseTeam, type ParsedPokemon } from "./parseTeam";
+import { parseTeam } from "./parseTeam";
+import type { ParsedPokemon, Team } from "@/types";
 
-export interface Team {
-  id: string;
-  rawPaste: string;
-  pokemon: ParsedPokemon[];
-  updatedAt: string;
-}
-
-export function createTeam(rawPaste: string): Team {
+export function createTeam(rawPaste: string, name: string): Team {
   return {
     id: crypto.randomUUID(),
+    name,
     rawPaste,
     pokemon: parseTeam(rawPaste),
     updatedAt: new Date().toISOString(),
