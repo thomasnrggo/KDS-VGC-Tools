@@ -5,4 +5,5 @@ export enum IconName {
   Delete = "delete",
   Edit = "edit",
   ExpandMore = "expand_more",
+  MoreVert = "more_vert",
 }

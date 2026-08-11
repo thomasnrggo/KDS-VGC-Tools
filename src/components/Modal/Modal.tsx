@@ -30,7 +30,7 @@ export function Modal({ onClose, labelledBy, children }: ModalProps) {
         aria-modal="true"
         aria-labelledby={labelledBy}
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-xl rounded-lg bg-white p-6 shadow-xl dark:bg-zinc-900"
+        className="w-full max-w-xl rounded-lg bg-white p-6 shadow-xl"
       >
         {children}
       </div>

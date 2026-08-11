@@ -104,3 +104,8 @@ export async function deleteOpponent(id: string): Promise<void> {
   const db = await getDb();
   await db.delete(OPPONENTS_STORE, id);
 }
+
+export async function clearOpponents(): Promise<void> {
+  const db = await getDb();
+  await db.clear(OPPONENTS_STORE);
+}

@@ -32,7 +32,7 @@ export function TeamPasteForm({
         onChange={(event) => setName(event.target.value)}
         placeholder="Team name (e.g. Regionals Team)"
         aria-label="Team name"
-        className="w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+        className="w-full rounded-lg border border-mauve-300 bg-white p-2 text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
       />
       <textarea
         value={value}
@@ -40,17 +40,17 @@ export function TeamPasteForm({
         rows={16}
         placeholder="Paste your Pokémon Showdown team export here…"
         aria-label="Pokémon Showdown team export"
-        className="w-full resize-y rounded-lg border border-zinc-300 bg-white p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+        className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
       />
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-red-600">
           {error}
         </p>
       )}
       <div className="flex gap-2">
         <button
           type="submit"
-          className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
         >
           Save team
         </button>
@@ -58,7 +58,7 @@ export function TeamPasteForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
           >
             Cancel
           </button>

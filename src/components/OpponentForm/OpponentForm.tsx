@@ -7,12 +7,16 @@ interface OpponentFormProps {
   initialPokepasteUrl?: string;
   initialRawPaste?: string;
   submitLabel?: string;
-  onSubmit: (label: string, rawPaste: string, pokepasteUrl: string) => string | null;
+  onSubmit: (
+    label: string,
+    rawPaste: string,
+    pokepasteUrl: string,
+  ) => string | null;
   onCancel: () => void;
 }
 
 const INPUT_CLASSES =
-  "w-full rounded-lg border border-zinc-300 bg-white p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50";
+  "w-full rounded-lg border border-mauve-300 bg-white p-2 text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400";
 
 export function OpponentForm({
   initialLabel = "",
@@ -35,12 +39,12 @@ export function OpponentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800"
+      className="flex flex-col gap-3 rounded-lg border border-mauve-200 p-4"
     >
       <input
         value={label}
         onChange={(event) => setLabel(event.target.value)}
-        placeholder='Opponent name (e.g. "Blastoise Delphox - LenVGC")'
+        placeholder='Opponent name (e.g. "Sand toxapex - Wolfey")'
         aria-label="Opponent name"
         className={INPUT_CLASSES}
       />
@@ -60,21 +64,21 @@ export function OpponentForm({
         className={`${INPUT_CLASSES} resize-y p-3 font-mono`}
       />
       {error && (
-        <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+        <p role="alert" className="text-sm text-red-600">
           {error}
         </p>
       )}
       <div className="flex gap-2">
         <button
           type="submit"
-          className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
         >
           {submitLabel}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
         >
           Cancel
         </button>

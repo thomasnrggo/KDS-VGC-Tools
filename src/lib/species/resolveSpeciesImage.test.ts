@@ -40,6 +40,15 @@ describe("resolveSpeciesImage", () => {
     });
   });
 
+  it("infers Blastoise's Mega form from its real item name, Blastoisinite", () => {
+    // Not "Blastoisite" — a common misspelling (verified against Bulbapedia).
+    expect(resolveSpeciesImage("Blastoise", "Blastoisinite")).toEqual({
+      dexId: 9,
+      formSuffix: "Mega",
+      imageUrl: `${IMAGE_BASE}/0009-Mega.png`,
+    });
+  });
+
   it("distinguishes Mega-X from Mega-Y via the specific stone", () => {
     expect(resolveSpeciesImage("Charizard", "Charizardite X")?.formSuffix).toBe("Mega-X");
     expect(resolveSpeciesImage("Charizard", "Charizardite Y")?.formSuffix).toBe("Mega-Y");
@@ -65,6 +74,14 @@ describe("resolveSpeciesImage", () => {
     expect(resolveSpeciesImage("Florges-Blue")?.dexId).toBe(671);
     expect(resolveSpeciesImage("Florges-Orange")?.dexId).toBe(671);
     expect(resolveSpeciesImage("Florges-Yellow")?.dexId).toBe(671);
+  });
+
+  it("resolves Maushold's Family of Four cosmetic form via alias", () => {
+    expect(resolveSpeciesImage("Maushold-Four")).toEqual({
+      dexId: 925,
+      formSuffix: undefined,
+      imageUrl: `${IMAGE_BASE}/0925.png`,
+    });
   });
 
   it("returns null for an unknown species instead of throwing", () => {

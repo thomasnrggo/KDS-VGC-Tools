@@ -70,14 +70,21 @@ export function PokemonSlotPicker({
               ? `${label}: ${selected.species}. Click to change.`
               : `${label}: none picked. Click to choose.`
           }
-          className="flex h-14 w-14 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500"
+          className="flex h-14 w-14 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-mauve-600"
         >
           {selected ? (
-            <PokemonHoverCard pokemon={selected}>
-              <PokemonSprite species={selected.species} size={56} />
+            <PokemonHoverCard
+              pokemon={selected}
+              triggerClassName="h-full w-full"
+            >
+              <div className="relative h-full w-full overflow-hidden rounded-lg bg-mauve-500/20">
+                <PokemonSprite species={selected.species} fill />
+              </div>
             </PokemonHoverCard>
           ) : (
-            <span className="block h-14 w-14 rounded-full border border-dashed border-zinc-300 transition-colors hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:border-zinc-500 dark:hover:bg-zinc-800" />
+            <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-mauve-500 transition-all hover:border-mauve-600 hover:bg-mauve-300/50 cursor-pointer">
+              <Icon className="text-mauve-500" name={IconName.Add} size={24} />
+            </span>
           )}
         </button>
         {selected && (
@@ -86,28 +93,21 @@ export function PokemonSlotPicker({
             onClick={() => onChange(null)}
             aria-label={`Clear ${label}`}
             title={`Clear ${label}`}
-            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-700 text-white hover:bg-red-600 dark:bg-zinc-600 dark:hover:bg-red-600"
+            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-mauve-400 text-mauve-700 hover:bg-mauve-500 hover:text-mauve-200 cursor-pointer"
           >
-            <Icon name={IconName.Close} size={10} />
+            <Icon name={IconName.Close} size={12} />
           </button>
         )}
       </div>
-
-      {/* <span
-        className="max-w-[4.5rem] truncate text-center text-xs text-zinc-700 dark:text-zinc-300"
-        title={selected?.species}
-      >
-        {selected ? selected.species : "—"}
-      </span> */}
 
       {isOpen && (
         <div
           role="listbox"
           aria-label={label}
-          className="absolute top-full z-20 mt-2 grid w-max grid-cols-3 gap-1 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+          className="absolute top-full z-20 mt-2 grid w-max grid-cols-3 gap-1 rounded-lg border border-mauve-200 bg-white p-2 shadow-lg"
         >
           {myTeamPokemon.length === 0 ? (
-            <p className="col-span-3 max-w-[10rem] p-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="col-span-3 max-w-40 p-1 text-xs text-mauve-500">
               Add your own team first.
             </p>
           ) : (
@@ -119,14 +119,11 @@ export function PokemonSlotPicker({
                 aria-selected={value === index}
                 onClick={() => pick(index)}
                 title={mon.species}
-                className={`flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:hover:bg-zinc-800 dark:focus:ring-zinc-500 ${
-                  value === index ? "bg-zinc-100 dark:bg-zinc-800" : ""
+                className={`flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-mauve-100 focus:outline-none focus:ring-2 focus:ring-mauve-400 ${
+                  value === index ? "bg-mauve-200" : ""
                 }`}
               >
-                <PokemonSprite species={mon.species} size={36} />
-                <span className="max-w-[3.5rem] truncate text-[10px] text-zinc-700 dark:text-zinc-300">
-                  {mon.species}
-                </span>
+                <PokemonSprite species={mon.species} size={48} />
               </button>
             ))
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { deleteOpponent, getOpponents, saveOpponent } from "@/lib/storage/db";
+import { clearOpponents, deleteOpponent, getOpponents, saveOpponent } from "@/lib/storage/db";
 import { createOpponent, getPlanForTeam } from "@/lib/opponent";
 import { createTeam, validateTeamSize } from "@/lib/team";
 import type { BulkImportResult, MatchupPlan, Opponent, TeamFolderEntry } from "@/types";
@@ -87,6 +87,11 @@ export function useOpponents() {
     void deleteOpponent(id);
   }, []);
 
+  const removeAllOpponents = useCallback(() => {
+    setOpponents([]);
+    void clearOpponents();
+  }, []);
+
   /** Applies `updater` to the opponent with `id`, persisting the result. No-op if not found. */
   const updateOpponent = useCallback((id: string, updater: (opponent: Opponent) => Opponent) => {
     setOpponents((prev) => {
@@ -155,6 +160,7 @@ export function useOpponents() {
     addOpponent,
     addOpponentsFromFolder,
     removeOpponent,
+    removeAllOpponents,
     updateOpponent,
     updateOpponentPlan,
     editOpponentTeam,

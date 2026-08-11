@@ -19,10 +19,10 @@ export function ItemIcon({ item, size = 24 }: ItemIconProps) {
         role="img"
         aria-label={item}
         title={item}
-        className="flex shrink-0 items-center justify-center rounded bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+        className="flex shrink-0 items-center justify-center rounded-full bg-mauve-200/90 text-mauve-500"
         style={{ width: size, height: size }}
       >
-        <span aria-hidden="true" className="text-[8px]">
+        <span aria-hidden="true" className="text-[8px] font-bold">
           ?
         </span>
       </div>
@@ -30,14 +30,16 @@ export function ItemIcon({ item, size = 24 }: ItemIconProps) {
   }
 
   return (
-    <Image
-      src={resolved.imageUrl}
-      alt={item}
-      title={item}
-      width={size}
-      height={size}
-      className="shrink-0 object-contain"
-      onError={() => setFailed(true)}
-    />
+    <div className="flex shrink-0 items-center justify-center rounded-full bg-mauve-200/90">
+      <Image
+        src={resolved.imageUrl}
+        alt={item}
+        title={item}
+        width={size}
+        height={size}
+        className="shrink-0 object-contain"
+        onError={() => setFailed(true)}
+      />
+    </div>
   );
 }

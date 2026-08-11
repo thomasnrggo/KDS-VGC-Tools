@@ -3,25 +3,55 @@ import { resolveSpeciesImage } from "@/lib/species/resolveSpeciesImage";
 
 interface PokemonSpriteProps {
   species: string;
+  /** Held item — only used to infer a Mega Evolution sprite via resolveSpeciesImage. */
+  item?: string;
   size?: number;
+  /**
+   * Fill the parent element instead of using an intrinsic pixel size — the
+   * parent must be positioned (e.g. `relative`) and sized (e.g. `aspect-square`).
+   * Lets the sprite scale proportionally with a responsive grid cell.
+   */
+  fill?: boolean;
 }
 
-export function PokemonSprite({ species, size = 96 }: PokemonSpriteProps) {
-  const resolved = resolveSpeciesImage(species);
+export function PokemonSprite({
+  species,
+  item,
+  size = 96,
+  fill = false,
+}: PokemonSpriteProps) {
+  const resolved = resolveSpeciesImage(species, item);
 
   if (!resolved) {
     return (
       <div
         role="img"
         aria-label={species}
-        className="flex shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
-        style={{ width: size, height: size }}
+        className={
+          fill
+            ? "absolute inset-0 flex items-center justify-center rounded-full bg-mauve-200 text-mauve-500"
+            : "flex shrink-0 items-center justify-center rounded-full bg-mauve-200 text-mauve-500"
+        }
+        style={fill ? undefined : { width: size, height: size }}
         title={species}
       >
         <span aria-hidden="true" className="text-xs">
           ?
         </span>
       </div>
+    );
+  }
+
+  if (fill) {
+    return (
+      <Image
+        src={resolved.imageUrl}
+        alt={species}
+        title={species}
+        fill
+        sizes="(max-width: 768px) 15vw, 80px"
+        className="object-contain p-1"
+      />
     );
   }
 

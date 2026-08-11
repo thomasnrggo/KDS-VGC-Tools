@@ -115,12 +115,12 @@ export function MyTeamHeader({
   }
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-zinc-200 bg-zinc-100/95 px-6 py-4 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
+    <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-mauve-100 bg-mauve-600 px-6 py-4 backdrop-blur">
       <h1 className="leading-tight">
-        <span className="block text-base text-zinc-500 dark:text-zinc-400">
+        <span className="block text-base text-mauve-200">
           Matchup
         </span>
-        <span className="block text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+        <span className="block text-2xl font-bold text-white">
           Planner
         </span>
       </h1>
@@ -130,7 +130,7 @@ export function MyTeamHeader({
           <button
             type="button"
             onClick={openAddModal}
-            className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            className="rounded-full bg-mauve-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-950"
           >
             Add your team
           </button>
@@ -153,8 +153,8 @@ export function MyTeamHeader({
                             key={index}
                             className="relative h-12 w-12 shrink-0"
                           >
-                            <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-white dark:bg-zinc-900">
-                              <PokemonSprite species={mon.species} size={44} />
+                            <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-mauve-100/50">
+                              <PokemonSprite species={mon.species} size={36} />
                             </span>
                             {mon.item && (
                               <span className="absolute -bottom-1 -right-1">
@@ -166,8 +166,8 @@ export function MyTeamHeader({
                       </span>
                       <Icon
                         name={IconName.ExpandMore}
-                        size={24}
-                        className="mb-3 text-zinc-500 opacity-70 dark:text-zinc-400 cursor-pointer"
+                        size={28}
+                        className="mb-3 text-mauve-100 cursor-pointer"
                       />
                     </span>
                   </button>
@@ -178,7 +178,7 @@ export function MyTeamHeader({
                     ref={dropdownRef}
                     role="listbox"
                     aria-label="Select team"
-                    className="absolute left-6 right-6 top-full z-20 mt-2 overflow-hidden rounded-lg border border-zinc-200 bg-white py-1 shadow-lg md:left-auto md:right-6 md:w-96 dark:border-zinc-700 dark:bg-zinc-900"
+                    className="absolute left-6 right-6 top-full z-20 mt-2 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg md:left-auto md:right-6 md:w-96"
                   >
                     {teams.map((team) => {
                       const isSelected = team.id === activeTeamId;
@@ -187,8 +187,8 @@ export function MyTeamHeader({
                           key={team.id}
                           role="option"
                           aria-selected={isSelected}
-                          className={`flex items-center gap-2 px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
-                            isSelected ? "bg-zinc-50 dark:bg-zinc-800/60" : ""
+                          className={`flex items-center gap-2 px-3 py-2 hover:bg-mauve-100 ${
+                            isSelected ? "bg-mauve-50" : ""
                           }`}
                         >
                           <button
@@ -196,8 +196,8 @@ export function MyTeamHeader({
                             onClick={() => selectTeam(team.id)}
                             className={`flex flex-1 items-center gap-2 overflow-hidden text-left text-sm ${
                               isSelected
-                                ? "font-medium text-zinc-900 dark:text-zinc-50"
-                                : "text-zinc-700 dark:text-zinc-300"
+                                ? "font-medium text-mauve-900"
+                                : "text-mauve-700"
                             }`}
                           >
                             <span className="flex flex-col shrink-0 gap-0.5">
@@ -208,7 +208,7 @@ export function MyTeamHeader({
                                 {team.pokemon.map((mon, index) => (
                                   <div
                                     key={index}
-                                    className="h-8 w-8 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
+                                    className="h-8 w-8 overflow-hidden rounded-full bg-mauve-100"
                                   >
                                     <PokemonSprite
                                       species={mon.species}
@@ -224,7 +224,7 @@ export function MyTeamHeader({
                             onClick={() => openEditModal(team.id)}
                             aria-label={`Edit ${team.name}`}
                             title={`Edit ${team.name}`}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-200 hover:text-mauve-700"
                           >
                             <Icon name={IconName.Edit} size={18} />
                           </button>
@@ -233,7 +233,7 @@ export function MyTeamHeader({
                             onClick={() => requestRemove(team.id)}
                             aria-label={`Remove ${team.name}`}
                             title={`Remove ${team.name}`}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-red-100 hover:text-red-600 dark:text-zinc-400 dark:hover:bg-red-950 dark:hover:text-red-400"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-red-100 hover:text-red-600"
                           >
                             <Icon name={IconName.Delete} size={18} />
                           </button>
@@ -246,7 +246,7 @@ export function MyTeamHeader({
                         openAddModal();
                         setIsTeamMenuOpen(false);
                       }}
-                      className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 md:hidden dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      className="flex w-full items-center gap-2 border-t border-mauve-200 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100"
                     >
                       <Icon name={IconName.Add} size={16} />
                       Add a team
@@ -255,16 +255,6 @@ export function MyTeamHeader({
                 )}
               </>
             )}
-
-            <button
-              type="button"
-              onClick={openAddModal}
-              aria-label="Add a team"
-              title="Add a team"
-              className="hidden md:flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-zinc-400 text-zinc-500 hover:border-zinc-500 hover:text-zinc-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-400 dark:hover:text-zinc-200 "
-            >
-              <Icon name={IconName.Add} size={16} />
-            </button>
           </>
         )}
       </div>
@@ -273,7 +263,7 @@ export function MyTeamHeader({
         <Modal onClose={closeModal} labelledBy="my-team-modal-title">
           <h2
             id="my-team-modal-title"
-            className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+            className="mb-4 text-lg font-semibold text-mauve-900"
           >
             {modalMode === "edit" ? "Edit team" : "Add a team"}
           </h2>
@@ -287,15 +277,19 @@ export function MyTeamHeader({
       )}
 
       {confirmDeleteTeam && (
-        <Modal onClose={() => setConfirmDeleteId(null)} labelledBy="confirm-remove-team-title">
+        <Modal
+          onClose={() => setConfirmDeleteId(null)}
+          labelledBy="confirm-remove-team-title"
+        >
           <h2
             id="confirm-remove-team-title"
-            className="mb-2 text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+            className="mb-2 text-lg font-semibold text-mauve-900"
           >
             Remove {confirmDeleteTeam.name}?
           </h2>
-          <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
-            This can&apos;t be undone — you&apos;ll need to paste the team again to add it back.
+          <p className="mb-4 text-sm text-mauve-600">
+            This can&apos;t be undone — you&apos;ll need to paste the team again
+            to add it back.
           </p>
           <div className="flex gap-2">
             <button
@@ -308,7 +302,7 @@ export function MyTeamHeader({
             <button
               type="button"
               onClick={() => setConfirmDeleteId(null)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
             >
               Cancel
             </button>
