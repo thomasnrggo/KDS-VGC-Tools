@@ -1,4 +1,5 @@
 import { IconName } from "@/enums";
+import { ICON_PATHS } from "./paths";
 
 interface IconProps {
   name: IconName;
@@ -8,12 +9,15 @@ interface IconProps {
 
 export function Icon({ name, size = 20, className = "" }: IconProps) {
   return (
-    <span
+    <svg
       aria-hidden="true"
-      className={`material-symbols-outlined select-none ${className}`}
-      style={{ fontSize: size }}
+      viewBox="0 -960 960 960"
+      width={size}
+      height={size}
+      fill="currentColor"
+      className={`shrink-0 select-none ${className}`}
     >
-      {name}
-    </span>
+      <path d={ICON_PATHS[name]} />
+    </svg>
   );
 }
