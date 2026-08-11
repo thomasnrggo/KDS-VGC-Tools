@@ -14,6 +14,13 @@ interface PokemonSpriteProps {
   fill?: boolean;
 }
 
+/**
+ * `unoptimized` on both <Image>s below: these are our own pre-compressed
+ * static PNGs (see PLANNING.md's sprite pipeline) — running them through
+ * Next's Image Optimization again is pure overhead (extra serverless
+ * invocations per unique size, subject to Vercel's optimization rate limits),
+ * and was the main cause of slow-to-appear sprites in production.
+ */
 export function PokemonSprite({
   species,
   item,
@@ -49,6 +56,7 @@ export function PokemonSprite({
         alt={species}
         title={species}
         fill
+        unoptimized
         sizes="(max-width: 768px) 15vw, 80px"
         className="object-contain p-1"
       />
@@ -62,6 +70,7 @@ export function PokemonSprite({
       title={species}
       width={size}
       height={size}
+      unoptimized
       className="shrink-0 object-contain"
     />
   );
