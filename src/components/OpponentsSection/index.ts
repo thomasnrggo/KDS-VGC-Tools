@@ -1,0 +1,1 @@
+export { OpponentsSection } from "./OpponentsSection";

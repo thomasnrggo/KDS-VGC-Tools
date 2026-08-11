@@ -1,7 +1,7 @@
 import speciesData from "@/data/species.json";
-import { normalizeSpeciesKey } from "./normalize";
-import { SPECIES_ALIASES } from "./aliases";
-import { MEGA_STONE_SUFFIX_BY_ITEM } from "./megaStones";
+import { candidateFormKeys } from "./candidateFormKeys";
+import { SPECIES_ALIASES } from "@/constants";
+import type { ResolvedSpeciesImage } from "@/types";
 
 interface SpeciesEntry {
   dexId: number;
@@ -10,14 +10,7 @@ interface SpeciesEntry {
 
 const SPECIES_DATA = speciesData as unknown as Record<string, SpeciesEntry>;
 
-const IMAGE_BASE_URL =
-  "https://raw.githubusercontent.com/HybridShivam/Pokemon/master/assets/images";
-
-export interface ResolvedSpeciesImage {
-  dexId: number;
-  formSuffix?: string;
-  imageUrl: string;
-}
+const IMAGE_BASE_URL = "/pokemon-sprites/thumbnails-compressed";
 
 function padDexId(dexId: number): string {
   return String(dexId).padStart(4, "0");
@@ -42,27 +35,19 @@ function toResolvedImage(entry: SpeciesEntry): ResolvedSpeciesImage {
 
 /**
  * Resolves a Showdown species name (+ optional held item, for Mega Stones) to
- * the HybridShivam/Pokemon sprite that represents it. Returns null when the
- * species/form isn't in the static lookup table — callers should render a
- * placeholder rather than a broken image, and treat it as a signal that
- * src/data/species.json or the alias table needs an entry added.
+ * its sprite, self-hosted under public/pokemon-sprites/thumbnails-compressed
+ * (originally sourced from HybridShivam/Pokemon, pre-compressed). Returns null
+ * when the species/form isn't in the static lookup table — callers should
+ * render a placeholder rather than a broken image, and treat it as a signal
+ * that src/data/species.json or the alias table needs an entry added.
  */
 export function resolveSpeciesImage(
   species: string,
   item?: string,
 ): ResolvedSpeciesImage | null {
-  const key = normalizeSpeciesKey(species);
-
-  if (item) {
-    const megaSuffix = MEGA_STONE_SUFFIX_BY_ITEM[normalizeSpeciesKey(item)];
-    if (megaSuffix) {
-      const megaEntry = lookup(`${key}-${normalizeSpeciesKey(megaSuffix)}`);
-      if (megaEntry) {
-        return toResolvedImage(megaEntry);
-      }
-    }
+  for (const key of candidateFormKeys(species, item)) {
+    const entry = lookup(key);
+    if (entry) return toResolvedImage(entry);
   }
-
-  const entry = lookup(key);
-  return entry ? toResolvedImage(entry) : null;
+  return null;
 }

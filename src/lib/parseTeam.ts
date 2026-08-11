@@ -1,35 +1,65 @@
-export interface ParsedPokemon {
-  /** Canonical Showdown species name, e.g. "Landorus-Therian" — used to resolve the sprite. */
-  species: string;
-  item?: string;
-}
+import type { ParsedPokemon } from "@/types";
 
 const HEADER_LINE = /^===.*===$/;
 const GENDER_SUFFIX = /\s*\((M|F)\)\s*$/;
 const NICKNAME_WRAPPER = /^.*\(([^()]+)\)\s*$/;
+const ABILITY_LINE = /^Ability:\s*(.+)$/;
+const EVS_LINE = /^EVs:\s*(.+)$/;
+const NATURE_LINE = /^(\w+)\s+Nature$/;
+const MOVE_LINE = /^-\s*(.+)$/;
 
 /**
- * Parses a Pokémon Showdown team export into one entry per Pokémon.
- *
- * Only the first line of each Pokémon block is read (species/item/nickname/
- * gender) — everything else (Ability, EVs, Nature, moves, ...) isn't part of
- * this app's data model yet. See PLANNING.md section 4.
+ * Parses a Pokémon Showdown team export into one entry per Pokémon: species,
+ * item, and (when present) ability/moves/nature/EVs for display in a hover
+ * card (and, for EVs/nature, for computing final stats — see
+ * src/lib/stats/calculateFinalStats.ts). IVs are intentionally not parsed —
+ * Pokémon Champions removed IVs entirely, every Pokémon is always 31 in every
+ * stat — nor is anything else (Shiny, Tera Type, ...); see PLANNING.md §4.
  */
 export function parseTeam(raw: string): ParsedPokemon[] {
   return splitIntoBlocks(raw).map(parsePokemonBlock);
 }
 
 export function parsePokemonBlock(block: string): ParsedPokemon {
-  const firstLine = block
+  const lines = block
     .split("\n")
     .map((line) => line.trim())
-    .find((line) => line.length > 0);
+    .filter((line) => line.length > 0);
 
+  const firstLine = lines[0];
   if (!firstLine) {
     throw new Error("Cannot parse an empty Pokémon block");
   }
 
-  return parseFirstLine(firstLine);
+  const parsed = parseFirstLine(firstLine);
+
+  const moves: string[] = [];
+  for (const line of lines.slice(1)) {
+    const abilityMatch = line.match(ABILITY_LINE);
+    if (abilityMatch) {
+      parsed.ability = abilityMatch[1].trim();
+      continue;
+    }
+    const evsMatch = line.match(EVS_LINE);
+    if (evsMatch) {
+      parsed.evs = evsMatch[1].trim();
+      continue;
+    }
+    const natureMatch = line.match(NATURE_LINE);
+    if (natureMatch) {
+      parsed.nature = natureMatch[1].trim();
+      continue;
+    }
+    const moveMatch = line.match(MOVE_LINE);
+    if (moveMatch) {
+      moves.push(moveMatch[1].trim());
+    }
+  }
+  if (moves.length > 0) {
+    parsed.moves = moves;
+  }
+
+  return parsed;
 }
 
 function splitIntoBlocks(raw: string): string[] {

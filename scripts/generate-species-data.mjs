@@ -1,7 +1,8 @@
-// One-off generator for src/data/species.json — not a runtime dependency of the app.
-// Pulls species/variety/form data from PokeAPI's bulk CSV export (much cheaper than
-// thousands of individual REST calls) and joins them into a flat
-// `showdown-style-slug -> { dexId, formSuffix? }` lookup table.
+// One-off generator for src/data/species.json and src/data/baseStats.json — not a
+// runtime dependency of the app. Pulls species/variety/form/stat data from PokeAPI's
+// bulk CSV export (much cheaper than thousands of individual REST calls) and joins
+// them into flat `showdown-style-slug -> { ... }` lookup tables, keyed identically
+// (so a form like "charizard-mega-x" resolves consistently in both).
 //
 // Re-run with `npm run generate:species` when new Pokemon/forms need to be added
 // (e.g. a new game release). See PLANNING.md section 5 for the resolution rules
@@ -16,7 +17,18 @@ const CSV_BASE =
   "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUTPUT_PATH = path.join(__dirname, "../src/data/species.json");
+const SPECIES_OUTPUT_PATH = path.join(__dirname, "../src/data/species.json");
+const BASE_STATS_OUTPUT_PATH = path.join(__dirname, "../src/data/baseStats.json");
+
+// stats.csv identifier -> our short stat key
+const STAT_KEY_BY_IDENTIFIER = {
+  hp: "hp",
+  attack: "atk",
+  defense: "def",
+  "special-attack": "spa",
+  "special-defense": "spd",
+  speed: "spe",
+};
 
 async function fetchCsv(filename) {
   const res = await fetch(`${CSV_BASE}/${filename}`);
@@ -47,16 +59,35 @@ function capitalizeSegments(slug) {
 }
 
 async function main() {
-  const [speciesRows, pokemonRows] = await Promise.all([
+  const [speciesRows, pokemonRows, statsRows, pokemonStatsRows] = await Promise.all([
     fetchCsv("pokemon_species.csv").then(parseCsv),
     fetchCsv("pokemon.csv").then(parseCsv),
+    fetchCsv("stats.csv").then(parseCsv),
+    fetchCsv("pokemon_stats.csv").then(parseCsv),
   ]);
 
   const speciesIdentifierById = new Map(
     speciesRows.map((row) => [row.id, row.identifier]),
   );
 
-  const output = {};
+  const statKeyByStatId = new Map(
+    statsRows
+      .filter((row) => row.identifier in STAT_KEY_BY_IDENTIFIER)
+      .map((row) => [row.id, STAT_KEY_BY_IDENTIFIER[row.identifier]]),
+  );
+
+  const baseStatsByPokemonId = new Map();
+  for (const row of pokemonStatsRows) {
+    const statKey = statKeyByStatId.get(row.stat_id);
+    if (!statKey) continue;
+    if (!baseStatsByPokemonId.has(row.pokemon_id)) {
+      baseStatsByPokemonId.set(row.pokemon_id, {});
+    }
+    baseStatsByPokemonId.get(row.pokemon_id)[statKey] = Number(row.base_stat);
+  }
+
+  const speciesOutput = {};
+  const baseStatsOutput = {};
   let skipped = 0;
 
   for (const row of pokemonRows) {
@@ -68,44 +99,61 @@ async function main() {
 
     const dexId = Number(row.species_id);
 
+    let key;
     if (row.is_default === "1") {
       // Default variety for the species — no suffix, even if its own identifier
       // carries a form-like tail (e.g. "deoxys-normal", "landorus-incarnate").
-      if (!(species in output)) {
-        output[species] = { dexId };
+      key = species;
+      if (!(key in speciesOutput)) {
+        speciesOutput[key] = { dexId };
       }
-      continue;
+    } else {
+      // Non-default varieties carry the full form chain in their own identifier
+      // (e.g. "urshifu-rapid-strike-gmax"), which is more reliable than trying to
+      // reconstruct it from pokemon_forms.csv's single-level form_identifier.
+      const prefix = `${species}-`;
+      const formIdentifier = row.identifier.startsWith(prefix)
+        ? row.identifier.slice(prefix.length)
+        : row.identifier;
+
+      if (!formIdentifier) {
+        skipped++;
+        continue;
+      }
+
+      key = `${species}-${formIdentifier}`;
+      if (!(key in speciesOutput)) {
+        speciesOutput[key] = { dexId, formSuffix: capitalizeSegments(formIdentifier) };
+      }
     }
 
-    // Non-default varieties carry the full form chain in their own identifier
-    // (e.g. "urshifu-rapid-strike-gmax"), which is more reliable than trying to
-    // reconstruct it from pokemon_forms.csv's single-level form_identifier.
-    const prefix = `${species}-`;
-    const formIdentifier = row.identifier.startsWith(prefix)
-      ? row.identifier.slice(prefix.length)
-      : row.identifier;
-
-    if (!formIdentifier) {
-      skipped++;
-      continue;
-    }
-
-    const key = `${species}-${formIdentifier}`;
-    if (!(key in output)) {
-      output[key] = { dexId, formSuffix: capitalizeSegments(formIdentifier) };
+    if (!(key in baseStatsOutput)) {
+      const stats = baseStatsByPokemonId.get(row.id);
+      if (stats && Object.keys(stats).length === 6) {
+        baseStatsOutput[key] = stats;
+      }
     }
   }
 
-  const sortedOutput = Object.fromEntries(
-    Object.keys(output)
-      .sort()
-      .map((key) => [key, output[key]]),
-  );
+  function sorted(obj) {
+    return Object.fromEntries(
+      Object.keys(obj)
+        .sort()
+        .map((key) => [key, obj[key]]),
+    );
+  }
 
-  await writeFile(OUTPUT_PATH, JSON.stringify(sortedOutput, null, 2) + "\n");
+  const sortedSpecies = sorted(speciesOutput);
+  const sortedBaseStats = sorted(baseStatsOutput);
+
+  await writeFile(SPECIES_OUTPUT_PATH, JSON.stringify(sortedSpecies, null, 2) + "\n");
+  await writeFile(BASE_STATS_OUTPUT_PATH, JSON.stringify(sortedBaseStats, null, 2) + "\n");
 
   console.log(
-    `Wrote ${Object.keys(sortedOutput).length} entries to ${path.relative(process.cwd(), OUTPUT_PATH)} (${skipped} rows skipped, no resolvable form)`,
+    `Wrote ${Object.keys(sortedSpecies).length} entries to ${path.relative(process.cwd(), SPECIES_OUTPUT_PATH)} (${skipped} rows skipped, no resolvable form)`,
+  );
+  console.log(
+    `Wrote ${Object.keys(sortedBaseStats).length} entries to ${path.relative(process.cwd(), BASE_STATS_OUTPUT_PATH)}`,
   );
 }
 
