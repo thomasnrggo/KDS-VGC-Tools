@@ -1,19 +1,11 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { calculateFinalStats } from "@/lib/stats/calculateFinalStats";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { isLikelyMegaStoneItem } from "@/constants";
+import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 import type { ParsedPokemon, StatKey } from "@/types";
-
-const SAFE_MARGIN = 8;
 
 // Two side-by-side stat columns, matching how VGC players read a stat screen.
 const LEFT_STATS: StatKey[] = ["hp", "def", "spd"];
@@ -76,13 +68,10 @@ interface PokemonHoverCardProps {
  * `children` (no wrapper, no listeners) when none of ability/nature/evs/moves
  * were parsed, so there's nothing to show.
  *
- * Position is measured (not just CSS-centered) so the popover stays within the
- * viewport for triggers near the page's left/right/bottom edges, rather than
- * spilling off-screen. It's re-measured on every animation frame while open
- * (not just once) because the page can still be reflowing shortly after
- * load — sprite/item images and the icon font loading in shift row heights —
- * and a one-shot measurement goes stale if that happens while the tooltip
- * is already open.
+ * Position comes from useViewportSafePosition, so the popover stays within
+ * the viewport for triggers near the page's left/right/bottom edges instead
+ * of spilling off-screen — see that hook (shared with PokemonSlotPicker's
+ * dropdown) for why it's re-measured every frame rather than once.
  */
 export function PokemonHoverCard({
   pokemon,
@@ -100,9 +89,9 @@ export function PokemonHoverCard({
   );
   const isOpen = trigger === "click" ? currentOpenId === id : hoverOpen;
 
-  const [style, setStyle] = useState<CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const style = useViewportSafePosition(isOpen, triggerRef, tooltipRef);
   const hasInfo = Boolean(
     pokemon.ability || pokemon.nature || pokemon.evs || pokemon.moves?.length,
   );
@@ -153,46 +142,6 @@ export function PokemonHoverCard({
       if (openId === id) setOpenId(null);
     };
   }, [trigger, id]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    let frameId: number;
-
-    function updatePosition() {
-      const triggerEl = triggerRef.current;
-      const tooltip = tooltipRef.current;
-      if (triggerEl && tooltip) {
-        const triggerRect = triggerEl.getBoundingClientRect();
-        const tooltipRect = tooltip.getBoundingClientRect();
-
-        const idealLeft =
-          triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
-        const maxLeft = window.innerWidth - tooltipRect.width - SAFE_MARGIN;
-        const left = Math.min(
-          Math.max(idealLeft, SAFE_MARGIN),
-          Math.max(maxLeft, SAFE_MARGIN),
-        );
-
-        const fitsBelow =
-          triggerRect.bottom + 4 + tooltipRect.height + SAFE_MARGIN <=
-          window.innerHeight;
-        const top = fitsBelow
-          ? triggerRect.bottom + 4
-          : triggerRect.top - tooltipRect.height - 4;
-
-        setStyle((prev) =>
-          prev.left === left && prev.top === top
-            ? prev
-            : { position: "fixed", left, top },
-        );
-      }
-      frameId = requestAnimationFrame(updatePosition);
-    }
-
-    frameId = requestAnimationFrame(updatePosition);
-    return () => cancelAnimationFrame(frameId);
-  }, [isOpen]);
 
   if (!hasInfo) {
     return <>{resolvedChildren}</>;

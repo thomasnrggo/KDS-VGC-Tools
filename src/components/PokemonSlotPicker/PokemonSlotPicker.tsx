@@ -6,6 +6,7 @@ import { PokemonSprite } from "../PokemonSprite";
 import { PokemonHoverCard } from "../PokemonHoverCard";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 
 interface PokemonSlotPickerProps {
   label: string;
@@ -22,6 +23,9 @@ export function PokemonSlotPicker({
 }: PokemonSlotPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const style = useViewportSafePosition(isOpen, triggerRef, dropdownRef);
   const selected = value !== null ? myTeamPokemon[value] : undefined;
 
   useEffect(() => {
@@ -59,7 +63,7 @@ export function PokemonSlotPicker({
       ref={containerRef}
       className="relative flex flex-col items-center gap-1"
     >
-      <div className="relative flex h-14 w-14 items-center justify-center">
+      <div ref={triggerRef} className="relative flex h-14 w-14 items-center justify-center">
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
@@ -102,9 +106,11 @@ export function PokemonSlotPicker({
 
       {isOpen && (
         <div
+          ref={dropdownRef}
           role="listbox"
           aria-label={label}
-          className="absolute top-full z-20 mt-2 grid w-max grid-cols-3 gap-1 rounded-lg border border-mauve-200 bg-white p-2 shadow-lg"
+          style={style}
+          className="z-20 grid w-max grid-cols-3 gap-1 rounded-lg border border-mauve-200 bg-white p-2 shadow-lg"
         >
           {myTeamPokemon.length === 0 ? (
             <p className="col-span-3 max-w-40 p-1 text-xs text-mauve-500">

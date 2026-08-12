@@ -115,7 +115,7 @@ export function MyTeamHeader({
   }
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between gap-4 border-b border-mauve-100 bg-mauve-600 px-6 py-4 backdrop-blur">
+    <header className="sticky top-0 z-40 relative flex items-center justify-between gap-2 border-b border-mauve-100 bg-mauve-600 px-4 py-4 backdrop-blur md:gap-4 md:px-6">
       <h1 className="leading-tight">
         <span className="block text-base text-mauve-200">
           Matchup
@@ -125,7 +125,7 @@ export function MyTeamHeader({
         </span>
       </h1>
 
-      <div className="flex flex-1 items-center gap-2 md:flex-none">
+      <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
         {isLoading ? null : teams.length === 0 ? (
           <button
             type="button"
@@ -138,27 +138,27 @@ export function MyTeamHeader({
           <>
             {activeTeam && (
               <>
-                <div ref={menuRef} className="relative flex-1 md:flex-none">
+                <div ref={menuRef} className="relative">
                   <button
                     type="button"
                     onClick={() => setIsTeamMenuOpen((open) => !open)}
                     aria-haspopup="listbox"
                     aria-expanded={isTeamMenuOpen}
-                    className="flex w-full flex-col items-center gap-1 md:w-auto md:items-start"
+                    className="flex flex-col items-center gap-1"
                   >
                     <span className="flex items-end gap-1">
                       <span className="flex gap-1">
                         {activeTeam.pokemon.map((mon, index) => (
                           <span
                             key={index}
-                            className="relative h-12 w-12 shrink-0"
+                            className="relative h-8 w-8 shrink-0 md:h-12 md:w-12"
                           >
-                            <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-mauve-100/50">
-                              <PokemonSprite species={mon.species} size={36} />
+                            <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-lg bg-mauve-100/50">
+                              <PokemonSprite species={mon.species} fill />
                             </span>
                             {mon.item && (
                               <span className="absolute -bottom-1 -right-1">
-                                <ItemIcon item={mon.item} size={20} />
+                                <ItemIcon item={mon.item} size={16} />
                               </span>
                             )}
                           </span>
@@ -167,7 +167,7 @@ export function MyTeamHeader({
                       <Icon
                         name={IconName.ExpandMore}
                         size={28}
-                        className="mb-3 text-mauve-100 cursor-pointer"
+                        className="mb-2 h-5 w-5 text-mauve-100 cursor-pointer md:mb-3 md:h-7 md:w-7"
                       />
                     </span>
                   </button>
@@ -178,7 +178,7 @@ export function MyTeamHeader({
                     ref={dropdownRef}
                     role="listbox"
                     aria-label="Select team"
-                    className="absolute left-6 right-6 top-full z-20 mt-2 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg md:left-auto md:right-6 md:w-96"
+                    className="absolute left-4 right-4 top-full z-20 mt-2 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg md:left-auto md:right-6 md:w-96"
                   >
                     {teams.map((team) => {
                       const isSelected = team.id === activeTeamId;
