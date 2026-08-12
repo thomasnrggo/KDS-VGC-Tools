@@ -9,11 +9,11 @@ interface TeamRosterProps {
 
 export function TeamRoster({ pokemon }: TeamRosterProps) {
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="grid grid-cols-6 gap-2 md:grid-cols-3 lg:grid-cols-6">
       {pokemon.map((mon, index) => (
         <div
           key={`${mon.species}-${index}`}
-          className="relative aspect-square w-full"
+          className="relative aspect-square w-full md:aspect-auto md:h-16 md:w-16"
         >
           <PokemonHoverCard
             pokemon={mon}
