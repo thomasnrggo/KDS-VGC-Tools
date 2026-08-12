@@ -7,4 +7,5 @@ export enum IconName {
   ExpandMore = "expand_more",
   MoreVert = "more_vert",
   OpenInNew = "open_in_new",
+  Search = "search",
 }

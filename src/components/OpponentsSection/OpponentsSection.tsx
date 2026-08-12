@@ -5,6 +5,7 @@ import { useOpponents } from "@/hooks/useOpponents";
 import { parseTeamFolder } from "@/lib/teamFolder";
 import { TEAM_PRESETS } from "@/data/presets";
 import type { ParsedPokemon, TeamFolderEntry } from "@/types";
+import { parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { OpponentForm } from "../OpponentForm";
 import { OpponentCard } from "../OpponentCard";
 import { BulkImportForm } from "../BulkImportForm";
@@ -38,8 +39,27 @@ export function OpponentsSection({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Space-separated terms are ANDed together per opponent — "charizard basculegion"
+  // only matches a team that has a Pokémon/item for *each* term, not either one.
+  const searchTerms = parseSearchTerms(searchQuery);
+  const isSearching = searchTerms.length > 0;
+  const visibleOpponents = isSearching
+    ? opponents.filter((opponent) =>
+        searchTerms.every((term) =>
+          opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term)),
+        ),
+      )
+    : opponents;
+
+  useEffect(() => {
+    if (isSearchOpen) searchInputRef.current?.focus();
+  }, [isSearchOpen]);
 
   useEffect(() => {
     if (!isMenuOpen) return;
@@ -101,6 +121,14 @@ export function OpponentsSection({
     reportImportResult(importedCount, skipped);
   }
 
+  function toggleSearch() {
+    setIsSearchOpen((open) => {
+      const next = !open;
+      if (!next) setSearchQuery("");
+      return next;
+    });
+  }
+
   function startAdding() {
     setEditingId(null);
     setIsBulkImporting(false);
@@ -147,9 +175,30 @@ export function OpponentsSection({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-mauve-900">
-          Opponents
-        </h2>
+        <div className="flex items-center gap-1">
+          <h2 className="text-xl font-semibold text-mauve-900">
+            Opponents
+          </h2>
+          {!isLoading &&
+            !isAdding &&
+            !isBulkImporting &&
+            opponents.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleSearch}
+                aria-label={
+                  isSearchOpen ? "Hide search" : "Search opponents"
+                }
+                aria-expanded={isSearchOpen}
+                title="Search by Pokémon or item"
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700 ${
+                  isSearchOpen ? "bg-mauve-100 text-mauve-700" : ""
+                }`}
+              >
+                <Icon name={IconName.Search} size={18} />
+              </button>
+            )}
+        </div>
         {!isAdding && !isBulkImporting && (
           <div className="flex gap-2">
             <button
@@ -214,6 +263,40 @@ export function OpponentsSection({
           </div>
         )}
       </div>
+
+      {isSearchOpen &&
+        !isLoading &&
+        !isAdding &&
+        !isBulkImporting &&
+        opponents.length > 0 && (
+        <div className="relative">
+          <Icon
+            name={IconName.Search}
+            size={18}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mauve-400"
+          />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
+            aria-label="Search opponents by Pokémon or item"
+            className="w-full rounded-full border border-mauve-300 bg-white py-2 pl-9 pr-9 text-sm text-mauve-800 placeholder:text-mauve-400 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+          />
+          {isSearching && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              title="Clear search"
+              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
+            >
+              <Icon name={IconName.Close} size={14} />
+            </button>
+          )}
+        </div>
+      )}
 
       {isAdding && (
         <OpponentForm
@@ -340,9 +423,13 @@ export function OpponentsSection({
             ))}
           </div>
         </div>
+      ) : isSearching && visibleOpponents.length === 0 ? (
+        <p className="py-12 text-center text-sm text-mauve-500">
+          No opponents have a Pokémon or item matching &ldquo;{searchQuery.trim()}&rdquo;.
+        </p>
       ) : (
         <ul className="flex flex-col">
-          {opponents.map((opponent, index) =>
+          {visibleOpponents.map((opponent, index) =>
             editingId === opponent.id ? (
               <li key={opponent.id}>
                 <OpponentForm
@@ -382,6 +469,14 @@ export function OpponentsSection({
                       updateOpponentPlan(opponent.id, activeTeamId, updater);
                     }
                   }}
+                  isMatch={
+                    isSearching
+                      ? (mon) =>
+                          searchTerms.some((term) =>
+                            pokemonMatchesQuery(mon, term),
+                          )
+                      : undefined
+                  }
                 />
               </div>
             ),

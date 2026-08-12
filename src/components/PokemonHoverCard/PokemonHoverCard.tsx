@@ -57,6 +57,8 @@ interface PokemonHoverCardProps {
    * several teams kept popping cards open unintentionally.
    */
   trigger?: "hover" | "click";
+  /** Forces the popover closed regardless of hover/click state — used by PokemonSlotPicker so this card can't overlap its own swap dropdown while that's open. */
+  disabled?: boolean;
 }
 
 /**
@@ -78,16 +80,19 @@ export function PokemonHoverCard({
   children,
   triggerClassName,
   trigger = "hover",
+  disabled = false,
 }: PokemonHoverCardProps) {
   const [id] = useState(() => Symbol("pokemon-hover-card"));
 
   const [hoverOpen, setHoverOpen] = useState(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentOpenId = useSyncExternalStore(
     subscribe,
     () => openId,
     () => null,
   );
-  const isOpen = trigger === "click" ? currentOpenId === id : hoverOpen;
+  const isOpen =
+    !disabled && (trigger === "click" ? currentOpenId === id : hoverOpen);
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -143,6 +148,14 @@ export function PokemonHoverCard({
     };
   }, [trigger, id]);
 
+  // Cancel any pending hover-close on unmount so it can't fire setState after
+  // the component's gone.
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
+    };
+  }, []);
+
   if (!hasInfo) {
     return <>{resolvedChildren}</>;
   }
@@ -180,8 +193,26 @@ export function PokemonHoverCard({
           },
         }
       : {
-          onMouseEnter: () => setHoverOpen(true),
-          onMouseLeave: () => setHoverOpen(false),
+          // The tooltip renders below/above the trigger with a small gap
+          // (see useViewportSafePosition) — moving the mouse from the trigger
+          // into the tooltip crosses that gap, which briefly isn't over
+          // either, so a same-tick close would unmount the tooltip before the
+          // cursor arrives. Closing on a short delay (cancelled by
+          // re-entering, whether that's back onto the trigger or onto the
+          // tooltip itself, since it's a DOM child of this same wrapper) lets
+          // the mouse actually reach and interact with the tooltip's content
+          // (e.g. the Mega toggle) instead of it vanishing mid-transit.
+          onMouseEnter: () => {
+            if (closeTimeoutRef.current !== null) {
+              clearTimeout(closeTimeoutRef.current);
+              closeTimeoutRef.current = null;
+            }
+            setHoverOpen(true);
+          },
+          onMouseLeave: () => {
+            if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = setTimeout(() => setHoverOpen(false), 200);
+          },
           onFocus: () => setHoverOpen(true),
           onBlur: () => setHoverOpen(false),
           onKeyDown: (event: React.KeyboardEvent) => {
@@ -201,7 +232,7 @@ export function PokemonHoverCard({
           ref={tooltipRef}
           role="tooltip"
           style={style}
-          className={`${trigger === "click" ? "pointer-events-auto" : "pointer-events-none"} z-30 flex w-80 cursor-auto overflow-hidden rounded-xl border border-mauve-200 bg-white text-left shadow-lg`}
+          className="pointer-events-auto z-30 flex w-80 cursor-auto overflow-hidden rounded-xl border border-mauve-200 bg-white text-left shadow-lg"
         >
           <div className="min-w-0 flex-1 p-3">
             <div className="mb-0.5 flex items-center justify-between gap-2">

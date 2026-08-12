@@ -63,7 +63,10 @@ export function PokemonSlotPicker({
       ref={containerRef}
       className="relative flex flex-col items-center gap-1"
     >
-      <div ref={triggerRef} className="relative flex h-14 w-14 items-center justify-center">
+      <div
+        ref={triggerRef}
+        className="relative flex h-16 w-16 items-center justify-center"
+      >
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
@@ -74,19 +77,20 @@ export function PokemonSlotPicker({
               ? `${label}: ${selected.species}. Click to change.`
               : `${label}: none picked. Click to choose.`
           }
-          className="flex h-14 w-14 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-mauve-600"
+          className="flex h-16 w-16 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-mauve-600"
         >
           {selected ? (
             <PokemonHoverCard
               pokemon={selected}
               triggerClassName="h-full w-full"
+              disabled={isOpen}
             >
               <div className="relative h-full w-full overflow-hidden rounded-lg bg-mauve-500/20">
                 <PokemonSprite species={selected.species} fill />
               </div>
             </PokemonHoverCard>
           ) : (
-            <span className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-mauve-500 transition-all hover:border-mauve-600 hover:bg-mauve-300/50 cursor-pointer">
+            <span className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-mauve-500 transition-all hover:border-mauve-600 hover:bg-mauve-300/50 cursor-pointer">
               <Icon className="text-mauve-500" name={IconName.Add} size={24} />
             </span>
           )}

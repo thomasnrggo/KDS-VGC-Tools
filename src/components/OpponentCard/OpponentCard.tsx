@@ -20,6 +20,7 @@ interface OpponentCardProps {
   onEdit: () => void;
   onRemove: () => void;
   onUpdatePlan: (updater: (plan: MatchupPlan) => MatchupPlan) => void;
+  isMatch?: (mon: ParsedPokemon) => boolean;
 }
 
 const COLUMN_CLASSES = "flex min-w-0 flex-col border-r-1 border-mauve-300";
@@ -36,6 +37,7 @@ export function OpponentCard({
   onEdit,
   onRemove,
   onUpdatePlan,
+  isMatch,
 }: OpponentCardProps) {
   const plan = getPlanForTeam(opponent, activeTeamId);
   const notesRef = useRef<HTMLTextAreaElement>(null);
@@ -109,7 +111,7 @@ export function OpponentCard({
               </button>
             </div>
           </div>
-          <TeamRoster pokemon={opponent.team.pokemon} />
+          <TeamRoster pokemon={opponent.team.pokemon} isMatch={isMatch} />
         </div>
       </div>
 
@@ -121,7 +123,7 @@ export function OpponentCard({
             </p>
           ) : (
             <div className="flex flex-wrap gap-6">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className={COLUMN_TITLE_CLASSES}>Lead</h3>
                 <div className="flex gap-2">
                   <PokemonSlotPicker
@@ -138,7 +140,7 @@ export function OpponentCard({
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <h3 className={COLUMN_TITLE_CLASSES}>Back</h3>
                 <div className="flex gap-2">
                   <PokemonSlotPicker
