@@ -13,6 +13,9 @@ interface PokemonSlotPickerProps {
   myTeamPokemon: ParsedPokemon[];
   value: PokemonSlot;
   onChange: (index: PokemonSlot) => void;
+  /** Whether the selected Pokémon's Mega form (if it has one) should render — persisted by the caller so it survives a reload instead of resetting to "on" every time. */
+  megaEnabled: boolean;
+  onMegaToggle: () => void;
 }
 
 export function PokemonSlotPicker({
@@ -20,6 +23,8 @@ export function PokemonSlotPicker({
   myTeamPokemon,
   value,
   onChange,
+  megaEnabled,
+  onMegaToggle,
 }: PokemonSlotPickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,10 +89,18 @@ export function PokemonSlotPicker({
               pokemon={selected}
               triggerClassName="h-full w-full"
               disabled={isOpen}
+              megaEnabled={megaEnabled}
+              onMegaToggle={onMegaToggle}
             >
-              <div className="relative h-full w-full overflow-hidden rounded-lg bg-mauve-500/20">
-                <PokemonSprite species={selected.species} fill />
-              </div>
+              {(showMega) => (
+                <div className="relative h-full w-full overflow-hidden rounded-lg bg-mauve-500/20">
+                  <PokemonSprite
+                    species={selected.species}
+                    item={showMega ? selected.item : undefined}
+                    fill
+                  />
+                </div>
+              )}
             </PokemonHoverCard>
           ) : (
             <span className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-mauve-500 transition-all hover:border-mauve-600 hover:bg-mauve-300/50 cursor-pointer">

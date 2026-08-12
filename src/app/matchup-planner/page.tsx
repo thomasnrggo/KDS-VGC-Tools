@@ -2,6 +2,7 @@
 
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
+import { MyTeamSection } from "@/components/MyTeamSection";
 import { OpponentsSection } from "@/components/OpponentsSection";
 
 export default function MatchupPlanner() {
@@ -27,7 +28,8 @@ export default function MatchupPlanner() {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
       />
-      <div className="flex w-full flex-col p-6">
+      <div className="flex w-full flex-col gap-6 p-6">
+        <MyTeamSection teams={teams} isLoading={isLoading} addTeam={addTeam} />
         <OpponentsSection
           myTeamPokemon={activeTeam?.pokemon ?? []}
           activeTeamId={activeTeamId}

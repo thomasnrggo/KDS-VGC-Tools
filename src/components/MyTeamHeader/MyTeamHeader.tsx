@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { Team } from "@/types";
 import { Modal } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
@@ -116,14 +117,21 @@ export function MyTeamHeader({
 
   return (
     <header className="sticky top-0 z-40 relative flex items-center justify-between gap-2 border-b border-mauve-100 bg-mauve-600 px-4 py-4 backdrop-blur md:gap-4 md:px-6">
-      <h1 className="leading-tight">
-        <span className="block text-base text-mauve-200">
-          Matchup
+      <div className="flex shrink-0 items-center gap-2">
+        <Image
+          src="/resources/logo.png"
+          alt="VGC Tools"
+          title="VGC Tools"
+          width={56}
+          height={56}
+          unoptimized
+          priority
+          className="h-12 w-12 shrink-0 md:h-14 md:w-14"
+        />
+        <span className="text-lg font-extrabold text-white md:text-xl">
+          VGC<span className="font-light">Tools</span>
         </span>
-        <span className="block text-2xl font-bold text-white">
-          Planner
-        </span>
-      </h1>
+      </div>
 
       <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
         {isLoading ? null : teams.length === 0 ? (

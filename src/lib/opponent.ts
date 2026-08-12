@@ -15,10 +15,16 @@ export function createOpponent(label: string, rawPaste: string, pokepasteUrl?: s
   };
 }
 
-/** Returns the matchup plan for `teamId`, or an empty one if none has been made yet. */
+/**
+ * Returns the matchup plan for `teamId`, or an empty one if none has been made yet. Merges over
+ * EMPTY_PLAN rather than trusting the stored shape directly, so a plan saved before a field (e.g.
+ * `leadMega`/`backMega`) existed still gets that field's default instead of `undefined`.
+ */
 export function getPlanForTeam(opponent: Opponent, teamId: string | null): MatchupPlan {
   if (!teamId) return EMPTY_PLAN;
-  return opponent.plansByTeamId[teamId] ?? EMPTY_PLAN;
+  const plan = opponent.plansByTeamId[teamId];
+  if (!plan) return EMPTY_PLAN;
+  return { ...EMPTY_PLAN, ...plan };
 }
 
 /**
@@ -46,6 +52,8 @@ export function normalizeOpponent(opponent: Opponent, legacyTeamId?: string | nu
     plansByTeamId[legacyTeamId ?? "legacy"] = {
       leadPair: legacy.leadPair ?? [null, null],
       backPair: legacy.backPair ?? [null, null],
+      leadMega: [true, true],
+      backMega: [true, true],
       notes: legacy.notes ?? "",
     };
   }

@@ -6,6 +6,9 @@ export type PokemonSlot = number | null;
 export interface MatchupPlan {
   leadPair: [PokemonSlot, PokemonSlot];
   backPair: [PokemonSlot, PokemonSlot];
+  /** Whether each Lead/Back slot's Mega-capable pick should render in its Mega form — defaults to true via EMPTY_PLAN, so plans saved before this field existed still show Mega by default (matching the old, always-Mega behavior). */
+  leadMega: [boolean, boolean];
+  backMega: [boolean, boolean];
   notes: string;
 }
 

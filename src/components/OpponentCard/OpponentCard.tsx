@@ -65,6 +65,18 @@ export function OpponentCard({
     onUpdatePlan((p) => ({ ...p, backPair: next }));
   }
 
+  function setLeadMega(slot: 0 | 1, value: boolean) {
+    const next: [boolean, boolean] = [...plan.leadMega];
+    next[slot] = value;
+    onUpdatePlan((p) => ({ ...p, leadMega: next }));
+  }
+
+  function setBackMega(slot: 0 | 1, value: boolean) {
+    const next: [boolean, boolean] = [...plan.backMega];
+    next[slot] = value;
+    onUpdatePlan((p) => ({ ...p, backMega: next }));
+  }
+
   return (
     <li className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] lg:grid-cols-[auto_auto_1fr]">
       <div className={COLUMN_CLASSES}>
@@ -73,7 +85,7 @@ export function OpponentCard({
             <div className="flex min-w-0 flex-1 items-center gap-1">
               <span
                 title={opponent.label}
-                className="max-w-28 truncate text-xs font-semibold uppercase tracking-wide text-mauve-600 md:max-w-36 lg:max-w-xs"
+                className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-mauve-600 md:max-w-36 lg:max-w-xs"
               >
                 {opponent.label}
               </span>
@@ -131,12 +143,16 @@ export function OpponentCard({
                     myTeamPokemon={myTeamPokemon}
                     value={plan.leadPair[0]}
                     onChange={(index) => setLeadSlot(0, index)}
+                    megaEnabled={plan.leadMega[0]}
+                    onMegaToggle={() => setLeadMega(0, !plan.leadMega[0])}
                   />
                   <PokemonSlotPicker
                     label="Lead 2"
                     myTeamPokemon={myTeamPokemon}
                     value={plan.leadPair[1]}
                     onChange={(index) => setLeadSlot(1, index)}
+                    megaEnabled={plan.leadMega[1]}
+                    onMegaToggle={() => setLeadMega(1, !plan.leadMega[1])}
                   />
                 </div>
               </div>
@@ -148,12 +164,16 @@ export function OpponentCard({
                     myTeamPokemon={myTeamPokemon}
                     value={plan.backPair[0]}
                     onChange={(index) => setBackSlot(0, index)}
+                    megaEnabled={plan.backMega[0]}
+                    onMegaToggle={() => setBackMega(0, !plan.backMega[0])}
                   />
                   <PokemonSlotPicker
                     label="Back 2"
                     myTeamPokemon={myTeamPokemon}
                     value={plan.backPair[1]}
                     onChange={(index) => setBackSlot(1, index)}
+                    megaEnabled={plan.backMega[1]}
+                    onMegaToggle={() => setBackMega(1, !plan.backMega[1])}
                   />
                 </div>
               </div>

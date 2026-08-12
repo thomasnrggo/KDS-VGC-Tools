@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
 
 interface TeamPasteFormProps {
   initialName?: string;
@@ -18,10 +19,38 @@ export function TeamPasteForm({
   const [name, setName] = useState(initialName);
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    setError(onSubmit(value, name));
+
+    let pasteText = value;
+    let resolvedName = name;
+
+    if (isPokepasteUrl(value)) {
+      setIsFetching(true);
+      setError(null);
+      try {
+        const data = await fetchPokepaste(value);
+        pasteText = data.paste;
+        if (!resolvedName.trim() && data.title) {
+          resolvedName = data.title;
+        }
+        setValue(pasteText);
+        setName(resolvedName);
+      } catch (fetchError) {
+        setIsFetching(false);
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Couldn't load that Poképaste.",
+        );
+        return;
+      }
+      setIsFetching(false);
+    }
+
+    setError(onSubmit(pasteText, resolvedName));
   }
 
   return (
@@ -38,8 +67,8 @@ export function TeamPasteForm({
         value={value}
         onChange={(event) => setValue(event.target.value)}
         rows={16}
-        placeholder="Paste your Pokémon Showdown team export here…"
-        aria-label="Pokémon Showdown team export"
+        placeholder="Paste your Pokémon Showdown team export here… (or a Poképaste link)"
+        aria-label="Pokémon Showdown team export or Poképaste link"
         className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
       />
       {error && (
@@ -50,9 +79,10 @@ export function TeamPasteForm({
       <div className="flex gap-2">
         <button
           type="submit"
-          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+          disabled={isFetching}
+          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Save team
+          {isFetching ? "Loading…" : "Save team"}
         </button>
         {onCancel && (
           <button

@@ -59,6 +59,15 @@ interface PokemonHoverCardProps {
   trigger?: "hover" | "click";
   /** Forces the popover closed regardless of hover/click state — used by PokemonSlotPicker so this card can't overlap its own swap dropdown while that's open. */
   disabled?: boolean;
+  /**
+   * Controls the Mega toggle from outside instead of this component tracking
+   * it internally — pass both together (or neither). Used by PokemonSlotPicker
+   * to persist each Lead/Back slot's Mega preference across reloads instead of
+   * it resetting to "on" every time. Without these, the toggle still works but
+   * only for the current render (e.g. TeamRoster's opponent-roster sprites).
+   */
+  megaEnabled?: boolean;
+  onMegaToggle?: () => void;
 }
 
 /**
@@ -81,6 +90,8 @@ export function PokemonHoverCard({
   triggerClassName,
   trigger = "hover",
   disabled = false,
+  megaEnabled,
+  onMegaToggle,
 }: PokemonHoverCardProps) {
   const [id] = useState(() => Symbol("pokemon-hover-card"));
 
@@ -107,7 +118,16 @@ export function PokemonHoverCard({
     !hasMegaForm &&
     Boolean(pokemon.item) &&
     isLikelyMegaStoneItem(pokemon.item!);
-  const [showMega, setShowMega] = useState(true);
+  const [internalShowMega, setInternalShowMega] = useState(true);
+  const isMegaControlled = onMegaToggle !== undefined;
+  const showMega = isMegaControlled ? (megaEnabled ?? true) : internalShowMega;
+  function toggleMega() {
+    if (isMegaControlled) {
+      onMegaToggle!();
+    } else {
+      setInternalShowMega((value) => !value);
+    }
+  }
   const effectivePokemon =
     hasMegaForm && !showMega ? { ...pokemon, item: undefined } : pokemon;
   const finalStats = hasInfo ? calculateFinalStats(effectivePokemon) : null;
@@ -251,13 +271,13 @@ export function PokemonHoverCard({
                   tabIndex={0}
                   onClick={(event) => {
                     event.stopPropagation();
-                    setShowMega((value) => !value);
+                    toggleMega();
                   }}
                   onKeyDown={(event) => {
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       event.stopPropagation();
-                      setShowMega((value) => !value);
+                      toggleMega();
                     }
                   }}
                   aria-pressed={showMega}

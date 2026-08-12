@@ -32,21 +32,50 @@ describe("getPlanForTeam", () => {
     expect(getPlanForTeam(opponent, null)).toEqual({
       leadPair: [null, null],
       backPair: [null, null],
+      leadMega: [true, true],
+      backMega: [true, true],
       notes: "",
     });
     expect(getPlanForTeam(opponent, "team-1")).toEqual({
       leadPair: [null, null],
       backPair: [null, null],
+      leadMega: [true, true],
+      backMega: [true, true],
       notes: "",
     });
   });
 
   it("returns the saved plan for the given team id", () => {
     const opponent = createOpponent("Some Team", "Ditto");
-    opponent.plansByTeamId["team-1"] = { leadPair: [0, null], backPair: [null, null], notes: "go" };
+    opponent.plansByTeamId["team-1"] = {
+      leadPair: [0, null],
+      backPair: [null, null],
+      leadMega: [false, true],
+      backMega: [true, true],
+      notes: "go",
+    };
     expect(getPlanForTeam(opponent, "team-1")).toEqual({
       leadPair: [0, null],
       backPair: [null, null],
+      leadMega: [false, true],
+      backMega: [true, true],
+      notes: "go",
+    });
+  });
+
+  it("backfills leadMega/backMega with the default (true) for a plan saved before those fields existed", () => {
+    const opponent = createOpponent("Some Team", "Ditto");
+    // Simulates a plan persisted before leadMega/backMega existed.
+    opponent.plansByTeamId["team-1"] = {
+      leadPair: [0, null],
+      backPair: [null, null],
+      notes: "go",
+    } as unknown as ReturnType<typeof getPlanForTeam>;
+    expect(getPlanForTeam(opponent, "team-1")).toEqual({
+      leadPair: [0, null],
+      backPair: [null, null],
+      leadMega: [true, true],
+      backMega: [true, true],
       notes: "go",
     });
   });
@@ -69,7 +98,13 @@ describe("normalizeOpponent", () => {
 
     const normalized = normalizeOpponent(stale, "team-abc");
     expect(normalized.plansByTeamId).toEqual({
-      "team-abc": { leadPair: [0, null], backPair: [null, null], notes: "watch out for trick room" },
+      "team-abc": {
+        leadPair: [0, null],
+        backPair: [null, null],
+        leadMega: [true, true],
+        backMega: [true, true],
+        notes: "watch out for trick room",
+      },
     });
     expect(normalized.label).toBe("Legacy Team");
   });
@@ -87,13 +122,25 @@ describe("normalizeOpponent", () => {
     stale.notes = "";
 
     expect(normalizeOpponent(stale).plansByTeamId).toEqual({
-      legacy: { leadPair: [0, null], backPair: [null, null], notes: "" },
+      legacy: {
+        leadPair: [0, null],
+        backPair: [null, null],
+        leadMega: [true, true],
+        backMega: [true, true],
+        notes: "",
+      },
     });
   });
 
   it("leaves an already-current opponent untouched", () => {
     const opponent = createOpponent("Current Team", "Ditto");
-    opponent.plansByTeamId["team-1"] = { leadPair: [0, null], backPair: [null, null], notes: "some notes" };
+    opponent.plansByTeamId["team-1"] = {
+      leadPair: [0, null],
+      backPair: [null, null],
+      leadMega: [true, false],
+      backMega: [true, true],
+      notes: "some notes",
+    };
     expect(normalizeOpponent(opponent)).toEqual(opponent);
   });
 });

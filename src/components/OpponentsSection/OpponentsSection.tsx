@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useOpponents } from "@/hooks/useOpponents";
 import { parseTeamFolder } from "@/lib/teamFolder";
 import { TEAM_PRESETS } from "@/data/presets";
 import type { ParsedPokemon, TeamFolderEntry } from "@/types";
-import { parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
+import {
+  parseSearchTerms,
+  pokemonMatchesQuery,
+} from "@/lib/pokemonMatchesQuery";
 import { OpponentForm } from "../OpponentForm";
 import { OpponentCard } from "../OpponentCard";
 import { BulkImportForm } from "../BulkImportForm";
@@ -116,7 +120,9 @@ export function OpponentsSection({
   }
 
   function loadPreset(rawPaste: string) {
-    const { importedCount, skipped } = addOpponentsFromFolder(parseTeamFolder(rawPaste));
+    const { importedCount, skipped } = addOpponentsFromFolder(
+      parseTeamFolder(rawPaste),
+    );
     setIsMenuOpen(false);
     reportImportResult(importedCount, skipped);
   }
@@ -177,7 +183,7 @@ export function OpponentsSection({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
           <h2 className="text-xl font-semibold text-mauve-900">
-            Opponents
+            Opposing Teams
           </h2>
           {!isLoading &&
             !isAdding &&
@@ -186,9 +192,7 @@ export function OpponentsSection({
               <button
                 type="button"
                 onClick={toggleSearch}
-                aria-label={
-                  isSearchOpen ? "Hide search" : "Search opponents"
-                }
+                aria-label={isSearchOpen ? "Hide search" : "Search opponents"}
                 aria-expanded={isSearchOpen}
                 title="Search by Pokémon or item"
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700 ${
@@ -269,34 +273,34 @@ export function OpponentsSection({
         !isAdding &&
         !isBulkImporting &&
         opponents.length > 0 && (
-        <div className="relative">
-          <Icon
-            name={IconName.Search}
-            size={18}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mauve-400"
-          />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
-            aria-label="Search opponents by Pokémon or item"
-            className="w-full rounded-full border border-mauve-300 bg-white py-2 pl-9 pr-9 text-sm text-mauve-800 placeholder:text-mauve-400 focus:outline-none focus:ring-2 focus:ring-mauve-400"
-          />
-          {isSearching && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              aria-label="Clear search"
-              title="Clear search"
-              className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
-            >
-              <Icon name={IconName.Close} size={14} />
-            </button>
-          )}
-        </div>
-      )}
+          <div className="relative">
+            <Icon
+              name={IconName.Search}
+              size={18}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mauve-400"
+            />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
+              aria-label="Search opponents by Pokémon or item"
+              className="w-full rounded-full border border-mauve-300 bg-white py-2 pl-9 pr-9 text-sm text-mauve-800 placeholder:text-mauve-400 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+            />
+            {isSearching && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label="Clear search"
+                title="Clear search"
+                className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
+              >
+                <Icon name={IconName.Close} size={14} />
+              </button>
+            )}
+          </div>
+        )}
 
       {isAdding && (
         <OpponentForm
@@ -340,8 +344,8 @@ export function OpponentsSection({
           </h2>
           <p className="mb-4 text-sm text-mauve-600">
             This removes all {opponents.length} opponent
-            {opponents.length === 1 ? "" : "s"} and can&apos;t be undone — you&apos;ll
-            need to re-add or re-import them.
+            {opponents.length === 1 ? "" : "s"} and can&apos;t be undone —
+            you&apos;ll need to re-add or re-import them.
           </p>
           <div className="flex gap-2">
             <button
@@ -374,8 +378,8 @@ export function OpponentsSection({
             Remove {confirmRemoveOpponent.label}?
           </h2>
           <p className="mb-4 text-sm text-mauve-600">
-            This can&apos;t be undone — you&apos;ll need to re-add or re-import this
-            team.
+            This can&apos;t be undone — you&apos;ll need to re-add or re-import
+            this team.
           </p>
           <div className="flex gap-2">
             <button
@@ -399,33 +403,57 @@ export function OpponentsSection({
       {isLoading ? (
         <p className="text-sm text-mauve-500">Loading…</p>
       ) : opponents.length === 0 && !isAdding && !isBulkImporting ? (
-        <div className="flex flex-col items-center gap-4 py-24 text-center">
-          <p className="text-sm text-mauve-500">
-            No opponents yet. Add one to start planning matchups.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-mauve-300 bg-mauve-50 px-6 py-14 text-center">
+          <Image
+            src="/resources/logo.png"
+            alt=""
+            width={56}
+            height={56}
+            unoptimized
+            className="h-14 w-14"
+          />
+          <div className="flex flex-col gap-1">
+            <h3 className="text-lg font-semibold text-mauve-900">
+              Prepare against your rivals
+            </h3>
+            <p className="max-w-md text-sm text-mauve-600">
+              Paste a Pokémon Showdown export for a team you want to prep
+              against, we&apos;ll pull in the roster, held items, and movesets
+              automatically so you can plan your leads and backs.
+            </p>
+          </div>
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
             <button
               type="button"
               onClick={startAdding}
               className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
             >
-              Add a team
+              Add opponent
             </button>
             {TEAM_PRESETS.map((preset) => (
               <button
                 key={preset.id}
                 type="button"
                 onClick={() => loadPreset(preset.rawPaste)}
-                className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+                className="rounded-full border border-mauve-300 bg-white px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
               >
                 Use default set: {preset.label}
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={startBulkImporting}
+            className="text-sm font-medium text-mauve-600 hover:underline"
+          >
+            Prepping for a big tournament? Import a whole folder of teams at
+            once →
+          </button>
         </div>
       ) : isSearching && visibleOpponents.length === 0 ? (
         <p className="py-12 text-center text-sm text-mauve-500">
-          No opponents have a Pokémon or item matching &ldquo;{searchQuery.trim()}&rdquo;.
+          No opponents have a Pokémon or item matching &ldquo;
+          {searchQuery.trim()}&rdquo;.
         </p>
       ) : (
         <ul className="flex flex-col">
