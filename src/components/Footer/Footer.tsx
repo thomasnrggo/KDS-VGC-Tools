@@ -16,9 +16,9 @@ export function Footer() {
         ]
       </p>
       <p className="mt-1 text-mauve-500">
-        Pokémon Champions is developed by The Pokémon Works. All images and data used on this site
-        are owned by Pokémon and its subsidiaries. This site is not affiliated with The Pokémon
-        Company, Game Freak, ILCA, or Nintendo in any way.
+        All images and data used on this site are owned by Pokémon and its
+        subsidiaries. This site is not affiliated with The Pokémon Company, Game
+        Freak, ILCA, or Nintendo in any way.
       </p>
     </footer>
   );

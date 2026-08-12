@@ -1,5 +1,6 @@
 import baseStatsData from "@/data/baseStats.json";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
+import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { SPECIES_ALIASES, NATURE_MODIFIERS } from "@/constants";
 import type { BaseStats, FinalStats, ParsedPokemon, StatKey } from "@/types";
 
@@ -62,6 +63,13 @@ function parseStatPointsAsEvs(text: string | undefined): BaseStats {
   return spread;
 }
 
+/** Choice Scarf multiplies effective Speed by ×1.5, applied after nature — same slot as an in-battle item modifier, not part of the "stat screen" base. */
+const CHOICE_SCARF_SPEED_MULTIPLIER = 1.5;
+
+function hasChoiceScarf(item: string | undefined): boolean {
+  return item !== undefined && normalizeSpeciesKey(item) === "choice-scarf";
+}
+
 function calculateHp(base: number, ev: number): number {
   return Math.floor(((2 * base + IV + Math.floor(ev / 4)) * LEVEL) / 100) + LEVEL + 10;
 }
@@ -91,14 +99,18 @@ export function calculateFinalStats(pokemon: ParsedPokemon): FinalStats | null {
     return 1;
   }
 
+  const scarfed = hasChoiceScarf(pokemon.item);
+  const speedBeforeScarf = calculateOtherStat(baseStats.spe, evs.spe, multiplierFor("spe"));
+
   return {
     hp: calculateHp(baseStats.hp, evs.hp),
     atk: calculateOtherStat(baseStats.atk, evs.atk, multiplierFor("atk")),
     def: calculateOtherStat(baseStats.def, evs.def, multiplierFor("def")),
     spa: calculateOtherStat(baseStats.spa, evs.spa, multiplierFor("spa")),
     spd: calculateOtherStat(baseStats.spd, evs.spd, multiplierFor("spd")),
-    spe: calculateOtherStat(baseStats.spe, evs.spe, multiplierFor("spe")),
+    spe: scarfed ? Math.floor(speedBeforeScarf * CHOICE_SCARF_SPEED_MULTIPLIER) : speedBeforeScarf,
     increasedStat: natureModifier?.increased,
     decreasedStat: natureModifier?.decreased,
+    speedBoostedByChoiceScarf: scarfed,
   };
 }

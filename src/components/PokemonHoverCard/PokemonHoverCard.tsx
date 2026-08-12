@@ -15,7 +15,9 @@ import type { ParsedPokemon, StatKey } from "@/types";
 
 const SAFE_MARGIN = 8;
 
-const STAT_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
+// Two side-by-side stat columns, matching how VGC players read a stat screen.
+const LEFT_STATS: StatKey[] = ["hp", "def", "spd"];
+const RIGHT_STATS: StatKey[] = ["atk", "spa", "spe"];
 const STAT_LABELS: Record<StatKey, string> = {
   hp: "HP",
   atk: "ATK",
@@ -105,22 +107,30 @@ export function PokemonHoverCard({
     pokemon.ability || pokemon.nature || pokemon.evs || pokemon.moves?.length,
   );
 
-  const hasMegaForm = candidateFormKeys(pokemon.species, pokemon.item).length > 1;
+  const hasMegaForm =
+    candidateFormKeys(pokemon.species, pokemon.item).length > 1;
   const holdsUnsupportedMegaStone =
-    !hasMegaForm && Boolean(pokemon.item) && isLikelyMegaStoneItem(pokemon.item!);
+    !hasMegaForm &&
+    Boolean(pokemon.item) &&
+    isLikelyMegaStoneItem(pokemon.item!);
   const [showMega, setShowMega] = useState(true);
   const effectivePokemon =
     hasMegaForm && !showMega ? { ...pokemon, item: undefined } : pokemon;
   const finalStats = hasInfo ? calculateFinalStats(effectivePokemon) : null;
   const resolvedChildren =
-    typeof children === "function" ? children(hasMegaForm ? showMega : true) : children;
+    typeof children === "function"
+      ? children(hasMegaForm ? showMega : true)
+      : children;
 
   useEffect(() => {
     if (trigger !== "click" || !isOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      if (triggerRef.current?.contains(target) || tooltipRef.current?.contains(target)) {
+      if (
+        triggerRef.current?.contains(target) ||
+        tooltipRef.current?.contains(target)
+      ) {
         return;
       }
       setOpenId(null);
@@ -156,18 +166,25 @@ export function PokemonHoverCard({
         const triggerRect = triggerEl.getBoundingClientRect();
         const tooltipRect = tooltip.getBoundingClientRect();
 
-        const idealLeft = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+        const idealLeft =
+          triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
         const maxLeft = window.innerWidth - tooltipRect.width - SAFE_MARGIN;
-        const left = Math.min(Math.max(idealLeft, SAFE_MARGIN), Math.max(maxLeft, SAFE_MARGIN));
+        const left = Math.min(
+          Math.max(idealLeft, SAFE_MARGIN),
+          Math.max(maxLeft, SAFE_MARGIN),
+        );
 
         const fitsBelow =
-          triggerRect.bottom + 4 + tooltipRect.height + SAFE_MARGIN <= window.innerHeight;
+          triggerRect.bottom + 4 + tooltipRect.height + SAFE_MARGIN <=
+          window.innerHeight;
         const top = fitsBelow
           ? triggerRect.bottom + 4
           : triggerRect.top - tooltipRect.height - 4;
 
         setStyle((prev) =>
-          prev.left === left && prev.top === top ? prev : { position: "fixed", left, top },
+          prev.left === left && prev.top === top
+            ? prev
+            : { position: "fixed", left, top },
         );
       }
       frameId = requestAnimationFrame(updatePosition);
@@ -179,6 +196,16 @@ export function PokemonHoverCard({
 
   if (!hasInfo) {
     return <>{resolvedChildren}</>;
+  }
+
+  function statClassName(stat: StatKey): string {
+    const boosted = finalStats && stat === finalStats.increasedStat;
+    const lowered = finalStats && stat === finalStats.decreasedStat;
+    const scarfed = stat === "spe" && finalStats?.speedBoostedByChoiceScarf;
+    return [
+      boosted ? "text-red-600" : lowered ? "text-blue-600" : "text-mauve-800",
+      boosted || lowered || scarfed ? "font-bold" : "font-medium",
+    ].join(" ");
   }
 
   const interactionProps =
@@ -225,90 +252,122 @@ export function PokemonHoverCard({
           ref={tooltipRef}
           role="tooltip"
           style={style}
-          className={`${trigger === "click" ? "pointer-events-auto" : "pointer-events-none"} z-30 w-48 cursor-auto rounded-lg border border-mauve-200 bg-white p-2 text-left shadow-lg`}
+          className={`${trigger === "click" ? "pointer-events-auto" : "pointer-events-none"} z-30 flex w-80 cursor-auto overflow-hidden rounded-xl border border-mauve-200 bg-white text-left shadow-lg`}
         >
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="truncate text-xs font-semibold text-mauve-900">
-              {pokemon.species}
-            </p>
-            {hasMegaForm && (
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setShowMega((value) => !value);
-                }}
-                aria-pressed={showMega}
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                  showMega
-                    ? "border-mauve-600 bg-mauve-600 text-white"
-                    : "border-mauve-300 text-mauve-500 hover:bg-mauve-100"
-                }`}
-              >
-                Mega
-              </button>
-            )}
-            {holdsUnsupportedMegaStone && (
-              <span
-                title={`Holding ${pokemon.item} — this Mega form isn't in our sprite/stats data yet`}
-                className="shrink-0 cursor-help rounded-full border border-mauve-200 px-2 py-0.5 text-[10px] font-semibold text-mauve-400"
-              >
-                Mega?
-              </span>
-            )}
-          </div>
-          {finalStats && (
-            <dl className="mb-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5 border-b border-mauve-100 pb-1.5 text-[11px]">
-              {STAT_ORDER.map((stat) => {
-                const colorClass =
-                  stat === finalStats.increasedStat
-                    ? "font-semibold text-red-600"
-                    : stat === finalStats.decreasedStat
-                      ? "font-semibold text-blue-600"
-                      : "text-mauve-700";
-                return (
-                  <div key={stat} className="flex items-center justify-between">
-                    <dt className={colorClass}>{STAT_LABELS[stat]}</dt>
-                    <dd className={colorClass}>{finalStats[stat]}</dd>
-                  </div>
-                );
-              })}
-            </dl>
-          )}
-          <dl className="flex flex-col gap-0.5 text-[11px] text-mauve-600">
+          <div className="min-w-0 flex-1 p-3">
+            <div className="mb-0.5 flex items-center justify-between gap-2">
+              <p className="truncate text-base font-bold text-mauve-900">
+                {pokemon.species}
+              </p>
+              {hasMegaForm && (
+                // A real <button> here can end up nested inside another
+                // <button> — PokemonSlotPicker's selected-slot trigger is a
+                // <button> that wraps this whole card via PokemonHoverCard —
+                // which is invalid HTML and causes a hydration mismatch. A
+                // span with button semantics avoids that while staying
+                // keyboard-accessible.
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setShowMega((value) => !value);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setShowMega((value) => !value);
+                    }
+                  }}
+                  aria-pressed={showMega}
+                  className={`shrink-0 cursor-pointer select-none rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${
+                    showMega
+                      ? "border-mauve-600 bg-mauve-600 text-white"
+                      : "border-mauve-300 text-mauve-500 hover:bg-mauve-100"
+                  }`}
+                >
+                  Mega
+                </span>
+              )}
+              {holdsUnsupportedMegaStone && (
+                <span
+                  title={`Holding ${pokemon.item} — this Mega form isn't in our sprite/stats data yet`}
+                  className="shrink-0 cursor-help rounded-full border border-mauve-200 px-2.5 py-0.5 text-xs font-semibold text-mauve-400"
+                >
+                  Mega?
+                </span>
+              )}
+            </div>
             {pokemon.ability && (
-              <div className="truncate">
-                <dt className="inline font-medium text-mauve-500">Ability: </dt>
-                <dd className="inline">{pokemon.ability}</dd>
+              <p className="mb-2 truncate text-sm text-mauve-400">
+                {pokemon.ability}
+              </p>
+            )}
+            {finalStats && (
+              <div className="flex text-sm">
+                <dl className="flex flex-1 flex-col gap-1 pr-2">
+                  {LEFT_STATS.map((stat) => (
+                    <div
+                      key={stat}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <dt className={statClassName(stat)}>
+                        {STAT_LABELS[stat]}
+                      </dt>
+                      <dd className={statClassName(stat)}>
+                        {finalStats[stat]}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="w-px shrink-0 bg-mauve-200" />
+                <dl className="flex flex-1 flex-col gap-1 pl-2">
+                  {RIGHT_STATS.map((stat) => (
+                    <div
+                      key={stat}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      <dt
+                        className={statClassName(stat)}
+                        title={
+                          stat === "spe" && finalStats.speedBoostedByChoiceScarf
+                            ? "Includes Choice Scarf's ×1.5 Speed boost"
+                            : undefined
+                        }
+                      >
+                        {STAT_LABELS[stat]}
+                      </dt>
+                      <dd className={statClassName(stat)}>
+                        {finalStats[stat]}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
-            {pokemon.nature && (
-              <div className="truncate">
-                <dt className="inline font-medium text-mauve-500">Nature: </dt>
-                <dd className="inline">{pokemon.nature}</dd>
+            {/* {(pokemon.nature || pokemon.evs) && (
+              <div className="mt-2 flex flex-col gap-0.5 border-t border-mauve-100 pt-2 text-[11px] text-mauve-400">
+                {pokemon.nature && <p className="truncate">{pokemon.nature} Nature</p>}
+                {pokemon.evs && <p className="truncate">EVs: {pokemon.evs}</p>}
               </div>
-            )}
-            {pokemon.evs && (
-              <div className="truncate">
-                <dt className="inline font-medium text-mauve-500">EVs: </dt>
-                <dd className="inline">{pokemon.evs}</dd>
+            )} */}
+          </div>
+          {pokemon.moves && pokemon.moves.length > 0 && (
+            <>
+              <div className="w-px shrink-0 bg-mauve-200" />
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
+                {pokemon.moves.map((move) => (
+                  <div
+                    key={move}
+                    className="rounded-md bg-mauve-100 px-2.5 py-1.5 text-xs text-mauve-700"
+                  >
+                    {move}
+                  </div>
+                ))}
               </div>
-            )}
-            {pokemon.moves && pokemon.moves.length > 0 && (
-              <div>
-                <dt className="font-medium text-mauve-500">Moves:</dt>
-                <dd>
-                  <ul className="list-disc pl-4">
-                    {pokemon.moves.map((move) => (
-                      <li key={move} className="truncate">
-                        {move}
-                      </li>
-                    ))}
-                  </ul>
-                </dd>
-              </div>
-            )}
-          </dl>
+            </>
+          )}
         </div>
       )}
     </div>

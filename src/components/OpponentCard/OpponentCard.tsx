@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { getPlanForTeam } from "@/lib/opponent";
 import type {
   MatchupPlan,
@@ -22,8 +23,11 @@ interface OpponentCardProps {
 }
 
 const COLUMN_CLASSES = "flex min-w-0 flex-col border-r-1 border-mauve-300";
+// h-7 + items-center: matches the roster column's edit/delete icon buttons
+// (also h-7) so every column header — icons or not — centers on the same
+// line, instead of icon-less headers sitting a few px higher.
 const COLUMN_TITLE_CLASSES =
-  "text-xs font-semibold uppercase tracking-wide text-mauve-500";
+  "flex h-7 items-center text-xs font-semibold uppercase tracking-wide text-mauve-500";
 
 export function OpponentCard({
   opponent,
@@ -34,6 +38,18 @@ export function OpponentCard({
   onUpdatePlan,
 }: OpponentCardProps) {
   const plan = getPlanForTeam(opponent, activeTeamId);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  // Grow the notes textarea to fit its content, up to a cap — re-measured on
+  // every value change. `min-h-16`/`max-h-32` (below) bound it: starts at
+  // roughly two rows, grows with content, then scrolls internally past that
+  // instead of growing the whole card indefinitely.
+  useEffect(() => {
+    const el = notesRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [plan.notes]);
 
   function setLeadSlot(slot: 0 | 1, index: PokemonSlot) {
     const next: [PokemonSlot, PokemonSlot] = [...plan.leadPair];
@@ -48,44 +64,50 @@ export function OpponentCard({
   }
 
   return (
-    <li className="relative grid grid-cols-1 md:grid-cols-[26rem_auto_1fr] ">
-      <div className="absolute right-3 top-3 flex gap-1">
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label="Edit opponent team"
-          title="Edit team"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
-        >
-          <Icon name={IconName.Edit} size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label="Remove opponent"
-          title="Remove opponent"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-red-50 hover:text-red-600"
-        >
-          <Icon name={IconName.Delete} size={16} />
-        </button>
-      </div>
-
+    <li className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] lg:grid-cols-[auto_auto_1fr]">
       <div className={COLUMN_CLASSES}>
         <div className="p-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-semibold uppercase tracking-wide mb-1 text-mauve-600 ">
-              {opponent.label}
+          <div className="mb-1 flex h-7 items-center gap-1">
+            <div className="flex min-w-0 flex-1 items-center gap-1">
+              <span
+                title={opponent.label}
+                className="max-w-28 truncate text-xs font-semibold uppercase tracking-wide text-mauve-600 md:max-w-36 lg:max-w-xs"
+              >
+                {opponent.label}
+              </span>
               {opponent.pokepasteUrl && (
                 <a
                   href={opponent.pokepasteUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-mauve-500 underline hover:text-mauve-700 ml-1.5"
+                  aria-label="Open Poképaste"
+                  title="Open Poképaste"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
                 >
-                  Poképaste
+                  <Icon name={IconName.OpenInNew} size={16} />
                 </a>
               )}
-            </span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edit opponent team"
+                title="Edit team"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+              >
+                <Icon name={IconName.Edit} size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={onRemove}
+                aria-label="Remove opponent"
+                title="Remove opponent"
+                className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-red-50 hover:text-red-600"
+              >
+                <Icon name={IconName.Delete} size={16} />
+              </button>
+            </div>
           </div>
           <TeamRoster pokemon={opponent.team.pokemon} />
         </div>
@@ -142,6 +164,7 @@ export function OpponentCard({
         <div className="p-4">
           <h3 className={COLUMN_TITLE_CLASSES}>Game plan</h3>
           <textarea
+            ref={notesRef}
             value={plan.notes}
             onChange={(event) => {
               const notes = event.target.value;
@@ -155,7 +178,7 @@ export function OpponentCard({
                 : "Add your own team above to add notes."
             }
             aria-label="Notes"
-            className="w-full flex-1 resize-y rounded-lg bg-transparent p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-transparent disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-transparent disabled:cursor-not-allowed disabled:opacity-60"
           />
         </div>
       </div>

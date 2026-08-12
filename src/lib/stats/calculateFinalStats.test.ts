@@ -20,6 +20,7 @@ describe("calculateFinalStats", () => {
       spe: 169,
       increasedStat: "spe",
       decreasedStat: "spa",
+      speedBoostedByChoiceScarf: false,
     });
   });
 
@@ -35,6 +36,7 @@ describe("calculateFinalStats", () => {
       spe: 122,
       increasedStat: undefined,
       decreasedStat: undefined,
+      speedBoostedByChoiceScarf: false,
     });
   });
 
@@ -47,6 +49,21 @@ describe("calculateFinalStats", () => {
     // where 1-3 EV are wasted between /4 breakpoints.
     expect(oneSp?.spe).toBeGreaterThan(zeroSp!.spe);
     expect(maxSp?.spe).toBeGreaterThan(oneSp!.spe);
+  });
+
+  it("folds a held Choice Scarf's ×1.5 into Speed and flags it, applied after nature", () => {
+    const unscarfed = calculateFinalStats({ species: "Garchomp", nature: "Jolly", evs: "32 Spe" });
+    const scarfed = calculateFinalStats({
+      species: "Garchomp",
+      item: "Choice Scarf",
+      nature: "Jolly",
+      evs: "32 Spe",
+    });
+    expect(unscarfed?.speedBoostedByChoiceScarf).toBe(false);
+    expect(scarfed?.speedBoostedByChoiceScarf).toBe(true);
+    expect(scarfed?.spe).toBe(Math.floor(unscarfed!.spe * 1.5));
+    // Only Speed changes — Choice Scarf isn't Choice Band/Specs.
+    expect(scarfed?.atk).toBe(unscarfed?.atk);
   });
 
   it("resolves the Mega form's (different) base stats when holding the matching Mega Stone", () => {

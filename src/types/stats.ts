@@ -19,4 +19,6 @@ export interface FinalStats extends BaseStats {
   /** The nature-boosted/lowered stat, if the nature isn't neutral — for display coloring. */
   increasedStat?: NatureAffectedStatKey;
   decreasedStat?: NatureAffectedStatKey;
+  /** True when `spe` already has the held Choice Scarf's ×1.5 folded in — for display (e.g. bolding). */
+  speedBoostedByChoiceScarf?: boolean;
 }
