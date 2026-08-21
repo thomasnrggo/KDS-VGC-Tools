@@ -458,10 +458,10 @@ export function DamageCalculator() {
     if (autoWeather) setWeather(autoWeather);
   }
 
-  // Adds a species (from the main search or the sidebar's own "+" tile) —
-  // appends a new custom entry while under MAX_SIDEBAR_POKEMON, otherwise
-  // replaces whichever entry is currently selected (or the first one, if
-  // none is) so the cap is never exceeded.
+  // Adds a species from the sidebar's own "+" tile — appends a new custom
+  // entry while under MAX_SIDEBAR_POKEMON, otherwise replaces whichever
+  // entry is currently selected (or the first one, if none is) so the cap
+  // is never exceeded.
   function attackerAddPokemon(newPokemon: ParsedPokemon) {
     const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
     const newIndex =
@@ -478,6 +478,46 @@ export function DamageCalculator() {
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
     const autoWeather = resolveAutoWeather(newPokemon, attackerMega);
+    if (autoWeather) setWeather(autoWeather);
+  }
+
+  // The main species search's onSelect target once a Pokémon is already
+  // selected — the search input now shows that Pokémon's own species as its
+  // value, so picking a new one there reads as "change this Pokémon," not
+  // "add another": swaps the species in place at the same sidebar index
+  // rather than appending or touching any other slot.
+  function attackerReplacePokemon(newPokemon: ParsedPokemon) {
+    if (attackerSelectedIndex === null) {
+      attackerAddPokemon(newPokemon);
+      return;
+    }
+    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
+    setAttackerSidebar(
+      attackerSidebar.map((entry, i) => (i === attackerSelectedIndex ? newEntry : entry)),
+    );
+    setSelectedMove(null);
+    setAttackerBattleState(DEFAULT_BATTLE_STATE);
+    setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
+    const autoWeather = resolveAutoWeather(newPokemon, attackerMega);
+    if (autoWeather) setWeather(autoWeather);
+  }
+
+  // The "Save" icon's action — appends a copy of whatever's currently shown
+  // (species, ability, item, nature, Stat Points, moves) as a new sidebar
+  // entry and selects it. Since the old "+" tile is gone, this (plus
+  // Import/Load Team) is now the only way to grow the roster: pick/tweak a
+  // Pokémon via the search + ability/item/moves fields, Save to lock it in,
+  // then keep editing the freshly-selected copy into the next one.
+  function attackerSaveCurrentToSidebar() {
+    if (!attackerPokemon || attackerSidebar.length >= MAX_SIDEBAR_POKEMON) return;
+    const newEntry: SidebarEntry = { pokemon: { ...attackerPokemon }, isCustom: true };
+    const newIndex = attackerSidebar.length;
+    setAttackerSidebar([...attackerSidebar, newEntry]);
+    setAttackerSelectedIndex(newIndex);
+    setSelectedMove(null);
+    setAttackerBattleState(DEFAULT_BATTLE_STATE);
+    setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
+    const autoWeather = resolveAutoWeather(attackerPokemon, attackerMega);
     if (autoWeather) setWeather(autoWeather);
   }
 
@@ -563,6 +603,35 @@ export function DamageCalculator() {
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
     const autoWeather = resolveAutoWeather(newPokemon, defenderMega);
+    if (autoWeather) setWeather(autoWeather);
+  }
+
+  function defenderReplacePokemon(newPokemon: ParsedPokemon) {
+    if (defenderSelectedIndex === null) {
+      defenderAddPokemon(newPokemon);
+      return;
+    }
+    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
+    setDefenderSidebar(
+      defenderSidebar.map((entry, i) => (i === defenderSelectedIndex ? newEntry : entry)),
+    );
+    setSelectedMove(null);
+    setDefenderBattleState(DEFAULT_BATTLE_STATE);
+    setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
+    const autoWeather = resolveAutoWeather(newPokemon, defenderMega);
+    if (autoWeather) setWeather(autoWeather);
+  }
+
+  function defenderSaveCurrentToSidebar() {
+    if (!defenderPokemon || defenderSidebar.length >= MAX_SIDEBAR_POKEMON) return;
+    const newEntry: SidebarEntry = { pokemon: { ...defenderPokemon }, isCustom: true };
+    const newIndex = defenderSidebar.length;
+    setDefenderSidebar([...defenderSidebar, newEntry]);
+    setDefenderSelectedIndex(newIndex);
+    setSelectedMove(null);
+    setDefenderBattleState(DEFAULT_BATTLE_STATE);
+    setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
+    const autoWeather = resolveAutoWeather(defenderPokemon, defenderMega);
     if (autoWeather) setWeather(autoWeather);
   }
 
@@ -662,6 +731,8 @@ export function DamageCalculator() {
           selectedIndex={attackerSelectedIndex}
           onSelectIndex={attackerSelectIndex}
           onAddPokemon={attackerAddPokemon}
+          onReplacePokemon={attackerReplacePokemon}
+          onSaveToSidebar={attackerSaveCurrentToSidebar}
           onImportTeam={attackerImportTeam}
           onRemovePokemon={attackerRemovePokemon}
           mega={attackerMega}
@@ -748,6 +819,8 @@ export function DamageCalculator() {
           selectedIndex={defenderSelectedIndex}
           onSelectIndex={defenderSelectIndex}
           onAddPokemon={defenderAddPokemon}
+          onReplacePokemon={defenderReplacePokemon}
+          onSaveToSidebar={defenderSaveCurrentToSidebar}
           onImportTeam={defenderImportTeam}
           loadableOpponents={opponents}
           onRemovePokemon={defenderRemovePokemon}

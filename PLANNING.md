@@ -1848,6 +1848,87 @@ leads/backs) is complete and working end to end.
       correctly replaced the Defender's sidebar with that opponent's full 6-Pokémon roster (Tyranitar first,
       Mega-toggled, Sand Stream resolving and auto-applying Sand weather, moves populated), the damage
       calculation panel recalculating live against the new matchup, and the success toast confirming the load.
+    - **Damage Calculator: reworked the per-Pokémon detail panel layout, per an annotated screenshot.** Five
+      changes, all in `RosterPokemonPicker.tsx`: (1) removed the detail panel's `h-16 w-16` `PokemonSprite`
+      thumbnail entirely — freed the row for the fields it already had, no new element added in its place. (2)
+      The top species search (`SearchableSelect`) now shows the selected Pokémon's species as its `value`
+      instead of a separate `<span>{pokemon.species}</span>` heading repeating the same text — picking a new
+      species there now reads as "change this Pokémon," not "add another," so it needed different wiring than
+      the existing `onAddPokemon`: a new `onReplacePokemon` prop (`attackerReplacePokemon`/
+      `defenderReplacePokemon` in `DamageCalculator.tsx`) swaps the species at the currently selected sidebar
+      index in place, falling back to `onAddPokemon`'s append behavior only when nothing is selected yet (empty
+      sidebar). The sidebar's own "+" tile is unaffected — still always appends a new entry via the original
+      `onAddPokemon`, since "add another Pokémon to my roster" and "change which Pokémon this slot is" are
+      genuinely different actions once the top search doubles as the current-species display. (3) Added a
+      `border-b` under the top Regulation/search block and a `border-l` on the sidebar strip, splitting the
+      panel into three visually distinct sections (team-level controls / selected Pokémon detail / roster
+      strip) per the request for "a division to give the team section display better." (4) Each sidebar tile's
+      "×" remove button moved off the sprite (was `absolute -right-1 -top-1`, overlapping the artwork's corner)
+      to a small icon column beside it. (5) Added a matching copy icon above the remove button in that same
+      column, so any individual saved Pokémon can be copied as Showdown export text directly from the sidebar
+      strip without first selecting it — reusing the existing single-Pokémon export machinery
+      (`formatPokemonPaste` + `toast.success`/`toast.error`), refactored from `copyExportText()` (bound to
+      whichever Pokémon was selected) into `copyPokemonExportText(target: ParsedPokemon)` so both the detail
+      panel's own copy icon and every sidebar tile's new one share one implementation. (The request's closing
+      line about "an icon to save an individual set in the team sidebar" was read as reinforcing this same
+      per-tile copy icon — i.e. "save" meaning "copy so I can save it elsewhere" — rather than a separate
+      persistence feature, matching the request's own summary that sidebar tiles end up with exactly two icons.)
+      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live
+      browser check confirmed the sprite is gone, the search input shows "Raichu" then updates live as
+      different sidebar tiles are clicked, typing a new *legal* species there (Grimmsnarl) replaced only that
+      one slot in place (the other 5 sidebar entries untouched) while an *illegal* species (Landorus, Flutter
+      Mane — both absent from Regulation M-B's list) correctly showed "No matches" same as the search always
+      has, both dividers render, each sidebar tile shows its copy/remove icons beside (not overlapping) the
+      sprite, clicking a tile's copy icon fires the correct per-Pokémon toast ("Copied Grimmsnarl to clipboard"
+      while Staraptor was the selected Pokémon, proving it copies that tile's own data, not the selection), and
+      the repositioned remove button still removes the correct tile.
+    - **Damage Calculator: replaced the "+" add-to-sidebar tile with a "Save" icon, per follow-up request** ("i
+      want to remove the + section, i dont like that experience for adding a new pokemon to the sidebar" /
+      "add a save button (icon) to save the current set to the team sidebar"). Removed `isAddingToSidebar`
+      state and its whole popup (the dashed "+" tile plus the bottom "Regulation + search" box it opened) from
+      `RosterPokemonPicker.tsx` entirely. In its place, a new "Save" icon (reusing `IconName.Add`, since it's
+      still fundamentally "add this as a new entry") sits in the detail panel's header row next to the existing
+      copy icon — clicking it appends a copy of whatever's *currently* shown (species, ability, item, nature,
+      Stat Points, moves, all as currently configured) as a new sidebar entry and selects it, via a new
+      `onSaveToSidebar` prop (`attackerSaveCurrentToSidebar`/`defenderSaveCurrentToSidebar` in
+      `DamageCalculator.tsx`) — hidden once `sidebar.length >= MAX_SIDEBAR_POKEMON`, same cap the old "+" tile
+      respected. This makes Save (plus Import/Load Team) the only way left to grow a roster past one entry,
+      which only works cleanly *because* of the previous entry's change to the main species search: picking a
+      species there now replaces the *currently selected* slot in place rather than always appending, so the
+      new intended flow is pick/tweak a Pokémon via the search + ability/item/moves fields, hit Save to lock it
+      into the roster (which duplicates it into a fresh selected slot), then use the search again on that new
+      slot to turn it into a different Pokémon for the next spot — repeatable up to 6, entirely within the one
+      unified detail-panel editing surface instead of a separate bare species-picker popup. Fires
+      `toast.success("Saved {species} to the {title} roster")` on click, consistent with every other
+      roster-mutating action in this session. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+      (169/169), and `npm run build` all clean; live browser check confirmed the "+" tile and its popup are
+      gone, clicking Save duplicated the Defender's Venusaur into a new selected second slot with the correct
+      toast, changing that new slot's species via the search to Incineroar left the original Venusaur slot
+      untouched, and clicking Save four more times filled the Defender roster to the 6-Pokémon cap and made the
+      Save icon disappear (only the copy icon remained) exactly as intended.
+    - Damage Calculator: dropped the move-info column (type icon + power) and returned the Moves section to a
+      `grid-cols-2` (2×2) layout, per request — reverting the single-column-plus-info-column change from
+      earlier in the session now that the info column's own reason for existing (fitting next to the type
+      icon) no longer applies. Each of the 4 move slots is now just its `SearchableSelect`, nothing else;
+      dropped the now-unused `moveInfo` lookup and the `TypeIcon` import along with it. Verified: `npx tsc
+      --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser check
+      confirmed the Moves section renders as a compact 2×2 grid of move names only, with no type icons or power
+      numbers.
+    - Damage Calculator: relocated the Mega toggle and the single-Pokémon export action, per feedback that the
+      Mega badge "feels out of place" sitting alone above the ability/nature fields. The Mega toggle now sits
+      directly beside the main species search input (same row, to its right) instead of its own row below —
+      incorporated into "the pokemon select" per the request's own suggestion, since `hasMegaForm` is already
+      computed unconditionally from `pokemon` and was trivially referenceable there. The single-Pokémon copy
+      icon moved out of that now-mostly-empty row entirely, up into the top Regulation/Export Team/Import row,
+      given a visible text label to match its new neighbors, and renamed from an icon-only "copy" to "Export
+      Set" (paired with "Export Team," the same `copyPokemonExportText` function, just relabeled and
+      relocated — no behavior change). What's left of the old row (Mega and the copy icon both moved out) is
+      just the "Save" icon, now alone and right-aligned via `justify-end` rather than the previous
+      Mega-left/Save-and-copy-right split. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169),
+      and `npm run build` all clean; live browser check confirmed "Export Set" appears in the top row next to
+      "Export Team"/"Import" and fires the correct "Copied {species} to clipboard" toast, the Mega badge sits
+      cleanly beside the search input and still toggles correctly (Raichu's ability/stats/damage numbers all
+      updated on toggle, same as before the move), and the detail row below now shows only the Save icon.
 
 ## 8. Attribution
 

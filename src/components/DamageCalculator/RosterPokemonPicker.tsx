@@ -15,7 +15,6 @@ import abilitiesData from "@/data/abilities.json";
 import movesData from "@/data/moves.json";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
-import { TypeIcon } from "../TypeIcon";
 import { Icon } from "../Icon";
 import { Modal } from "../Modal";
 import { toast } from "../Toast";
@@ -152,8 +151,12 @@ interface RosterPokemonPickerProps {
   sidebar: SidebarEntry[];
   selectedIndex: number | null;
   onSelectIndex: (index: number) => void;
-  /** Adds a species (from either the main search or the sidebar's own "+" tile) — appends if under the cap, otherwise replaces the currently selected entry. */
+  /** The main species search's fallback when nothing is selected yet (an empty sidebar) — appends a fresh custom Pokémon, since there's no existing entry for `onReplacePokemon` to swap in place. */
   onAddPokemon: (pokemon: ParsedPokemon) => void;
+  /** The main species search's onSelect target when a Pokémon is already selected — swaps that entry's species in place (the search input shows the current species as its value, so picking a new one reads as "change this Pokémon," not "add another"). */
+  onReplacePokemon: (pokemon: ParsedPokemon) => void;
+  /** Appends a copy of the currently displayed Pokémon (species, ability, item, nature, Stat Points, moves — everything as currently configured) as a new sidebar entry and selects it, ready for further editing — the "Save" icon's action, and now the only way (besides Import/Load Team) to grow the roster past one entry, since the old "+" tile is gone. Only called while sidebar.length < MAX_SIDEBAR_POKEMON (the button itself is hidden past the cap). */
+  onSaveToSidebar: () => void;
   /** Importing more than one Pokémon at once (a full team paste) replaces this side's whole sidebar rather than appending, since a multi-mon paste represents "this is my team," not "add one more." */
   onImportTeam: (pokemon: ParsedPokemon[]) => void;
   onRemovePokemon: (index: number) => void;
@@ -178,6 +181,8 @@ export function RosterPokemonPicker({
   selectedIndex,
   onSelectIndex,
   onAddPokemon,
+  onReplacePokemon,
+  onSaveToSidebar,
   onImportTeam,
   onRemovePokemon,
   mega,
@@ -193,7 +198,6 @@ export function RosterPokemonPicker({
   onMovesChange,
   loadableOpponents,
 }: RosterPokemonPickerProps) {
-  const [isAddingToSidebar, setIsAddingToSidebar] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
@@ -246,11 +250,10 @@ export function RosterPokemonPicker({
     toast.success(`Loaded ${opponent.label} onto ${title}`);
   }
 
-  async function copyExportText() {
-    if (!pokemon) return;
+  async function copyPokemonExportText(target: ParsedPokemon) {
     try {
-      await navigator.clipboard.writeText(formatPokemonPaste(pokemon));
-      toast.success(`Copied ${pokemon.species} to clipboard`);
+      await navigator.clipboard.writeText(formatPokemonPaste(target));
+      toast.success(`Copied ${target.species} to clipboard`);
     } catch {
       toast.error("Couldn't copy to clipboard.");
     }
@@ -361,7 +364,7 @@ export function RosterPokemonPicker({
         {title}
       </h3>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 border-b border-mauve-200 pb-3">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-medium text-mauve-500">
             Regulation: {REGULATIONS[0].label}
@@ -391,6 +394,18 @@ export function RosterPokemonPicker({
                 Export Team
               </button>
             )}
+            {pokemon && (
+              <button
+                type="button"
+                onClick={() => copyPokemonExportText(pokemon)}
+                aria-label={`Export ${title} as Showdown export text`}
+                title="Export as Showdown export text"
+                className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+              >
+                <Icon name={IconName.ContentCopy} size={14} />
+                Export Set
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -406,12 +421,38 @@ export function RosterPokemonPicker({
             </button>
           </div>
         </div>
-        <SearchableSelect
-          options={SPECIES_OPTIONS}
-          placeholder="Search for a Pokémon…"
-          ariaLabel={`${title} Pokémon`}
-          onSelect={(option) => onAddPokemon(buildCustomPokemon(option.id))}
-        />
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SearchableSelect
+              options={SPECIES_OPTIONS}
+              placeholder="Search for a Pokémon…"
+              ariaLabel={`${title} Pokémon`}
+              value={pokemon?.species}
+              onSelect={(option) => {
+                const newPokemon = buildCustomPokemon(option.id);
+                if (selectedIndex !== null) {
+                  onReplacePokemon(newPokemon);
+                } else {
+                  onAddPokemon(newPokemon);
+                }
+              }}
+            />
+          </div>
+          {hasMegaForm && (
+            <button
+              type="button"
+              onClick={() => onMegaChange(!mega)}
+              aria-pressed={mega}
+              className={`shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors ${
+                mega
+                  ? "border-mauve-600 bg-mauve-600 text-white"
+                  : "border-mauve-300 text-mauve-500 hover:bg-mauve-100"
+              }`}
+            >
+              Mega
+            </button>
+          )}
+        </div>
       </div>
 
       {isImportOpen && (
@@ -540,90 +581,69 @@ export function RosterPokemonPicker({
       <div className="flex gap-3">
         {pokemon && (
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex items-start gap-3">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-mauve-100">
-              <PokemonSprite
-                species={pokemon.species}
-                item={mega ? pokemon.item : undefined}
-                fill
-              />
-            </div>
-            <div className="flex flex-1 flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-semibold text-mauve-900">
-                  {pokemon.species}
-                </span>
-                {hasMegaForm && (
-                  <button
-                    type="button"
-                    onClick={() => onMegaChange(!mega)}
-                    aria-pressed={mega}
-                    className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold transition-colors ${
-                      mega
-                        ? "border-mauve-600 bg-mauve-600 text-white"
-                        : "border-mauve-300 text-mauve-500 hover:bg-mauve-100"
-                    }`}
-                  >
-                    Mega
-                  </button>
-                )}
+          <div className="flex flex-col gap-1">
+            {sidebar.length < MAX_SIDEBAR_POKEMON && (
+              <div className="flex items-center justify-end">
                 <button
                   type="button"
-                  onClick={copyExportText}
-                  aria-label={`Copy ${title} as Showdown export text`}
-                  title="Copy as Showdown export text"
-                  className="ml-auto flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-mauve-400 transition-colors hover:bg-mauve-100 hover:text-mauve-700"
+                  onClick={() => {
+                    onSaveToSidebar();
+                    toast.success(`Saved ${pokemon.species} to the ${title} roster`);
+                  }}
+                  aria-label={`Save ${title} as a new roster entry`}
+                  title="Save as a new roster entry"
+                  className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-mauve-400 transition-colors hover:bg-mauve-100 hover:text-mauve-700"
                 >
-                  <Icon name={IconName.ContentCopy} size={14} />
+                  <Icon name={IconName.Add} size={14} />
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-xs text-mauve-500">
-                {onAbilityChange ? (
-                  <div className="min-w-0 flex-1">
-                    <SearchableSelect
-                      options={abilitySelectOptions}
-                      placeholder="Select ability…"
-                      ariaLabel={`${title} ability`}
-                      // Shows the CURRENTLY ACTIVE ability (mega-aware —
-                      // Mega Blastoise displays "Mega Launcher", not the
-                      // pasted base form's "Torrent") even though picking a
-                      // new option still writes to the base pokemon.ability
-                      // field, same as before — a Mega form only ever has
-                      // one ability anyway, so this only changes what's
-                      // shown while mega is toggled on, not what gets saved.
-                      value={effectiveAbility}
-                      onSelect={(option) => onAbilityChange(option.id)}
-                      compact
-                    />
-                  </div>
-                ) : (
-                  effectiveAbility && <span className="truncate">{effectiveAbility}</span>
-                )}
+            )}
+            <div className="flex items-center gap-2 text-xs text-mauve-500">
+              {onAbilityChange ? (
                 <div className="min-w-0 flex-1">
                   <SearchableSelect
-                    options={NATURE_OPTIONS}
-                    placeholder="Select nature…"
-                    ariaLabel={`${title} nature`}
-                    value={natureLabel(currentNature.toLowerCase())}
-                    onSelect={(option) =>
-                      onStatOverridesChange({ ...statOverrides, nature: option.id })
-                    }
+                    options={abilitySelectOptions}
+                    placeholder="Select ability…"
+                    ariaLabel={`${title} ability`}
+                    // Shows the CURRENTLY ACTIVE ability (mega-aware —
+                    // Mega Blastoise displays "Mega Launcher", not the
+                    // pasted base form's "Torrent") even though picking a
+                    // new option still writes to the base pokemon.ability
+                    // field, same as before — a Mega form only ever has
+                    // one ability anyway, so this only changes what's
+                    // shown while mega is toggled on, not what gets saved.
+                    value={effectiveAbility}
+                    onSelect={(option) => onAbilityChange(option.id)}
                     compact
                   />
                 </div>
-              </div>
-              {onItemChange && (
+              ) : (
+                effectiveAbility && <span className="truncate">{effectiveAbility}</span>
+              )}
+              <div className="min-w-0 flex-1">
                 <SearchableSelect
-                  options={itemOptions}
-                  placeholder="Add a held item…"
-                  ariaLabel={`${title} held item`}
-                  value={pokemon.item}
-                  onSelect={(option) => onItemChange(option.id)}
-                  onClear={() => onItemChange(undefined)}
+                  options={NATURE_OPTIONS}
+                  placeholder="Select nature…"
+                  ariaLabel={`${title} nature`}
+                  value={natureLabel(currentNature.toLowerCase())}
+                  onSelect={(option) =>
+                    onStatOverridesChange({ ...statOverrides, nature: option.id })
+                  }
                   compact
                 />
-              )}
+              </div>
             </div>
+            {onItemChange && (
+              <SearchableSelect
+                options={itemOptions}
+                placeholder="Add a held item…"
+                ariaLabel={`${title} held item`}
+                value={pokemon.item}
+                onSelect={(option) => onItemChange(option.id)}
+                onClear={() => onItemChange(undefined)}
+                compact
+              />
+            )}
           </div>
 
           {breakdown ? (
@@ -759,7 +779,7 @@ export function RosterPokemonPicker({
           {onMovesChange && (
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-mauve-600">Moves</span>
-              <div className="flex flex-col gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5">
                 {[0, 1, 2, 3].map((slot) => {
                   const moves = pokemon.moves ?? [];
                   const move = moves[slot];
@@ -772,39 +792,28 @@ export function RosterPokemonPicker({
                   const availableOptions = MOVE_OPTIONS.filter(
                     (option) => !usedElsewhere.includes(option.label),
                   );
-                  const moveInfo = move ? MOVES[normalizeSpeciesKey(move)] : undefined;
                   return (
-                    <div key={slot} className="flex items-center gap-2">
-                      <div className="w-56 shrink-0">
-                        <SearchableSelect
-                          options={availableOptions}
-                          placeholder="Add a move…"
-                          ariaLabel={`${title} move ${slot + 1}`}
-                          value={move}
-                          onSelect={(option) => {
-                            if (slot < moves.length) {
-                              const next = [...moves];
-                              next[slot] = option.label;
-                              onMovesChange(next);
-                            } else {
-                              onMovesChange([...moves, option.label]);
-                            }
-                          }}
-                          onClear={() => {
-                            const next = [...moves];
-                            next.splice(slot, 1);
-                            onMovesChange(next);
-                          }}
-                        />
-                      </div>
-                      {moveInfo && (
-                        <span className="flex flex-1 items-center gap-1 text-xs text-mauve-500">
-                          {/* 38px matches the compact SearchableSelect input's own rendered height, so the icon lines up edge-to-edge with the move field beside it. */}
-                          <TypeIcon type={moveInfo.type} size={38} />
-                          {moveInfo.power !== null && moveInfo.power}
-                        </span>
-                      )}
-                    </div>
+                    <SearchableSelect
+                      key={slot}
+                      options={availableOptions}
+                      placeholder="Add a move…"
+                      ariaLabel={`${title} move ${slot + 1}`}
+                      value={move}
+                      onSelect={(option) => {
+                        if (slot < moves.length) {
+                          const next = [...moves];
+                          next[slot] = option.label;
+                          onMovesChange(next);
+                        } else {
+                          onMovesChange([...moves, option.label]);
+                        }
+                      }}
+                      onClear={() => {
+                        const next = [...moves];
+                        next.splice(slot, 1);
+                        onMovesChange(next);
+                      }}
+                    />
                   );
                 })}
               </div>
@@ -814,14 +823,14 @@ export function RosterPokemonPicker({
         )}
 
         <div
-          className="flex shrink-0 flex-col gap-1.5"
+          className="flex shrink-0 flex-col gap-1.5 border-l border-mauve-200 pl-3"
           role="listbox"
           aria-label={`${title} sidebar`}
         >
           {sidebar.map((entry, index) => {
             const isSelected = selectedIndex === index;
             return (
-              <div key={index} className="relative">
+              <div key={index} className="flex items-center gap-1">
                 <button
                   type="button"
                   role="option"
@@ -845,50 +854,31 @@ export function RosterPokemonPicker({
                     </span>
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => onRemovePokemon(index)}
-                  aria-label={`Remove ${entry.pokemon.species}`}
-                  title={`Remove ${entry.pokemon.species}`}
-                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-mauve-400 text-mauve-700 hover:bg-mauve-500 hover:text-mauve-200"
-                >
-                  <Icon name={IconName.Close} size={12} />
-                </button>
+                <div className="flex shrink-0 flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => copyPokemonExportText(entry.pokemon)}
+                    aria-label={`Copy ${entry.pokemon.species} as Showdown export text`}
+                    title="Copy as Showdown export text"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
+                  >
+                    <Icon name={IconName.ContentCopy} size={11} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemovePokemon(index)}
+                    aria-label={`Remove ${entry.pokemon.species}`}
+                    title={`Remove ${entry.pokemon.species}`}
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-red-600"
+                  >
+                    <Icon name={IconName.Close} size={11} />
+                  </button>
+                </div>
               </div>
             );
           })}
-          {sidebar.length < MAX_SIDEBAR_POKEMON && (
-            <button
-              type="button"
-              onClick={() => setIsAddingToSidebar((open) => !open)}
-              aria-pressed={isAddingToSidebar}
-              aria-label="Add a Pokémon"
-              title="Add a Pokémon"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-mauve-500 transition-colors hover:border-mauve-600 hover:bg-mauve-300/50"
-            >
-              <Icon className="text-mauve-500" name={IconName.Add} size={18} />
-            </button>
-          )}
         </div>
       </div>
-
-      {isAddingToSidebar && (
-        <div className="flex flex-col gap-1.5 rounded-lg border border-mauve-200 bg-mauve-50 p-3">
-          <span className="text-xs font-medium text-mauve-600">
-            Regulation: {REGULATIONS[0].label}
-          </span>
-          <SearchableSelect
-            options={SPECIES_OPTIONS}
-            placeholder="Search for a Pokémon…"
-            ariaLabel={`${title} add Pokémon to sidebar`}
-            autoFocus
-            onSelect={(option) => {
-              onAddPokemon(buildCustomPokemon(option.id));
-              setIsAddingToSidebar(false);
-            }}
-          />
-        </div>
-      )}
     </div>
   );
 }
