@@ -27,6 +27,7 @@ export default function MatchupPlanner() {
         editTeam={editTeam}
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
+        currentPage="matchup-planner"
       />
       <div className="flex w-full flex-col gap-6 p-6">
         <MyTeamSection teams={teams} isLoading={isLoading} addTeam={addTeam} />

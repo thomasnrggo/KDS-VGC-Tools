@@ -15,7 +15,9 @@ This is a Next.js 16.2.12 / React 19.2.4 app for planning Pokémon VGC matchups.
 - `npm run start` — run a production build locally
 - `npm run lint` — ESLint (flat config via `eslint.config.mjs`, extends `eslint-config-next`'s `core-web-vitals` and `typescript` rule sets)
 - `npm test` — run the Vitest unit test suite once; `npm run test:watch` for watch mode
-- `npm run generate:species` — regenerate `src/data/species.json` from PokeAPI (one-off, not run per-request; see PLANNING.md §5)
+- `npm run generate:species` — regenerate `src/data/species.json`/`baseStats.json`/`speciesTypes.json` from PokeAPI (one-off, not run per-request; see PLANNING.md §5)
+- `npm run generate:moves` — regenerate `src/data/moves.json` from PokeAPI (one-off; see PLANNING.md §7's Damage Calculator entry)
+- `npm run generate:type-chart` — regenerate `src/data/typeChart.json` from PokeAPI (one-off; static data, rarely needs re-running)
 
 ## Stack notes
 
