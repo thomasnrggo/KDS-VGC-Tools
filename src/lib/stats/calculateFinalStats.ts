@@ -43,12 +43,12 @@ function resolveBaseStats(species: string, item?: string): BaseStats | undefined
 }
 
 /**
- * Parses a raw "32 HP / 20 Def / 14 SpD" style Stat Points line (as captured by
- * parseTeam's `evs` field) into an EV-equivalent value per stat (× 8), defaulting
+ * Parses a raw "32 HP / 20 Def / 14 SpD" style Stat Points line (as captured
+ * by parseTeam's `evs` field) into the raw 0-32 SP value per stat, defaulting
  * any stat not mentioned to 0 — matching Showdown's own convention of only
  * listing non-default values.
  */
-function parseStatPointsAsEvs(text: string | undefined): BaseStats {
+function parseStatPoints(text: string | undefined): BaseStats {
   const spread: BaseStats = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
   if (!text) return spread;
 
@@ -57,10 +57,21 @@ function parseStatPointsAsEvs(text: string | undefined): BaseStats {
     if (!match) continue;
     const statKey = STAT_ABBREVIATIONS[match[2].toLowerCase()];
     if (statKey) {
-      spread[statKey] = Number(match[1]) * STAT_POINTS_TO_EV;
+      spread[statKey] = Number(match[1]);
     }
   }
   return spread;
+}
+
+function statPointsToEvs(statPoints: BaseStats): BaseStats {
+  return {
+    hp: statPoints.hp * STAT_POINTS_TO_EV,
+    atk: statPoints.atk * STAT_POINTS_TO_EV,
+    def: statPoints.def * STAT_POINTS_TO_EV,
+    spa: statPoints.spa * STAT_POINTS_TO_EV,
+    spd: statPoints.spd * STAT_POINTS_TO_EV,
+    spe: statPoints.spe * STAT_POINTS_TO_EV,
+  };
 }
 
 /** Choice Scarf multiplies effective Speed by ×1.5, applied after nature — same slot as an in-battle item modifier, not part of the "stat screen" base. */
@@ -90,7 +101,7 @@ export function calculateFinalStats(pokemon: ParsedPokemon): FinalStats | null {
   const baseStats = resolveBaseStats(pokemon.species, pokemon.item);
   if (!baseStats) return null;
 
-  const evs = parseStatPointsAsEvs(pokemon.evs);
+  const evs = statPointsToEvs(parseStatPoints(pokemon.evs));
   const natureModifier = pokemon.nature ? NATURE_MODIFIERS[pokemon.nature.toLowerCase()] : undefined;
 
   function multiplierFor(stat: StatKey): number {
@@ -113,4 +124,24 @@ export function calculateFinalStats(pokemon: ParsedPokemon): FinalStats | null {
     decreasedStat: natureModifier?.decreased,
     speedBoostedByChoiceScarf: scarfed,
   };
+}
+
+export interface StatBreakdown {
+  base: BaseStats;
+  /** Raw 0-32 Stat Points per stat, as pasted — not the ×8 EV-equivalent calculateFinalStats uses internally. */
+  statPoints: BaseStats;
+  final: FinalStats;
+}
+
+/**
+ * Base/Stat Points/Final breakdown for the per-Pokémon stat table (Base | SP
+ * | Final columns) — reuses calculateFinalStats for the Final column rather
+ * than duplicating the stat formula.
+ */
+export function calculateStatBreakdown(pokemon: ParsedPokemon): StatBreakdown | null {
+  const base = resolveBaseStats(pokemon.species, pokemon.item);
+  const final = calculateFinalStats(pokemon);
+  if (!base || !final) return null;
+
+  return { base, statPoints: parseStatPoints(pokemon.evs), final };
 }

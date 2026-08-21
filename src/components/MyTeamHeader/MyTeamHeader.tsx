@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Team } from "@/types";
 import { Modal } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
@@ -18,7 +19,14 @@ interface MyTeamHeaderProps {
   editTeam: (id: string, rawPaste: string, name: string) => string | null;
   removeTeam: (id: string) => void;
   setActiveTeamId: (id: string | null) => void;
+  /** Which page this header is rendered on — swaps the single nav link so it never points at itself (Matchup Planner shows a link to the Damage Calc, and vice versa). */
+  currentPage: "matchup-planner" | "damage-calc";
 }
+
+const NAV_LINK_BY_PAGE = {
+  "matchup-planner": { href: "/damage-calc", label: "Damage Calc", shortLabel: "Calc" },
+  "damage-calc": { href: "/matchup-planner", label: "Matchup Planner", shortLabel: "Planner" },
+} as const;
 
 export function MyTeamHeader({
   teams,
@@ -28,7 +36,9 @@ export function MyTeamHeader({
   editTeam,
   removeTeam,
   setActiveTeamId,
+  currentPage,
 }: MyTeamHeaderProps) {
+  const navLink = NAV_LINK_BY_PAGE[currentPage];
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
@@ -132,6 +142,15 @@ export function MyTeamHeader({
           VGC<span className="font-light">Tools</span>
         </span>
       </div>
+
+      <Link
+        href={navLink.href}
+        title={navLink.label}
+        className="shrink-0 rounded-full border border-mauve-400 px-2.5 py-1.5 text-xs font-medium text-mauve-100 hover:bg-mauve-500 md:px-4 md:py-2 md:text-sm"
+      >
+        <span className="md:hidden">{navLink.shortLabel}</span>
+        <span className="hidden md:inline">{navLink.label}</span>
+      </Link>
 
       <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
         {isLoading ? null : teams.length === 0 ? (

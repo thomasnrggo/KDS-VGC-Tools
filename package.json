@@ -12,7 +12,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate:species": "node scripts/generate-species-data.mjs"
+    "generate:species": "node scripts/generate-species-data.mjs",
+    "generate:moves": "node scripts/generate-move-data.mjs",
+    "generate:type-chart": "node scripts/generate-type-chart.mjs"
   },
   "dependencies": {
     "idb": "^8.0.3",
