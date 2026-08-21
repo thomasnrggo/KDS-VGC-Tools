@@ -481,6 +481,21 @@ export function DamageCalculator() {
     if (autoWeather) setWeather(autoWeather);
   }
 
+  // Importing a full team paste (more than one Pokémon) replaces this side's
+  // whole sidebar rather than appending, since a multi-mon paste means "this
+  // is my team," not "add one more" — see RosterPokemonPicker's onImportTeam
+  // doc comment.
+  function attackerImportTeam(pokemonList: ParsedPokemon[]) {
+    const newSidebar: SidebarEntry[] = pokemonList.map((pokemon) => ({ pokemon, isCustom: true }));
+    setAttackerSidebar(newSidebar);
+    setAttackerSelectedIndex(newSidebar.length > 0 ? 0 : null);
+    setSelectedMove(null);
+    setAttackerBattleState(DEFAULT_BATTLE_STATE);
+    setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
+    const autoWeather = resolveAutoWeather(newSidebar[0]?.pokemon, attackerMega);
+    if (autoWeather) setWeather(autoWeather);
+  }
+
   function attackerRemovePokemon(index: number) {
     setAttackerSidebar(attackerSidebar.filter((_, i) => i !== index));
     if (attackerSelectedIndex === index) {
@@ -548,6 +563,17 @@ export function DamageCalculator() {
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
     const autoWeather = resolveAutoWeather(newPokemon, defenderMega);
+    if (autoWeather) setWeather(autoWeather);
+  }
+
+  function defenderImportTeam(pokemonList: ParsedPokemon[]) {
+    const newSidebar: SidebarEntry[] = pokemonList.map((pokemon) => ({ pokemon, isCustom: true }));
+    setDefenderSidebar(newSidebar);
+    setDefenderSelectedIndex(newSidebar.length > 0 ? 0 : null);
+    setSelectedMove(null);
+    setDefenderBattleState(DEFAULT_BATTLE_STATE);
+    setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
+    const autoWeather = resolveAutoWeather(newSidebar[0]?.pokemon, defenderMega);
     if (autoWeather) setWeather(autoWeather);
   }
 
@@ -636,6 +662,7 @@ export function DamageCalculator() {
           selectedIndex={attackerSelectedIndex}
           onSelectIndex={attackerSelectIndex}
           onAddPokemon={attackerAddPokemon}
+          onImportTeam={attackerImportTeam}
           onRemovePokemon={attackerRemovePokemon}
           mega={attackerMega}
           onMegaChange={(mega) => {
@@ -721,6 +748,8 @@ export function DamageCalculator() {
           selectedIndex={defenderSelectedIndex}
           onSelectIndex={defenderSelectIndex}
           onAddPokemon={defenderAddPokemon}
+          onImportTeam={defenderImportTeam}
+          loadableOpponents={opponents}
           onRemovePokemon={defenderRemovePokemon}
           mega={defenderMega}
           onMegaChange={(mega) => {

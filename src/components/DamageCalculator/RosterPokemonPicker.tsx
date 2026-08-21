@@ -7,6 +7,8 @@ import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
+import { parseTeam } from "@/lib/parseTeam";
+import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
 import { WEATHER_SPEED_DOUBLING_ABILITIES, NATURE_MODIFIERS } from "@/constants";
 import { REGULATIONS, megaStoneItemsForSpecies } from "@/data/regulations";
 import abilitiesData from "@/data/abilities.json";
@@ -15,9 +17,11 @@ import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { TypeIcon } from "../TypeIcon";
 import { Icon } from "../Icon";
+import { Modal } from "../Modal";
+import { toast } from "../Toast";
 import { IconName } from "@/enums";
 import { SearchableSelect, type SearchableSelectOption } from "./SearchableSelect";
-import type { DamageCalcOptions, MoveData, ParsedPokemon, StatKey } from "@/types";
+import type { DamageCalcOptions, MoveData, Opponent, ParsedPokemon, StatKey } from "@/types";
 
 const NATURE_NAMES = Object.keys(NATURE_MODIFIERS);
 const ABILITIES = abilitiesData as unknown as Record<string, string[]>;
@@ -150,6 +154,8 @@ interface RosterPokemonPickerProps {
   onSelectIndex: (index: number) => void;
   /** Adds a species (from either the main search or the sidebar's own "+" tile) — appends if under the cap, otherwise replaces the currently selected entry. */
   onAddPokemon: (pokemon: ParsedPokemon) => void;
+  /** Importing more than one Pokémon at once (a full team paste) replaces this side's whole sidebar rather than appending, since a multi-mon paste represents "this is my team," not "add one more." */
+  onImportTeam: (pokemon: ParsedPokemon[]) => void;
   onRemovePokemon: (index: number) => void;
   mega: boolean;
   onMegaChange: (mega: boolean) => void;
@@ -162,6 +168,8 @@ interface RosterPokemonPickerProps {
   onAbilityChange?: (ability: string) => void;
   onItemChange?: (item: string | undefined) => void;
   onMovesChange?: (moves: string[]) => void;
+  /** Saved opponents from the Matchup Planner, for a "Load Team" picker — only passed for the Defender side (the Attacker already seeds from the header's active team), so the button only renders there. */
+  loadableOpponents?: Opponent[];
 }
 
 export function RosterPokemonPicker({
@@ -170,6 +178,7 @@ export function RosterPokemonPicker({
   selectedIndex,
   onSelectIndex,
   onAddPokemon,
+  onImportTeam,
   onRemovePokemon,
   mega,
   onMegaChange,
@@ -182,10 +191,82 @@ export function RosterPokemonPicker({
   onAbilityChange,
   onItemChange,
   onMovesChange,
+  loadableOpponents,
 }: RosterPokemonPickerProps) {
   const [isAddingToSidebar, setIsAddingToSidebar] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isExportTeamOpen, setIsExportTeamOpen] = useState(false);
+  const [isLoadOpponentOpen, setIsLoadOpponentOpen] = useState(false);
   const selected = selectedIndex !== null ? sidebar[selectedIndex] : undefined;
   const pokemon = selected?.pokemon ?? null;
+
+  function submitImport() {
+    const trimmed = importText.trim();
+    if (!trimmed) {
+      setImportError("Paste a Pokémon's (or a full team's) Showdown export text first.");
+      return;
+    }
+    try {
+      const parsed = parseTeam(trimmed);
+      if (parsed.length === 0) {
+        setImportError("Couldn't read that as a Pokémon — check the format and try again.");
+        return;
+      }
+      if (parsed.length === 1) {
+        onAddPokemon(parsed[0]);
+      } else {
+        onImportTeam(parsed.slice(0, MAX_SIDEBAR_POKEMON));
+      }
+      setImportText("");
+      setImportError(null);
+      setIsImportOpen(false);
+    } catch {
+      // parseTeam only throws via parsePokemonBlock on a genuinely empty
+      // block, already excluded by splitIntoBlocks — this catch is a
+      // defensive fallback, not a real expected path, so the message stays
+      // generic.
+      setImportError("Couldn't read that as a Pokémon — check the format and try again.");
+    }
+  }
+
+  function closeImport() {
+    setIsImportOpen(false);
+    setImportText("");
+    setImportError(null);
+  }
+
+  const importModalTitleId = `${title.toLowerCase()}-import-modal-title`;
+  const loadOpponentModalTitleId = `${title.toLowerCase()}-load-opponent-modal-title`;
+
+  function loadOpponentTeam(opponent: Opponent) {
+    onImportTeam(opponent.team.pokemon.slice(0, MAX_SIDEBAR_POKEMON));
+    setIsLoadOpponentOpen(false);
+    toast.success(`Loaded ${opponent.label} onto ${title}`);
+  }
+
+  async function copyExportText() {
+    if (!pokemon) return;
+    try {
+      await navigator.clipboard.writeText(formatPokemonPaste(pokemon));
+      toast.success(`Copied ${pokemon.species} to clipboard`);
+    } catch {
+      toast.error("Couldn't copy to clipboard.");
+    }
+  }
+
+  const teamExportText = formatTeamPaste(sidebar.map((entry) => entry.pokemon));
+  const exportTeamModalTitleId = `${title.toLowerCase()}-export-team-modal-title`;
+
+  async function copyTeamExportText() {
+    try {
+      await navigator.clipboard.writeText(teamExportText);
+      toast.success(`Copied ${title} team (${sidebar.length} Pokémon) to clipboard`);
+    } catch {
+      toast.error("Couldn't copy to clipboard.");
+    }
+  }
 
   const hasMegaForm = pokemon
     ? candidateFormKeys(pokemon.species, pokemon.item).length > 1
@@ -281,9 +362,50 @@ export function RosterPokemonPicker({
       </h3>
 
       <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-mauve-500">
-          Regulation: {REGULATIONS[0].label}
-        </span>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-medium text-mauve-500">
+            Regulation: {REGULATIONS[0].label}
+          </span>
+          <div className="flex shrink-0 items-center gap-3">
+            {loadableOpponents && (
+              <button
+                type="button"
+                onClick={() => setIsLoadOpponentOpen(true)}
+                aria-label={`Load a saved opponent's team onto ${title}`}
+                title="Load a saved opponent's team"
+                className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+              >
+                <Icon name={IconName.Download} size={14} />
+                Load Team
+              </button>
+            )}
+            {sidebar.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsExportTeamOpen(true)}
+                aria-label={`Export the whole ${title} team as Showdown export text`}
+                title="Export team as Showdown export text"
+                className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+              >
+                <Icon name={IconName.ContentCopy} size={14} />
+                Export Team
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsImportOpen(true);
+                setImportError(null);
+              }}
+              aria-label={`Import a ${title} Pokémon from Showdown export text`}
+              title="Import from Showdown export text"
+              className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+            >
+              <Icon name={IconName.ContentPaste} size={14} />
+              Import
+            </button>
+          </div>
+        </div>
         <SearchableSelect
           options={SPECIES_OPTIONS}
           placeholder="Search for a Pokémon…"
@@ -291,6 +413,129 @@ export function RosterPokemonPicker({
           onSelect={(option) => onAddPokemon(buildCustomPokemon(option.id))}
         />
       </div>
+
+      {isImportOpen && (
+        <Modal onClose={closeImport} labelledBy={importModalTitleId}>
+          <h2 id={importModalTitleId} className="mb-1 text-lg font-semibold text-mauve-900">
+            Import {title}
+          </h2>
+          <p className="mb-4 text-sm text-mauve-600">
+            Paste one Pokémon, or a full team (blank line between each) to replace this side&apos;s
+            whole roster.
+          </p>
+          <textarea
+            value={importText}
+            onChange={(event) => {
+              setImportText(event.target.value);
+              setImportError(null);
+            }}
+            placeholder={
+              "Charizard @ Charizardite Y\nAbility: Blaze\nEVs: 17 HP / 25 Def / 11 SpA / 13 Spe\nModest Nature\n- Heat Wave\n- Weather Ball\n- Solar Beam\n- Protect"
+            }
+            rows={12}
+            autoFocus
+            aria-label={`${title} Showdown export text to import`}
+            className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+          />
+          {importError && (
+            <p role="alert" className="mt-2 text-sm text-red-600">
+              {importError}
+            </p>
+          )}
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={submitImport}
+              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+            >
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={closeImport}
+              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {isLoadOpponentOpen && loadableOpponents && (
+        <Modal onClose={() => setIsLoadOpponentOpen(false)} labelledBy={loadOpponentModalTitleId}>
+          <h2 id={loadOpponentModalTitleId} className="mb-1 text-lg font-semibold text-mauve-900">
+            Load {title} Team
+          </h2>
+          <p className="mb-4 text-sm text-mauve-600">
+            Pick a saved opponent from the Matchup Planner to replace this side&apos;s whole roster.
+          </p>
+          {loadableOpponents.length === 0 ? (
+            <p className="text-sm text-mauve-600">
+              No opponents saved yet — add one in the Matchup Planner first.
+            </p>
+          ) : (
+            <div className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
+              {loadableOpponents.map((opponent) => (
+                <button
+                  key={opponent.id}
+                  type="button"
+                  onClick={() => loadOpponentTeam(opponent)}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-mauve-200 px-3 py-2 text-left hover:bg-mauve-100"
+                >
+                  <span className="truncate text-sm font-medium text-mauve-900">{opponent.label}</span>
+                  <span className="shrink-0 text-xs text-mauve-500">
+                    {opponent.team.pokemon.length} Pokémon
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setIsLoadOpponentOpen(false)}
+              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {isExportTeamOpen && (
+        <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId}>
+          <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-mauve-900">
+            Export {title} Team
+          </h2>
+          <p className="mb-4 text-sm text-mauve-600">
+            The whole {title.toLowerCase()} roster ({sidebar.length} Pokémon) as Showdown export text.
+          </p>
+          <textarea
+            readOnly
+            value={teamExportText}
+            rows={12}
+            onFocus={(event) => event.target.select()}
+            aria-label={`${title} team Showdown export text`}
+            className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+          />
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={copyTeamExportText}
+              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+            >
+              Copy to clipboard
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsExportTeamOpen(false)}
+              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+            >
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
 
       <div className="flex gap-3">
         {pokemon && (
@@ -322,6 +567,15 @@ export function RosterPokemonPicker({
                     Mega
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={copyExportText}
+                  aria-label={`Copy ${title} as Showdown export text`}
+                  title="Copy as Showdown export text"
+                  className="ml-auto flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-mauve-400 transition-colors hover:bg-mauve-100 hover:text-mauve-700"
+                >
+                  <Icon name={IconName.ContentCopy} size={14} />
+                </button>
               </div>
               <div className="flex items-center gap-2 text-xs text-mauve-500">
                 {onAbilityChange ? (

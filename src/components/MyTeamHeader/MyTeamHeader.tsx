@@ -23,10 +23,10 @@ interface MyTeamHeaderProps {
   currentPage: "matchup-planner" | "damage-calc";
 }
 
-const NAV_LINK_BY_PAGE = {
-  "matchup-planner": { href: "/damage-calc", label: "Damage Calc", shortLabel: "Calc" },
-  "damage-calc": { href: "/matchup-planner", label: "Matchup Planner", shortLabel: "Planner" },
-} as const;
+const NAV_LINKS = [
+  { page: "matchup-planner", href: "/matchup-planner", label: "Matchup Planner" },
+  { page: "damage-calc", href: "/damage-calc", label: "Damage Calculator" },
+] as const;
 
 export function MyTeamHeader({
   teams,
@@ -38,13 +38,20 @@ export function MyTeamHeader({
   setActiveTeamId,
   currentPage,
 }: MyTeamHeaderProps) {
-  const navLink = NAV_LINK_BY_PAGE[currentPage];
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // Mobile-only nav menu — the two page links move behind a hamburger below
+  // the md breakpoint instead of squeezing in next to the logo (which, at
+  // narrow widths, was crowding the always-visible team sprite row/switcher
+  // — see PLANNING.md). Same click-outside/Escape-to-close pattern as the
+  // team menu above, just a second independent instance.
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const mobileNavMenuRef = useRef<HTMLDivElement>(null);
+  const mobileNavDropdownRef = useRef<HTMLDivElement>(null);
 
   const editingTeam = editingId
     ? (teams.find((team) => team.id === editingId) ?? null)
@@ -78,6 +85,31 @@ export function MyTeamHeader({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isTeamMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileNavOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      const clickedTrigger = mobileNavMenuRef.current?.contains(target);
+      const clickedDropdown = mobileNavDropdownRef.current?.contains(target);
+      if (!clickedTrigger && !clickedDropdown) {
+        setIsMobileNavOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsMobileNavOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileNavOpen]);
 
   function selectTeam(id: string) {
     setActiveTeamId(id);
@@ -127,30 +159,91 @@ export function MyTeamHeader({
 
   return (
     <header className="sticky top-0 z-40 relative flex items-center justify-between gap-2 border-b border-mauve-100 bg-mauve-600 px-4 py-4 backdrop-blur md:gap-4 md:px-6">
-      <div className="flex shrink-0 items-center gap-2">
-        <Image
-          src="/resources/logo.png"
-          alt="VGC Tools"
-          title="VGC Tools"
-          width={56}
-          height={56}
-          unoptimized
-          priority
-          className="h-12 w-12 shrink-0 md:h-14 md:w-14"
-        />
-        <span className="text-lg font-extrabold text-white md:text-xl">
-          VGC<span className="font-light">Tools</span>
-        </span>
-      </div>
+      <div className="flex min-w-0 shrink items-center gap-3 md:gap-6">
+        <div className="flex shrink-0 items-center gap-2">
+          <Image
+            src="/resources/logo.png"
+            alt="VGC Tools"
+            title="VGC Tools"
+            width={56}
+            height={56}
+            unoptimized
+            priority
+            className="h-12 w-12 shrink-0 md:h-14 md:w-14"
+          />
+          <span className="text-lg font-extrabold text-white md:text-xl">
+            VGC<span className="font-light">Tools</span>
+          </span>
+        </div>
 
-      <Link
-        href={navLink.href}
-        title={navLink.label}
-        className="shrink-0 rounded-full border border-mauve-400 px-2.5 py-1.5 text-xs font-medium text-mauve-100 hover:bg-mauve-500 md:px-4 md:py-2 md:text-sm"
-      >
-        <span className="md:hidden">{navLink.shortLabel}</span>
-        <span className="hidden md:inline">{navLink.label}</span>
-      </Link>
+        {/* Desktop: both links inline next to the logo, same as before. */}
+        <nav className="hidden shrink-0 items-center gap-6 md:flex">
+          {NAV_LINKS.map((link) => {
+            const isActive = link.page === currentPage;
+            return isActive ? (
+              <span key={link.page} aria-current="page" className="text-sm font-bold text-white">
+                {link.label}
+              </span>
+            ) : (
+              <Link
+                key={link.page}
+                href={link.href}
+                className="text-sm font-medium text-mauve-200 transition-colors hover:text-white"
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Mobile: a hamburger opening a dropdown, instead of squeezing
+            abbreviated labels in next to the logo — narrow widths need that
+            space for the always-visible team sprite row/switcher on the
+            other side of the header (see PLANNING.md). */}
+        <div ref={mobileNavMenuRef} className="relative shrink-0 md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen((open) => !open)}
+            aria-haspopup="menu"
+            aria-expanded={isMobileNavOpen}
+            aria-label="Navigation menu"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-mauve-100 hover:bg-mauve-500"
+          >
+            <Icon name={IconName.Menu} size={22} />
+          </button>
+
+          {isMobileNavOpen && (
+            <div
+              ref={mobileNavDropdownRef}
+              role="menu"
+              aria-label="Navigation menu"
+              className="absolute left-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
+            >
+              {NAV_LINKS.map((link) => {
+                const isActive = link.page === currentPage;
+                return isActive ? (
+                  <span
+                    key={link.page}
+                    aria-current="page"
+                    className="block px-3 py-2 text-sm font-bold text-mauve-900"
+                  >
+                    {link.label}
+                  </span>
+                ) : (
+                  <Link
+                    key={link.page}
+                    href={link.href}
+                    onClick={() => setIsMobileNavOpen(false)}
+                    className="block px-3 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
 
       <div className="flex flex-1 items-center justify-end gap-2 md:flex-none">
         {isLoading ? null : teams.length === 0 ? (

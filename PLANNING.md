@@ -1677,6 +1677,177 @@ leads/backs) is complete and working end to end.
       above (Foul Play, still 34.8-41.3% baseline, unchanged) plus a fresh Colbur Berry vs. Gengar check
       (Dark is 2x super-effective against Ghost) showing 85.9-102.2% drop to exactly 43-51.1% — a clean half,
       confirming the corrected 0.5 resist-Berry multiplier survived the full rewrite intact.
+    - `MyTeamHeader.tsx`: replaced the single pill-button-styled nav link (only showed the *other* page —
+      "Damage Calc" on the Matchup Planner, "Matchup Planner" on the Damage Calc page, never both at once)
+      with real navigation — both "Matchup Planner" and "Damage Calculator" always visible side by side, per
+      request ("lets hava acutual navigation links, not buttoms, first link 'Matchup Planner', 'damage
+      calculator'"). `NAV_LINK_BY_PAGE` (a single swap-target lookup) became `NAV_LINKS` (a 2-item array in
+      that fixed order); the current page renders as plain non-interactive text (`aria-current="page"`, the
+      conventional "you are here" pattern — avoids a no-op click reloading the same page), the other as a
+      real `next/link` `<Link>`. Dropped the pill/border/background button styling entirely in favor of
+      plain text links (muted `text-mauve-200` inactive, `text-white` active, underline-free per "not
+      buttoms"). Kept the existing mobile/desktop short-label split ("Planner"/"Calc" vs. full names).
+      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check on
+      `/matchup-planner` confirmed both links render with "Matchup Planner" active (white) and "Damage
+      Calculator" muted, and clicking "Damage Calculator" navigated to `/damage-calc` with the active state
+      correctly swapping.
+    - `MyTeamHeader.tsx` follow-up: moved the nav links from the header's center to sit directly beside the
+      logo/wordmark, and switched the active-page highlight from color-only to bold, per request ("can we
+      align then to the left, close to the logo? also can we make bold or resalt could be bold"). Wrapped the
+      logo block and the `<nav>` in one shared flex container (`gap-3 md:gap-6`) so they sit as one
+      left-aligned group; the header's own `justify-between` now just splits that group from the
+      right-side team switcher, instead of splitting 3 separate items across the full width. Active link:
+      `font-bold text-white`; inactive: `font-medium text-mauve-200` (unchanged from the previous entry).
+      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check
+      confirmed both links now sit immediately right of the "VGCTools" wordmark, with "Matchup Planner"
+      rendering visibly bold against the muted "Damage Calculator".
+    - `MyTeamHeader.tsx`: added a proper mobile nav, per a screenshot showing the two nav links' abbreviated
+      "Planner"/"Calc" labels squeezing the header on a narrow viewport and crowding the team sprite
+      row/switcher next to them — explicit requirement: "I want to keep the team selection visible alwasy".
+      The desktop `<nav>` (both links inline, full labels) is now `hidden md:flex`; a new mobile-only
+      (`md:hidden`) hamburger button opens a dropdown with the same two links (full labels, stacked), using
+      the exact same click-outside/Escape-to-close pattern already used for the team-switcher dropdown (a
+      second independent `isMobileNavOpen` state + ref pair, not a shared/generalized one — kept simple over
+      DRY since the two menus' trigger/content shapes differ). Picking a link in the mobile dropdown also
+      closes it (`onClick` calls `setIsMobileNavOpen(false)` in addition to navigating). The team
+      sprite row/switcher itself needed no changes at all — it was never gated behind any responsive class,
+      so it was already "always visible"; the actual fix was giving the nav links somewhere else to go on
+      narrow screens instead of fighting the switcher for space. Added `IconName.Menu` (Material Symbols
+      Outlined "menu" — the standard 3-bar hamburger glyph, fetched from the same
+      google/material-design-icons source the other icons were extracted from) since no menu icon existed
+      yet. Dropped the now-unused `shortLabel` field from `NAV_LINKS` entirely (both mobile and desktop show
+      full labels now — mobile just relocated them rather than abbreviating). Verified: `npx tsc --noEmit`,
+      `npm run lint`, `npm test` (163/163) all clean; live browser check at a 420px-wide viewport (matching
+      the screenshot's cramped width) confirmed the header now shows logo, hamburger, and the full
+      unobstructed team sprite switcher with no crowding, the hamburger opens a dropdown with "Matchup
+      Planner" (bold, active) and "Damage Calculator", and clicking "Damage Calculator" navigates to
+      `/damage-calc` and auto-closes the menu, with the team switcher staying visible throughout.
+    - **Damage Calculator: Import/Export a Pokémon in Showdown format.** Per request ("can we add a way to
+      import and export a pokemon, using showdown format"), added both directions to `RosterPokemonPicker.tsx`.
+      Import reuses `parsePokemonBlock` (`parseTeam.ts`) outright — it already tolerates the extra lines a
+      Showdown export carries that this app doesn't track (Shiny, Tera Type, IVs, gender marker), so no new
+      parsing logic was needed, only UI wiring: a paste-icon "Import" toggle next to the species search opens a
+      textarea + Import/Cancel buttons, calling the existing `onAddPokemon` prop (same path species-search picks
+      already use). Export needed a genuinely new serializer since nothing existed: `src/lib/formatPokemonPaste.ts`
+      is the inverse of `parsePokemonBlock` — always writes `Level: 50` (this app's only supported level), omits
+      Shiny/Tera Type/IVs (untracked), and only lists non-zero Stat Points in standard HP/Atk/Def/SpA/SpD/Spe
+      order (unlike `applyStatOverrides`'s own internal `evs` string, which always lists all 6). A copy icon
+      next to the species name/Mega-button row copies the formatted export text straight to the clipboard on a
+      single click (`navigator.clipboard.writeText`) — no intermediate popup — with the icon itself swapping to
+      a checkmark (new `IconName.Check`) for ~2s as feedback, per a follow-up request for a smoother one-click
+      experience over the original open-panel-then-click-copy two-step flow. Added `IconName.ContentCopy`/
+      `ContentPaste`/`Check` (Material Symbols Outlined, same extraction pattern as the other icons). Verified:
+      `src/lib/formatPokemonPaste.test.ts` round-trips the user's own Charizard example exactly; `npx tsc
+      --noEmit`, `npm run lint`, `npm test` (167/167) all clean. Live browser check: pasted the user's exact
+      Charizard (M) @ Charizardite Y / Blaze / Shiny / EVs / Modest / 4-move example into Import — correctly
+      populated species, Mega form (with Drought resolving as the effective ability and Sun weather
+      auto-applying), nature, Stat Points, and all 4 moves. Also verified the Import error path (empty/
+      whitespace-only paste correctly shows "Paste a Pokémon's Showdown export text first." instead of silently
+      no-oping). The copy icon's click didn't visibly flip to a checkmark under CDP-driven automation in either
+      the original popup version or this simplified version — traced to the Clipboard API's write call itself
+      hanging (confirmed via a manual `javascript_tool` call to `navigator.clipboard.writeText` timing out)
+      rather than an app bug: Chrome's clipboard-write permission needs a trusted user gesture, which synthetic
+      automation clicks don't reliably provide, so this doesn't reflect real mouse-click usage.
+    - **Damage Calculator: Import a full team, not just one Pokémon.** Per follow-up request ("the pokemon
+      import that we add in the calculator could work for a team as well?"), Import now accepts a full
+      Showdown team paste (multiple Pokémon separated by a blank line), reusing `parseTeam` (`parseTeam.ts`) —
+      the same plural function that already powers full-team pasting elsewhere in the app — instead of the
+      singular `parsePokemonBlock`. Agreed with the user's own proposal that importing more than one Pokémon
+      should replace this side's whole sidebar rather than append (a multi-mon paste means "this is my team,"
+      not "add one more"): `RosterPokemonPicker` gained a new required `onImportTeam: (pokemon: ParsedPokemon[])
+      => void` prop, wired to new `attackerImportTeam`/`defenderImportTeam` functions in `DamageCalculator.tsx`
+      that replace the sidebar outright (capped at `MAX_SIDEBAR_POKEMON`), select the first parsed Pokémon, and
+      reset battle state/stat overrides/auto-weather the same way every other roster-changing action already
+      does. A single-Pokémon paste is unaffected — still goes through the existing `onAddPokemon` (append-or-
+      replace-selected) path. Added a hint line above the Import textarea ("Paste one Pokémon, or a full team
+      … to replace this side's whole roster") so the replace behavior is visible before submitting, not a
+      surprise after. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (167/167) all clean. Live browser
+      check: pasted a 3-Pokémon team (Pikachu/Incineroar/Rillaboom) into the Attacker side that already had a
+      different single Pokémon (Grimmsnarl) selected — confirmed the old entry was fully replaced (not appended
+      alongside), all 3 new sprites appeared in the sidebar, Pikachu (the first) auto-selected with correct
+      item/ability/nature/Stat Points/moves, and Incineroar (the second) also checked out correct when selected.
+    - Damage Calculator: switched Import from an inline expanding panel to the shared `Modal` component, per
+      request ("can we use a modal as we do for adding a own team") — matching `MyTeamSection`'s "Add a team"
+      modal pattern (`Modal` + a heading + textarea + Import/Cancel buttons) rather than a bespoke inline
+      layout. Reused the existing `Modal` component as-is (click-outside/Escape-to-close already built in); the
+      textarea grew from `rows={6}` to `rows={12}` (`resize-y` instead of `resize-none`) now that it has a full
+      modal's vertical room, matching `TeamPasteForm`'s sizing. No behavior changed beyond presentation — same
+      `submitImport`/`onImportTeam`/`onAddPokemon` logic, same hint text and error handling, just triggered from
+      a centered dialog instead of an inline panel pushing the rest of the panel down. Verified: `npx tsc
+      --noEmit`, `npm run lint`, `npm test` (167/167) all clean; live browser check confirmed the modal opens
+      centered with a backdrop (visually matching the "Add a team" modal), Cancel and clicking outside both
+      close it without side effects, and submitting a 2-Pokémon team (Landorus-Therian/Flutter Mane) through it
+      still correctly replaced the sidebar and closed the modal.
+    - Damage Calculator: added "Export Team" alongside the existing single-Pokémon Export, per request ("can we
+      have an option to export all team from calc as well") — the natural counterpart to Import already
+      accepting a full team. New `formatTeamPaste(pokemon: ParsedPokemon[])` in `formatPokemonPaste.ts` joins
+      each Pokémon's own `formatPokemonPaste` block with a blank line (the same separator `parseTeam`'s
+      `splitIntoBlocks` expects), so an exported team round-trips straight back through Import's team-paste
+      path — asserted directly in `formatPokemonPaste.test.ts` (`parseTeam(formatTeamPaste(team))` equals the
+      original `team`). An "Export Team" text link (next to Import, only shown once the sidebar has at least
+      one Pokémon) opens a `Modal` — same pattern as the Import modal just added — with a read-only textarea of
+      the whole roster's export text and a "Copy to clipboard" button (swaps to "Copied!" for ~2s, same as the
+      single-Pokémon Export icon). Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169, +2 new)
+      all clean; live browser check with a 6-Pokémon Attacker sidebar confirmed the modal opens with the
+      heading "Export Attacker Team," the count line reads "The whole attacker roster (6 Pokémon)," and
+      scrolling the textarea shows all 6 Pokémon correctly serialized and blank-line-separated in sidebar order.
+    - **Toast notification component.** Per request ("can we create a toast notification component, we can look
+      for and npm package that is secure and compatible with the project"), evaluated three candidates —
+      `sonner`, `react-hot-toast`, `react-toastify` — against React 19/Next.js 16 compatibility and supply-chain
+      footprint: `sonner` was the only one with zero runtime dependencies (the other two pull in `goober`/
+      `csstype` and `clsx` respectively), an explicit `react: '^18.0.0 || ^19.0.0'` peer range, and the most
+      recent publish of the three. Confirmed via `npm audit` before/after installing that `sonner` adds zero new
+      vulnerabilities — the app's pre-existing 6 high-severity findings (`brace-expansion`, `js-yaml`, `nanoid`,
+      `next`, `postcss`, `sharp`, all dev-tooling/build transitive deps, unrelated to this change) were identical
+      with and without it. Added `src/components/Toast/` (mirroring the `Modal`/`Icon` folder-per-component
+      pattern): `Toast.tsx` wraps sonner's `<Toaster />`, pre-styled via `toastOptions.classNames` to match this
+      app's mauve palette/card look (`border-mauve-200`, `rounded-lg`, `shadow-lg`) instead of sonner's default
+      theme, with success/error keeping the `green-600`/`red-600` this app already uses elsewhere (the Damage
+      Calculator's copy-confirmation checkmark, import error text); `index.ts` re-exports `Toaster` plus `toast`
+      straight from `sonner` so callers `import { toast } from "@/components/Toast"` rather than reaching into
+      the package directly. `<Toaster />` is mounted once in the root layout (`src/app/layout.tsx`), positioned
+      `bottom-right` with `closeButton` enabled, so `toast(...)`/`toast.success(...)`/`toast.error(...)` work
+      from anywhere in the app with no further setup — not yet wired into any existing feature (e.g. the Export/
+      Export Team copy confirmations), left for a follow-up request rather than assumed in scope here. Verified:
+      `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser
+      check temporarily fired one of each toast type (default/success/error) to confirm the mauve styling,
+      stacking, hover-to-expand, and close button all render correctly, then the temporary test code was
+      removed, leaving the component wired but unused.
+    - Wired the new toast component into the Export/Export Team copy confirmations, per follow-up request.
+      Both `copyExportText` and `copyTeamExportText` (`RosterPokemonPicker.tsx`) now wrap the clipboard write in
+      try/catch — `toast.success` (e.g. "Copied Grimmsnarl to clipboard", "Copied Attacker team (6 Pokémon) to
+      clipboard") on success, `toast.error("Couldn't copy to clipboard.")` if the write throws — replacing the
+      previous local `exportCopied`/`teamExportCopied` state and its icon-swap (copy icon → green checkmark) /
+      button-text-swap ("Copy to clipboard" → "Copied!") feedback, which is now redundant with the toast. Net
+      simplification: two fewer `useState` calls, no `setTimeout` cleanup, and the export copy icon no longer
+      needs `IconName.Check` (still defined in the shared icon set, just unused by this file now). The Export
+      Team modal's copy button also benefits from the switch — its old "Copied!" text was only visible while the
+      modal stayed open, whereas the toast confirms even after the user closes the modal right after copying.
+      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169) all clean; live browser check stubbed
+      `navigator.clipboard.writeText` to resolve instantly (working around the same CDP-automation clipboard-
+      permission limitation noted in the Import/Export entry above) and confirmed both buttons fire the correct
+      green success toast with the right message.
+    - **Damage Calculator: "Load Team" for the Defender, sourced from the Matchup Planner's saved opponents.**
+      Per request ("I want an option to load existing opposite team that exist on the matchup planner" for "the
+      defenser side (b side)"), added a new `loadableOpponents?: Opponent[]` prop to `RosterPokemonPicker` —
+      only passed for the Defender instance in `DamageCalculator.tsx` (`loadableOpponents={opponents}`, from the
+      `useOpponents()` call already used for the `?opponentId=` URL-param seed), so the button only renders on
+      that side; the Attacker doesn't need it since it already auto-seeds from the header's active team. A new
+      "Load Team" text link (new `IconName.Download`, Material Symbols Outlined "download") sits next to Export
+      Team/Import in the Defender panel's header row, opening a `Modal` that lists every saved opponent by
+      `label` with its Pokémon count, sourced straight from the same `opponents` array the Matchup Planner
+      itself renders (confirmed matching, same 9 names/order in both places during verification). Picking one
+      calls the *existing* `onImportTeam` prop with `opponent.team.pokemon` — no new replace-sidebar logic
+      needed, since this is exactly the same "load a whole team, wholesale-replacing this side's roster"
+      operation the team-paste Import path already does, just sourced from saved data instead of pasted text —
+      then fires `toast.success("Loaded {label} onto Defender")` and closes the modal. Handles the empty-state
+      case ("No opponents saved yet — add one in the Matchup Planner first.") for a fresh install with no
+      opponents yet. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all
+      clean; live browser check confirmed "Load Team" appears only on the Defender (not Attacker), the modal
+      lists all 9 existing saved opponents with correct Pokémon counts, and picking "M-Staraptor-Milotic Sand"
+      correctly replaced the Defender's sidebar with that opponent's full 6-Pokémon roster (Tyranitar first,
+      Mega-toggled, Sand Stream resolving and auto-applying Sand weather, moves populated), the damage
+      calculation panel recalculating live against the new matchup, and the success toast confirming the load.
 
 ## 8. Attribution
 
