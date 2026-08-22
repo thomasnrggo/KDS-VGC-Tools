@@ -17,6 +17,7 @@
     "generate:type-chart": "node scripts/generate-type-chart.mjs"
   },
   "dependencies": {
+    "firebase": "^12.18.0",
     "idb": "^8.0.3",
     "next": "16.2.12",
     "react": "19.2.4",
