@@ -1,9 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { clearOpponents, deleteOpponent, getOpponents, saveOpponent } from "@/lib/storage/db";
+import {
+  clearOpponents,
+  deleteOpponent,
+  getOpponents,
+  saveOpponent,
+  syncOpponentsWithCloud,
+} from "@/lib/storage/db";
 import { createOpponent, getPlanForTeam } from "@/lib/opponent";
 import { createTeam, validateTeamSize } from "@/lib/team";
+import { useAuth } from "./useAuth";
 import type { BulkImportResult, MatchupPlan, Opponent, TeamFolderEntry } from "@/types";
 
 function sortByUpdatedAtDesc(opponents: Opponent[]): Opponent[] {
@@ -11,12 +18,20 @@ function sortByUpdatedAtDesc(opponents: Opponent[]): Opponent[] {
 }
 
 export function useOpponents() {
+  const { user } = useAuth();
   const [opponents, setOpponents] = useState<Opponent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    getOpponents().then((loaded) => {
+    const load = user
+      ? () =>
+          syncOpponentsWithCloud(user.uid).catch((error) => {
+            console.error("[cloud sync] pull opponents failed:", error);
+            return getOpponents();
+          })
+      : getOpponents;
+    load().then((loaded) => {
       if (!cancelled) {
         setOpponents(sortByUpdatedAtDesc(loaded));
         setIsLoading(false);
@@ -25,7 +40,7 @@ export function useOpponents() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   /** Returns the created Opponent on success, or an error message string on failure. */
   const addOpponent = useCallback(

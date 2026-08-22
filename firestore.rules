@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Every synced record (teams, opponents, their delete-tombstones, and the
+// small meta/state doc — see src/lib/storage/db.ts and
+// src/lib/firebase/cloudSync.ts) lives under users/{uid}/, so one recursive
+// rule covers all of it: a signed-in user may only read/write their own tree.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

@@ -1,0 +1,1 @@
+export { FirebaseAnalytics } from "./FirebaseAnalytics";

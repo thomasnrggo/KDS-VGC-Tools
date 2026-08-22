@@ -1,6 +1,7 @@
 "use client";
 
 import { useMyTeams } from "@/hooks/useMyTeams";
+import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { MyTeamSection } from "@/components/MyTeamSection";
 import { OpponentsSection } from "@/components/OpponentsSection";
@@ -16,6 +17,7 @@ export default function MatchupPlanner() {
     removeTeam,
     setActiveTeamId,
   } = useMyTeams();
+  const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
 
   return (
     <div className="flex flex-1 flex-col">
@@ -28,6 +30,10 @@ export default function MatchupPlanner() {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="matchup-planner"
+        authUser={user}
+        isAuthLoading={isAuthLoading}
+        onSignIn={signInWithGoogle}
+        onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-6 p-6">
         <MyTeamSection teams={teams} isLoading={isLoading} addTeam={addTeam} />
