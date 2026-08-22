@@ -25,7 +25,8 @@ interface MyTeamHeaderProps {
 
 const NAV_LINKS = [
   { page: "matchup-planner", href: "/matchup-planner", label: "Matchup Planner" },
-  { page: "damage-calc", href: "/damage-calc", label: "Damage Calculator" },
+  // Damage Calculator nav link hidden — feature has known bugs, not ready to
+  // publish yet. Re-add here once it's stable (see PLANNING.md).
 ] as const;
 
 export function MyTeamHeader({

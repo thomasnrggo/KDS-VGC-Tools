@@ -103,16 +103,9 @@ export function OpponentCard({
               )}
             </div>
             <div className="flex shrink-0 items-center gap-1">
-              <a
-                href={`/damage-calc?opponentId=${opponent.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open in Damage Calculator"
-                title="Open in Damage Calculator"
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
-              >
-                <Icon name={IconName.Calculate} size={16} />
-              </a>
+              {/* "Open in Damage Calculator" link hidden — feature has known
+                  bugs, not ready to publish yet. Re-add once stable (see
+                  PLANNING.md). */}
               <button
                 type="button"
                 onClick={onEdit}
