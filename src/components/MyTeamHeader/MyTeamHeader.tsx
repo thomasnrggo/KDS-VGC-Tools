@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { User } from "firebase/auth";
 import type { Team } from "@/types";
 import { Modal } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
+import { AuthMenu } from "../AuthMenu";
 import { IconName } from "@/enums";
 
 interface MyTeamHeaderProps {
@@ -21,6 +23,10 @@ interface MyTeamHeaderProps {
   setActiveTeamId: (id: string | null) => void;
   /** Which page this header is rendered on — swaps the single nav link so it never points at itself (Matchup Planner shows a link to the Damage Calc, and vice versa). */
   currentPage: "matchup-planner" | "damage-calc";
+  authUser: User | null;
+  isAuthLoading: boolean;
+  onSignIn: () => void;
+  onSignOut: () => void;
 }
 
 const NAV_LINKS = [
@@ -38,6 +44,10 @@ export function MyTeamHeader({
   removeTeam,
   setActiveTeamId,
   currentPage,
+  authUser,
+  isAuthLoading,
+  onSignIn,
+  onSignOut,
 }: MyTeamHeaderProps) {
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -378,6 +388,12 @@ export function MyTeamHeader({
             )}
           </>
         )}
+        <AuthMenu
+          user={authUser}
+          isLoading={isAuthLoading}
+          onSignIn={onSignIn}
+          onSignOut={onSignOut}
+        />
       </div>
 
       {modalMode && (
