@@ -7,9 +7,16 @@ import {
   getMyTeams,
   saveMyTeam,
   setActiveTeamId as persistActiveTeamId,
+  syncMyTeamsWithCloud,
 } from "@/lib/storage/db";
 import { createTeam, validateTeamSize } from "@/lib/team";
+import { useAuth } from "./useAuth";
 import type { Team } from "@/types";
+
+async function loadLocalOnly(): Promise<{ teams: Team[]; activeTeamId: string | null }> {
+  const [teams, activeTeamId] = await Promise.all([getMyTeams(), getActiveTeamId()]);
+  return { teams, activeTeamId };
+}
 
 function sortByUpdatedAtAsc(teams: Team[]): Team[] {
   // Oldest-first (creation order) so switching teams doesn't reorder the tabs.
@@ -17,18 +24,26 @@ function sortByUpdatedAtAsc(teams: Team[]): Team[] {
 }
 
 export function useMyTeams() {
+  const { user } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getMyTeams(), getActiveTeamId()]).then(([loadedTeams, loadedActiveId]) => {
+    const load = user
+      ? () =>
+          syncMyTeamsWithCloud(user.uid).catch((error) => {
+            console.error("[cloud sync] pull teams failed:", error);
+            return loadLocalOnly();
+          })
+      : loadLocalOnly;
+    load().then((loaded) => {
       if (cancelled) return;
-      const sorted = sortByUpdatedAtAsc(loadedTeams);
+      const sorted = sortByUpdatedAtAsc(loaded.teams);
       const resolvedActiveId =
-        loadedActiveId && sorted.some((team) => team.id === loadedActiveId)
-          ? loadedActiveId
+        loaded.activeTeamId && sorted.some((team) => team.id === loaded.activeTeamId)
+          ? loaded.activeTeamId
           : (sorted[0]?.id ?? null);
       setTeams(sorted);
       setActiveTeamIdState(resolvedActiveId);
@@ -37,7 +52,7 @@ export function useMyTeams() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   const setActiveTeamId = useCallback((id: string | null) => {
     setActiveTeamIdState(id);

@@ -1929,6 +1929,67 @@ leads/backs) is complete and working end to end.
       "Export Team"/"Import" and fires the correct "Copied {species} to clipboard" toast, the Mega badge sits
       cleanly beside the search input and still toggles correctly (Raichu's ability/stats/damage numbers all
       updated on toggle, same as before the move), and the detail row below now shows only the Save icon.
+- [x] **Firebase: SDK setup, Google Sign-In, and cross-device sync for My Teams/Opponents.** Per a
+    2026-08-22 request to make My Teams and Opponents data available across devices. Three parts, done as
+    one continuous effort:
+    - **SDK setup.** `src/lib/firebase/config.ts` initializes the app from `NEXT_PUBLIC_FIREBASE_*` env
+      vars (`.env.example` documents the 7 required names; real values live in the gitignored
+      `.env.local`) — guarded with `getApps()[0] ?? initializeApp(...)` against Next's Fast Refresh
+      re-running the module. `src/lib/firebase/analytics.ts` lazily initializes Analytics client-side only
+      (`getAnalytics` touches `window`, which breaks SSR if called eagerly at module scope the way the
+      console's own setup snippet does) behind an `isSupported()` check, mounted via a tiny
+      `<FirebaseAnalytics>` client component in `layout.tsx`. Note: a Firebase web app's config values
+      (`apiKey` etc.) aren't actually secret — they're designed to ship in the client bundle, real security
+      comes from Firestore/Auth rules — env vars are still used for per-environment config hygiene, not to
+      hide anything.
+    - **Google Sign-In.** `src/lib/firebase/auth.ts` (`auth`, `signInWithGoogle` via
+      `signInWithPopup`/`GoogleAuthProvider`, `signOutUser`) and `src/hooks/useAuth.ts`
+      (`onAuthStateChanged`-backed, swallows the "user closed the popup" error codes rather than treating
+      them as failures, everything else surfaces a `sonner` toast). `src/components/AuthMenu` renders a
+      "Sign in" pill with Google's official multicolor G mark when signed out, or a circular avatar
+      (initial-letter fallback if no photo) opening a name/email/"Sign out" dropdown when signed in —
+      mounted in `MyTeamHeader`, with both `/matchup-planner` and `/damage-calc` pages owning `useAuth()`
+      and passing it down (mirroring how they already own `useMyTeams()`), since the sync work below needs
+      `user` at the page level too. `next.config.ts` gained a `**.googleusercontent.com` remote pattern for
+      `next/image` to render Google profile photos. Chose Google-only over email/password: zero password-
+      security surface to maintain, and this app doesn't need email as a first-class identity — just a
+      stable id to key synced data by.
+    - **Cross-device sync.** Scoped explicitly to keep IndexedDB as the source of truth for everyone,
+      signed in or not — the app stays fully local-first/offline by default, and Firestore is a sync layer
+      bolted on only for signed-in users, not a replacement. Structure mirrors the existing IndexedDB stores
+      1:1: `users/{uid}/teams/{teamId}`, `users/{uid}/opponents/{opponentId}`, `users/{uid}/meta/state`
+      (`activeTeamId`) — reusing `Team`/`Opponent`/`MatchupPlan` as-is with zero new types or mapping layer,
+      since `updatedAt`/`createdAt` are already ISO strings and every id is already a `crypto.randomUUID()`
+      globally unique across devices. `src/lib/firebase/cloudSync.ts`'s `createCollectionSync<T>` is the
+      generic engine both `teams` and `opponents` share: `push`/`remove` mirror one local mutation to the
+      cloud (called from `src/lib/storage/db.ts`'s `saveMyTeam`/`deleteMyTeam`/`saveOpponent`/
+      `deleteOpponent`/`clearOpponents`, fire-and-forget, only when `auth.currentUser` is set — so nothing
+      changes for signed-out users, and a signed-in-but-offline push just silently no-ops via `.catch(() =>
+      {})` until the next successful sync); `pullAndMerge` reconciles a full local list against the cloud,
+      last-write-wins per record by `updatedAt`. Deletions use a parallel `{collection}_deleted` tombstone
+      collection (`{ deletedAt }`) — without it, a device that missed a delete (offline at the time) would
+      see "don't have this record" as indistinguishable from "never had it," and push the deleted record
+      right back on its next sync; editing a record after it was deleted elsewhere "undeletes" it, simply
+      because the edit's `updatedAt` then outranks the tombstone. `syncMyTeamsWithCloud`/
+      `syncOpponentsWithCloud` run the full pull-and-merge once per sign-in (not per mutation — everyday
+      saves/deletes already push incrementally) from `useMyTeams`/`useOpponents`'s load effect, keyed on
+      `user` from a `useAuth()` call each hook now makes internally (rather than threading `user` through
+      every call site — both hooks are already independently instantiated in multiple places, e.g.
+      `DamageCalculator.tsx` and `OpponentsSection.tsx` beyond the two pages) — wrapped in `.catch(() =>
+      getMyTeams()/getOpponents())` so a signed-in-but-offline load falls back to local-only data instead of
+      failing. Deliberately deferred: real-time `onSnapshot` listeners (sync-on-sign-in plus the existing
+      tab-focus remount is enough for "see it on my other device next time I open the app," without the
+      complexity of guarding a live listener against re-triggering its own just-pushed writes) and JSON
+      import/export backup (set aside per the same conversation, as a separate smaller follow-up).
+      `firestore.rules` (checked in for reference/deploy) scopes all reads/writes to
+      `request.auth.uid == uid` under that user's own `users/{uid}/**` tree.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean.
+      Live browser check with a real signed-in Google account (session already established from testing the
+      Sign-In work) showed clean `firestore.googleapis.com` traffic (200s) and zero console errors on load,
+      confirming the pull-and-merge path executes successfully against the real project — a database already
+      exists and Google Sign-In is enabled there. Signed-out behavior double-checked separately: local
+      add/remove team and opponent flows still work with zero Firestore calls attempted, confirming the sync
+      layer is fully inert until sign-in.
 
 ## 8. Attribution
 
