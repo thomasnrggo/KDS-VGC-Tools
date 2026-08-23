@@ -5,5 +5,5 @@ export * from "./species";
 export * from "./items";
 export * from "./bulkImport";
 export * from "./stats";
-export * from "./preset";
+export * from "./season";
 export * from "./damage";

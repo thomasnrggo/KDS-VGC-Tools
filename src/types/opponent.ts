@@ -17,6 +17,8 @@ export interface Opponent {
   label: string;
   team: Team;
   pokepasteUrl?: string;
+  /** Regulation.id (see src/data/regulations) this opponent was prepped under — lets the Matchup Planner filter the list by regulation instead of showing every opponent you've ever added forever. Opponents saved before this field existed are backfilled to the current regulation by normalizeOpponent. */
+  regulationId: string;
   /** Lead/back picks + notes, keyed by which of your (possibly several) teams is planning against this opponent. */
   plansByTeamId: Record<string, MatchupPlan>;
   createdAt: string;

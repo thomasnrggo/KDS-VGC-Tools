@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useOpponents } from "@/hooks/useOpponents";
+import { useSeasons } from "@/hooks/useSeasons";
 import { parseTeamFolder } from "@/lib/teamFolder";
-import { TEAM_PRESETS } from "@/data/presets";
+import { REGULATIONS } from "@/data/regulations";
 import type { ParsedPokemon, TeamFolderEntry } from "@/types";
 import {
   parseSearchTerms,
@@ -32,10 +33,14 @@ export function OpponentsSection({
     addOpponent,
     addOpponentsFromFolder,
     removeOpponent,
-    removeAllOpponents,
+    removeOpponents,
     updateOpponentPlan,
     editOpponentTeam,
   } = useOpponents();
+  const { seasons, currentSeasonId } = useSeasons();
+  const [selectedRegulationId, setSelectedRegulationId] = useState(
+    REGULATIONS[0]?.id ?? "",
+  );
   const [isAdding, setIsAdding] = useState(false);
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -49,17 +54,27 @@ export function OpponentsSection({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Regulation filter comes first — everything below (search, the empty-state
+  // check, "Clear all data") operates on the currently-viewed regulation's
+  // opponents only, not the full cross-regulation list.
+  const regulationOpponents = opponents.filter(
+    (opponent) => opponent.regulationId === selectedRegulationId,
+  );
+  const regulationSeasons = seasons.filter(
+    (season) => season.regulationId === selectedRegulationId,
+  );
+
   // Space-separated terms are ANDed together per opponent — "charizard basculegion"
   // only matches a team that has a Pokémon/item for *each* term, not either one.
   const searchTerms = parseSearchTerms(searchQuery);
   const isSearching = searchTerms.length > 0;
   const visibleOpponents = isSearching
-    ? opponents.filter((opponent) =>
+    ? regulationOpponents.filter((opponent) =>
         searchTerms.every((term) =>
           opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term)),
         ),
       )
-    : opponents;
+    : regulationOpponents;
 
   useEffect(() => {
     if (isSearchOpen) searchInputRef.current?.focus();
@@ -89,7 +104,7 @@ export function OpponentsSection({
   }, [isMenuOpen]);
 
   function handleSubmit(label: string, rawPaste: string, pokepasteUrl: string) {
-    const result = addOpponent(label, rawPaste, pokepasteUrl);
+    const result = addOpponent(label, rawPaste, selectedRegulationId, pokepasteUrl);
     if (typeof result === "string") {
       return result;
     }
@@ -98,7 +113,7 @@ export function OpponentsSection({
   }
 
   function reportImportResult(importedCount: number, skipped: string[]) {
-    if (importedCount === 0) {
+    if (importedCount === 0 && skipped.length === 0) {
       setImportNotice(
         "Couldn't import any teams from that paste — check the format and try again.",
       );
@@ -114,14 +129,15 @@ export function OpponentsSection({
   }
 
   function handleBulkImport(entries: TeamFolderEntry[]) {
-    const { importedCount, skipped } = addOpponentsFromFolder(entries);
+    const { importedCount, skipped } = addOpponentsFromFolder(entries, selectedRegulationId);
     setIsBulkImporting(false);
     reportImportResult(importedCount, skipped);
   }
 
-  function loadPreset(rawPaste: string) {
+  function loadPreset(rawPaste: string, regulationId: string) {
     const { importedCount, skipped } = addOpponentsFromFolder(
       parseTeamFolder(rawPaste),
+      regulationId,
     );
     setIsMenuOpen(false);
     reportImportResult(importedCount, skipped);
@@ -161,7 +177,7 @@ export function OpponentsSection({
   }
 
   function confirmClearAll() {
-    removeAllOpponents();
+    removeOpponents(regulationOpponents.map((opponent) => opponent.id));
     setIsConfirmingClear(false);
   }
 
@@ -181,14 +197,39 @@ export function OpponentsSection({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-mauve-900">
             Opposing Teams
           </h2>
+          {REGULATIONS.length > 1 ? (
+            <div className="relative">
+              <select
+                value={selectedRegulationId}
+                onChange={(event) => setSelectedRegulationId(event.target.value)}
+                aria-label="Regulation"
+                className="appearance-none rounded-full border border-mauve-300 bg-white py-1 pl-3 pr-8 text-xs font-medium text-mauve-700"
+              >
+                {REGULATIONS.map((regulation) => (
+                  <option key={regulation.id} value={regulation.id}>
+                    {regulation.label}
+                  </option>
+                ))}
+              </select>
+              <Icon
+                name={IconName.ExpandMore}
+                size={14}
+                className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-mauve-500"
+              />
+            </div>
+          ) : (
+            <span className="rounded-full border border-mauve-200 bg-mauve-50 px-3 py-1 text-xs font-medium text-mauve-500">
+              {REGULATIONS[0]?.label}
+            </span>
+          )}
           {!isLoading &&
             !isAdding &&
             !isBulkImporting &&
-            opponents.length > 0 && (
+            regulationOpponents.length > 0 && (
               <button
                 type="button"
                 onClick={toggleSearch}
@@ -232,16 +273,16 @@ export function OpponentsSection({
                   className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
                 >
                   {!isLoading &&
-                    opponents.length === 0 &&
-                    TEAM_PRESETS.map((preset) => (
+                    regulationSeasons.map((season) => (
                       <button
-                        key={preset.id}
+                        key={season.id}
                         type="button"
                         role="menuitem"
-                        onClick={() => loadPreset(preset.rawPaste)}
+                        onClick={() => loadPreset(season.rawPaste, season.regulationId)}
                         className={MENU_ITEM_CLASSES}
                       >
-                        Load default set: {preset.label}
+                        Load default set: {season.label}
+                        {season.id === currentSeasonId ? " (current)" : ""}
                       </button>
                     ))}
                   <button
@@ -256,7 +297,7 @@ export function OpponentsSection({
                     type="button"
                     role="menuitem"
                     onClick={requestClearAll}
-                    disabled={opponents.length === 0}
+                    disabled={regulationOpponents.length === 0}
                     className="flex w-full items-center gap-2 border-t border-mauve-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-mauve-300 disabled:hover:bg-transparent"
                   >
                     Clear all data
@@ -272,7 +313,7 @@ export function OpponentsSection({
         !isLoading &&
         !isAdding &&
         !isBulkImporting &&
-        opponents.length > 0 && (
+        regulationOpponents.length > 0 && (
           <div className="relative">
             <Icon
               name={IconName.Search}
@@ -340,12 +381,14 @@ export function OpponentsSection({
             id="confirm-clear-opponents-title"
             className="mb-2 text-lg font-semibold text-mauve-900"
           >
-            Clear all opponent teams?
+            Clear all {REGULATIONS.find((r) => r.id === selectedRegulationId)?.label} opponent
+            teams?
           </h2>
           <p className="mb-4 text-sm text-mauve-600">
-            This removes all {opponents.length} opponent
-            {opponents.length === 1 ? "" : "s"} and can&apos;t be undone —
-            you&apos;ll need to re-add or re-import them.
+            This removes all {regulationOpponents.length} opponent
+            {regulationOpponents.length === 1 ? "" : "s"} under this regulation and can&apos;t be
+            undone — you&apos;ll need to re-add or re-import them. Opponents under other
+            regulations aren&apos;t affected.
           </p>
           <div className="flex gap-2">
             <button
@@ -402,7 +445,7 @@ export function OpponentsSection({
 
       {isLoading ? (
         <p className="text-sm text-mauve-500">Loading…</p>
-      ) : opponents.length === 0 && !isAdding && !isBulkImporting ? (
+      ) : regulationOpponents.length === 0 && !isAdding && !isBulkImporting ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-mauve-300 bg-mauve-50 px-6 py-14 text-center">
           <Image
             src="/resources/logo.png"
@@ -430,14 +473,15 @@ export function OpponentsSection({
             >
               Add opponent
             </button>
-            {TEAM_PRESETS.map((preset) => (
+            {regulationSeasons.map((season) => (
               <button
-                key={preset.id}
+                key={season.id}
                 type="button"
-                onClick={() => loadPreset(preset.rawPaste)}
+                onClick={() => loadPreset(season.rawPaste, season.regulationId)}
                 className="rounded-full border border-mauve-300 bg-white px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
               >
-                Use default set: {preset.label}
+                Use default set: {season.label}
+                {season.id === currentSeasonId ? " (current)" : ""}
               </button>
             ))}
           </div>

@@ -164,16 +164,22 @@ export async function deleteOpponent(id: string): Promise<void> {
   }
 }
 
-export async function clearOpponents(): Promise<void> {
+/**
+ * Deletes exactly the given opponent ids — used by "Clear all data," which
+ * (now that opponents are tagged by regulation) only clears whichever
+ * regulation is currently being viewed, not literally every opponent ever
+ * added. A blanket `db.clear()` would silently wipe other regulations' data
+ * too, which is not what "clear all" means once there's more than one.
+ */
+export async function deleteOpponents(ids: string[]): Promise<void> {
   const db = await getDb();
   const uid = currentUid();
   if (uid) {
-    const ids = (await db.getAllKeys(OPPONENTS_STORE)) as string[];
     void Promise.all(ids.map((id) => opponentsSync.remove(uid, id))).catch((error) =>
-      logCloudSyncError("clear opponents", error),
+      logCloudSyncError("delete opponents", error),
     );
   }
-  await db.clear(OPPONENTS_STORE);
+  await Promise.all(ids.map((id) => db.delete(OPPONENTS_STORE, id)));
 }
 
 /**
@@ -215,7 +221,15 @@ export async function syncMyTeamsWithCloud(
 /** Same idea as syncMyTeamsWithCloud, for opponents — see its doc comment. */
 export async function syncOpponentsWithCloud(uid: string): Promise<Opponent[]> {
   const localOpponents = await getOpponents();
-  const merged = await opponentsSync.pullAndMerge(uid, localOpponents);
+  const activeTeamId = await getActiveTeamId();
+  // pullAndMerge can substitute in a raw remote-sourced record (e.g. when the
+  // cloud copy ties or wins on updatedAt) that never went through
+  // normalizeOpponent — a record synced before a schema field (regulationId,
+  // plansByTeamId, ...) existed would otherwise skip that backfill entirely
+  // and silently vanish from anything that filters on it.
+  const merged = (await opponentsSync.pullAndMerge(uid, localOpponents)).map((opponent) =>
+    normalizeOpponent(opponent, activeTeamId),
+  );
   const mergedIds = new Set(merged.map((opponent) => opponent.id));
   const removedIds = localOpponents
     .filter((opponent) => !mergedIds.has(opponent.id))
