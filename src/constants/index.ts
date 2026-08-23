@@ -4,6 +4,7 @@ export * from "./megaFormAbilities";
 export * from "./localItemFallbackImages";
 export * from "./itemAliases";
 export * from "./matchupPlan";
+export * from "./teamCombination";
 export * from "./natures";
 export * from "./abilityDamageModifiers";
 export * from "./itemDamageModifiers";

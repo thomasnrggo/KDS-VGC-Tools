@@ -2216,6 +2216,72 @@ leads/backs) is complete and working end to end.
       confirmed after the fix it correctly imported 0 and skipped all 14 with the specific reason, and
       confirmed the custom chevron renders correctly and the select still functions (switching between
       M-B/M-A) after the `appearance-none` change.
+- [x] **Phase 11 — My Teams list + Team Report pages.** Per a 2026-08-23 request, with two reference
+    mockups. Confirmed scope up front on three points before building: the mockup's extra nav items
+    ("Speed tier," "Builder") are placeholder, not real pages to build — only "My Teams" was added as a
+    third nav link; the Team Report mockup's "Add Opponent" button and search icon were mockup artifacts
+    (reused from the Opponents page as a starting point) and skipped; the Notes/Weaknesses boxes below
+    the combinations panel are one-per-team (shown once), not one per combination.
+    - **Data model**: `Team` gained `regulationId: string` (same tagging/backfill treatment Opponent got
+      — `normalizeTeam` in `src/lib/team.ts` backfills it to `REGULATIONS[0].id`, applied in both
+      `getMyTeams()` and, after the same cloud-merge gap found and fixed for opponents, `syncMyTeamsWithCloud`
+      too — added proactively this time instead of waiting to rediscover it live) plus four new optional
+      fields for the Team Report page: `notes?`, `weaknesses?` (both team-level, free text),
+      `pokemonNotes?: Record<number, string>` (per-Pokémon, keyed by roster index), and
+      `combinations?: TeamCombination[]` (new type: `{id, leadPair, backPair, leadMega, backMega, notes}`
+      — structurally `MatchupPlan` plus an `id`, since a team can have any number of these, not one per
+      opponent). `createTeam`/`createOpponent`'s nested team, and every existing call site
+      (`MyTeamHeader`, `MyTeamSection`, `editOpponentTeam`) updated to thread a `regulationId` through —
+      editing preserves the team's existing regulation rather than needing one re-specified.
+    - **Duplicate prevention added proactively**: `addTeam` in `useMyTeams.ts` got the same
+      same-regulation-plus-byte-identical-rawPaste duplicate check `addOpponent` got fixed with
+      yesterday, rather than waiting to hit the same bug on Teams too.
+    - **`/teams`** (`src/components/MyTeamsSection`) — mirrors `OpponentsSection`'s structure
+      (search, regulation switcher, add/edit/remove) but simplified: no bulk import or mass-clear, since
+      this is a handful of your own teams, not a big opponent list. Each row navigates to
+      `/teams/[teamId]` on click (`role="link"`, whole row, not just the mockup's chevron — edit/delete
+      icons `stopPropagation` so they don't also trigger navigation); the chevron itself is
+      `IconName.ExpandMore` rotated -90°, since the icon set has no dedicated chevron-right and fetching
+      one for a single use wasn't worth it. Sprites render plain/static (not `TeamRoster`'s
+      hover-card-wrapped version) specifically to avoid a click-conflict — a hover-card's own click-to-open
+      would otherwise fight the row's click-to-navigate.
+    - **`/teams/[teamId]`** ("Team report") — left column: `PokemonReportRow` (new component) per
+      Pokémon — sprite/ability/item, a read-only Base/Points/Final stat table (reusing
+      `calculateStatBreakdown`, the same source the Damage Calculator's editable version uses, just
+      rendered plain here since this isn't a battle calculator), its moveset as pasted, and a notes box
+      bound to `pokemonNotes[index]`. Right column: "Common combinations" — `TeamCombinationCard` (new
+      component) per combination, each a Lead pair + Back pair reusing the exact `PokemonSlotPicker`
+      component the Matchup Planner's opponent cards already use, just pointed at this team's own roster
+      instead of an opponent-planning context — plus the team-level Notes and Weaknesses boxes below.
+      `params` read via React's `use()` (this Next version's Client Component pattern for dynamic route
+      params — see AGENTS.md's directive to check the bundled docs rather than assume).
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180, +2 new — `normalizeTeam`'s
+      backfill), and `npm run build` (new `/teams` and `/teams/[teamId]` routes, the latter correctly
+      dynamic) all clean. Live browser check against real existing team data: confirmed existing teams
+      correctly auto-backfilled under "Regulation M-B" on first load with zero data loss, clicked into a
+      real team's report and confirmed the stat table/moveset render correctly from real pasted data,
+      added a combination and picked a real Mega-capable Pokémon (Raichu) as a lead — confirmed its Mega
+      sprite rendered correctly in the picker — typed a combination note and a per-Pokémon note, reloaded
+      the page fully, and confirmed both persisted exactly as entered; zero console errors throughout.
+    - **Layout/visual fast follow, same day**: both new pages stretched full-bleed on wide viewports,
+      spreading sprites/columns out with large gaps rather than staying compact like the reference
+      mockups. `MyTeamsSection` capped at `max-w-3xl`; the Team Report's two-column grid capped at
+      `max-w-6xl`. The cap alone caused a second bug — `PokemonReportRow`'s stat table had a hardcoded
+      `min-w-[220px]` that no longer fit the now-narrower inner column, clipping the Final column behind a
+      horizontal scrollbar; reduced to `min-w-[150px]`. Also added alternating row backgrounds
+      (`bg-mauve-200`/`bg-mauve-100`) to Team Report's per-Pokémon rows, matching the pattern
+      `OpponentsSection`/`MyTeamsSection` already use — `PokemonReportRow` itself stays
+      presentation-agnostic (background applied by the parent's `.map()`, same division of responsibility
+      as `OpponentCard`) — and bumped the notes/textarea backgrounds (combination notes, team notes,
+      team weaknesses) from `bg-mauve-50` to `bg-mauve-100` so they read as clearer input boxes, per the
+      mockup; the per-Pokémon notes box went the other way, to `bg-white/60`, since it now sits on an
+      alternating-colored row rather than a plain white card (mirrors `OpponentCard`'s own
+      `bg-transparent` game-plan notes field sitting on its row's color). Moveset pills switched from
+      `bg-mauve-100` to `bg-white` so they don't blend into the row on the alternating background's
+      lighter half. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180), `npm run build`
+      all clean; live browser check confirmed both pages are now compact instead of full-bleed, the stat
+      table's Final column is fully visible again, and the combination panel's notes box reads clearly
+      against its white card.
 
 ## 8. Attribution
 

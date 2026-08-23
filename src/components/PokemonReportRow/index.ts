@@ -1,0 +1,1 @@
+export { PokemonReportRow } from "./PokemonReportRow";

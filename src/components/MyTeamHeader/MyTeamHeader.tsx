@@ -12,17 +12,18 @@ import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
 import { AuthMenu } from "../AuthMenu";
 import { IconName } from "@/enums";
+import { REGULATIONS } from "@/data/regulations";
 
 interface MyTeamHeaderProps {
   teams: Team[];
   activeTeamId: string | null;
   isLoading: boolean;
-  addTeam: (rawPaste: string, name: string) => string | null;
+  addTeam: (rawPaste: string, name: string, regulationId: string) => string | null;
   editTeam: (id: string, rawPaste: string, name: string) => string | null;
   removeTeam: (id: string) => void;
   setActiveTeamId: (id: string | null) => void;
-  /** Which page this header is rendered on — swaps the single nav link so it never points at itself (Matchup Planner shows a link to the Damage Calc, and vice versa). */
-  currentPage: "matchup-planner" | "damage-calc";
+  /** Which page this header is rendered on — swaps the nav links so the current page never links to itself. */
+  currentPage: "matchup-planner" | "damage-calc" | "teams";
   authUser: User | null;
   isAuthLoading: boolean;
   onSignIn: () => void;
@@ -31,6 +32,7 @@ interface MyTeamHeaderProps {
 
 const NAV_LINKS = [
   { page: "matchup-planner", href: "/matchup-planner", label: "Matchup Planner" },
+  { page: "teams", href: "/teams", label: "My Teams" },
   // Damage Calculator nav link hidden — feature has known bugs, not ready to
   // publish yet. Re-add here once it's stable (see PLANNING.md).
 ] as const;
@@ -147,7 +149,7 @@ export function MyTeamHeader({
     const error =
       modalMode === "edit" && editingId
         ? editTeam(editingId, raw, name)
-        : addTeam(raw, name);
+        : addTeam(raw, name, REGULATIONS[0].id);
     if (!error) {
       closeModal();
     }

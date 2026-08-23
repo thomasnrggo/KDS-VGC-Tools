@@ -10,6 +10,7 @@ import {
   syncMyTeamsWithCloud,
 } from "@/lib/storage/db";
 import { createTeam, validateTeamSize } from "@/lib/team";
+import { REGULATIONS } from "@/data/regulations";
 import { useAuth } from "./useAuth";
 import type { Team } from "@/types";
 
@@ -61,16 +62,26 @@ export function useMyTeams() {
 
   /** Adds a new team from a paste and makes it active. Returns an error message, or null on success. */
   const addTeam = useCallback(
-    (rawPaste: string, name: string): string | null => {
+    (rawPaste: string, name: string, regulationId: string): string | null => {
       const trimmed = rawPaste.trim();
       if (!trimmed) {
         return "Paste your team's Showdown export first.";
       }
 
-      const newTeam = createTeam(trimmed, name.trim() || `Team ${teams.length + 1}`);
+      const newTeam = createTeam(trimmed, name.trim() || `Team ${teams.length + 1}`, regulationId);
       const sizeError = validateTeamSize(newTeam.pokemon);
       if (sizeError) {
         return sizeError;
+      }
+
+      // Same reasoning as Opponents' duplicate check: prevents re-adding the
+      // exact same team twice (e.g. re-pasting by habit) from silently
+      // creating two entries with different random ids.
+      const duplicate = teams.find(
+        (team) => team.regulationId === regulationId && team.rawPaste === newTeam.rawPaste,
+      );
+      if (duplicate) {
+        return `"${duplicate.name}" already has this exact roster under this regulation.`;
       }
 
       setTeams((prev) => [...prev, newTeam]);
@@ -78,26 +89,50 @@ export function useMyTeams() {
       setActiveTeamId(newTeam.id);
       return null;
     },
-    [teams.length, setActiveTeamId],
+    [teams, setActiveTeamId],
   );
 
-  /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id. Returns an error message, or null on success. */
-  const editTeam = useCallback((id: string, rawPaste: string, name: string): string | null => {
-    const trimmed = rawPaste.trim();
-    if (!trimmed) {
-      return "Paste your team's Showdown export first.";
-    }
+  /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id and regulationId. Returns an error message, or null on success. */
+  const editTeam = useCallback(
+    (id: string, rawPaste: string, name: string): string | null => {
+      const trimmed = rawPaste.trim();
+      if (!trimmed) {
+        return "Paste your team's Showdown export first.";
+      }
 
-    const reparsed = createTeam(trimmed, name.trim() || "Team");
-    const sizeError = validateTeamSize(reparsed.pokemon);
-    if (sizeError) {
-      return sizeError;
-    }
+      const existing = teams.find((team) => team.id === id);
+      const reparsed = createTeam(
+        trimmed,
+        name.trim() || "Team",
+        existing?.regulationId ?? REGULATIONS[0].id,
+      );
+      const sizeError = validateTeamSize(reparsed.pokemon);
+      if (sizeError) {
+        return sizeError;
+      }
 
-    const updated: Team = { ...reparsed, id };
-    setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
-    void saveMyTeam(updated);
-    return null;
+      const updated: Team = { ...existing, ...reparsed, id };
+      setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
+      void saveMyTeam(updated);
+      return null;
+    },
+    [teams],
+  );
+
+  /** Applies `updater` to the team with `id`, persisting the result — used by the Team Report page (notes/weaknesses/pokemonNotes/combinations). No-op if not found. */
+  const updateTeam = useCallback((id: string, updater: (team: Team) => Team) => {
+    setTeams((prev) => {
+      let updated: Team | undefined;
+      const next = prev.map((team) => {
+        if (team.id !== id) return team;
+        updated = { ...updater(team), updatedAt: new Date().toISOString() };
+        return updated;
+      });
+      if (updated) {
+        void saveMyTeam(updated);
+      }
+      return next;
+    });
   }, []);
 
   const removeTeam = useCallback(
@@ -120,6 +155,7 @@ export function useMyTeams() {
     isLoading,
     addTeam,
     editTeam,
+    updateTeam,
     removeTeam,
     setActiveTeamId,
   };

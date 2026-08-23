@@ -1,5 +1,6 @@
 import { openDB, type IDBPDatabase } from "idb";
 import { normalizeOpponent } from "@/lib/opponent";
+import { normalizeTeam } from "@/lib/team";
 import { auth, createCollectionSync, pullMetaDoc, pushMetaDoc } from "@/lib/firebase";
 import type { Opponent, Team } from "@/types";
 
@@ -79,7 +80,8 @@ function getDb(): Promise<IDBPDatabase> {
 
 export async function getMyTeams(): Promise<Team[]> {
   const db = await getDb();
-  return db.getAll(MY_TEAMS_STORE);
+  const teams = await db.getAll(MY_TEAMS_STORE);
+  return teams.map(normalizeTeam);
 }
 
 async function putTeamLocal(team: Team): Promise<void> {
@@ -198,7 +200,9 @@ export async function syncMyTeamsWithCloud(
     pullMetaDoc<{ activeTeamId: string | null }>(uid, "state"),
   ]);
 
-  const merged = await teamsSync.pullAndMerge(uid, localTeams);
+  // Same fix as syncOpponentsWithCloud below — pullAndMerge can substitute in
+  // a raw remote-sourced record that never went through normalizeTeam.
+  const merged = (await teamsSync.pullAndMerge(uid, localTeams)).map(normalizeTeam);
   const mergedIds = new Set(merged.map((team) => team.id));
   const removedIds = localTeams.filter((team) => !mergedIds.has(team.id)).map((team) => team.id);
   await Promise.all([

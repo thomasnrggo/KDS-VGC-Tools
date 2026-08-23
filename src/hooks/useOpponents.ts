@@ -10,6 +10,7 @@ import {
 } from "@/lib/storage/db";
 import { createOpponent, getPlanForTeam } from "@/lib/opponent";
 import { createTeam, validateTeamSize } from "@/lib/team";
+import { parseTeam } from "@/lib/parseTeam";
 import { useAuth } from "./useAuth";
 import type { BulkImportResult, MatchupPlan, Opponent, TeamFolderEntry } from "@/types";
 
@@ -185,8 +186,7 @@ export function useOpponents() {
         return "Paste the opponent's Showdown export.";
       }
 
-      const team = createTeam(trimmedPaste, trimmedLabel);
-      const sizeError = validateTeamSize(team.pokemon);
+      const sizeError = validateTeamSize(parseTeam(trimmedPaste));
       if (sizeError) {
         return sizeError;
       }
@@ -194,7 +194,7 @@ export function useOpponents() {
       updateOpponent(id, (opponent) => ({
         ...opponent,
         label: trimmedLabel,
-        team,
+        team: createTeam(trimmedPaste, trimmedLabel, opponent.regulationId),
         pokepasteUrl: pokepasteUrl || undefined,
       }));
       return null;

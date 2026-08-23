@@ -13,7 +13,7 @@ export function createOpponent(
   return {
     id: crypto.randomUUID(),
     label,
-    team: createTeam(rawPaste, label),
+    team: createTeam(rawPaste, label, regulationId),
     pokepasteUrl,
     regulationId,
     plansByTeamId: {},
