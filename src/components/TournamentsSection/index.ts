@@ -1,0 +1,1 @@
+export { TournamentsSection } from "./TournamentsSection";

@@ -1,0 +1,1 @@
+export { OpponentPokemonCard } from "./OpponentPokemonCard";

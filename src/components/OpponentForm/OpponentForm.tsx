@@ -8,6 +8,8 @@ interface OpponentFormProps {
   initialPokepasteUrl?: string;
   initialRawPaste?: string;
   submitLabel?: string;
+  /** Set false when the caller already provides a bordered container (e.g. a Modal), to avoid a card-in-a-card look. */
+  bordered?: boolean;
   onSubmit: (
     label: string,
     rawPaste: string,
@@ -24,6 +26,7 @@ export function OpponentForm({
   initialPokepasteUrl = "",
   initialRawPaste = "",
   submitLabel = "Add opponent",
+  bordered = true,
   onSubmit,
   onCancel,
 }: OpponentFormProps) {
@@ -83,7 +86,7 @@ export function OpponentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 rounded-lg border border-mauve-200 p-4"
+      className={`flex flex-col gap-3 ${bordered ? "rounded-lg border border-mauve-200 p-4" : ""}`}
     >
       <input
         value={label}

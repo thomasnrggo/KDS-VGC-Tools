@@ -1,4 +1,5 @@
 import { createTeam } from "./team";
+import { generateId } from "./id";
 import { EMPTY_PLAN } from "@/constants";
 import { REGULATIONS } from "@/data/regulations";
 import type { MatchupPlan, Opponent, PokemonSlot } from "@/types";
@@ -11,7 +12,7 @@ export function createOpponent(
 ): Opponent {
   const now = new Date().toISOString();
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     label,
     team: createTeam(rawPaste, label, regulationId),
     pokepasteUrl,

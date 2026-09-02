@@ -3,13 +3,16 @@
 import { use, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
+import { useTournaments } from "@/hooks/useTournaments";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportRow } from "@/components/PokemonReportRow";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
+import { PokemonSprite } from "@/components/PokemonSprite";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { createEmptyCombination } from "@/constants";
+import { computeTeamUsageStats } from "@/lib/tournament";
 import type { TeamCombination } from "@/types";
 
 interface TeamReportPageProps {
@@ -28,9 +31,11 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
     setActiveTeamId,
     updateTeam,
   } = useMyTeams();
+  const { tournaments } = useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
 
   const team = teams.find((t) => t.id === teamId) ?? null;
+  const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
 
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const weaknessesRef = useRef<HTMLTextAreaElement>(null);
@@ -198,6 +203,54 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
                   aria-label="Team weaknesses"
                   className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
                 />
+              </div>
+
+              <div className="flex flex-col gap-2 rounded-lg border border-mauve-200 bg-white p-4">
+                <h2 className="text-sm font-semibold text-mauve-900">Tournament stats</h2>
+                {usageStats.every((stat) => stat.timesPicked === 0) ? (
+                  <p className="text-sm text-mauve-500">
+                    No games logged with this team yet — Pokémon usage and win/loss stats
+                    accumulate here as you log{" "}
+                    <Link href="/tournaments" className="text-mauve-600 hover:underline">
+                      tournament
+                    </Link>{" "}
+                    games.
+                  </p>
+                ) : (
+                  <table className="w-full text-xs text-mauve-700">
+                    <thead>
+                      <tr className="text-mauve-500">
+                        <th className="py-1 text-left font-normal">Pokémon</th>
+                        <th className="text-right font-normal">Picked</th>
+                        <th className="text-right font-normal">Wins</th>
+                        <th className="text-right font-normal">Losses</th>
+                        <th className="text-right font-normal">Win %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usageStats.map((stat) => (
+                        <tr key={stat.index} className="border-t border-mauve-100">
+                          <td className="flex items-center gap-2 py-1.5">
+                            <span className="relative h-6 w-6 shrink-0">
+                              <PokemonSprite species={stat.pokemon.species} fill />
+                            </span>
+                            <span className="truncate font-medium text-mauve-900">
+                              {stat.pokemon.species}
+                            </span>
+                          </td>
+                          <td className="text-right">{stat.timesPicked}</td>
+                          <td className="text-right text-green-700">{stat.wins}</td>
+                          <td className="text-right text-red-600">{stat.losses}</td>
+                          <td className="text-right font-medium">
+                            {stat.timesPicked > 0
+                              ? `${Math.round((stat.wins / stat.timesPicked) * 100)}%`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           </div>

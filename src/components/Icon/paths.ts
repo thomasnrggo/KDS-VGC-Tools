@@ -29,6 +29,11 @@ export const ICON_PATHS: Record<IconName, string> = {
     "M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z",
   [IconName.Edit]:
     "M180-180h44l472-471-44-44-472 471v44Zm-60 60v-128l575-574q8-8 19-12.5t23-4.5q11 0 22 4.5t20 12.5l44 44q9 9 13 20t4 22q0 11-4.5 22.5T823-694L248-120H120Zm659-617-41-41 41 41Zm-105 64-22-22 44 44-22-22Z",
+  // Vertical mirror of ExpandMore's path (same stroke weight/style, flipped
+  // around the glyph's vertical center) — expand_less isn't in the
+  // extracted @material-symbols/svg-400 subset this app ships, but a chevron
+  // is symmetric so deriving it this way is exact.
+  [IconName.ExpandLess]: "M480-627 240-387l43 43 197-197 197 197 43-43-240-240Z",
   [IconName.ExpandMore]: "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z",
   [IconName.Menu]: "M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z",
   [IconName.MoreVert]:

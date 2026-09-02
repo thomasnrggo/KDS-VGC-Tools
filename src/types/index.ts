@@ -7,3 +7,4 @@ export * from "./bulkImport";
 export * from "./stats";
 export * from "./season";
 export * from "./damage";
+export * from "./tournament";

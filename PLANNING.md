@@ -2282,6 +2282,73 @@ leads/backs) is complete and working end to end.
       all clean; live browser check confirmed both pages are now compact instead of full-bleed, the stat
       table's Final column is fully visible again, and the combination panel's notes box reads clearly
       against its white card.
+- [x] **Phase 12 — Tournament Mode.** Per a 2026-08-23 request, with one reference mockup for the Round
+    page. Confirmed two real design forks up front before building: how a Round's opponent roster gets
+    entered (chose the existing paste-box pattern, EVs optional — `parseTeam` already tolerates a block
+    with no EVs line, since a real tournament team sheet rarely reveals Stat Points — over a per-slot
+    manual-entry form the mockup showed but which would've meant a wholly new entry UX), and where the
+    accumulated Pokémon usage/win-loss stats surface (a new section on the existing Team Report page,
+    matching the request's own "accumulating those stats on my team" wording, over a separate page).
+    - **Data model** (`src/types/tournament.ts`): `Tournament {id, name, teamId, regulationId, rounds,
+      createdAt, updatedAt}` → `TournamentRound {id, label, opponentRawPaste, opponentTeam:
+      ParsedPokemon[], opponentPokemonNotes?, games}` (opponent roster reuses `ParsedPokemon` as-is —
+      every field is already optional except species, so "however much of a build you know" needed no
+      new type) → exactly 3 fixed `TournamentGame {id, result: "win"|"loss"|null, opponentPicks: [4],
+      myPicks: [4], notes}` per round (Bo3; a round ending 2-0 just leaves game 3 unplayed, no
+      add/remove-game UI needed, unlike Combinations' variable-length list). Picks are 4-tuples of
+      indices into the round's opponentTeam / the tournament's own team roster — "which 4 of 6," not a
+      lead/back-ordered pair like MatchupPlan/TeamCombination.
+    - **`src/lib/tournament.ts`**: `createTournament`/`createRound` (factories), `getRoundResult` (first
+      to 2 game wins decides a Bo3 round, `"in-progress"` otherwise), `getTournamentRecord` (rounds W-L,
+      only counting decided ones), and `computeTeamUsageStats(tournaments, team)` — the actual "usage
+      stats" ask: for a given team, rolls up every decided game across every given tournament into a
+      per-roster-slot `{timesPicked, wins, losses}`, keyed by roster index (same "index is a stable
+      identity" assumption Combinations/MatchupPlan's leadPair/backPair already make). All four are pure
+      functions with their own unit tests (`tournament.test.ts`) — this is exactly the kind of
+      logic-heavy code this codebase always covers directly, not just through UI verification.
+    - **Storage/sync**: `tournaments` gets the identical treatment as `teams`/`opponents` —
+      `TOURNAMENTS_STORE` in IndexedDB (`DB_VERSION` 3→4), `getTournaments`/`saveTournament`/
+      `deleteTournament`/`syncTournamentsWithCloud` in `db.ts`, `useTournaments()` hook mirroring
+      `useOpponents.ts`'s shape. No new Firestore rule needed — `tournaments` lives under
+      `users/{uid}/tournaments`, already covered by the existing recursive `users/{uid}/{document=**}`
+      rule. Skipped the duplicate-content check `addOpponent`/`addTeam` both got — a tournament is a
+      one-off named event you type a name for each time, not a pasted blob you might accidentally
+      re-paste, so the same accidental-duplication risk doesn't really apply.
+    - **Pages**: `/tournaments` (list, mirrors `MyTeamsSection` minus search/regulation-switcher — nothing
+      to filter yet with one regulation) → `/tournaments/[id]` (name, team, W-L record, rounds list,
+      "Add round") → `/tournaments/[id]/rounds/[id]` (the mockup's page: opponent roster as
+      `OpponentPokemonCard`s in a responsive 3-column grid — deliberately no stat table on these unlike
+      `PokemonReportRow`, since without Stat Points there's no real Final stat to compute, and showing one
+      anyway would be misleading — plus 3 `TournamentGameCard`s, each Win/Loss + both sides' picks
+      (reusing `PokemonSlotPicker` again) + notes). "Tournaments" added as a 4th real nav link. Mega-toggle
+      state per pick slot is deliberately local-only, not persisted to `TournamentGame` — usage stats only
+      care *which* Pokémon was brought, not its Mega state that specific game, so widening the data model
+      for it wasn't worth it.
+    - **Team Report addition**: a new "Tournament stats" card, computed via `computeTeamUsageStats`
+      against every tournament using that team — a table of Picked/Wins/Losses/Win% per roster Pokémon,
+      with an empty-state pointing at `/tournaments` when nothing's logged yet.
+    - **Found and fixed during verification, not from a code review**: `DB_VERSION`'s 3→4 bump (adding
+      `TOURNAMENTS_STORE`) had no `blocked`/`blocking` handling — `idb`'s default is to silently wait
+      forever if another tab holds an older-version connection open during a schema upgrade, which would
+      read to a real user as a permanently-stuck "Loading…" with zero error, not an obvious bug report.
+      Added both: `blocking` (fires on an old connection when a newer version wants in) now closes that
+      connection proactively instead of leaving it to block forever; `blocked` at least logs clearly if a
+      case still can't self-resolve. This is a general robustness fix for *any* future `DB_VERSION` bump,
+      not specific to this feature.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (191/191, +11 new — every pure function in
+      `tournament.ts`), and `npm run build` (three new routes, all correctly dynamic) all clean. Live
+      browser verification was cut short by a genuine automation-environment limitation, not a demonstrated
+      app bug: the test tab wasn't the OS-focused window (`document.visibilityState` stayed `"hidden"`
+      even after a synthetic click), and Chrome throttles IndexedDB hard for unfocused windows — confirmed
+      via raw `indexedDB.open()`/`deleteDatabase()` calls that got zero events at all within 3 seconds,
+      not even the `blocked` event that fires near-instantly for a genuine same-origin lock conflict, and
+      zero Firestore network requests fired either (execution never got past the IndexedDB layer). Same
+      category of issue as this session's earlier clipboard-API hangs under CDP automation. The `/teams`
+      and `/matchup-planner` nav links, the "Tournaments" nav link's presence, and the Tournaments list
+      page's initial render (name, Add tournament button, layout) were confirmed live before hitting this;
+      full create-a-tournament-through-log-a-game-through-see-usage-stats flow verification is left for
+      the user to confirm in their own actively-focused browser, where this class of throttling doesn't
+      apply.
 
 ## 8. Attribution
 

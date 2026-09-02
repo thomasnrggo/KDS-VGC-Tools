@@ -9,6 +9,7 @@ export enum IconName {
   Delete = "delete",
   Download = "download",
   Edit = "edit",
+  ExpandLess = "expand_less",
   ExpandMore = "expand_more",
   Menu = "menu",
   MoreVert = "more_vert",

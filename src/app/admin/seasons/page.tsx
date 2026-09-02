@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { deleteSeason, getSeasons, saveSeason } from "@/lib/firebase";
 import { parseTeamFolder } from "@/lib/teamFolder";
+import { generateId } from "@/lib/id";
 import { REGULATIONS } from "@/data/regulations";
 import { AuthMenu } from "@/components/AuthMenu";
 import { Modal } from "@/components/Modal";
@@ -100,7 +101,7 @@ export default function AdminSeasonsPage() {
     }
 
     const season: Season = {
-      id: editingId ?? crypto.randomUUID(),
+      id: editingId ?? generateId(),
       regulationId: form.regulationId,
       label: form.label.trim(),
       startDate: form.startDate,

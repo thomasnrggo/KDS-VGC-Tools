@@ -1,10 +1,11 @@
 import { parseTeam } from "./parseTeam";
+import { generateId } from "./id";
 import { REGULATIONS } from "@/data/regulations";
 import type { ParsedPokemon, Team } from "@/types";
 
 export function createTeam(rawPaste: string, name: string, regulationId: string): Team {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name,
     rawPaste,
     pokemon: parseTeam(rawPaste),

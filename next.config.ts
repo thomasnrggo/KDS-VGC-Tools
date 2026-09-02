@@ -2,10 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  allowedDevOrigins: ["192.168.68.55"],
   reactCompiler: true,
   images: {
     remotePatterns: [
-      new URL("https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/**"),
+      new URL(
+        "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/**",
+      ),
       // Google account profile photos (Sign in with Google) — served from a
       // handful of lh*.googleusercontent.com subdomains, hence the wildcard.
       { protocol: "https", hostname: "**.googleusercontent.com" },
