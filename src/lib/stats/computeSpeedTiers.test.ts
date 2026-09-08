@@ -19,8 +19,10 @@ describe("computeSpeedTierRows", () => {
       maxSpeed: 110,
       neutral32: 100,
       neutral0: 68,
+      minSpeed: Math.floor(68 * 0.9),
       maxScarf: Math.floor(110 * 1.5),
       neutral32Scarf: Math.floor(100 * 1.5),
+      special: null,
     });
   });
 
@@ -43,8 +45,12 @@ describe("computeSpeedTierRows", () => {
       maxSpeed: 158,
       neutral32: 144,
       neutral0: 112,
+      minSpeed: Math.floor(112 * 0.9),
       maxScarf: null,
       neutral32Scarf: null,
+      // Mega Garchomp's curated ability is Sand Force (a power boost, not a
+      // Speed doubler) — not to be confused with Sand Rush.
+      special: null,
     });
   });
 
@@ -60,5 +66,49 @@ describe("computeSpeedTierRows", () => {
 
     expect(rows.map((row) => row.name)).toEqual(["Raichu-Alola", "Abra"]);
     expect(rows.map((row) => row.speciesKey)).toEqual(["raichu-alola", "abra"]);
+  });
+
+  describe("special (conditional Speed-doubling) column", () => {
+    it("flags a base-form species whose own ability list includes a weather Speed-doubler", () => {
+      // Venusaur: Overgrow / Chlorophyll (hidden) — Chlorophyll doubles Speed in Sun.
+      const [venusaur] = computeSpeedTierRows(["venusaur"], megaStoneItemsForSpecies);
+      expect(venusaur.special).toEqual({
+        label: "Sun",
+        descriptor: "in Sun",
+        value: venusaur.maxSpeed * 2,
+      });
+
+      // Excadrill: Sand Rush / Sand Force / Mold Breaker — Sand Rush doubles Speed in Sand.
+      const [excadrill] = computeSpeedTierRows(["excadrill"], megaStoneItemsForSpecies);
+      expect(excadrill.special).toEqual({
+        label: "Sand",
+        descriptor: "in Sand",
+        value: excadrill.maxSpeed * 2,
+      });
+
+      // Sneasler: Pressure / Unburden / Poison Touch (hidden) — Unburden doubles Speed once triggered.
+      const [sneasler] = computeSpeedTierRows(["sneasler"], megaStoneItemsForSpecies);
+      expect(sneasler.special).toEqual({
+        label: "Unburden",
+        descriptor: "once Unburden activates",
+        value: sneasler.maxSpeed * 2,
+      });
+    });
+
+    it("uses the Mega form's own fixed ability, not the base form's, for a Mega row", () => {
+      // Base Swampert (Torrent/Damp) has no Speed-doubling ability at all —
+      // Mega Swampert's curated override ability is Swift Swim, which doubles
+      // Speed in Rain. The base row and Mega row must disagree here.
+      const rows = computeSpeedTierRows(["swampert"], megaStoneItemsForSpecies);
+      const base = rows.find((row) => !row.isMega)!;
+      const mega = rows.find((row) => row.isMega)!;
+
+      expect(base.special).toBeNull();
+      expect(mega.special).toEqual({
+        label: "Rain",
+        descriptor: "in Rain",
+        value: mega.maxSpeed * 2,
+      });
+    });
   });
 });
