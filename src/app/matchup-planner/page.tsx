@@ -8,7 +8,7 @@ import { OpponentsSection } from "@/components/OpponentsSection";
 
 export default function MatchupPlanner() {
   const {
-    teams,
+    activeTeams,
     activeTeam,
     activeTeamId,
     isLoading,
@@ -22,7 +22,7 @@ export default function MatchupPlanner() {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isLoading}
         addTeam={addTeam}
@@ -36,7 +36,7 @@ export default function MatchupPlanner() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-6 p-6">
-        <MyTeamSection teams={teams} isLoading={isLoading} addTeam={addTeam} />
+        <MyTeamSection teams={activeTeams} isLoading={isLoading} addTeam={addTeam} />
         <OpponentsSection
           myTeamPokemon={activeTeam?.pokemon ?? []}
           activeTeamId={activeTeamId}

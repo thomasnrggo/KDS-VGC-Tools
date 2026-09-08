@@ -8,11 +8,14 @@ import { MyTeamsSection } from "@/components/MyTeamsSection";
 export default function TeamsPage() {
   const {
     teams,
+    activeTeams,
     activeTeamId,
     isLoading,
     addTeam,
     editTeam,
     removeTeam,
+    archiveTeam,
+    unarchiveTeam,
     setActiveTeamId,
   } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
@@ -20,7 +23,7 @@ export default function TeamsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isLoading}
         addTeam={addTeam}
@@ -40,6 +43,8 @@ export default function TeamsPage() {
           addTeam={addTeam}
           editTeam={editTeam}
           removeTeam={removeTeam}
+          archiveTeam={archiveTeam}
+          unarchiveTeam={unarchiveTeam}
         />
       </div>
     </div>

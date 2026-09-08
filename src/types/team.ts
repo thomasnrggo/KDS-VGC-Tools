@@ -55,5 +55,7 @@ export interface Team {
   pokemonNotes?: Record<number, string>;
   /** "Common combinations" the Team Report page lists — add as many as you want. */
   combinations?: TeamCombination[];
+  /** ISO timestamp of when this team was archived, or absent/undefined if it's active. Archiving is reversible (see unarchiveTeam) — it just moves the team out of the switcher and the My Teams "Active" tab, it never deletes anything. */
+  archivedAt?: string;
   updatedAt: string;
 }

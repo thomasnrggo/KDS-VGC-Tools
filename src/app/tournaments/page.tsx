@@ -9,6 +9,7 @@ import { TournamentsSection } from "@/components/TournamentsSection";
 export default function TournamentsPage() {
   const {
     teams,
+    activeTeams,
     activeTeamId,
     isLoading: isTeamsLoading,
     addTeam,
@@ -23,7 +24,7 @@ export default function TournamentsPage() {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isTeamsLoading}
         addTeam={addTeam}

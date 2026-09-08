@@ -523,8 +523,10 @@ export function MyTeamHeader({
         to the logo — narrow widths don't have room for both that and the
         page nav (see PLANNING.md). Only shown once there's a team to
         preview; with zero teams the "Add your team" button above covers it.
-        Same mauve-600 as the header so it reads as one matching bar. */}
-    {activeTeam && (
+        Same mauve-600 as the header so it reads as one matching bar. Scoped
+        to the Matchup Planner — that's the only page where switching teams
+        mid-task is useful; elsewhere it's just a redundant control. */}
+    {currentPage === "matchup-planner" && activeTeam && (
       <nav
         ref={mobileTeamNavRef}
         aria-label="Mobile team switcher"

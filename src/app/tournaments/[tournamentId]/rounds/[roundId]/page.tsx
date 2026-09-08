@@ -22,6 +22,7 @@ export default function RoundPage({ params }: RoundPageProps) {
   const { tournamentId, roundId } = use(params);
   const {
     teams,
+    activeTeams,
     activeTeamId,
     isLoading: isTeamsLoading,
     addTeam,
@@ -71,7 +72,7 @@ export default function RoundPage({ params }: RoundPageProps) {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isTeamsLoading}
         addTeam={addTeam}

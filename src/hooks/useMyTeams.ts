@@ -9,7 +9,13 @@ import {
   setActiveTeamId as persistActiveTeamId,
   syncMyTeamsWithCloud,
 } from "@/lib/storage/db";
-import { createTeam, validateTeamSize } from "@/lib/team";
+import {
+  archiveTeam as toArchived,
+  createTeam,
+  isTeamArchived,
+  unarchiveTeam as toActive,
+  validateTeamSize,
+} from "@/lib/team";
 import { REGULATIONS } from "@/data/regulations";
 import { useAuth } from "./useAuth";
 import type { Team } from "@/types";
@@ -42,10 +48,14 @@ export function useMyTeams() {
     load().then((loaded) => {
       if (cancelled) return;
       const sorted = sortByUpdatedAtAsc(loaded.teams);
+      // An archived team can never be "the active team" — this both picks
+      // the initial one and recovers if the persisted id points at a team
+      // that's since been archived (e.g. archived from another device).
       const resolvedActiveId =
-        loaded.activeTeamId && sorted.some((team) => team.id === loaded.activeTeamId)
+        loaded.activeTeamId &&
+        sorted.some((team) => team.id === loaded.activeTeamId && !isTeamArchived(team))
           ? loaded.activeTeamId
-          : (sorted[0]?.id ?? null);
+          : (sorted.find((team) => !isTeamArchived(team))?.id ?? null);
       setTeams(sorted);
       setActiveTeamIdState(resolvedActiveId);
       setIsLoading(false);
@@ -55,10 +65,19 @@ export function useMyTeams() {
     };
   }, [user]);
 
-  const setActiveTeamId = useCallback((id: string | null) => {
-    setActiveTeamIdState(id);
-    void persistActiveTeamId(id);
-  }, []);
+  const setActiveTeamId = useCallback(
+    (id: string | null) => {
+      // Belt-and-suspenders: the switcher never offers an archived team as a
+      // choice, but guard here too in case something else ever calls this
+      // directly with one.
+      if (id && teams.some((team) => team.id === id && isTeamArchived(team))) {
+        return;
+      }
+      setActiveTeamIdState(id);
+      void persistActiveTeamId(id);
+    },
+    [teams],
+  );
 
   /** Adds a new team from a paste and makes it active. Returns an error message, or null on success. */
   const addTeam = useCallback(
@@ -76,7 +95,9 @@ export function useMyTeams() {
 
       // Same reasoning as Opponents' duplicate check: prevents re-adding the
       // exact same team twice (e.g. re-pasting by habit) from silently
-      // creating two entries with different random ids.
+      // creating two entries with different random ids. Checked against
+      // archived teams too — re-pasting one you'd archived should surface
+      // the same message rather than silently making a second copy.
       const duplicate = teams.find(
         (team) => team.regulationId === regulationId && team.rawPaste === newTeam.rawPaste,
       );
@@ -139,17 +160,51 @@ export function useMyTeams() {
     (id: string) => {
       setTeams((prev) => prev.filter((team) => team.id !== id));
       if (activeTeamId === id) {
-        setActiveTeamId(teams.find((team) => team.id !== id)?.id ?? null);
+        setActiveTeamId(
+          teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null,
+        );
       }
       void deleteMyTeam(id);
     },
     [activeTeamId, teams, setActiveTeamId],
   );
 
-  const activeTeam = teams.find((team) => team.id === activeTeamId) ?? null;
+  /** Archives a team — reversible (see unarchiveTeam), it just moves the team off the switcher and onto the My Teams "Archived" tab. Reassigns activeTeamId if this was the active team, same fallback as removeTeam. */
+  const archiveTeam = useCallback(
+    (id: string) => {
+      const existing = teams.find((team) => team.id === id);
+      if (!existing) return;
+      const updated = toArchived(existing);
+      setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
+      void saveMyTeam(updated);
+      if (activeTeamId === id) {
+        setActiveTeamId(
+          teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null,
+        );
+      }
+    },
+    [teams, activeTeamId, setActiveTeamId],
+  );
+
+  const unarchiveTeam = useCallback(
+    (id: string) => {
+      const existing = teams.find((team) => team.id === id);
+      if (!existing) return;
+      const updated = toActive(existing);
+      setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
+      void saveMyTeam(updated);
+    },
+    [teams],
+  );
+
+  const activeTeams = teams.filter((team) => !isTeamArchived(team));
+  const archivedTeams = teams.filter((team) => isTeamArchived(team));
+  const activeTeam = activeTeams.find((team) => team.id === activeTeamId) ?? null;
 
   return {
     teams,
+    activeTeams,
+    archivedTeams,
     activeTeam,
     activeTeamId,
     isLoading,
@@ -157,6 +212,8 @@ export function useMyTeams() {
     editTeam,
     updateTeam,
     removeTeam,
+    archiveTeam,
+    unarchiveTeam,
     setActiveTeamId,
   };
 }

@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 import { TeamRoster } from "../TeamRoster";
 import { PokemonSlotPicker } from "../PokemonSlotPicker";
+import { RowActionsMenu } from "../RowActionsMenu";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import {
@@ -84,96 +85,6 @@ function GamePlanNotes({
         className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-transparent disabled:cursor-not-allowed disabled:opacity-60"
       />
     </>
-  );
-}
-
-/**
- * Its own component (rather than one shared menu reused at both the mobile
- * and desktop render sites below) so each site's trigger gets its own ref
- * and open state — the same ref object can't be shared between two
- * simultaneously-mounted DOM nodes.
- */
-function OpponentRowMenu({
-  onEdit,
-  onRemove,
-}: {
-  onEdit: () => void;
-  onRemove: () => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-      const clickedTrigger = menuRef.current?.contains(target);
-      const clickedDropdown = dropdownRef.current?.contains(target);
-      if (!clickedTrigger && !clickedDropdown) {
-        setIsOpen(false);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  return (
-    <div ref={menuRef} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setIsOpen((open) => !open)}
-        aria-haspopup="menu"
-        aria-expanded={isOpen}
-        aria-label="Opponent options"
-        title="More options"
-        className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
-      >
-        <Icon name={IconName.MoreVert} size={16} />
-      </button>
-      {isOpen && (
-        <div
-          ref={dropdownRef}
-          role="menu"
-          aria-label="Opponent options"
-          className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onEdit();
-              setIsOpen(false);
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100"
-          >
-            <Icon name={IconName.Edit} size={16} />
-            Edit
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onRemove();
-              setIsOpen(false);
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-          >
-            <Icon name={IconName.Delete} size={16} />
-            Remove
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -310,7 +221,7 @@ export function OpponentCard({
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <OpponentRowMenu onEdit={onEdit} onRemove={onRemove} />
+                <RowActionsMenu onEdit={onEdit} onRemove={onRemove} label="Opponent options" />
                 <CollapsibleTrigger
                   aria-label={
                     isExpanded ? "Collapse team details" : "Expand team details"
@@ -369,7 +280,7 @@ export function OpponentCard({
                 {/* "Open in Damage Calculator" link hidden — feature has known
                     bugs, not ready to publish yet. Re-add once stable (see
                     PLANNING.md). */}
-                <OpponentRowMenu onEdit={onEdit} onRemove={onRemove} />
+                <RowActionsMenu onEdit={onEdit} onRemove={onRemove} label="Opponent options" />
               </div>
             </div>
             <TeamRoster pokemon={opponent.team.pokemon} isMatch={isMatch} />

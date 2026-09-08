@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Team, Tournament } from "@/types";
 import { getTournamentRecord } from "@/lib/tournament";
+import { isTeamArchived } from "@/lib/team";
 import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 
 interface TournamentsSectionProps {
   tournaments: Tournament[];
+  /** Every team, active or archived — an existing tournament still needs to resolve/display the team it was created with even if that team's since been archived (see `activeTeams` below for the create-tournament picker, which excludes them). */
   teams: Team[];
   isLoading: boolean;
   addTournament: (name: string, teamId: string, regulationId: string) => Tournament;
@@ -25,19 +27,22 @@ export function TournamentsSection({
   removeTournament,
 }: TournamentsSectionProps) {
   const router = useRouter();
+  // Only active teams are offered when starting a new tournament — same
+  // reasoning as the team switcher (see PLANNING.md).
+  const activeTeams = teams.filter((team) => !isTeamArchived(team));
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState("");
-  const [teamId, setTeamId] = useState(teams[0]?.id ?? "");
+  const [teamId, setTeamId] = useState(activeTeams[0]?.id ?? "");
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   function openAdd() {
     setName("");
-    setTeamId(teams[0]?.id ?? "");
+    setTeamId(activeTeams[0]?.id ?? "");
     setIsAdding(true);
   }
 
   function handleAddSubmit() {
-    const team = teams.find((t) => t.id === teamId);
+    const team = activeTeams.find((t) => t.id === teamId);
     if (!team) return;
     const tournament = addTournament(name, team.id, team.regulationId);
     setIsAdding(false);
@@ -55,7 +60,7 @@ export function TournamentsSection({
         <button
           type="button"
           onClick={openAdd}
-          disabled={teams.length === 0}
+          disabled={activeTeams.length === 0}
           className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Add tournament
@@ -83,7 +88,7 @@ export function TournamentsSection({
                 onChange={(event) => setTeamId(event.target.value)}
                 className="rounded-lg border border-mauve-300 bg-white p-2 text-sm text-mauve-900"
               >
-                {teams.map((team) => (
+                {activeTeams.map((team) => (
                   <option key={team.id} value={team.id}>
                     {team.name}
                   </option>
@@ -146,7 +151,7 @@ export function TournamentsSection({
 
       {isLoading ? (
         <p className="text-sm text-mauve-500">Loading…</p>
-      ) : teams.length === 0 ? (
+      ) : activeTeams.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-mauve-300 bg-mauve-50 px-6 py-14 text-center text-sm text-mauve-600">
           Add a team on the My Teams page first — a tournament tracks your rounds with one of your
           saved teams.

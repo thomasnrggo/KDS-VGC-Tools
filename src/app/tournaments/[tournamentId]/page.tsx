@@ -31,6 +31,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
   const router = useRouter();
   const {
     teams,
+    activeTeams,
     activeTeamId,
     isLoading: isTeamsLoading,
     addTeam,
@@ -59,7 +60,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isTeamsLoading}
         addTeam={addTeam}

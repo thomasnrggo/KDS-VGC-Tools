@@ -47,26 +47,26 @@ export function PokemonReportRow({
 
   return (
     <div className="grid grid-cols-1 gap-3 border-b border-mauve-300/60 p-4 last:border-b-0 md:grid-cols-[100px_150px_170px_1fr] md:items-start md:gap-4">
-      <div className="flex flex-col items-center gap-1.5 rounded-lg bg-white/60 p-2.5 text-center">
-        <span className="relative h-16 w-16 shrink-0">
+      <div className="flex flex-col items-center gap-1.5 text-center">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-mauve-500/20">
           <PokemonSprite species={pokemon.species} item={pokemon.item} fill />
           {pokemon.item && (
             <span className="absolute -bottom-1 -right-1">
               <ItemIcon item={pokemon.item} size={18} />
             </span>
           )}
-        </span>
+        </div>
         <div className="flex min-w-0 flex-col items-center">
           <span className="truncate text-sm font-semibold text-mauve-900">
             {pokemon.species}
           </span>
           {pokemon.ability && (
-            <span className="truncate text-xs text-mauve-600">
+            <span className="truncate text-xs text-mauve-500">
               {pokemon.ability}
             </span>
           )}
           {pokemon.item && (
-            <span className="truncate text-xs font-bold text-mauve-600">
+            <span className="truncate text-xs font-bold text-mauve-700">
               {pokemon.item}
             </span>
           )}

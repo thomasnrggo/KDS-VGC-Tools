@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useTournaments } from "@/hooks/useTournaments";
@@ -13,16 +13,26 @@ import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { createEmptyCombination } from "@/constants";
 import { computeTeamUsageStats } from "@/lib/tournament";
+import { isTeamArchived } from "@/lib/team";
 import type { TeamCombination } from "@/types";
 
 interface TeamReportPageProps {
   params: Promise<{ teamId: string }>;
 }
 
+type ReportTab = "report" | "strategy" | "stats";
+
+const TABS: { id: ReportTab; label: string }[] = [
+  { id: "report", label: "Team report" },
+  { id: "strategy", label: "Strategy" },
+  { id: "stats", label: "Tournament stats" },
+];
+
 export default function TeamReportPage({ params }: TeamReportPageProps) {
   const { teamId } = use(params);
   const {
     teams,
+    activeTeams,
     activeTeamId,
     isLoading,
     addTeam,
@@ -30,12 +40,14 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
     removeTeam,
     setActiveTeamId,
     updateTeam,
+    unarchiveTeam,
   } = useMyTeams();
   const { tournaments } = useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
 
   const team = teams.find((t) => t.id === teamId) ?? null;
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
+  const [activeTab, setActiveTab] = useState<ReportTab>("report");
 
   const notesRef = useRef<HTMLTextAreaElement>(null);
   const weaknessesRef = useRef<HTMLTextAreaElement>(null);
@@ -83,7 +95,7 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isLoading}
         addTeam={addTeam}
@@ -128,132 +140,195 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
             </h1>
           </div>
 
-          <div className="grid w-full grid-cols-1 gap-6 xl:grid-cols-2">
-            <div className="flex flex-col overflow-hidden rounded-lg border border-mauve-200">
-              {team.pokemon.map((mon, index) => (
-                <div key={`${mon.species}-${index}`} className={index % 2 === 0 ? "bg-mauve-200" : "bg-mauve-100"}>
-                  <PokemonReportRow
-                    pokemon={mon}
-                    note={team.pokemonNotes?.[index] ?? ""}
-                    onNoteChange={(note) => updatePokemonNote(index, note)}
+          {isTeamArchived(team) && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-mauve-200 bg-mauve-50 px-4 py-3">
+              <span className="flex items-center gap-2 text-sm text-mauve-700">
+                <Icon name={IconName.Archive} size={18} className="shrink-0 text-mauve-500" />
+                This team is archived — it&apos;s hidden from the team switcher and can&apos;t be
+                set active until you unarchive it.
+              </span>
+              <button
+                type="button"
+                onClick={() => unarchiveTeam(team.id)}
+                className="shrink-0 rounded-full border border-mauve-300 px-4 py-1.5 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              >
+                Unarchive
+              </button>
+            </div>
+          )}
+
+          <div role="tablist" aria-label="Team report sections" className="flex gap-1.5">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-mauve-600 text-white"
+                    : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "report" && (
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              {[0, 1].map((column) => {
+                const half = Math.ceil(team.pokemon.length / 2);
+                const start = column === 0 ? 0 : half;
+                const end = column === 0 ? half : team.pokemon.length;
+                const slice = team.pokemon.slice(start, end);
+                if (slice.length === 0) return null;
+                return (
+                  <div
+                    key={column}
+                    className="flex flex-col overflow-hidden rounded-lg border border-mauve-200"
+                  >
+                    {slice.map((mon, i) => {
+                      const index = start + i;
+                      return (
+                        <div
+                          key={`${mon.species}-${index}`}
+                          className={index % 2 === 0 ? "bg-mauve-200" : "bg-mauve-100"}
+                        >
+                          <PokemonReportRow
+                            pokemon={mon}
+                            note={team.pokemonNotes?.[index] ?? ""}
+                            onNoteChange={(note) => updatePokemonNote(index, note)}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {activeTab === "strategy" && (
+            <div className="flex flex-col gap-3 rounded-lg border border-mauve-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-mauve-900">
+                  Common combinations
+                </h2>
+                <button
+                  type="button"
+                  onClick={addCombination}
+                  aria-label="Add combination"
+                  title="Add combination"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+                >
+                  <Icon name={IconName.Add} size={18} />
+                </button>
+              </div>
+              {(team.combinations ?? []).length === 0 ? (
+                <p className="text-sm text-mauve-500">
+                  No combinations yet — add one to save a lead/back pairing you like using with
+                  this team.
+                </p>
+              ) : (
+                (team.combinations ?? []).map((combination) => (
+                  <TeamCombinationCard
+                    key={combination.id}
+                    combination={combination}
+                    teamPokemon={team.pokemon}
+                    onUpdate={(updater) => updateCombination(combination.id, updater)}
+                    onRemove={() => removeCombination(combination.id)}
+                  />
+                ))
+              )}
+
+              <div className="grid grid-cols-1 gap-4 border-t border-mauve-200 pt-4 md:grid-cols-2">
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+                    Notes
+                  </h2>
+                  <textarea
+                    ref={notesRef}
+                    value={team.notes ?? ""}
+                    onChange={(event) =>
+                      updateTeam(teamId, (t) => ({ ...t, notes: event.target.value }))
+                    }
+                    rows={3}
+                    placeholder="How does this team play? What's the game plan?"
+                    aria-label="Team notes"
+                    className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
                   />
                 </div>
-              ))}
-            </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 rounded-lg border border-mauve-200 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-mauve-900">
-                    Common combinations
+                <div className="flex flex-col gap-1">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+                    Weaknesses
                   </h2>
-                  <button
-                    type="button"
-                    onClick={addCombination}
-                    aria-label="Add combination"
-                    title="Add combination"
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
-                  >
-                    <Icon name={IconName.Add} size={18} />
-                  </button>
+                  <textarea
+                    ref={weaknessesRef}
+                    value={team.weaknesses ?? ""}
+                    onChange={(event) =>
+                      updateTeam(teamId, (t) => ({ ...t, weaknesses: event.target.value }))
+                    }
+                    rows={3}
+                    placeholder="What does this team struggle against?"
+                    aria-label="Team weaknesses"
+                    className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+                  />
                 </div>
-                {(team.combinations ?? []).length === 0 ? (
-                  <p className="text-sm text-mauve-500">
-                    No combinations yet — add one to save a lead/back pairing you like using with
-                    this team.
-                  </p>
-                ) : (
-                  (team.combinations ?? []).map((combination) => (
-                    <TeamCombinationCard
-                      key={combination.id}
-                      combination={combination}
-                      teamPokemon={team.pokemon}
-                      onUpdate={(updater) => updateCombination(combination.id, updater)}
-                      onRemove={() => removeCombination(combination.id)}
-                    />
-                  ))
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1 rounded-lg border border-mauve-200 bg-white p-4">
-                <h2 className="text-sm font-semibold text-mauve-900">Notes</h2>
-                <textarea
-                  ref={notesRef}
-                  value={team.notes ?? ""}
-                  onChange={(event) =>
-                    updateTeam(teamId, (t) => ({ ...t, notes: event.target.value }))
-                  }
-                  rows={3}
-                  placeholder="How does this team play? What's the game plan?"
-                  aria-label="Team notes"
-                  className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1 rounded-lg border border-mauve-200 bg-white p-4">
-                <h2 className="text-sm font-semibold text-mauve-900">Weaknesses</h2>
-                <textarea
-                  ref={weaknessesRef}
-                  value={team.weaknesses ?? ""}
-                  onChange={(event) =>
-                    updateTeam(teamId, (t) => ({ ...t, weaknesses: event.target.value }))
-                  }
-                  rows={3}
-                  placeholder="What does this team struggle against?"
-                  aria-label="Team weaknesses"
-                  className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 rounded-lg border border-mauve-200 bg-white p-4">
-                <h2 className="text-sm font-semibold text-mauve-900">Tournament stats</h2>
-                {usageStats.every((stat) => stat.timesPicked === 0) ? (
-                  <p className="text-sm text-mauve-500">
-                    No games logged with this team yet — Pokémon usage and win/loss stats
-                    accumulate here as you log{" "}
-                    <Link href="/tournaments" className="text-mauve-600 hover:underline">
-                      tournament
-                    </Link>{" "}
-                    games.
-                  </p>
-                ) : (
-                  <table className="w-full text-xs text-mauve-700">
-                    <thead>
-                      <tr className="text-mauve-500">
-                        <th className="py-1 text-left font-normal">Pokémon</th>
-                        <th className="text-right font-normal">Picked</th>
-                        <th className="text-right font-normal">Wins</th>
-                        <th className="text-right font-normal">Losses</th>
-                        <th className="text-right font-normal">Win %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {usageStats.map((stat) => (
-                        <tr key={stat.index} className="border-t border-mauve-100">
-                          <td className="flex items-center gap-2 py-1.5">
-                            <span className="relative h-6 w-6 shrink-0">
-                              <PokemonSprite species={stat.pokemon.species} fill />
-                            </span>
-                            <span className="truncate font-medium text-mauve-900">
-                              {stat.pokemon.species}
-                            </span>
-                          </td>
-                          <td className="text-right">{stat.timesPicked}</td>
-                          <td className="text-right text-green-700">{stat.wins}</td>
-                          <td className="text-right text-red-600">{stat.losses}</td>
-                          <td className="text-right font-medium">
-                            {stat.timesPicked > 0
-                              ? `${Math.round((stat.wins / stat.timesPicked) * 100)}%`
-                              : "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
               </div>
             </div>
-          </div>
+          )}
+
+          {activeTab === "stats" && (
+            <div className="flex flex-col gap-2 rounded-lg border border-mauve-200 bg-white p-4">
+              {usageStats.every((stat) => stat.timesPicked === 0) ? (
+                <p className="text-sm text-mauve-500">
+                  No games logged with this team yet — Pokémon usage and win/loss stats
+                  accumulate here as you log{" "}
+                  <Link href="/tournaments" className="text-mauve-600 hover:underline">
+                    tournament
+                  </Link>{" "}
+                  games.
+                </p>
+              ) : (
+                <table className="w-full text-xs text-mauve-700">
+                  <thead>
+                    <tr className="text-mauve-500">
+                      <th className="py-1 text-left font-normal">Pokémon</th>
+                      <th className="text-right font-normal">Picked</th>
+                      <th className="text-right font-normal">Wins</th>
+                      <th className="text-right font-normal">Losses</th>
+                      <th className="text-right font-normal">Win %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usageStats.map((stat) => (
+                      <tr key={stat.index} className="border-t border-mauve-100">
+                        <td className="flex items-center gap-2 py-1.5">
+                          <span className="relative h-6 w-6 shrink-0">
+                            <PokemonSprite species={stat.pokemon.species} fill />
+                          </span>
+                          <span className="truncate font-medium text-mauve-900">
+                            {stat.pokemon.species}
+                          </span>
+                        </td>
+                        <td className="text-right">{stat.timesPicked}</td>
+                        <td className="text-right text-green-700">{stat.wins}</td>
+                        <td className="text-right text-red-600">{stat.losses}</td>
+                        <td className="text-right font-medium">
+                          {stat.timesPicked > 0
+                            ? `${Math.round((stat.wins / stat.timesPicked) * 100)}%`
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -15,6 +15,7 @@ import { OpponentForm } from "../OpponentForm";
 import { OpponentCard } from "../OpponentCard";
 import { BulkImportForm } from "../BulkImportForm";
 import { Modal } from "../Modal";
+import { SearchField } from "../SearchField";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 
@@ -141,67 +142,6 @@ function OpponentsMoreMenu({
   );
 }
 
-/**
- * Its own component (rather than one shared input reused at both the mobile
- * and desktop render sites below) so each site's input gets its own
- * autofocus-on-mount ref — the same ref object can't be shared between two
- * simultaneously-mounted DOM nodes.
- */
-function OpponentSearchField({
-  query,
-  onQueryChange,
-  onClose,
-  autoFocus = false,
-  className,
-}: {
-  query: string;
-  onQueryChange: (value: string) => void;
-  /** Omit on desktop, where the field is always visible and there's nothing to "close" — the trailing button then only clears, and only once there's a query. */
-  onClose?: () => void;
-  /** Only for the mobile field, which mounts in response to the user tapping the search icon — desktop's is always mounted, so autofocusing it would steal focus on every render. */
-  autoFocus?: boolean;
-  className?: string;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
-  }, [autoFocus]);
-
-  return (
-    <div className={`relative ${className ?? ""}`}>
-      <Icon
-        name={IconName.Search}
-        size={18}
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mauve-400"
-      />
-      <input
-        ref={inputRef}
-        type="text"
-        value={query}
-        onChange={(event) => onQueryChange(event.target.value)}
-        placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
-        aria-label="Search opponents by Pokémon or item"
-        className="w-full rounded-full border border-mauve-300 bg-white py-2 pl-9 pr-9 text-sm text-mauve-800 placeholder:text-mauve-400 focus:outline-none focus:ring-2 focus:ring-mauve-400"
-      />
-      {/* Doubles as "close search" (once the query is empty) when onClose is
-          given — the leading search-icon toggle button, the only other way
-          to close it, is hidden while the field is showing since it's
-          redundant with this field's own icon (see PLANNING.md). */}
-      {(query || onClose) && (
-        <button
-          type="button"
-          onClick={() => (query ? onQueryChange("") : onClose?.())}
-          aria-label={query ? "Clear search" : "Close search"}
-          title={query ? "Clear search" : "Close search"}
-          className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
-        >
-          <Icon name={IconName.Close} size={14} />
-        </button>
-      )}
-    </div>
-  );
-}
 
 export function OpponentsSection({
   myTeamPokemon,
@@ -401,9 +341,11 @@ export function OpponentsSection({
         <div className="flex items-center gap-2">
           {searchToggleButton}
           {isSearchOpen && canSearch && (
-            <OpponentSearchField
+            <SearchField
               query={searchQuery}
               onQueryChange={setSearchQuery}
+              placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
+              ariaLabel="Search opponents by Pokémon or item"
               onClose={toggleSearch}
               autoFocus
               className="min-w-0 flex-1"
@@ -468,9 +410,11 @@ export function OpponentsSection({
           room for it; mobile still shows a toggle-triggered version inline
           in the row above instead (see PLANNING.md). */}
       {canSearch && (
-        <OpponentSearchField
+        <SearchField
           query={searchQuery}
           onQueryChange={setSearchQuery}
+          placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
+          ariaLabel="Search opponents by Pokémon or item"
           className="hidden md:block"
         />
       )}

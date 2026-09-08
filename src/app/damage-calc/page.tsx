@@ -8,7 +8,7 @@ import { DamageCalculator } from "@/components/DamageCalculator";
 
 export default function DamageCalcPage() {
   const {
-    teams,
+    activeTeams,
     activeTeamId,
     isLoading,
     addTeam,
@@ -21,7 +21,7 @@ export default function DamageCalcPage() {
   return (
     <div className="flex flex-1 flex-col">
       <MyTeamHeader
-        teams={teams}
+        teams={activeTeams}
         activeTeamId={activeTeamId}
         isLoading={isLoading}
         addTeam={addTeam}
