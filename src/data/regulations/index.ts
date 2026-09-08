@@ -2,11 +2,13 @@ import {
   REGULATION_M_B_SPECIES_KEYS,
   REGULATION_M_B_HELD_ITEMS,
   REGULATION_M_B_BERRIES,
+  megaStoneItemsForSpecies as megaStoneItemsForSpeciesMB,
 } from "./regulationMB";
 import {
   REGULATION_M_A_SPECIES_KEYS,
   REGULATION_M_A_HELD_ITEMS,
   REGULATION_M_A_BERRIES,
+  megaStoneItemsForSpeciesMA,
 } from "./regulationMA";
 
 export interface Regulation {
@@ -14,8 +16,10 @@ export interface Regulation {
   label: string;
   /** src/data/species.json keys legal to add under this regulation. */
   speciesKeys: string[];
-  /** Legal non-Mega-Stone held items (regular held items + Berries) — Mega Stones are handled separately per-species, see regulationMB.ts's megaStoneItemsForSpecies (and regulationMA.ts's megaStoneItemsForSpeciesMA). */
+  /** Legal non-Mega-Stone held items (regular held items + Berries) — Mega Stones are handled separately per-species, see megaStoneItemsForSpecies below. */
   items: string[];
+  /** Legal Mega Stone display name(s) for a species.json key under this regulation (e.g. "charizard" -> ["Charizardite X", "Charizardite Y"]); empty if that species has no legal Mega form here. */
+  megaStoneItemsForSpecies: (speciesKey: string) => string[];
 }
 
 /**
@@ -36,12 +40,14 @@ export const REGULATIONS: Regulation[] = [
     label: "Regulation M-B",
     speciesKeys: REGULATION_M_B_SPECIES_KEYS,
     items: [...REGULATION_M_B_HELD_ITEMS, ...REGULATION_M_B_BERRIES],
+    megaStoneItemsForSpecies: megaStoneItemsForSpeciesMB,
   },
   {
     id: "regulation-m-a",
     label: "Regulation M-A",
     speciesKeys: REGULATION_M_A_SPECIES_KEYS,
     items: [...REGULATION_M_A_HELD_ITEMS, ...REGULATION_M_A_BERRIES],
+    megaStoneItemsForSpecies: megaStoneItemsForSpeciesMA,
   },
 ];
 

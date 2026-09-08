@@ -35,7 +35,7 @@ interface MyTeamHeaderProps {
   removeTeam: (id: string) => void;
   setActiveTeamId: (id: string | null) => void;
   /** Which page this header is rendered on — swaps the nav links so the current page never links to itself. */
-  currentPage: "matchup-planner" | "damage-calc" | "teams" | "tournaments";
+  currentPage: "matchup-planner" | "damage-calc" | "teams" | "tournaments" | "speed-tiers";
   authUser: User | null;
   isAuthLoading: boolean;
   onSignIn: () => void;
@@ -46,6 +46,7 @@ const NAV_LINKS = [
   { page: "matchup-planner", href: "/matchup-planner", label: "Matchup Planner" },
   { page: "teams", href: "/teams", label: "My Teams" },
   { page: "tournaments", href: "/tournaments", label: "Tournaments" },
+  { page: "speed-tiers", href: "/speed-tiers", label: "Speed Tiers" },
   // Damage Calculator nav link hidden — feature has known bugs, not ready to
   // publish yet. Re-add here once it's stable (see PLANNING.md).
 ] as const;

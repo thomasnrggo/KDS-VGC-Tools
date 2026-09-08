@@ -33,8 +33,8 @@ function lookupBaseStats(key: string): BaseStats | undefined {
   return BASE_STATS_DATA[key] ?? BASE_STATS_DATA[SPECIES_ALIASES[key]];
 }
 
-/** Same species+item resolution as resolveSpeciesImage, so stats and sprite always agree on the form. */
-function resolveBaseStats(species: string, item?: string): BaseStats | undefined {
+/** Same species+item resolution as resolveSpeciesImage, so stats and sprite always agree on the form. Exported for callers (e.g. the Speed Tiers table) that need a form's raw base stats, not just its computed Level 50 stats. */
+export function resolveBaseStats(species: string, item?: string): BaseStats | undefined {
   for (const key of candidateFormKeys(species, item)) {
     const entry = lookupBaseStats(key);
     if (entry) return entry;

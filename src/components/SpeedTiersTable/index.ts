@@ -1,0 +1,1 @@
+export { SpeedTiersTable } from "./SpeedTiersTable";

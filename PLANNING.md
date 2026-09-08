@@ -2349,6 +2349,55 @@ leads/backs) is complete and working end to end.
       full create-a-tournament-through-log-a-game-through-see-usage-stats flow verification is left for
       the user to confirm in their own actively-focused browser, where this class of throttling doesn't
       apply.
+- [x] **Phase 13 — Speed Tiers.** Per a 2026-09-08 request modeled on pikalytics.com/speed-tiers: a
+      static reference table, scoped to one regulation, listing every legal species' Speed at the
+      handful of spreads that actually matter for outspeed math — Base, Max (32 Stat Points + a
+      Speed-boosting nature), Neutral +32 (32 SP, neutral nature), Neutral 0 (0 SP, neutral nature), Max
+      Scarf, and Neutral +32 Scarf (the same two ×1.5 Choice Scarf). This is deliberately *not* the
+      still-out-of-scope "cross-team speed-tier comparison charts" bullet above (§2's "Deliberately out
+      of scope" list) — that one means overlaying a user's own team/opponent builds on the chart; this
+      is a plain per-regulation lookup table, no team data involved.
+    - Confirmed two scope forks up front via AskUserQuestion rather than guessing: Mega Evolution forms
+      initially didn't get their own row (a Mega Stone and Choice Scarf can't be held at once, which
+      would leave both Scarf columns meaningless on a Mega row), and the page is a full `/speed-tiers`
+      route with its own nav link, not folded into an existing page or left unlinked. **Same-day
+      follow-up:** Mega rows added after all, per a direct request — one extra row per legal Mega Stone
+      a species can hold, both Scarf columns rendered as "–" (`null` in `SpeedTierRow`) rather than
+      omitted, since a Mega row still has a real answer for every other column.
+    - **`src/lib/stats/computeSpeedTiers.ts`** (`computeSpeedTierRows(speciesKeys,
+      megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation — it calls the existing
+      `calculateFinalStats` once per column per row with a synthetic `ParsedPokemon` (Jolly for the
+      "positive Speed nature" columns, Hardy for "neutral" — arbitrary representatives, since every
+      Speed-boosting/neutral nature is equivalent for the Speed stat alone) and reads `.spe` off each
+      result, rather than duplicating the Level 50 stat formula. A Mega row reuses the exact same
+      species+item resolution `calculateFinalStats`/`PokemonSprite` already use elsewhere (base species
+      name + the Mega Stone as `item`), so its stats and sprite always agree on the form — no new
+      Mega-specific lookup logic. `resolveBaseStats` (previously private to `calculateFinalStats.ts`)
+      is now exported, reused here to read a Mega form's own base Speed (e.g. Mega Garchomp's 92 vs.
+      base Garchomp's 102) for the Base column, rather than duplicating that resolution. `Regulation`
+      (`src/data/regulations/index.ts`) gained a `megaStoneItemsForSpecies` field — each regulation
+      already had its own same-shaped function (`regulationMB.ts`'s `megaStoneItemsForSpecies`,
+      `regulationMA.ts`'s `megaStoneItemsForSpeciesMA`) that nothing before this wired into the
+      `REGULATIONS` array itself; putting it on the `Regulation` object means any per-regulation caller
+      (this table, and `RosterPokemonPicker` in the future) can call `regulation.megaStoneItemsForSpecies(key)`
+      instead of branching on which regulation it is. Own unit tests (`computeSpeedTiers.test.ts`) cover
+      a no-Mega species, a single-Mega species (Garchomp, cross-checked against
+      `calculateFinalStats.test.ts`'s existing reference values), and an X/Y two-Mega species
+      (Charizard).
+    - **`SpeedTiersTable`** (`src/components/SpeedTiersTable/`): sortable by any column (click to sort,
+      click again to flip direction), defaulting to Max Speed descending like pikalytics' own default;
+      a `SearchField` (reused from Opponents/My Teams) filters by species name. Wrapped in a
+      horizontally-scrolling container (7 columns doesn't fit narrow viewports) with a vertically
+      scrolling, sticky-header inner container so a ~235-row table stays navigable without pushing the
+      whole page's scroll around.
+    - **`/speed-tiers` page**: same `MyTeamHeader` + regulation `<select>` pattern as
+      `OpponentsSection`'s regulation dropdown (reused directly, not reinvented). `MyTeamHeader`'s
+      `currentPage` union and `NAV_LINKS` both gained a `"speed-tiers"` entry, labeled "Speed Tiers".
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (195/195, +4 new) all clean, plus live
+      browser checks both before and after the Mega follow-up — sorted rendering, sorting, search, the
+      Garchomp row matching the unit test's hand-computed values, and (after the follow-up) searching
+      "charizard" showing Charizard/Mega Charizard X/Mega Charizard Y with matching Base/Max/Neutral
+      columns and "–" in both Scarf columns on the two Mega rows.
 
 ## 8. Attribution
 
