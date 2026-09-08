@@ -1989,7 +1989,366 @@ leads/backs) is complete and working end to end.
       confirming the pull-and-merge path executes successfully against the real project — a database already
       exists and Google Sign-In is enabled there. Signed-out behavior double-checked separately: local
       add/remove team and opponent flows still work with zero Firestore calls attempted, confirming the sync
-      layer is fully inert until sign-in.
+      layer is fully inert until sign-in. Fixed one bug found through real use after this shipped:
+      Firestore's `setDoc()` throws on any field whose value is literally `undefined` (not `null`) —
+      several optional fields across Team/Opponent/ParsedPokemon (`pokepasteUrl`, `item`, `ability`,
+      `nature`, `evs`, ...) are exactly that when unset, so any record missing one tripped this the
+      moment it tried to sync. Fixed by initializing Firestore with `ignoreUndefinedProperties: true`
+      (`src/lib/firebase/firestore.ts`) rather than sanitizing every optional field at every call site —
+      it silently omits `undefined` fields instead, matching how they already behave in IndexedDB. Also
+      swapped the cloud-sync `.catch(() => {})` blocks (`db.ts`, both hooks) for `console.error` logging
+      — non-blocking either way, but silently swallowing failures is exactly why the above bug went
+      unnoticed until a real permissions-rule gap surfaced it. Verified live against the real project both
+      times: first catching the exact `Missing or insufficient permissions` error via the new logging
+      (rules hadn't been deployed yet), then confirming a real edit (opponent with no `pokepasteUrl`) saved
+      cleanly after the `ignoreUndefinedProperties` fix, and separately confirming a lead/back pick + game
+      plan note round-tripped into `Opponent.plansByTeamId` in the live Firestore console exactly as set in
+      the UI (proving matchup plans sync as part of the same Opponent document, not a separate concern).
+- [x] **Regulation → Season data model, and an admin-editable default-team-set list.** Per a 2026-08-22
+    request: formalizes a relationship that already existed informally — `Regulation` (M-A, M-B; already
+    modeled in `src/data/regulations/regulationMB.ts` as static, hand-authored legality data — confirmed
+    with the user that legality doesn't vary within a regulation, so this stays untouched) contains
+    multiple **Seasons** (M-1, M-2, ... M-5 — Aug 5–Sep 9 2026 being current), each a dated snapshot
+    carrying its own default "meta" team-set. This *replaces* `src/data/presets/`'s old flat, ad-hoc
+    `TeamPreset` (`{id, label, rawPaste}`, one static entry, `regulation-m-b-m-4`, requiring a code change
+    + redeploy to update) rather than adding a parallel concept — a preset was really just an unlabeled
+    season snapshot all along, so `Season` (`src/types/season.ts`: `{id, regulationId, label, startDate,
+    endDate, rawPaste}`) absorbs it directly.
+    - **Storage**: new top-level (not `users/{uid}/`-scoped — shared/global, not per-user) Firestore
+      collection `seasons/{seasonId}` — public read (every visitor needs it for the existing "Load/Use
+      default set" buttons, signed in or not), write locked to a single hardcoded admin uid in
+      `firestore.rules` (kept in sync with a new `NEXT_PUBLIC_ADMIN_UID` env var used for the client-side
+      page gate — real enforcement is the rule, the env var only hides the page from everyone else).
+      `src/lib/firebase/seasons.ts` (`getSeasons`/`saveSeason`/`deleteSeason`) is plain CRUD, no
+      tombstone/merge logic — unlike the per-user sync work above, this is a single admin-managed list,
+      not something reconciled across devices.
+    - **Admin page**: `/admin/seasons` (`src/app/admin/seasons/page.tsx`) — gated on
+      `user?.uid === NEXT_PUBLIC_ADMIN_UID`, shows a sign-in prompt if signed out and a plain "Not
+      authorized" message for any other signed-in account. A form (regulation dropdown from
+      `REGULATIONS`, label, start/end date, rawPaste textarea) plus a list of existing seasons with
+      Edit/Delete (Delete behind the existing `Modal`-based confirm pattern).
+    - **Matchup Planner UX**: `useSeasons()` (`src/hooks/useSeasons.ts`) loads the public season list,
+      falling back to a small static seed (`src/data/seasons/index.ts`'s `FALLBACK_SEASONS`, carrying the
+      old M-4 raw data forward with placeholder dates — real dates weren't tracked before this) if the
+      read fails, so the buttons never just disappear offline. Computes `currentSeasonId` — whichever
+      season's `[startDate, endDate]` covers today, or the most recently-started one if today falls in a
+      gap between seasons. `OpponentsSection.tsx`'s two "Load/Use default set" button rows now render one
+      button per season (sorted newest-first) labeled with the season, current one marked "(current)" —
+      switching seasons is just clicking a different season's button, rather than a separate selector
+      control, since loading that season's team set is the only season-dependent behavior in the Matchup
+      Planner today.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169 — includes the relocated
+      `regulationMbM4.test.ts`, confirming the data-directory move didn't break anything), and `npm run
+      build` (new `/admin/seasons` route builds and prerenders) all clean. Live browser check: signed in
+      as the admin account, confirmed the page renders the form (client-side gate passes); before the
+      updated `firestore.rules` were deployed, confirmed the exact `Missing or insufficient permissions`
+      error surfaces via the new console logging (same verification pattern as the sync-rules bug above)
+      rather than failing silently.
+    - **Fast follow, same day, found through real use once rules were deployed and a real M-5 season was
+      added**: two bugs. (1) `OpponentsSection.tsx`'s "Load default set" button in the "⋮" menu had
+      inherited the old `TeamPreset` code's `opponents.length === 0` gate unchanged — meaning the season
+      switcher was invisible the moment you had even one opponent already, which defeats the entire point
+      of a switcher. Removed that condition (the onboarding empty-state's copy of the buttons keeps it
+      correctly, since that block itself only renders with zero opponents) — loading a season is additive
+      (`addOpponentsFromFolder` prepends, never replaces), so showing it unconditionally is safe. (2) The
+      real M-5 data entered via the admin form turned out to be a plain single-team Showdown paste, not
+      the "Team Folder" format (`=== [format] Title ===` headers) `parseTeamFolder` requires — it saved
+      successfully (valid as far as the Season type/Firestore write were concerned) but silently produced
+      zero importable teams the moment someone tried to load it, surfacing only as the pre-existing
+      generic "Couldn't import any teams from that paste" message with no indication of *why*. Rather than
+      leave this as a trap for the next season entry, `/admin/seasons` now: runs the pasted text through
+      `parseTeamFolder` live and shows a "N teams detected" hint under the textarea as you type, and
+      blocks the save entirely with a specific error message (not just the generic one) if that comes back
+      zero — catching the mistake at data-entry time instead of at import time. Verified: `npx tsc
+      --noEmit`, `npm run lint` clean; live browser check reproduced both bugs first (season switcher
+      confirmed invisible with existing opponents present, "0 teams detected" confirmed live against the
+      real malformed M-5 doc via its Edit form) before fixing, then confirmed the switcher now appears
+      unconditionally and correctly loads M-5's data once re-entered in the right format (left the actual
+      re-entry to the user, since only they know the real M-5 team list).
+- [x] **Regulation tagging on opponents, and a visual regulation switcher.** Per a 2026-08-22 request:
+    "switching regulation/season" so far only meant loading a season's default team-set — this adds the
+    other half, filtering *existing* opponents (and their per-team game-plan notes, which live nested
+    inside the same Opponent document) by which regulation they belong to, since nothing tagged opponents
+    by regulation at all before this. Confirmed scope with the user first: tag by **regulation only**
+    (M-A/M-B), not per-season — legality doesn't vary by season, and this is the coarser, rarer-changing
+    axis; and existing untagged opponents get **migrated to the current regulation** rather than left
+    unfiltered, so nothing looks like it silently vanished.
+    - `Opponent` gained a required `regulationId: string` field (`src/types/opponent.ts`).
+      `createOpponent` (`src/lib/opponent.ts`) now takes it as a required parameter, and
+      `normalizeOpponent` backfills it to `REGULATIONS[0].id` for any record missing it — same
+      "storage should always read through this" migration pattern the pre-existing `plansByTeamId`
+      backfill already established.
+    - `OpponentsSection.tsx` gained a regulation switcher next to the "Opposing Teams" heading — a
+      `<select>` once more than one `Regulation` is registered, a plain static badge today since M-B is
+      still the only one (`REGULATIONS.length > 1` ternary — the switcher exists and is wired correctly
+      end-to-end now, but has nothing to actually switch *to* until a second regulation is added under
+      `src/data/regulations/`, which the user was told plainly). Every list derived from `opponents` —
+      the visible list, search, the empty-state check, "Clear all data," the season buttons — now filters
+      through `regulationOpponents`/`regulationSeasons` (opponents/seasons matching
+      `selectedRegulationId`) first, local `useState` only (no persistence needed with one regulation).
+      New opponents (manual add, bulk import, or loading a season's default set) get tagged with
+      whichever regulation is currently selected — or, for a season's default set specifically, that
+      season's own `regulationId`, which is more precise than "whatever's selected" even though they'd
+      always agree today.
+    - **"Clear all data" behavior change, worth flagging on its own**: it used to wipe the *entire*
+      opponents store unconditionally (`db.clear()`). Now that opponents can belong to different
+      regulations, that would silently delete opponents under regulations you weren't even looking at —
+      so it's now scoped to exactly the currently-viewed regulation's opponents.
+      `src/lib/storage/db.ts`'s `clearOpponents()` (blanket local `db.clear()` + tombstone-every-key) was
+      replaced with `deleteOpponents(ids: string[])` (tombstone + delete exactly the given ids);
+      `useOpponents.ts`'s `removeAllOpponents()` became `removeOpponents(ids)`, with the caller
+      (`OpponentsSection`) deciding scope. The confirm dialog's copy was updated to say so explicitly
+      ("removes all N opponents under this regulation... opponents under other regulations aren't
+      affected").
+    - **Bug found and fixed during live verification, not from a code review — a real one**: after
+      shipping, existing opponents (added earlier this session, already synced to Firestore) vanished
+      entirely from the Opponents list once the regulation filter went live, despite `normalizeOpponent`
+      correctly backfilling `regulationId` for locally-read data. Root cause: `syncOpponentsWithCloud`
+      calls `opponentsSync.pullAndMerge`, which — on a tie or a remote-wins comparison by `updatedAt` —
+      substitutes in the *raw remote Firestore document* in place of the locally-normalized one, and that
+      merged result was returned/persisted **without ever passing back through `normalizeOpponent`**.
+      Every opponent synced to the cloud before `regulationId` existed had no such field in its stored
+      Firestore document, so the merge could silently reintroduce an un-backfilled record even after a
+      correct local read had just fixed it. This was a latent gap in the sync architecture itself (the
+      same would already have been true for the older `plansByTeamId` migration, just never exercised
+      because that field predates cloud sync entirely) — not specific to this feature. Fixed by mapping
+      `merged` through `normalizeOpponent` in `syncOpponentsWithCloud` before persisting/returning it, so
+      every opponent is normalized regardless of which path (local read vs. cloud merge) it arrived
+      through. Deliberately not re-pushing the backfilled value to Firestore proactively — the record
+      self-heals locally on every load, and picks up the real fix in the cloud the next time it's
+      genuinely edited (any `saveOpponent` call pushes the full, now-normalized object) — not worth the
+      complexity of diffing pre/post-normalization to force an immediate re-push for what's a one-time
+      legacy-data gap.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169 — `opponent.test.ts` updated for
+      `createOpponent`'s new required `regulationId` parameter), and `npm run build` all clean. Live
+      browser check against the real signed-in project: reproduced the vanishing-opponents bug first
+      (confirmed via the empty "Prepare against your rivals" state despite opponents genuinely existing),
+      fixed it, then confirmed all opponents reappeared correctly tagged under the "Regulation M-B" badge,
+      the "⋮" menu's season/clear-data items still work, and no console errors on load.
+- [x] **Regulation M-A added — the regulation switcher's first real second option.** Per a 2026-08-22
+    request, after being told adding a regulation is a real data-authoring task (not something that fits
+    an admin form the way Seasons do — it needs the same sourcing-and-verification rigor M-B originally
+    got, not a paste-in blob). Delegated the research/authoring to a background fork to keep a ~280-entry
+    species list out of the main conversation; reviewed and independently re-verified its output
+    (`npx tsc --noEmit`/`npm run lint`/`npm test`/`npm run build` all re-run fresh, plus a live browser
+    check) before reporting it done.
+    - New `src/data/regulations/regulationMA.ts` + `regulationMA.test.ts`, registered as a second entry
+      in `index.ts`'s `REGULATIONS` array (M-B stays index 0/"current" — M-A, 2026-04-08–2026-06-17, is
+      already-ended and registered for reference/theorycrafting against past-season opponent data).
+    - **Species**: 213 keys, independently re-verified against Bulbapedia's Regulation Set M-A page
+      (fetched twice, not trusted from a single pass) and confirmed to be an **exact subset** of M-B's
+      235 — M-A adds nothing M-B lacks; M-B added 22 species M-A never had (Vileplume, Qwilfish, Sceptile,
+      Blaziken, Swampert, Mawile, Metagross, Staraptor, Musharna, Scolipede, Scrafty, Eelektross, Pyroar,
+      Malamar, Barbaracle, Dragalge, Grimmsnarl, Falinks, Overqwil, Houndstone, Annihilape, Gholdengo).
+      Derived as M-B's already-verified list filtered down, rather than 213 keys re-resolved from scratch
+      by hand — lower transcription risk, and `regulationMA.test.ts` still independently verifies every
+      key resolves in `species.json`/`baseStats.json`/`speciesTypes.json` and round-trips through
+      `normalizeSpeciesKey(formatSpeciesDisplayName(key))`, plus asserts the subset relationship holds
+      (so it'd fail loudly if that assumption ever turned out wrong).
+    - **Items**: shared with M-B, re-exported rather than duplicated — Bulbapedia's M-A page has no
+      separate item list (only a "no duplicate held items" mechanic rule, not a banlist), and nothing
+      found suggests item legality is regulation-specific in this game the way species are.
+    - **Mega Stones — a known, explicitly-documented gap, not silently resolved**: derived as M-B's
+      species→stone map filtered to M-A-legal species (61 stones/59 species), but Bulbapedia states M-A
+      had "76 Mega Evolution forms" — this filtered-subset approach is a verified **lower bound**, since a
+      species that stayed base-legal into M-B but lost Mega access specifically wouldn't be caught by a
+      pure species-list diff, and no per-mega M-A source was found to close that gap. Documented plainly
+      in both the code header and a named test case rather than fudged to look complete.
+    - Verified (independently re-run by me, not just trusted from the fork's own report): `npx tsc
+      --noEmit`, `npm run lint`, `npm test` (176/176, +7 new), and `npm run build` all clean. Live browser
+      check: the Opponents section's regulation switcher is now a real `<select>` with both options
+      (previously a static badge with nothing to switch to); selecting "Regulation M-A" correctly shows
+      the empty "Prepare against your rivals" state (no M-A opponents exist yet — everything pre-dating
+      this feature was migrated to M-B) with no default-set buttons (no M-A seasons exist yet either);
+      the Damage Calculator's "Add Any Pokémon" regulation-gated picker (a separate, static
+      `REGULATIONS[0]` display, unaffected by this change) still works correctly; zero console errors.
+    - **Correction, same day, from a user who actually played M-A**: the assumption above ("nothing found
+      suggests item legality is regulation-specific," the Mega Stone list flagged only as an incomplete
+      lower bound) turned out to be genuinely wrong in two specific, now-fixed ways, not just
+      under-verified. (1) **Life Orb was banned in M-A**, only legalized starting M-B — confirmed via web
+      search (multiple independent sources agree); `REGULATION_M_A_HELD_ITEMS` is now M-B's held items
+      with Life Orb filtered out, not a blind re-export. (2) **Mega Raichu was a M-B addition, not legal
+      in M-A** — confirmed two ways: metavgc.com's M-B item list explicitly names "Raichunite X/Y" among
+      M-B's newly-added stones, and Bulbapedia's own dedicated "Mega Evolutions" list for M-A (distinct
+      from its general eligible-species list) doesn't include Raichu either, despite Raichu itself being
+      a legal M-A species — `REGULATION_M_A_MEGA_STONE_SPECIES` no longer includes it (61→59 stones,
+      59→58 species). One figure was investigated and deliberately left unresolved rather than forced to
+      match: some sources cite "59 species capable of Mega Evolution" for M-A, one above this file's 58 —
+      that's a bare count with no enumerated list behind it, so it can't be reconciled against this file's
+      species-by-species derivation; flagged in the code as a known, unresolved source disagreement rather
+      than silently overridden or silently ignored. Both fixes' root cause was the same: treating "no
+      evidence of a difference" as "confirmed identical" instead of positively verifying — worth
+      remembering the next time a sibling regulation's data is assumed to carry over unchanged. Verified:
+      `npx tsc --noEmit`, `npm run lint`, `npm test` (178/178, +2 new — one asserting Life Orb's absence
+      byte-for-byte against a filtered M-B list, one asserting Raichu's absence from the Mega map), and
+      `npm run build` all clean.
+- [x] **Regulation select's arrow padding; duplicate-opponent prevention.** Two small fixes from a
+    2026-08-22 report.
+    - **Select arrow padding.** The regulation `<select>`'s dropdown chevron sat flush against the pill's
+      edge. First attempt (`pr-7` padding on the native select) visibly did nothing — native `<select>`
+      arrows are drawn by the browser itself and don't reliably reposition from CSS padding alone, a fact
+      worth remembering next time a native form control looks "almost right" after a padding tweak. Fixed
+      properly with `appearance-none` (hides the native arrow) plus a manually-positioned `ExpandMore`
+      icon from the app's existing Icon set, absolutely positioned inside a `relative` wrapper — the same
+      custom-chevron pattern already used elsewhere (e.g. `MyTeamHeader`'s team switcher), which is the
+      reason this should have been the first approach, not the second.
+    - **Duplicate opponents.** Root cause: `addOpponent`/`addOpponentsFromFolder` never checked for
+      existing content before creating a new opponent — every call makes a fresh `crypto.randomUUID()`,
+      so importing the same season's default set twice (once per device, or just repeated testing/habit)
+      creates two opponents with different ids but identical content. Cloud sync's merge is by id only
+      (see the Firebase entries above), so it has no way to know two different ids are "the same"
+      opponent — both survive and both render, which is exactly the bug reported (two identical
+      "M-Staraptor-Milotic Sand" cards). Fixed at creation time, before sync is even involved: a new
+      `findDuplicate` helper in `useOpponents.ts` checks for an existing opponent under the same
+      `regulationId` with byte-identical `team.rawPaste`; `addOpponent` now returns an error string for a
+      single duplicate paste, and `addOpponentsFromFolder` skips duplicate entries individually (including
+      duplicates within the same pasted folder, not just against already-existing opponents) and reports
+      them through the existing `skipped` mechanism. Also fixed a messaging bug this surfaced:
+      `reportImportResult` unconditionally showed a generic "check the format" message whenever
+      `importedCount` was 0, even when `skipped` had specific per-team reasons — reproducing the bug (Load
+      default set: M-5 a second time) showed exactly that misleading message before the fix, correctly
+      showing "Skipped 14: ... already exists under this regulation" for every entry after. Doesn't
+      retroactively clean up the already-existing duplicate from the report — deleting one copy is a
+      single click on its own trash icon, and auto-merging two opponents that might have diverging
+      game-plan notes by now isn't a safe thing to do silently. Verified: `npx tsc --noEmit`,
+      `npm run lint`, `npm test` (178/178) clean; live browser check reproduced the exact bug (clicking
+      "Load default set: M-5" a second time against data that already had it loaded) before the fix, then
+      confirmed after the fix it correctly imported 0 and skipped all 14 with the specific reason, and
+      confirmed the custom chevron renders correctly and the select still functions (switching between
+      M-B/M-A) after the `appearance-none` change.
+- [x] **Phase 11 — My Teams list + Team Report pages.** Per a 2026-08-23 request, with two reference
+    mockups. Confirmed scope up front on three points before building: the mockup's extra nav items
+    ("Speed tier," "Builder") are placeholder, not real pages to build — only "My Teams" was added as a
+    third nav link; the Team Report mockup's "Add Opponent" button and search icon were mockup artifacts
+    (reused from the Opponents page as a starting point) and skipped; the Notes/Weaknesses boxes below
+    the combinations panel are one-per-team (shown once), not one per combination.
+    - **Data model**: `Team` gained `regulationId: string` (same tagging/backfill treatment Opponent got
+      — `normalizeTeam` in `src/lib/team.ts` backfills it to `REGULATIONS[0].id`, applied in both
+      `getMyTeams()` and, after the same cloud-merge gap found and fixed for opponents, `syncMyTeamsWithCloud`
+      too — added proactively this time instead of waiting to rediscover it live) plus four new optional
+      fields for the Team Report page: `notes?`, `weaknesses?` (both team-level, free text),
+      `pokemonNotes?: Record<number, string>` (per-Pokémon, keyed by roster index), and
+      `combinations?: TeamCombination[]` (new type: `{id, leadPair, backPair, leadMega, backMega, notes}`
+      — structurally `MatchupPlan` plus an `id`, since a team can have any number of these, not one per
+      opponent). `createTeam`/`createOpponent`'s nested team, and every existing call site
+      (`MyTeamHeader`, `MyTeamSection`, `editOpponentTeam`) updated to thread a `regulationId` through —
+      editing preserves the team's existing regulation rather than needing one re-specified.
+    - **Duplicate prevention added proactively**: `addTeam` in `useMyTeams.ts` got the same
+      same-regulation-plus-byte-identical-rawPaste duplicate check `addOpponent` got fixed with
+      yesterday, rather than waiting to hit the same bug on Teams too.
+    - **`/teams`** (`src/components/MyTeamsSection`) — mirrors `OpponentsSection`'s structure
+      (search, regulation switcher, add/edit/remove) but simplified: no bulk import or mass-clear, since
+      this is a handful of your own teams, not a big opponent list. Each row navigates to
+      `/teams/[teamId]` on click (`role="link"`, whole row, not just the mockup's chevron — edit/delete
+      icons `stopPropagation` so they don't also trigger navigation); the chevron itself is
+      `IconName.ExpandMore` rotated -90°, since the icon set has no dedicated chevron-right and fetching
+      one for a single use wasn't worth it. Sprites render plain/static (not `TeamRoster`'s
+      hover-card-wrapped version) specifically to avoid a click-conflict — a hover-card's own click-to-open
+      would otherwise fight the row's click-to-navigate.
+    - **`/teams/[teamId]`** ("Team report") — left column: `PokemonReportRow` (new component) per
+      Pokémon — sprite/ability/item, a read-only Base/Points/Final stat table (reusing
+      `calculateStatBreakdown`, the same source the Damage Calculator's editable version uses, just
+      rendered plain here since this isn't a battle calculator), its moveset as pasted, and a notes box
+      bound to `pokemonNotes[index]`. Right column: "Common combinations" — `TeamCombinationCard` (new
+      component) per combination, each a Lead pair + Back pair reusing the exact `PokemonSlotPicker`
+      component the Matchup Planner's opponent cards already use, just pointed at this team's own roster
+      instead of an opponent-planning context — plus the team-level Notes and Weaknesses boxes below.
+      `params` read via React's `use()` (this Next version's Client Component pattern for dynamic route
+      params — see AGENTS.md's directive to check the bundled docs rather than assume).
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180, +2 new — `normalizeTeam`'s
+      backfill), and `npm run build` (new `/teams` and `/teams/[teamId]` routes, the latter correctly
+      dynamic) all clean. Live browser check against real existing team data: confirmed existing teams
+      correctly auto-backfilled under "Regulation M-B" on first load with zero data loss, clicked into a
+      real team's report and confirmed the stat table/moveset render correctly from real pasted data,
+      added a combination and picked a real Mega-capable Pokémon (Raichu) as a lead — confirmed its Mega
+      sprite rendered correctly in the picker — typed a combination note and a per-Pokémon note, reloaded
+      the page fully, and confirmed both persisted exactly as entered; zero console errors throughout.
+    - **Layout/visual fast follow, same day**: both new pages stretched full-bleed on wide viewports,
+      spreading sprites/columns out with large gaps rather than staying compact like the reference
+      mockups. `MyTeamsSection` capped at `max-w-3xl`; the Team Report's two-column grid capped at
+      `max-w-6xl`. The cap alone caused a second bug — `PokemonReportRow`'s stat table had a hardcoded
+      `min-w-[220px]` that no longer fit the now-narrower inner column, clipping the Final column behind a
+      horizontal scrollbar; reduced to `min-w-[150px]`. Also added alternating row backgrounds
+      (`bg-mauve-200`/`bg-mauve-100`) to Team Report's per-Pokémon rows, matching the pattern
+      `OpponentsSection`/`MyTeamsSection` already use — `PokemonReportRow` itself stays
+      presentation-agnostic (background applied by the parent's `.map()`, same division of responsibility
+      as `OpponentCard`) — and bumped the notes/textarea backgrounds (combination notes, team notes,
+      team weaknesses) from `bg-mauve-50` to `bg-mauve-100` so they read as clearer input boxes, per the
+      mockup; the per-Pokémon notes box went the other way, to `bg-white/60`, since it now sits on an
+      alternating-colored row rather than a plain white card (mirrors `OpponentCard`'s own
+      `bg-transparent` game-plan notes field sitting on its row's color). Moveset pills switched from
+      `bg-mauve-100` to `bg-white` so they don't blend into the row on the alternating background's
+      lighter half. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180), `npm run build`
+      all clean; live browser check confirmed both pages are now compact instead of full-bleed, the stat
+      table's Final column is fully visible again, and the combination panel's notes box reads clearly
+      against its white card.
+- [x] **Phase 12 — Tournament Mode.** Per a 2026-08-23 request, with one reference mockup for the Round
+    page. Confirmed two real design forks up front before building: how a Round's opponent roster gets
+    entered (chose the existing paste-box pattern, EVs optional — `parseTeam` already tolerates a block
+    with no EVs line, since a real tournament team sheet rarely reveals Stat Points — over a per-slot
+    manual-entry form the mockup showed but which would've meant a wholly new entry UX), and where the
+    accumulated Pokémon usage/win-loss stats surface (a new section on the existing Team Report page,
+    matching the request's own "accumulating those stats on my team" wording, over a separate page).
+    - **Data model** (`src/types/tournament.ts`): `Tournament {id, name, teamId, regulationId, rounds,
+      createdAt, updatedAt}` → `TournamentRound {id, label, opponentRawPaste, opponentTeam:
+      ParsedPokemon[], opponentPokemonNotes?, games}` (opponent roster reuses `ParsedPokemon` as-is —
+      every field is already optional except species, so "however much of a build you know" needed no
+      new type) → exactly 3 fixed `TournamentGame {id, result: "win"|"loss"|null, opponentPicks: [4],
+      myPicks: [4], notes}` per round (Bo3; a round ending 2-0 just leaves game 3 unplayed, no
+      add/remove-game UI needed, unlike Combinations' variable-length list). Picks are 4-tuples of
+      indices into the round's opponentTeam / the tournament's own team roster — "which 4 of 6," not a
+      lead/back-ordered pair like MatchupPlan/TeamCombination.
+    - **`src/lib/tournament.ts`**: `createTournament`/`createRound` (factories), `getRoundResult` (first
+      to 2 game wins decides a Bo3 round, `"in-progress"` otherwise), `getTournamentRecord` (rounds W-L,
+      only counting decided ones), and `computeTeamUsageStats(tournaments, team)` — the actual "usage
+      stats" ask: for a given team, rolls up every decided game across every given tournament into a
+      per-roster-slot `{timesPicked, wins, losses}`, keyed by roster index (same "index is a stable
+      identity" assumption Combinations/MatchupPlan's leadPair/backPair already make). All four are pure
+      functions with their own unit tests (`tournament.test.ts`) — this is exactly the kind of
+      logic-heavy code this codebase always covers directly, not just through UI verification.
+    - **Storage/sync**: `tournaments` gets the identical treatment as `teams`/`opponents` —
+      `TOURNAMENTS_STORE` in IndexedDB (`DB_VERSION` 3→4), `getTournaments`/`saveTournament`/
+      `deleteTournament`/`syncTournamentsWithCloud` in `db.ts`, `useTournaments()` hook mirroring
+      `useOpponents.ts`'s shape. No new Firestore rule needed — `tournaments` lives under
+      `users/{uid}/tournaments`, already covered by the existing recursive `users/{uid}/{document=**}`
+      rule. Skipped the duplicate-content check `addOpponent`/`addTeam` both got — a tournament is a
+      one-off named event you type a name for each time, not a pasted blob you might accidentally
+      re-paste, so the same accidental-duplication risk doesn't really apply.
+    - **Pages**: `/tournaments` (list, mirrors `MyTeamsSection` minus search/regulation-switcher — nothing
+      to filter yet with one regulation) → `/tournaments/[id]` (name, team, W-L record, rounds list,
+      "Add round") → `/tournaments/[id]/rounds/[id]` (the mockup's page: opponent roster as
+      `OpponentPokemonCard`s in a responsive 3-column grid — deliberately no stat table on these unlike
+      `PokemonReportRow`, since without Stat Points there's no real Final stat to compute, and showing one
+      anyway would be misleading — plus 3 `TournamentGameCard`s, each Win/Loss + both sides' picks
+      (reusing `PokemonSlotPicker` again) + notes). "Tournaments" added as a 4th real nav link. Mega-toggle
+      state per pick slot is deliberately local-only, not persisted to `TournamentGame` — usage stats only
+      care *which* Pokémon was brought, not its Mega state that specific game, so widening the data model
+      for it wasn't worth it.
+    - **Team Report addition**: a new "Tournament stats" card, computed via `computeTeamUsageStats`
+      against every tournament using that team — a table of Picked/Wins/Losses/Win% per roster Pokémon,
+      with an empty-state pointing at `/tournaments` when nothing's logged yet.
+    - **Found and fixed during verification, not from a code review**: `DB_VERSION`'s 3→4 bump (adding
+      `TOURNAMENTS_STORE`) had no `blocked`/`blocking` handling — `idb`'s default is to silently wait
+      forever if another tab holds an older-version connection open during a schema upgrade, which would
+      read to a real user as a permanently-stuck "Loading…" with zero error, not an obvious bug report.
+      Added both: `blocking` (fires on an old connection when a newer version wants in) now closes that
+      connection proactively instead of leaving it to block forever; `blocked` at least logs clearly if a
+      case still can't self-resolve. This is a general robustness fix for *any* future `DB_VERSION` bump,
+      not specific to this feature.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (191/191, +11 new — every pure function in
+      `tournament.ts`), and `npm run build` (three new routes, all correctly dynamic) all clean. Live
+      browser verification was cut short by a genuine automation-environment limitation, not a demonstrated
+      app bug: the test tab wasn't the OS-focused window (`document.visibilityState` stayed `"hidden"`
+      even after a synthetic click), and Chrome throttles IndexedDB hard for unfocused windows — confirmed
+      via raw `indexedDB.open()`/`deleteDatabase()` calls that got zero events at all within 3 seconds,
+      not even the `blocked` event that fires near-instantly for a genuine same-origin lock conflict, and
+      zero Firestore network requests fired either (execution never got past the IndexedDB layer). Same
+      category of issue as this session's earlier clipboard-API hangs under CDP automation. The `/teams`
+      and `/matchup-planner` nav links, the "Tournaments" nav link's presence, and the Tournaments list
+      page's initial render (name, Add tournament button, layout) were confirmed live before hitting this;
+      full create-a-tournament-through-log-a-game-through-see-usage-stats flow verification is left for
+      the user to confirm in their own actively-focused browser, where this class of throttling doesn't
+      apply.
 
 ## 8. Attribution
 

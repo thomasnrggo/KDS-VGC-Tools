@@ -1,6 +1,7 @@
 /** Names from https://fonts.google.com/icons (Material Symbols Outlined) currently used in the app. */
 export enum IconName {
   Add = "add",
+  Archive = "archive",
   Calculate = "calculate",
   Check = "check",
   Close = "close",
@@ -9,9 +10,11 @@ export enum IconName {
   Delete = "delete",
   Download = "download",
   Edit = "edit",
+  ExpandLess = "expand_less",
   ExpandMore = "expand_more",
   Menu = "menu",
   MoreVert = "more_vert",
   OpenInNew = "open_in_new",
   Search = "search",
+  Unarchive = "unarchive",
 }

@@ -1,14 +1,22 @@
 import { createTeam } from "./team";
+import { generateId } from "./id";
 import { EMPTY_PLAN } from "@/constants";
+import { REGULATIONS } from "@/data/regulations";
 import type { MatchupPlan, Opponent, PokemonSlot } from "@/types";
 
-export function createOpponent(label: string, rawPaste: string, pokepasteUrl?: string): Opponent {
+export function createOpponent(
+  label: string,
+  rawPaste: string,
+  regulationId: string,
+  pokepasteUrl?: string,
+): Opponent {
   const now = new Date().toISOString();
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     label,
-    team: createTeam(rawPaste, label),
+    team: createTeam(rawPaste, label, regulationId),
     pokepasteUrl,
+    regulationId,
     plansByTeamId: {},
     createdAt: now,
     updatedAt: now,
@@ -35,12 +43,18 @@ export function getPlanForTeam(opponent: Opponent, teamId: string | null): Match
  *   migrated into `plansByTeamId[legacyTeamId]`, so the single team that existed at the time
  *   keeps its picks. `legacyTeamId` is the id of whatever "My Team" the DB migration resolved
  *   (see storage/db.ts) — falls back to a fixed key if that's unavailable.
+ * - Pre-regulationId records (every opponent added before the regulation switcher existed) get
+ *   tagged with the current regulation — `REGULATIONS[0]` today, the only one registered — rather
+ *   than being left unfiltered/invisible once switching is a thing.
  */
 export function normalizeOpponent(opponent: Opponent, legacyTeamId?: string | null): Opponent {
-  if (opponent.plansByTeamId) {
-    return opponent;
-  }
+  const withPlans = opponent.plansByTeamId ? opponent : migrateLegacyPlan(opponent, legacyTeamId);
+  return withPlans.regulationId
+    ? withPlans
+    : { ...withPlans, regulationId: REGULATIONS[0].id };
+}
 
+function migrateLegacyPlan(opponent: Opponent, legacyTeamId?: string | null): Opponent {
   const legacy = opponent as unknown as Opponent & {
     leadPair?: [PokemonSlot, PokemonSlot];
     backPair?: [PokemonSlot, PokemonSlot];
@@ -63,6 +77,7 @@ export function normalizeOpponent(opponent: Opponent, legacyTeamId?: string | nu
     label: opponent.label,
     team: opponent.team,
     pokepasteUrl: opponent.pokepasteUrl,
+    regulationId: opponent.regulationId,
     plansByTeamId,
     createdAt: opponent.createdAt,
     updatedAt: opponent.updatedAt,

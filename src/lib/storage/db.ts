@@ -1,16 +1,18 @@
 import { openDB, type IDBPDatabase } from "idb";
 import { normalizeOpponent } from "@/lib/opponent";
+import { normalizeTeam } from "@/lib/team";
 import { auth, createCollectionSync, pullMetaDoc, pushMetaDoc } from "@/lib/firebase";
-import type { Opponent, Team } from "@/types";
+import type { Opponent, Team, Tournament } from "@/types";
 
 const DB_NAME = "vgc-match-planner";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const LEGACY_MY_TEAM_STORE = "myTeam";
 const LEGACY_MY_TEAM_KEY = "current";
 const MY_TEAMS_STORE = "myTeams";
 const META_STORE = "meta";
 const ACTIVE_TEAM_ID_KEY = "activeTeamId";
 const OPPONENTS_STORE = "opponents";
+const TOURNAMENTS_STORE = "tournaments";
 
 // IndexedDB stays the source of truth for every read/write below, signed in
 // or not — these two only get touched when a user is actually signed in
@@ -18,6 +20,7 @@ const OPPONENTS_STORE = "opponents";
 // replacing local storage.
 const teamsSync = createCollectionSync<Team>("teams");
 const opponentsSync = createCollectionSync<Opponent>("opponents");
+const tournamentsSync = createCollectionSync<Tournament>("tournaments");
 
 function currentUid(): string | null {
   return auth.currentUser?.uid ?? null;
@@ -40,6 +43,9 @@ function getDb(): Promise<IDBPDatabase> {
       async upgrade(db, oldVersion, _newVersion, transaction) {
         if (!db.objectStoreNames.contains(OPPONENTS_STORE)) {
           db.createObjectStore(OPPONENTS_STORE);
+        }
+        if (!db.objectStoreNames.contains(TOURNAMENTS_STORE)) {
+          db.createObjectStore(TOURNAMENTS_STORE);
         }
 
         // v3 introduced multiple "My Team"s: the old single-record `myTeam` store
@@ -72,6 +78,22 @@ function getDb(): Promise<IDBPDatabase> {
           }
         }
       },
+      // Without these, a schema-version bump (like this one, adding
+      // TOURNAMENTS_STORE) hangs forever — not just errors — if another tab
+      // still has an old-version connection open: IndexedDB blocks the
+      // upgrade until every other connection closes, and idb's default is to
+      // silently wait. `blocking` runs on that OLD tab's connection and
+      // proactively closes it so the new one can proceed instead of the user
+      // seeing a stuck "Loading…"; `blocked` at least logs so a still-hung
+      // case (e.g. an old tab with unsaved work) isn't a silent mystery.
+      blocking() {
+        void dbPromise?.then((db) => db.close());
+      },
+      blocked(currentVersion) {
+        console.error(
+          `[storage] IndexedDB upgrade to v${DB_VERSION} blocked by an existing connection at v${currentVersion} — close other tabs with this app open.`,
+        );
+      },
     });
   }
   return dbPromise;
@@ -79,7 +101,8 @@ function getDb(): Promise<IDBPDatabase> {
 
 export async function getMyTeams(): Promise<Team[]> {
   const db = await getDb();
-  return db.getAll(MY_TEAMS_STORE);
+  const teams = await db.getAll(MY_TEAMS_STORE);
+  return teams.map(normalizeTeam);
 }
 
 async function putTeamLocal(team: Team): Promise<void> {
@@ -164,16 +187,22 @@ export async function deleteOpponent(id: string): Promise<void> {
   }
 }
 
-export async function clearOpponents(): Promise<void> {
+/**
+ * Deletes exactly the given opponent ids — used by "Clear all data," which
+ * (now that opponents are tagged by regulation) only clears whichever
+ * regulation is currently being viewed, not literally every opponent ever
+ * added. A blanket `db.clear()` would silently wipe other regulations' data
+ * too, which is not what "clear all" means once there's more than one.
+ */
+export async function deleteOpponents(ids: string[]): Promise<void> {
   const db = await getDb();
   const uid = currentUid();
   if (uid) {
-    const ids = (await db.getAllKeys(OPPONENTS_STORE)) as string[];
     void Promise.all(ids.map((id) => opponentsSync.remove(uid, id))).catch((error) =>
-      logCloudSyncError("clear opponents", error),
+      logCloudSyncError("delete opponents", error),
     );
   }
-  await db.clear(OPPONENTS_STORE);
+  await Promise.all(ids.map((id) => db.delete(OPPONENTS_STORE, id)));
 }
 
 /**
@@ -192,7 +221,9 @@ export async function syncMyTeamsWithCloud(
     pullMetaDoc<{ activeTeamId: string | null }>(uid, "state"),
   ]);
 
-  const merged = await teamsSync.pullAndMerge(uid, localTeams);
+  // Same fix as syncOpponentsWithCloud below — pullAndMerge can substitute in
+  // a raw remote-sourced record that never went through normalizeTeam.
+  const merged = (await teamsSync.pullAndMerge(uid, localTeams)).map(normalizeTeam);
   const mergedIds = new Set(merged.map((team) => team.id));
   const removedIds = localTeams.filter((team) => !mergedIds.has(team.id)).map((team) => team.id);
   await Promise.all([
@@ -215,7 +246,15 @@ export async function syncMyTeamsWithCloud(
 /** Same idea as syncMyTeamsWithCloud, for opponents — see its doc comment. */
 export async function syncOpponentsWithCloud(uid: string): Promise<Opponent[]> {
   const localOpponents = await getOpponents();
-  const merged = await opponentsSync.pullAndMerge(uid, localOpponents);
+  const activeTeamId = await getActiveTeamId();
+  // pullAndMerge can substitute in a raw remote-sourced record (e.g. when the
+  // cloud copy ties or wins on updatedAt) that never went through
+  // normalizeOpponent — a record synced before a schema field (regulationId,
+  // plansByTeamId, ...) existed would otherwise skip that backfill entirely
+  // and silently vanish from anything that filters on it.
+  const merged = (await opponentsSync.pullAndMerge(uid, localOpponents)).map((opponent) =>
+    normalizeOpponent(opponent, activeTeamId),
+  );
   const mergedIds = new Set(merged.map((opponent) => opponent.id));
   const removedIds = localOpponents
     .filter((opponent) => !mergedIds.has(opponent.id))
@@ -223,6 +262,54 @@ export async function syncOpponentsWithCloud(uid: string): Promise<Opponent[]> {
   await Promise.all([
     ...merged.map((opponent) => putOpponentLocal(opponent)),
     ...removedIds.map((id) => deleteOpponentLocal(id)),
+  ]);
+  return merged;
+}
+
+export async function getTournaments(): Promise<Tournament[]> {
+  const db = await getDb();
+  return db.getAll(TOURNAMENTS_STORE);
+}
+
+async function putTournamentLocal(tournament: Tournament): Promise<void> {
+  const db = await getDb();
+  await db.put(TOURNAMENTS_STORE, tournament, tournament.id);
+}
+
+async function deleteTournamentLocal(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(TOURNAMENTS_STORE, id);
+}
+
+export async function saveTournament(tournament: Tournament): Promise<void> {
+  await putTournamentLocal(tournament);
+  const uid = currentUid();
+  if (uid) {
+    void tournamentsSync
+      .push(uid, tournament)
+      .catch((error) => logCloudSyncError("push tournament", error));
+  }
+}
+
+export async function deleteTournament(id: string): Promise<void> {
+  await deleteTournamentLocal(id);
+  const uid = currentUid();
+  if (uid) {
+    void tournamentsSync.remove(uid, id).catch((error) => logCloudSyncError("remove tournament", error));
+  }
+}
+
+/** Same idea as syncMyTeamsWithCloud/syncOpponentsWithCloud — no normalize step needed, Tournament has no legacy schema to backfill. */
+export async function syncTournamentsWithCloud(uid: string): Promise<Tournament[]> {
+  const localTournaments = await getTournaments();
+  const merged = await tournamentsSync.pullAndMerge(uid, localTournaments);
+  const mergedIds = new Set(merged.map((tournament) => tournament.id));
+  const removedIds = localTournaments
+    .filter((tournament) => !mergedIds.has(tournament.id))
+    .map((tournament) => tournament.id);
+  await Promise.all([
+    ...merged.map((tournament) => putTournamentLocal(tournament)),
+    ...removedIds.map((id) => deleteTournamentLocal(id)),
   ]);
   return merged;
 }

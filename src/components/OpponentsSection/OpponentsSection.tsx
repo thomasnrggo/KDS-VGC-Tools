@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useOpponents } from "@/hooks/useOpponents";
+import { useSeasons } from "@/hooks/useSeasons";
 import { parseTeamFolder } from "@/lib/teamFolder";
-import { TEAM_PRESETS } from "@/data/presets";
-import type { ParsedPokemon, TeamFolderEntry } from "@/types";
+import { REGULATIONS } from "@/data/regulations";
+import type { ParsedPokemon, Season, TeamFolderEntry } from "@/types";
 import {
   parseSearchTerms,
   pokemonMatchesQuery,
@@ -14,6 +15,7 @@ import { OpponentForm } from "../OpponentForm";
 import { OpponentCard } from "../OpponentCard";
 import { BulkImportForm } from "../BulkImportForm";
 import { Modal } from "../Modal";
+import { SearchField } from "../SearchField";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 
@@ -21,6 +23,125 @@ interface OpponentsSectionProps {
   myTeamPokemon: ParsedPokemon[];
   activeTeamId: string | null;
 }
+
+const MENU_ITEM_CLASSES =
+  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100";
+
+/**
+ * Its own component (rather than sharing OpponentsSection's isMenuOpen/refs
+ * at both the mobile and desktop render sites below) so each site's trigger
+ * gets its own ref and open state — the same ref object can't be shared
+ * between two simultaneously-mounted DOM nodes.
+ */
+function OpponentsMoreMenu({
+  isLoading,
+  regulationSeasons,
+  currentSeasonId,
+  clearDisabled,
+  onLoadPreset,
+  onBulkImport,
+  onClearAll,
+}: {
+  isLoading: boolean;
+  regulationSeasons: Season[];
+  currentSeasonId: string | null;
+  clearDisabled: boolean;
+  onLoadPreset: (rawPaste: string, regulationId: string) => void;
+  onBulkImport: () => void;
+  onClearAll: () => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      const clickedTrigger = menuRef.current?.contains(target);
+      const clickedDropdown = dropdownRef.current?.contains(target);
+      if (!clickedTrigger && !clickedDropdown) {
+        setIsOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={menuRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label="More opponent options"
+        title="More options"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-mauve-300 text-mauve-700 hover:bg-mauve-100"
+      >
+        <Icon name={IconName.MoreVert} size={18} />
+      </button>
+      {isOpen && (
+        <div
+          ref={dropdownRef}
+          role="menu"
+          aria-label="More opponent options"
+          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
+        >
+          {!isLoading &&
+            regulationSeasons.map((season) => (
+              <button
+                key={season.id}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onLoadPreset(season.rawPaste, season.regulationId);
+                  setIsOpen(false);
+                }}
+                className={MENU_ITEM_CLASSES}
+              >
+                Load default set: {season.label}
+                {season.id === currentSeasonId ? " (current)" : ""}
+              </button>
+            ))}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onBulkImport();
+              setIsOpen(false);
+            }}
+            className={MENU_ITEM_CLASSES}
+          >
+            Mass import
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onClearAll();
+              setIsOpen(false);
+            }}
+            disabled={clearDisabled}
+            className="flex w-full items-center gap-2 border-t border-mauve-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-mauve-300 disabled:hover:bg-transparent"
+          >
+            Clear all data
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export function OpponentsSection({
   myTeamPokemon,
@@ -32,64 +153,47 @@ export function OpponentsSection({
     addOpponent,
     addOpponentsFromFolder,
     removeOpponent,
-    removeAllOpponents,
+    removeOpponents,
     updateOpponentPlan,
     editOpponentTeam,
   } = useOpponents();
+  const { seasons, currentSeasonId } = useSeasons();
+  const [selectedRegulationId, setSelectedRegulationId] = useState(
+    REGULATIONS[0]?.id ?? "",
+  );
   const [isAdding, setIsAdding] = useState(false);
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [importNotice, setImportNotice] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isConfirmingClear, setIsConfirmingClear] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const menuRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Regulation filter comes first — everything below (search, the empty-state
+  // check, "Clear all data") operates on the currently-viewed regulation's
+  // opponents only, not the full cross-regulation list.
+  const regulationOpponents = opponents.filter(
+    (opponent) => opponent.regulationId === selectedRegulationId,
+  );
+  const regulationSeasons = seasons.filter(
+    (season) => season.regulationId === selectedRegulationId,
+  );
 
   // Space-separated terms are ANDed together per opponent — "charizard basculegion"
   // only matches a team that has a Pokémon/item for *each* term, not either one.
   const searchTerms = parseSearchTerms(searchQuery);
   const isSearching = searchTerms.length > 0;
   const visibleOpponents = isSearching
-    ? opponents.filter((opponent) =>
+    ? regulationOpponents.filter((opponent) =>
         searchTerms.every((term) =>
           opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term)),
         ),
       )
-    : opponents;
-
-  useEffect(() => {
-    if (isSearchOpen) searchInputRef.current?.focus();
-  }, [isSearchOpen]);
-
-  useEffect(() => {
-    if (!isMenuOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-      const clickedTrigger = menuRef.current?.contains(target);
-      const clickedDropdown = dropdownRef.current?.contains(target);
-      if (!clickedTrigger && !clickedDropdown) {
-        setIsMenuOpen(false);
-      }
-    }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsMenuOpen(false);
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isMenuOpen]);
+    : regulationOpponents;
 
   function handleSubmit(label: string, rawPaste: string, pokepasteUrl: string) {
-    const result = addOpponent(label, rawPaste, pokepasteUrl);
+    const result = addOpponent(label, rawPaste, selectedRegulationId, pokepasteUrl);
     if (typeof result === "string") {
       return result;
     }
@@ -98,7 +202,7 @@ export function OpponentsSection({
   }
 
   function reportImportResult(importedCount: number, skipped: string[]) {
-    if (importedCount === 0) {
+    if (importedCount === 0 && skipped.length === 0) {
       setImportNotice(
         "Couldn't import any teams from that paste — check the format and try again.",
       );
@@ -114,16 +218,16 @@ export function OpponentsSection({
   }
 
   function handleBulkImport(entries: TeamFolderEntry[]) {
-    const { importedCount, skipped } = addOpponentsFromFolder(entries);
+    const { importedCount, skipped } = addOpponentsFromFolder(entries, selectedRegulationId);
     setIsBulkImporting(false);
     reportImportResult(importedCount, skipped);
   }
 
-  function loadPreset(rawPaste: string) {
+  function loadPreset(rawPaste: string, regulationId: string) {
     const { importedCount, skipped } = addOpponentsFromFolder(
       parseTeamFolder(rawPaste),
+      regulationId,
     );
-    setIsMenuOpen(false);
     reportImportResult(importedCount, skipped);
   }
 
@@ -145,7 +249,6 @@ export function OpponentsSection({
     setEditingId(null);
     setIsAdding(false);
     setImportNotice(null);
-    setIsMenuOpen(false);
     setIsBulkImporting(true);
   }
 
@@ -156,12 +259,11 @@ export function OpponentsSection({
   }
 
   function requestClearAll() {
-    setIsMenuOpen(false);
     setIsConfirmingClear(true);
   }
 
   function confirmClearAll() {
-    removeAllOpponents();
+    removeOpponents(regulationOpponents.map((opponent) => opponent.id));
     setIsConfirmingClear(false);
   }
 
@@ -175,33 +277,112 @@ export function OpponentsSection({
     ? (opponents.find((opponent) => opponent.id === confirmRemoveId) ?? null)
     : null;
 
-  const MENU_ITEM_CLASSES =
-    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100";
+  const editingOpponent = editingId
+    ? (opponents.find((opponent) => opponent.id === editingId) ?? null)
+    : null;
+
+  const regulationControl =
+    REGULATIONS.length > 1 ? (
+      <div className="relative shrink-0">
+        <select
+          value={selectedRegulationId}
+          onChange={(event) => setSelectedRegulationId(event.target.value)}
+          aria-label="Regulation"
+          className="appearance-none rounded-full border border-mauve-300 bg-white py-1 pl-3 pr-8 text-xs font-medium text-mauve-700"
+        >
+          {REGULATIONS.map((regulation) => (
+            <option key={regulation.id} value={regulation.id}>
+              {regulation.label}
+            </option>
+          ))}
+        </select>
+        <Icon
+          name={IconName.ExpandMore}
+          size={14}
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-mauve-500"
+        />
+      </div>
+    ) : (
+      <span className="shrink-0 rounded-full border border-mauve-200 bg-mauve-50 px-3 py-1 text-xs font-medium text-mauve-500">
+        {REGULATIONS[0]?.label}
+      </span>
+    );
+
+  const canSearch =
+    !isLoading && !isAdding && !isBulkImporting && regulationOpponents.length > 0;
+
+  // Hidden once search is open — the field itself (below) has its own icon,
+  // and its trailing button takes over closing search (see PLANNING.md).
+  const searchToggleButton = canSearch && !isSearchOpen && (
+    <button
+      type="button"
+      onClick={toggleSearch}
+      aria-label="Search opponents"
+      aria-expanded={isSearchOpen}
+      title="Search by Pokémon or item"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+    >
+      <Icon name={IconName.Search} size={18} />
+    </button>
+  );
 
   return (
     <section className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
+      {/* Mobile: title + regulation on their own row, search (left) and
+          add/more (right) below — one row was cramming a big "Add opponent"
+          pill against the title/regulation/search cluster (see PLANNING.md). */}
+      <div className="flex flex-col gap-3 md:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="whitespace-nowrap text-xl font-semibold text-mauve-900">
+            Opposing Teams
+          </h2>
+          {regulationControl}
+        </div>
+        <div className="flex items-center gap-2">
+          {searchToggleButton}
+          {isSearchOpen && canSearch && (
+            <SearchField
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
+              ariaLabel="Search opponents by Pokémon or item"
+              onClose={toggleSearch}
+              autoFocus
+              className="min-w-0 flex-1"
+            />
+          )}
+          {!isAdding && !isBulkImporting && (
+            <div className="ml-auto flex gap-2">
+              <button
+                type="button"
+                onClick={startAdding}
+                aria-label="Add opponent"
+                title="Add opponent"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-mauve-600 text-white hover:bg-mauve-700"
+              >
+                <Icon name={IconName.Add} size={20} />
+              </button>
+              <OpponentsMoreMenu
+                isLoading={isLoading}
+                regulationSeasons={regulationSeasons}
+                currentSeasonId={currentSeasonId}
+                clearDisabled={regulationOpponents.length === 0}
+                onLoadPreset={loadPreset}
+                onBulkImport={startBulkImporting}
+                onClearAll={requestClearAll}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop: unchanged single-row layout. */}
+      <div className="hidden items-center justify-between md:flex">
+        <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-mauve-900">
             Opposing Teams
           </h2>
-          {!isLoading &&
-            !isAdding &&
-            !isBulkImporting &&
-            opponents.length > 0 && (
-              <button
-                type="button"
-                onClick={toggleSearch}
-                aria-label={isSearchOpen ? "Hide search" : "Search opponents"}
-                aria-expanded={isSearchOpen}
-                title="Search by Pokémon or item"
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700 ${
-                  isSearchOpen ? "bg-mauve-100 text-mauve-700" : ""
-                }`}
-              >
-                <Icon name={IconName.Search} size={18} />
-              </button>
-            )}
+          {regulationControl}
         </div>
         {!isAdding && !isBulkImporting && (
           <div className="flex gap-2">
@@ -212,101 +393,80 @@ export function OpponentsSection({
             >
               Add opponent
             </button>
-            <div ref={menuRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setIsMenuOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={isMenuOpen}
-                aria-label="More opponent options"
-                title="More options"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-mauve-300 text-mauve-700 hover:bg-mauve-100"
-              >
-                <Icon name={IconName.MoreVert} size={18} />
-              </button>
-              {isMenuOpen && (
-                <div
-                  ref={dropdownRef}
-                  role="menu"
-                  aria-label="More opponent options"
-                  className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
-                >
-                  {!isLoading &&
-                    opponents.length === 0 &&
-                    TEAM_PRESETS.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        role="menuitem"
-                        onClick={() => loadPreset(preset.rawPaste)}
-                        className={MENU_ITEM_CLASSES}
-                      >
-                        Load default set: {preset.label}
-                      </button>
-                    ))}
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={startBulkImporting}
-                    className={MENU_ITEM_CLASSES}
-                  >
-                    Mass import
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={requestClearAll}
-                    disabled={opponents.length === 0}
-                    className="flex w-full items-center gap-2 border-t border-mauve-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-mauve-300 disabled:hover:bg-transparent"
-                  >
-                    Clear all data
-                  </button>
-                </div>
-              )}
-            </div>
+            <OpponentsMoreMenu
+              isLoading={isLoading}
+              regulationSeasons={regulationSeasons}
+              currentSeasonId={currentSeasonId}
+              clearDisabled={regulationOpponents.length === 0}
+              onLoadPreset={loadPreset}
+              onBulkImport={startBulkImporting}
+              onClearAll={requestClearAll}
+            />
           </div>
         )}
       </div>
 
-      {isSearchOpen &&
-        !isLoading &&
-        !isAdding &&
-        !isBulkImporting &&
-        opponents.length > 0 && (
-          <div className="relative">
-            <Icon
-              name={IconName.Search}
-              size={18}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mauve-400"
-            />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
-              aria-label="Search opponents by Pokémon or item"
-              className="w-full rounded-full border border-mauve-300 bg-white py-2 pl-9 pr-9 text-sm text-mauve-800 placeholder:text-mauve-400 focus:outline-none focus:ring-2 focus:ring-mauve-400"
-            />
-            {isSearching && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery("")}
-                aria-label="Clear search"
-                title="Clear search"
-                className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
-              >
-                <Icon name={IconName.Close} size={14} />
-              </button>
-            )}
-          </div>
-        )}
+      {/* Desktop only — always visible rather than toggled, since there's
+          room for it; mobile still shows a toggle-triggered version inline
+          in the row above instead (see PLANNING.md). */}
+      {canSearch && (
+        <SearchField
+          query={searchQuery}
+          onQueryChange={setSearchQuery}
+          placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
+          ariaLabel="Search opponents by Pokémon or item"
+          className="hidden md:block"
+        />
+      )}
 
       {isAdding && (
-        <OpponentForm
-          onSubmit={handleSubmit}
-          onCancel={() => setIsAdding(false)}
-        />
+        <Modal onClose={() => setIsAdding(false)} labelledBy="add-opponent-title">
+          <h2
+            id="add-opponent-title"
+            className="mb-4 text-lg font-semibold text-mauve-900"
+          >
+            Add opponent
+          </h2>
+          <OpponentForm
+            bordered={false}
+            onSubmit={handleSubmit}
+            onCancel={() => setIsAdding(false)}
+          />
+        </Modal>
+      )}
+      {editingOpponent && (
+        <Modal
+          onClose={() => setEditingId(null)}
+          labelledBy="edit-opponent-title"
+        >
+          <h2
+            id="edit-opponent-title"
+            className="mb-4 text-lg font-semibold text-mauve-900"
+          >
+            Edit opponent
+          </h2>
+          <OpponentForm
+            bordered={false}
+            initialLabel={editingOpponent.label}
+            initialPokepasteUrl={editingOpponent.pokepasteUrl ?? ""}
+            initialRawPaste={editingOpponent.team.rawPaste}
+            submitLabel="Save changes"
+            onSubmit={(label, rawPaste, pokepasteUrl) => {
+              const result = editOpponentTeam(
+                editingOpponent.id,
+                label,
+                rawPaste,
+                pokepasteUrl,
+              );
+              if (result) {
+                return result;
+              }
+              setEditingId(null);
+              return null;
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        </Modal>
       )}
       {isBulkImporting && (
         <BulkImportForm
@@ -340,12 +500,14 @@ export function OpponentsSection({
             id="confirm-clear-opponents-title"
             className="mb-2 text-lg font-semibold text-mauve-900"
           >
-            Clear all opponent teams?
+            Clear all {REGULATIONS.find((r) => r.id === selectedRegulationId)?.label} opponent
+            teams?
           </h2>
           <p className="mb-4 text-sm text-mauve-600">
-            This removes all {opponents.length} opponent
-            {opponents.length === 1 ? "" : "s"} and can&apos;t be undone —
-            you&apos;ll need to re-add or re-import them.
+            This removes all {regulationOpponents.length} opponent
+            {regulationOpponents.length === 1 ? "" : "s"} under this regulation and can&apos;t be
+            undone — you&apos;ll need to re-add or re-import them. Opponents under other
+            regulations aren&apos;t affected.
           </p>
           <div className="flex gap-2">
             <button
@@ -402,7 +564,7 @@ export function OpponentsSection({
 
       {isLoading ? (
         <p className="text-sm text-mauve-500">Loading…</p>
-      ) : opponents.length === 0 && !isAdding && !isBulkImporting ? (
+      ) : regulationOpponents.length === 0 && !isAdding && !isBulkImporting ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-mauve-300 bg-mauve-50 px-6 py-14 text-center">
           <Image
             src="/resources/logo.png"
@@ -430,14 +592,15 @@ export function OpponentsSection({
             >
               Add opponent
             </button>
-            {TEAM_PRESETS.map((preset) => (
+            {regulationSeasons.map((season) => (
               <button
-                key={preset.id}
+                key={season.id}
                 type="button"
-                onClick={() => loadPreset(preset.rawPaste)}
+                onClick={() => loadPreset(season.rawPaste, season.regulationId)}
                 className="rounded-full border border-mauve-300 bg-white px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
               >
-                Use default set: {preset.label}
+                Use default set: {season.label}
+                {season.id === currentSeasonId ? " (current)" : ""}
               </button>
             ))}
           </div>
@@ -457,58 +620,33 @@ export function OpponentsSection({
         </p>
       ) : (
         <ul className="flex flex-col">
-          {visibleOpponents.map((opponent, index) =>
-            editingId === opponent.id ? (
-              <li key={opponent.id}>
-                <OpponentForm
-                  initialLabel={opponent.label}
-                  initialPokepasteUrl={opponent.pokepasteUrl ?? ""}
-                  initialRawPaste={opponent.team.rawPaste}
-                  submitLabel="Save changes"
-                  onSubmit={(label, rawPaste, pokepasteUrl) => {
-                    const result = editOpponentTeam(
-                      opponent.id,
-                      label,
-                      rawPaste,
-                      pokepasteUrl,
-                    );
-                    if (result) {
-                      return result;
-                    }
-                    setEditingId(null);
-                    return null;
-                  }}
-                  onCancel={() => setEditingId(null)}
-                />
-              </li>
-            ) : (
-              <div
-                key={opponent.id}
-                className={index % 2 === 0 ? "bg-mauve-200" : "bg-mauve-100"}
-              >
-                <OpponentCard
-                  opponent={opponent}
-                  myTeamPokemon={myTeamPokemon}
-                  activeTeamId={activeTeamId}
-                  onEdit={() => startEditing(opponent.id)}
-                  onRemove={() => setConfirmRemoveId(opponent.id)}
-                  onUpdatePlan={(updater) => {
-                    if (activeTeamId) {
-                      updateOpponentPlan(opponent.id, activeTeamId, updater);
-                    }
-                  }}
-                  isMatch={
-                    isSearching
-                      ? (mon) =>
-                          searchTerms.some((term) =>
-                            pokemonMatchesQuery(mon, term),
-                          )
-                      : undefined
+          {visibleOpponents.map((opponent, index) => (
+            <div
+              key={opponent.id}
+              className={index % 2 === 0 ? "bg-mauve-200" : "bg-mauve-100"}
+            >
+              <OpponentCard
+                opponent={opponent}
+                myTeamPokemon={myTeamPokemon}
+                activeTeamId={activeTeamId}
+                onEdit={() => startEditing(opponent.id)}
+                onRemove={() => setConfirmRemoveId(opponent.id)}
+                onUpdatePlan={(updater) => {
+                  if (activeTeamId) {
+                    updateOpponentPlan(opponent.id, activeTeamId, updater);
                   }
-                />
-              </div>
-            ),
-          )}
+                }}
+                isMatch={
+                  isSearching
+                    ? (mon) =>
+                        searchTerms.some((term) =>
+                          pokemonMatchesQuery(mon, term),
+                        )
+                    : undefined
+                }
+              />
+            </div>
+          ))}
         </ul>
       )}
     </section>

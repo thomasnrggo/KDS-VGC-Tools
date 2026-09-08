@@ -1,17 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { createTeam, validateTeamSize } from "./team";
+import { createTeam, normalizeTeam, validateTeamSize } from "./team";
+import { REGULATIONS } from "@/data/regulations";
+
+const REG_ID = REGULATIONS[0].id;
 
 describe("createTeam", () => {
-  it("wraps parseTeam output with an id, name, rawPaste, and updatedAt", () => {
-    const team = createTeam("Ditto @ Choice Scarf\nAbility: Imposter", "Team 1");
+  it("wraps parseTeam output with an id, name, rawPaste, regulationId, and updatedAt", () => {
+    const team = createTeam("Ditto @ Choice Scarf\nAbility: Imposter", "Team 1", REG_ID);
 
     expect(team.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(team.name).toBe("Team 1");
     expect(team.rawPaste).toBe("Ditto @ Choice Scarf\nAbility: Imposter");
+    expect(team.regulationId).toBe(REG_ID);
     expect(team.pokemon).toEqual([
       { species: "Ditto", item: "Choice Scarf", ability: "Imposter" },
     ]);
     expect(() => new Date(team.updatedAt).toISOString()).not.toThrow();
+  });
+});
+
+describe("normalizeTeam", () => {
+  it("leaves an already-current team untouched", () => {
+    const team = createTeam("Ditto", "Team 1", REG_ID);
+    expect(normalizeTeam(team)).toEqual(team);
+  });
+
+  it("backfills regulationId for a team saved before it existed", () => {
+    const stale = { ...createTeam("Ditto", "Team 1", REG_ID) } as unknown as Record<
+      string,
+      unknown
+    >;
+    delete stale.regulationId;
+    expect(normalizeTeam(stale as never).regulationId).toBe(REGULATIONS[0].id);
   });
 });
 

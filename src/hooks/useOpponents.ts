@@ -2,19 +2,39 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  clearOpponents,
   deleteOpponent,
+  deleteOpponents,
   getOpponents,
   saveOpponent,
   syncOpponentsWithCloud,
 } from "@/lib/storage/db";
 import { createOpponent, getPlanForTeam } from "@/lib/opponent";
 import { createTeam, validateTeamSize } from "@/lib/team";
+import { parseTeam } from "@/lib/parseTeam";
 import { useAuth } from "./useAuth";
 import type { BulkImportResult, MatchupPlan, Opponent, TeamFolderEntry } from "@/types";
 
 function sortByUpdatedAtDesc(opponents: Opponent[]): Opponent[] {
   return [...opponents].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/**
+ * A duplicate is the same regulation + byte-identical raw paste — e.g.
+ * clicking "Load default set" for the same season twice (once per device,
+ * or just by habit) creates fresh `crypto.randomUUID()` ids each time with
+ * otherwise-identical content, and cloud sync's merge-by-id has no way to
+ * know two different ids are "the same" opponent, so both survive and both
+ * show up. Catching it here — before an id even exists to merge — is
+ * simpler and more reliable than trying to detect it during sync.
+ */
+function findDuplicate(
+  opponents: Opponent[],
+  regulationId: string,
+  rawPaste: string,
+): Opponent | undefined {
+  return opponents.find(
+    (opponent) => opponent.regulationId === regulationId && opponent.team.rawPaste === rawPaste,
+  );
 }
 
 export function useOpponents() {
@@ -44,7 +64,12 @@ export function useOpponents() {
 
   /** Returns the created Opponent on success, or an error message string on failure. */
   const addOpponent = useCallback(
-    (label: string, rawPaste: string, pokepasteUrl?: string): Opponent | string => {
+    (
+      label: string,
+      rawPaste: string,
+      regulationId: string,
+      pokepasteUrl?: string,
+    ): Opponent | string => {
       const trimmedLabel = label.trim();
       const trimmedPaste = rawPaste.trim();
 
@@ -55,18 +80,23 @@ export function useOpponents() {
         return "Paste the opponent's Showdown export.";
       }
 
-      const opponent = createOpponent(trimmedLabel, trimmedPaste, pokepasteUrl || undefined);
+      const opponent = createOpponent(trimmedLabel, trimmedPaste, regulationId, pokepasteUrl || undefined);
 
       const sizeError = validateTeamSize(opponent.team.pokemon);
       if (sizeError) {
         return sizeError;
       }
 
+      const duplicate = findDuplicate(opponents, regulationId, opponent.team.rawPaste);
+      if (duplicate) {
+        return `"${duplicate.label}" already has this exact team under this regulation.`;
+      }
+
       setOpponents((prev) => sortByUpdatedAtDesc([opponent, ...prev]));
       void saveOpponent(opponent);
       return opponent;
     },
-    [],
+    [opponents],
   );
 
   /**
@@ -74,37 +104,55 @@ export function useOpponents() {
    * Entries that don't parse into a valid 1-6 Pokémon team are skipped, not blocking,
    * so a mostly-good paste still imports everything that's valid.
    */
-  const addOpponentsFromFolder = useCallback((entries: TeamFolderEntry[]): BulkImportResult => {
-    const created: Opponent[] = [];
-    const skipped: string[] = [];
+  const addOpponentsFromFolder = useCallback(
+    (entries: TeamFolderEntry[], regulationId: string): BulkImportResult => {
+      const created: Opponent[] = [];
+      const skipped: string[] = [];
+      // Guards against both "this exact team is already an opponent" and
+      // "the pasted folder itself lists the same team twice" — the latter
+      // wouldn't be caught by checking only against `opponents`.
+      const seenRawPastes = new Set(
+        opponents
+          .filter((opponent) => opponent.regulationId === regulationId)
+          .map((opponent) => opponent.team.rawPaste),
+      );
 
-    for (const entry of entries) {
-      const label = entry.label.trim() || "Unnamed team";
-      const opponent = createOpponent(label, entry.rawPaste);
-      const sizeError = validateTeamSize(opponent.team.pokemon);
-      if (sizeError) {
-        skipped.push(`${label}: ${sizeError}`);
-        continue;
+      for (const entry of entries) {
+        const label = entry.label.trim() || "Unnamed team";
+        const opponent = createOpponent(label, entry.rawPaste, regulationId);
+        const sizeError = validateTeamSize(opponent.team.pokemon);
+        if (sizeError) {
+          skipped.push(`${label}: ${sizeError}`);
+          continue;
+        }
+        if (seenRawPastes.has(opponent.team.rawPaste)) {
+          skipped.push(`${label}: already exists under this regulation`);
+          continue;
+        }
+        seenRawPastes.add(opponent.team.rawPaste);
+        created.push(opponent);
       }
-      created.push(opponent);
-    }
 
-    if (created.length > 0) {
-      setOpponents((prev) => sortByUpdatedAtDesc([...created, ...prev]));
-      created.forEach((opponent) => void saveOpponent(opponent));
-    }
+      if (created.length > 0) {
+        setOpponents((prev) => sortByUpdatedAtDesc([...created, ...prev]));
+        created.forEach((opponent) => void saveOpponent(opponent));
+      }
 
-    return { importedCount: created.length, skipped };
-  }, []);
+      return { importedCount: created.length, skipped };
+    },
+    [opponents],
+  );
 
   const removeOpponent = useCallback((id: string) => {
     setOpponents((prev) => prev.filter((opponent) => opponent.id !== id));
     void deleteOpponent(id);
   }, []);
 
-  const removeAllOpponents = useCallback(() => {
-    setOpponents([]);
-    void clearOpponents();
+  /** Removes exactly the given opponent ids — the caller decides scope (e.g. "every opponent under the currently-viewed regulation"), not this hook. */
+  const removeOpponents = useCallback((ids: string[]) => {
+    const idSet = new Set(ids);
+    setOpponents((prev) => prev.filter((opponent) => !idSet.has(opponent.id)));
+    void deleteOpponents(ids);
   }, []);
 
   /** Applies `updater` to the opponent with `id`, persisting the result. No-op if not found. */
@@ -138,8 +186,7 @@ export function useOpponents() {
         return "Paste the opponent's Showdown export.";
       }
 
-      const team = createTeam(trimmedPaste, trimmedLabel);
-      const sizeError = validateTeamSize(team.pokemon);
+      const sizeError = validateTeamSize(parseTeam(trimmedPaste));
       if (sizeError) {
         return sizeError;
       }
@@ -147,7 +194,7 @@ export function useOpponents() {
       updateOpponent(id, (opponent) => ({
         ...opponent,
         label: trimmedLabel,
-        team,
+        team: createTeam(trimmedPaste, trimmedLabel, opponent.regulationId),
         pokepasteUrl: pokepasteUrl || undefined,
       }));
       return null;
@@ -175,7 +222,7 @@ export function useOpponents() {
     addOpponent,
     addOpponentsFromFolder,
     removeOpponent,
-    removeAllOpponents,
+    removeOpponents,
     updateOpponent,
     updateOpponentPlan,
     editOpponentTeam,

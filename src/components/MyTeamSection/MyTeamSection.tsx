@@ -5,11 +5,12 @@ import Image from "next/image";
 import type { Team } from "@/types";
 import { Modal } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
+import { REGULATIONS } from "@/data/regulations";
 
 interface MyTeamSectionProps {
   teams: Team[];
   isLoading: boolean;
-  addTeam: (rawPaste: string, name: string) => string | null;
+  addTeam: (rawPaste: string, name: string, regulationId: string) => string | null;
 }
 
 /**
@@ -31,7 +32,7 @@ export function MyTeamSection({
   }
 
   function handleSubmit(rawPaste: string, name: string) {
-    const error = addTeam(rawPaste, name);
+    const error = addTeam(rawPaste, name, REGULATIONS[0].id);
     if (!error) {
       setIsAdding(false);
     }

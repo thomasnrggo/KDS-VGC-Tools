@@ -9,5 +9,15 @@ service cloud.firestore {
     match /users/{uid}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // Shared, public default-team-set data (see src/data/regulations for the
+    // Regulation this belongs under, src/types/season.ts, and the
+    // /admin/seasons editor) — every visitor reads it, only the admin
+    // account writes. Keep this uid in sync with NEXT_PUBLIC_ADMIN_UID.
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+    }
   }
 }
