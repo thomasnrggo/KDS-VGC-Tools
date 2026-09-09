@@ -10,11 +10,13 @@
 export const SPECIES_ALIASES: Record<string, string> = {
   "indeedee-f": "indeedee-female",
   "meowstic-f": "meowstic-female",
-  // Meowstic's Mega forms are gendered ("Female-Mega"/"Male-Mega" formSuffix,
-  // not "Mega-Female"/"Mega-Male") — candidateFormKeys always appends the mega
-  // suffix after the species key, so these two combined keys need their own
-  // aliases; the ungendered bare "Meowstic" defaults to the male form, same as
-  // its base (non-mega) sprite already does.
+  // Meowstic's Mega has separate male/female entries in species.json (their
+  // stats differ), but only one sprite exists (0678-Mega.png, gender-neutral)
+  // — both entries' formSuffix is plain "Mega", not "Female-Mega"/"Male-Mega".
+  // candidateFormKeys always appends the mega suffix after the species key,
+  // so these two combined keys still need their own aliases; the ungendered
+  // bare "Meowstic" defaults to the male form, same as its base (non-mega)
+  // sprite already does.
   "meowstic-mega": "meowstic-male-mega",
   "meowstic-f-mega": "meowstic-female-mega",
   "oinkologne-f": "oinkologne-female",

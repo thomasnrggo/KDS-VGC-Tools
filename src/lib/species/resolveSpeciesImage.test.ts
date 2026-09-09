@@ -84,6 +84,23 @@ describe("resolveSpeciesImage", () => {
     });
   });
 
+  it("resolves Meowstic's Mega (male or female) to the shared gender-neutral sprite", () => {
+    // Only one Mega sprite exists for Meowstic (0678-Mega.png) even though
+    // species.json carries separate male/female entries for its distinct
+    // stats — regression test for a broken image where formSuffix had been
+    // "Male-Mega"/"Female-Mega", pointing at files that don't exist.
+    expect(resolveSpeciesImage("Meowstic", "Meowsticite")).toEqual({
+      dexId: 678,
+      formSuffix: "Mega",
+      imageUrl: `${IMAGE_BASE}/0678-Mega.png`,
+    });
+    expect(resolveSpeciesImage("Meowstic-F", "Meowsticite")).toEqual({
+      dexId: 678,
+      formSuffix: "Mega",
+      imageUrl: `${IMAGE_BASE}/0678-Mega.png`,
+    });
+  });
+
   it("returns null for an unknown species instead of throwing", () => {
     expect(resolveSpeciesImage("Not-A-Real-Pokemon")).toBeNull();
   });

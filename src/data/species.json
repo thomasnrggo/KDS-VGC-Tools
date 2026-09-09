@@ -2308,11 +2308,11 @@
   },
   "meowstic-female-mega": {
     "dexId": 678,
-    "formSuffix": "Female-Mega"
+    "formSuffix": "Mega"
   },
   "meowstic-male-mega": {
     "dexId": 678,
-    "formSuffix": "Male-Mega"
+    "formSuffix": "Mega"
   },
   "meowth": {
     "dexId": 52

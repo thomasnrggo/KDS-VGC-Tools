@@ -80,8 +80,9 @@ export default function SpeedTiersPage() {
         </div>
 
         {/* Table = one row per Pokémon, every config as its own column.
-            List = one row per (Pokémon, config) record, all sorted together —
-            an experimental alternate view, per a 2026-09-08 follow-up request. */}
+            Tiers ("list" internally) = one row per (Pokémon, config) record,
+            all sorted together by real Speed value — the pikalytics-style
+            true speed tier list, vs. Table's full per-Pokémon stat spread. */}
         <div role="tablist" aria-label="Speed Tiers view" className="flex gap-1.5">
           <button
             type="button"
@@ -107,7 +108,7 @@ export default function SpeedTiersPage() {
                 : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
             }`}
           >
-            List
+            Tiers
           </button>
         </div>
 

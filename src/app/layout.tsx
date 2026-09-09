@@ -4,6 +4,7 @@ import "./globals.css";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/Toast";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,8 +34,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-mauve-50 pb-[var(--mobile-bar-height,0px)] lg:pb-0">
-        {children}
-        <Footer />
+        <TooltipProvider>
+          {children}
+          <Footer />
+        </TooltipProvider>
         <Toaster />
         <FirebaseAnalytics />
       </body>

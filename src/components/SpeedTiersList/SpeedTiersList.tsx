@@ -10,6 +10,8 @@ import {
 } from "@/lib/stats/speedQuery";
 import { PokemonSprite } from "../PokemonSprite";
 import { SearchField } from "../SearchField";
+import { GroupModeToggle } from "../GroupModeToggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 
@@ -35,6 +37,15 @@ interface SpeedRecord {
   metricKey: MetricKey;
   metricLabel: string;
   value: number;
+}
+
+/** One speed-tier line: every record tied on the same value at the same metric, e.g. Mega Alakazam and Mega Aerodactyl both at 222 Max Speed. */
+interface SpeedGroup {
+  id: string;
+  metricKey: MetricKey;
+  metricLabel: string;
+  value: number;
+  records: SpeedRecord[];
 }
 
 const METRICS: { key: MetricKey; label: string; defaultActive: boolean }[] = [
@@ -78,6 +89,41 @@ function flattenToRecords(rows: SpeedTierRow[]): SpeedRecord[] {
     }
   }
   return records;
+}
+
+/** Groups records tied on the same value at the same metric into one tier line — same value at a different metric stays separate, since "Max Speed 200" and "Neutral +32 Scarf 200" aren't the same line. Order within a group is alphabetical, for a stable sprite layout. */
+function groupRecords(records: SpeedRecord[]): SpeedGroup[] {
+  const groups = new Map<string, SpeedGroup>();
+  for (const record of records) {
+    const key = `${record.value}-${record.metricKey}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.records.push(record);
+    } else {
+      groups.set(key, {
+        id: key,
+        metricKey: record.metricKey,
+        metricLabel: record.metricLabel,
+        value: record.value,
+        records: [record],
+      });
+    }
+  }
+  for (const group of groups.values()) {
+    group.records.sort((a, b) => a.row.name.localeCompare(b.row.name));
+  }
+  return [...groups.values()];
+}
+
+/** Wraps a single record as its own one-member group — used in "By Pokémon" mode, where grouping is skipped entirely and every (Pokémon, metric) record gets its own row. Shares the same SpeedGroup shape as groupRecords' output so the rest of the component doesn't need to branch on mode. */
+function toSingletonGroup(record: SpeedRecord): SpeedGroup {
+  return {
+    id: record.id,
+    metricKey: record.metricKey,
+    metricLabel: record.metricLabel,
+    value: record.value,
+    records: [record],
+  };
 }
 
 /** Row/text background per Speed-query proximity tier — exact match in amber, a result faster than the search in green, slower in red; `null` (no numeric query, or search by name) gets the default hover-only treatment. */
@@ -134,10 +180,15 @@ function MetricFilterChip({
 }
 
 /**
- * The "one record per row" alternate view: every legal species' (plus Mega
- * forms') Speed at every metric, each as its own row, sorted together by
- * value — a true speed tier list rather than a per-Pokémon spreadsheet. See
- * SpeedTiersTable for the wide, one-row-per-Pokémon equivalent.
+ * The "one tier per row" alternate view: every legal species' (plus Mega
+ * forms') Speed at every metric, sorted together by value — a true speed
+ * tier list rather than a per-Pokémon spreadsheet. Records tied on the same
+ * value at the same metric (e.g. Mega Alakazam and Mega Aerodactyl both at
+ * 222 Max Speed) share one row, shown as sprites rather than repeated names.
+ * A "Grouped" / "By Pokémon" toggle switches between that merged view and
+ * one row per (Pokémon, metric) record, with its name shown instead of
+ * sprites-only. See SpeedTiersTable for the wide, one-row-per-Pokémon
+ * spreadsheet equivalent.
  */
 export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedTiersListProps) {
   const [query, setQuery] = useState("");
@@ -145,6 +196,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
     () => new Set(METRICS.filter((metric) => metric.defaultActive).map((metric) => metric.key)),
   );
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [groupMode, setGroupMode] = useState(true);
 
   const rows = useMemo(
     () => computeSpeedTierRows(speciesKeys, megaStoneItemsForSpecies),
@@ -155,7 +207,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
 
   const numericQuery = useMemo(() => parseSpeedQuery(query), [query]);
 
-  const visibleRecords = useMemo(() => {
+  const visibleGroups = useMemo(() => {
     const trimmedQuery = query.trim().toLowerCase();
     const filtered = allRecords.filter((record) => {
       if (!activeMetrics.has(record.metricKey)) return false;
@@ -166,11 +218,16 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
       return true;
     });
 
-    return [...filtered].sort((a, b) => {
-      const comparison = a.value - b.value || a.row.name.localeCompare(b.row.name);
+    const groups = groupMode ? groupRecords(filtered) : filtered.map(toSingletonGroup);
+
+    return groups.sort((a, b) => {
+      const comparison =
+        a.value - b.value ||
+        a.metricLabel.localeCompare(b.metricLabel) ||
+        a.records[0].row.name.localeCompare(b.records[0].row.name);
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [allRecords, activeMetrics, query, numericQuery, sortDirection]);
+  }, [allRecords, activeMetrics, query, numericQuery, sortDirection, groupMode]);
 
   function toggleMetric(key: MetricKey) {
     setActiveMetrics((current) => {
@@ -204,6 +261,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
             />
           ))}
         </div>
+        <GroupModeToggle grouped={groupMode} onChange={setGroupMode} className="ml-auto" />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-mauve-200 bg-white">
@@ -242,32 +300,54 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
               </tr>
             </thead>
             <tbody>
-              {visibleRecords.map((record, index) => {
-                const tier = numericQuery !== null ? speedQueryTier(record.value, numericQuery) : null;
+              {visibleGroups.map((group, index) => {
+                const tier = numericQuery !== null ? speedQueryTier(group.value, numericQuery) : null;
                 return (
                   <tr
-                    key={record.id}
+                    key={group.id}
                     className={`border-b border-mauve-100 last:border-b-0 ${tierRowClass(tier)}`}
                   >
                     <td className="w-12 pl-3 pr-1 py-1.5 text-mauve-400">{index + 1}</td>
                     <td className="px-3 py-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="relative h-8 w-8 shrink-0">
-                          <PokemonSprite species={record.row.speciesName} item={record.row.item} fill />
-                        </span>
-                        <span className="truncate font-medium text-mauve-900">
-                          {record.row.name}
-                        </span>
-                      </div>
+                      {groupMode ? (
+                        // max-w caps the row at 7 sprites (7 * 56px sprite + 6 * 6px gap) before wrapping to a new line.
+                        <div className="flex max-w-[428px] flex-wrap items-center gap-1.5">
+                          {group.records.map((record) => (
+                            <Tooltip key={record.id}>
+                              <TooltipTrigger render={<span className="relative h-14 w-14 shrink-0" />}>
+                                <PokemonSprite
+                                  species={record.row.speciesName}
+                                  item={record.row.item}
+                                  fill
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>{record.row.name}</TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="relative h-14 w-14 shrink-0">
+                            <PokemonSprite
+                              species={group.records[0].row.speciesName}
+                              item={group.records[0].row.item}
+                              fill
+                            />
+                          </span>
+                          <span className="truncate font-medium text-mauve-900">
+                            {group.records[0].row.name}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className={`px-3 py-1.5 text-right font-semibold ${tierTextClass(tier)}`}>
-                      {record.value}
+                      {group.value}
                     </td>
-                    <td className="px-3 py-1.5 text-mauve-600">{record.metricLabel}</td>
+                    <td className="px-3 py-1.5 whitespace-nowrap text-mauve-600">{group.metricLabel}</td>
                   </tr>
                 );
               })}
-              {visibleRecords.length === 0 && (
+              {visibleGroups.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-3 py-6 text-center text-mauve-400">
                     No records match the current search/filters.
