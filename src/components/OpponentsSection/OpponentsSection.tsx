@@ -22,10 +22,15 @@ import { IconName } from "@/enums";
 interface OpponentsSectionProps {
   myTeamPokemon: ParsedPokemon[];
   activeTeamId: string | null;
+  /** False when there's an active team but it isn't tagged for selectedRegulationId — passed through to OpponentCard so it blocks Lead/Back picking with an explanatory message instead of letting you plan with an off-regulation team. */
+  activeTeamMatchesRegulation: boolean;
+  /** Lifted up to the page (see matchup-planner/page.tsx) so MyTeamHeader's team switcher can scope its offered list to the same regulation this section is already filtering opponents/seasons by. */
+  selectedRegulationId: string;
+  setSelectedRegulationId: (id: string) => void;
 }
 
 const MENU_ITEM_CLASSES =
-  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100";
+  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100";
 
 /**
  * Its own component (rather than sharing OpponentsSection's isMenuOpen/refs
@@ -86,7 +91,7 @@ function OpponentsMoreMenu({
         aria-expanded={isOpen}
         aria-label="More opponent options"
         title="More options"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-mauve-300 text-mauve-700 hover:bg-mauve-100"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-300 text-zinc-700 hover:bg-zinc-100"
       >
         <Icon name={IconName.MoreVert} size={18} />
       </button>
@@ -95,7 +100,7 @@ function OpponentsMoreMenu({
           ref={dropdownRef}
           role="menu"
           aria-label="More opponent options"
-          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           {!isLoading &&
             regulationSeasons.map((season) => (
@@ -132,7 +137,7 @@ function OpponentsMoreMenu({
               setIsOpen(false);
             }}
             disabled={clearDisabled}
-            className="flex w-full items-center gap-2 border-t border-mauve-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-mauve-300 disabled:hover:bg-transparent"
+            className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
           >
             Clear all data
           </button>
@@ -146,6 +151,9 @@ function OpponentsMoreMenu({
 export function OpponentsSection({
   myTeamPokemon,
   activeTeamId,
+  activeTeamMatchesRegulation,
+  selectedRegulationId,
+  setSelectedRegulationId,
 }: OpponentsSectionProps) {
   const {
     opponents,
@@ -158,9 +166,6 @@ export function OpponentsSection({
     editOpponentTeam,
   } = useOpponents();
   const { seasons, currentSeasonId } = useSeasons();
-  const [selectedRegulationId, setSelectedRegulationId] = useState(
-    REGULATIONS[0]?.id ?? "",
-  );
   const [isAdding, setIsAdding] = useState(false);
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -288,7 +293,7 @@ export function OpponentsSection({
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
           aria-label="Regulation"
-          className="appearance-none rounded-full border border-mauve-300 bg-white py-1 pl-3 pr-8 text-xs font-medium text-mauve-700"
+          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
@@ -299,11 +304,11 @@ export function OpponentsSection({
         <Icon
           name={IconName.ExpandMore}
           size={14}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-mauve-500"
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
         />
       </div>
     ) : (
-      <span className="shrink-0 rounded-full border border-mauve-200 bg-mauve-50 px-3 py-1 text-xs font-medium text-mauve-500">
+      <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
         {REGULATIONS[0]?.label}
       </span>
     );
@@ -320,7 +325,7 @@ export function OpponentsSection({
       aria-label="Search opponents"
       aria-expanded={isSearchOpen}
       title="Search by Pokémon or item"
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
     >
       <Icon name={IconName.Search} size={18} />
     </button>
@@ -333,7 +338,7 @@ export function OpponentsSection({
           pill against the title/regulation/search cluster (see PLANNING.md). */}
       <div className="flex flex-col gap-3 md:hidden">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="whitespace-nowrap text-xl font-semibold text-mauve-900">
+          <h2 className="whitespace-nowrap text-xl font-semibold text-zinc-900">
             Opposing Teams
           </h2>
           {regulationControl}
@@ -358,7 +363,7 @@ export function OpponentsSection({
                 onClick={startAdding}
                 aria-label="Add opponent"
                 title="Add opponent"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-mauve-600 text-white hover:bg-mauve-700"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-600 dark:bg-zinc-400 text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
               >
                 <Icon name={IconName.Add} size={20} />
               </button>
@@ -379,7 +384,7 @@ export function OpponentsSection({
       {/* Desktop: unchanged single-row layout. */}
       <div className="hidden items-center justify-between md:flex">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-mauve-900">
+          <h2 className="text-xl font-semibold text-zinc-900">
             Opposing Teams
           </h2>
           {regulationControl}
@@ -389,7 +394,7 @@ export function OpponentsSection({
             <button
               type="button"
               onClick={startAdding}
-              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
               Add opponent
             </button>
@@ -423,7 +428,7 @@ export function OpponentsSection({
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-opponent-title">
           <h2
             id="add-opponent-title"
-            className="mb-4 text-lg font-semibold text-mauve-900"
+            className="mb-4 text-lg font-semibold text-zinc-900"
           >
             Add opponent
           </h2>
@@ -441,7 +446,7 @@ export function OpponentsSection({
         >
           <h2
             id="edit-opponent-title"
-            className="mb-4 text-lg font-semibold text-mauve-900"
+            className="mb-4 text-lg font-semibold text-zinc-900"
           >
             Edit opponent
           </h2>
@@ -477,14 +482,14 @@ export function OpponentsSection({
       {importNotice && (
         <div
           role="status"
-          className="flex items-start justify-between gap-3 rounded-lg border border-mauve-200 bg-mauve-50 p-3 text-sm text-mauve-700"
+          className="flex items-start justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700"
         >
           <span>{importNotice}</span>
           <button
             type="button"
             onClick={() => setImportNotice(null)}
             aria-label="Dismiss"
-            className="shrink-0 text-mauve-500 hover:text-mauve-700"
+            className="shrink-0 text-zinc-500 hover:text-zinc-700"
           >
             ×
           </button>
@@ -498,12 +503,12 @@ export function OpponentsSection({
         >
           <h2
             id="confirm-clear-opponents-title"
-            className="mb-2 text-lg font-semibold text-mauve-900"
+            className="mb-2 text-lg font-semibold text-zinc-900"
           >
             Clear all {REGULATIONS.find((r) => r.id === selectedRegulationId)?.label} opponent
             teams?
           </h2>
-          <p className="mb-4 text-sm text-mauve-600">
+          <p className="mb-4 text-sm text-zinc-600">
             This removes all {regulationOpponents.length} opponent
             {regulationOpponents.length === 1 ? "" : "s"} under this regulation and can&apos;t be
             undone — you&apos;ll need to re-add or re-import them. Opponents under other
@@ -520,7 +525,7 @@ export function OpponentsSection({
             <button
               type="button"
               onClick={() => setIsConfirmingClear(false)}
-              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               Cancel
             </button>
@@ -535,11 +540,11 @@ export function OpponentsSection({
         >
           <h2
             id="confirm-remove-opponent-title"
-            className="mb-2 text-lg font-semibold text-mauve-900"
+            className="mb-2 text-lg font-semibold text-zinc-900"
           >
             Remove {confirmRemoveOpponent.label}?
           </h2>
-          <p className="mb-4 text-sm text-mauve-600">
+          <p className="mb-4 text-sm text-zinc-600">
             This can&apos;t be undone — you&apos;ll need to re-add or re-import
             this team.
           </p>
@@ -554,7 +559,7 @@ export function OpponentsSection({
             <button
               type="button"
               onClick={() => setConfirmRemoveId(null)}
-              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               Cancel
             </button>
@@ -563,9 +568,9 @@ export function OpponentsSection({
       )}
 
       {isLoading ? (
-        <p className="text-sm text-mauve-500">Loading…</p>
+        <p className="text-sm text-zinc-500">Loading…</p>
       ) : regulationOpponents.length === 0 && !isAdding && !isBulkImporting ? (
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-mauve-300 bg-mauve-50 px-6 py-14 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center">
           <Image
             src="/resources/logo.png"
             alt=""
@@ -575,10 +580,10 @@ export function OpponentsSection({
             className="h-14 w-14"
           />
           <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold text-mauve-900">
+            <h3 className="text-lg font-semibold text-zinc-900">
               Prepare against your rivals
             </h3>
-            <p className="max-w-md text-sm text-mauve-600">
+            <p className="max-w-md text-sm text-zinc-600">
               Paste a Pokémon Showdown export for a team you want to prep
               against, we&apos;ll pull in the roster, held items, and movesets
               automatically so you can plan your leads and backs.
@@ -588,7 +593,7 @@ export function OpponentsSection({
             <button
               type="button"
               onClick={startAdding}
-              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
               Add opponent
             </button>
@@ -597,7 +602,7 @@ export function OpponentsSection({
                 key={season.id}
                 type="button"
                 onClick={() => loadPreset(season.rawPaste, season.regulationId)}
-                className="rounded-full border border-mauve-300 bg-white px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+                className="rounded-full border border-zinc-300 bg-zinc-50 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
                 Use default set: {season.label}
                 {season.id === currentSeasonId ? " (current)" : ""}
@@ -607,14 +612,14 @@ export function OpponentsSection({
           <button
             type="button"
             onClick={startBulkImporting}
-            className="text-sm font-medium text-mauve-600 hover:underline"
+            className="text-sm font-medium text-zinc-600 hover:underline"
           >
             Prepping for a big tournament? Import a whole folder of teams at
             once →
           </button>
         </div>
       ) : isSearching && visibleOpponents.length === 0 ? (
-        <p className="py-12 text-center text-sm text-mauve-500">
+        <p className="py-12 text-center text-sm text-zinc-500">
           No opponents have a Pokémon or item matching &ldquo;
           {searchQuery.trim()}&rdquo;.
         </p>
@@ -623,12 +628,13 @@ export function OpponentsSection({
           {visibleOpponents.map((opponent, index) => (
             <div
               key={opponent.id}
-              className={index % 2 === 0 ? "bg-mauve-200" : "bg-mauve-100"}
+              className={index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"}
             >
               <OpponentCard
                 opponent={opponent}
                 myTeamPokemon={myTeamPokemon}
                 activeTeamId={activeTeamId}
+                activeTeamMatchesRegulation={activeTeamMatchesRegulation}
                 onEdit={() => startEditing(opponent.id)}
                 onRemove={() => setConfirmRemoveId(opponent.id)}
                 onUpdatePlan={(updater) => {

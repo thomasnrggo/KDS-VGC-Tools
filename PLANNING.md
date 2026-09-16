@@ -262,13 +262,46 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   (`opponent.ts`), which backfills any missing fields with defaults. Any future field added to
   `Opponent` needs the same treatment there, since there's no migration step otherwise — old browser
   data just keeps loading through whatever's the current shape.
-- **Single color palette: `mauve` (a built-in Tailwind v4 color, `mauve-50`…`mauve-950`), no dark
-  mode.** Per a 2026-08-10 user request. All prior `zinc-*` neutrals were swapped 1:1 for the
-  matching `mauve-*` shade, every `dark:` variant class was removed, and `globals.css`'s
-  `prefers-color-scheme: dark` block was deleted. Semantic accent colors (red for
-  delete/errors/decreased-stat, blue for increased-stat, amber for warnings) are unchanged, just
-  without their `dark:` variants. If dark mode comes back later, it needs a real design pass, not a
-  blanket re-add of `dark:` classes.
+- **Single color palette: `zinc` (Tailwind's standard neutral, `zinc-50`…`zinc-950`), with real
+  light/dark mode via a palette-level swap rather than a `dark:` sweep.** History: the app originally
+  used `zinc`; a 2026-08-10 request swapped every `zinc-*` neutral 1:1 for a custom `mauve` palette
+  and removed dark mode entirely (every `dark:` class stripped, `globals.css`'s
+  `prefers-color-scheme: dark` block deleted); a 2026-09-12 request brought dark mode back on top of
+  `mauve`; a same-day follow-up asked to drop `mauve` and return to the plain `zinc` default — so the
+  net result today is `zinc` + dark mode, not `mauve` + dark mode. The dark-mode *mechanism* below is
+  what "a real design pass, not a blanket `dark:` re-add" (the original removal note's ask) produced,
+  and survived the mauve→zinc swap unchanged — only the color family's name and its underlying oklch
+  numbers changed, via a project-wide `mauve`→`zinc` text substitution plus re-deriving the `.dark`
+  block's values from zinc's own Tailwind-shipped scale (not mauve's).
+  `globals.css`'s `.dark { --color-zinc-N: ... }` block overrides each Tailwind zinc step's CSS
+  variable with the *opposite* step's original value (50↔950, 100↔900, 200↔800, 300↔700, 400↔600,
+  500 unchanged) — so every existing `bg-zinc-*`/`text-zinc-*`/`border-zinc-*` class across the app
+  theme-swaps automatically with zero per-component changes, since Tailwind utilities already resolve
+  to `var(--color-zinc-N)`.
+  The one place the swap alone breaks: `bg-zinc-600`/`900` + `text-white` (primary buttons, the
+  header's chrome bar, active tab pills) — swapped, those become the *light* end of the scale, which
+  white text can't read against. Those specific elements carry a targeted `dark:bg-zinc-400`
+  (`600`'s pair) or `dark:bg-zinc-100`/`dark:hover:bg-zinc-50` (`900`'s pair) so the chrome stays
+  the same fixed dark zinc in both themes instead of inverting — see `MyTeamHeader`'s header bar and
+  every `bg-zinc-600 text-white` CTA button. Any `text-*`/`bg-*` sitting *on* that fixed chrome
+  (nav link text, icons, the translucent sprite backing) needed the matching inverse-lookup fix too
+  (`text-zinc-200` → `dark:text-zinc-800`, etc.) — see `MyTeamHeader`'s comments for the full
+  reasoning. `bg-white` used as a card/surface (not a deliberate fixed-white element like the
+  AuthMenu sign-in pill) was swept to `bg-zinc-50` so it participates in the swap. Semantic accent
+  colors (red for delete/errors, green/emerald for wins, amber for warnings) are Tailwind's own
+  scales, untouched by the zinc swap — their saturated 500–700 shades already have enough contrast
+  for white text in both themes and needed no changes, but their *light-tint* uses (`bg-amber-50`-
+  style search-highlight rows in Speed Tiers, `bg-sky-100`/`bg-rose-100` SpeedLine hover highlights,
+  `hover:bg-red-50`/`100` delete-button hovers) got explicit `dark:` overrides to their own
+  matching-scale `-950` shade, since those don't invert on their own and the light tint reads as
+  light-text-on-light-background once the surrounding zinc text flips.
+  A `useTheme` hook (`src/hooks/useTheme.ts`) reads/writes the `<html>` element's `dark` class via
+  `useSyncExternalStore` (not a manual `useEffect` sync — that trips the `react-hooks/set-state-in-effect`
+  lint rule and risks a hydration mismatch), persists an explicit toggle to `localStorage`, and a
+  blocking `next/script` (`beforeInteractive`) in `layout.tsx` sets the class before first paint
+  (falling back to `prefers-color-scheme` if nothing's stored yet) so there's no flash of the wrong
+  theme. `ThemeToggle` (`src/components/ThemeToggle`) lives in `MyTeamHeader`'s icon-button row, next
+  to the hamburger/auth controls, visible on both desktop and mobile.
 - **"Load default set" — a one-click preset that bulk-imports a hand-picked opponent roster, offered
   only when there are zero opponents.** Per a 2026-08-10 user request, first preset is
   `regulation-m-b-m-4` (`src/data/presets/regulationMbM4.ts`) — 13 real Regulation M-B teams the user
@@ -924,7 +957,7 @@ leads/backs) is complete and working end to end.
       calculator's own layout, ahead of the Pokémon pickers and Field panel below — per the user's
       screenshots, this is "the important part" and shouldn't require scrolling past the setup UI first.
       `MoveList` was restyled from bordered pill-buttons to a flat divided row list (selected row gets a
-      subtle `bg-mauve-100` highlight instead of a filled color swap) to read as a compact table, matching
+      subtle `bg-zinc-100` highlight instead of a filled color swap) to read as a compact table, matching
       the reference's list style; each list also grew a small "click a move to see details" hint line under
       its heading. The previously separate full-width bottom result panel became `ResultPanel`, a new
       component always rendered as the middle column (with a "Click a move on either side to see the
@@ -1006,7 +1039,7 @@ leads/backs) is complete and working end to end.
       per-button JSX needed direct control over the Reflect/Light Screen pairing anyway. Verified:
       `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check confirmed every
       toggle (Weather, Terrain, Critical Hit/Fairy Aura/Gravity, and both side panels' conditions) switches
-      between the pill's active (filled `bg-mauve-600`) and inactive (outlined) states correctly, and the two
+      between the pill's active (filled `bg-zinc-600`) and inactive (outlined) states correctly, and the two
       side panels now render side by side instead of stacked.
     - Damage Calculator: added "add any Pokémon" — a from-scratch build (species, ability, held item,
       nature, Stat Points, up to 4 moves), gated by a new first-class "Regulation" concept, starting with
@@ -1685,7 +1718,7 @@ leads/backs) is complete and working end to end.
       that fixed order); the current page renders as plain non-interactive text (`aria-current="page"`, the
       conventional "you are here" pattern — avoids a no-op click reloading the same page), the other as a
       real `next/link` `<Link>`. Dropped the pill/border/background button styling entirely in favor of
-      plain text links (muted `text-mauve-200` inactive, `text-white` active, underline-free per "not
+      plain text links (muted `text-zinc-200` inactive, `text-white` active, underline-free per "not
       buttoms"). Kept the existing mobile/desktop short-label split ("Planner"/"Calc" vs. full names).
       Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check on
       `/matchup-planner` confirmed both links render with "Matchup Planner" active (white) and "Damage
@@ -1697,7 +1730,7 @@ leads/backs) is complete and working end to end.
       logo block and the `<nav>` in one shared flex container (`gap-3 md:gap-6`) so they sit as one
       left-aligned group; the header's own `justify-between` now just splits that group from the
       right-side team switcher, instead of splitting 3 separate items across the full width. Active link:
-      `font-bold text-white`; inactive: `font-medium text-mauve-200` (unchanged from the previous entry).
+      `font-bold text-white`; inactive: `font-medium text-zinc-200` (unchanged from the previous entry).
       Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check
       confirmed both links now sit immediately right of the "VGCTools" wordmark, with "Matchup Planner"
       rendering visibly bold against the muted "Damage Calculator".
@@ -1801,7 +1834,7 @@ leads/backs) is complete and working end to end.
       `next`, `postcss`, `sharp`, all dev-tooling/build transitive deps, unrelated to this change) were identical
       with and without it. Added `src/components/Toast/` (mirroring the `Modal`/`Icon` folder-per-component
       pattern): `Toast.tsx` wraps sonner's `<Toaster />`, pre-styled via `toastOptions.classNames` to match this
-      app's mauve palette/card look (`border-mauve-200`, `rounded-lg`, `shadow-lg`) instead of sonner's default
+      app's zinc palette/card look (`border-zinc-200`, `rounded-lg`, `shadow-lg`) instead of sonner's default
       theme, with success/error keeping the `green-600`/`red-600` this app already uses elsewhere (the Damage
       Calculator's copy-confirmation checkmark, import error text); `index.ts` re-exports `Toaster` plus `toast`
       straight from `sonner` so callers `import { toast } from "@/components/Toast"` rather than reaching into
@@ -1810,7 +1843,7 @@ leads/backs) is complete and working end to end.
       from anywhere in the app with no further setup — not yet wired into any existing feature (e.g. the Export/
       Export Team copy confirmations), left for a follow-up request rather than assumed in scope here. Verified:
       `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser
-      check temporarily fired one of each toast type (default/success/error) to confirm the mauve styling,
+      check temporarily fired one of each toast type (default/success/error) to confirm the zinc styling,
       stacking, hover-to-expand, and close button all render correctly, then the temporary test code was
       removed, leaving the component wired but unused.
     - Wired the new toast component into the Export/Export Team copy confirmations, per follow-up request.
@@ -2269,15 +2302,15 @@ leads/backs) is complete and working end to end.
       `max-w-6xl`. The cap alone caused a second bug — `PokemonReportRow`'s stat table had a hardcoded
       `min-w-[220px]` that no longer fit the now-narrower inner column, clipping the Final column behind a
       horizontal scrollbar; reduced to `min-w-[150px]`. Also added alternating row backgrounds
-      (`bg-mauve-200`/`bg-mauve-100`) to Team Report's per-Pokémon rows, matching the pattern
+      (`bg-zinc-200`/`bg-zinc-100`) to Team Report's per-Pokémon rows, matching the pattern
       `OpponentsSection`/`MyTeamsSection` already use — `PokemonReportRow` itself stays
       presentation-agnostic (background applied by the parent's `.map()`, same division of responsibility
       as `OpponentCard`) — and bumped the notes/textarea backgrounds (combination notes, team notes,
-      team weaknesses) from `bg-mauve-50` to `bg-mauve-100` so they read as clearer input boxes, per the
+      team weaknesses) from `bg-zinc-50` to `bg-zinc-100` so they read as clearer input boxes, per the
       mockup; the per-Pokémon notes box went the other way, to `bg-white/60`, since it now sits on an
       alternating-colored row rather than a plain white card (mirrors `OpponentCard`'s own
       `bg-transparent` game-plan notes field sitting on its row's color). Moveset pills switched from
-      `bg-mauve-100` to `bg-white` so they don't blend into the row on the alternating background's
+      `bg-zinc-100` to `bg-white` so they don't blend into the row on the alternating background's
       lighter half. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180), `npm run build`
       all clean; live browser check confirmed both pages are now compact instead of full-bleed, the stat
       table's Final column is fully visible again, and the combination panel's notes box reads clearly

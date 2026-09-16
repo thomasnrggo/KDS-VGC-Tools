@@ -24,13 +24,13 @@ export function TeamRoster({ pokemon, isMatch }: TeamRosterProps) {
               triggerClassName="h-full w-full cursor-pointer"
               trigger="click"
             >
-              {(showMega) => (
+              {(displayPokemon) => (
                 <div
-                  className={`relative h-full w-full overflow-hidden rounded-lg bg-mauve-500/20 ${matched ? "ring-2 ring-amber-400" : ""}`}
+                  className={`relative h-full w-full overflow-hidden rounded-lg bg-zinc-500/20 ${matched ? "ring-2 ring-amber-400" : ""}`}
                 >
                   <PokemonSprite
-                    species={mon.species}
-                    item={showMega ? mon.item : undefined}
+                    species={displayPokemon.species}
+                    item={displayPokemon.item}
                     fill
                   />
                 </div>

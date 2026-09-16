@@ -77,8 +77,15 @@ function statPointsToEvs(statPoints: BaseStats): BaseStats {
 /** Choice Scarf multiplies effective Speed by ×1.5, applied after nature — same slot as an in-battle item modifier, not part of the "stat screen" base. */
 const CHOICE_SCARF_SPEED_MULTIPLIER = 1.5;
 
+/** Iron Ball halves effective Speed (as well as granting Ground-type moves hit through Levitate/flying immunities, which isn't a stat and isn't this function's concern) — same "applied after nature" item-modifier slot as Choice Scarf. */
+const IRON_BALL_SPEED_MULTIPLIER = 0.5;
+
 function hasChoiceScarf(item: string | undefined): boolean {
   return item !== undefined && normalizeSpeciesKey(item) === "choice-scarf";
+}
+
+function hasIronBall(item: string | undefined): boolean {
+  return item !== undefined && normalizeSpeciesKey(item) === "iron-ball";
 }
 
 function calculateHp(base: number, ev: number): number {
@@ -110,8 +117,15 @@ export function calculateFinalStats(pokemon: ParsedPokemon): FinalStats | null {
     return 1;
   }
 
+  // Mutually exclusive — a Pokémon holds exactly one item — so at most one of these multipliers ever applies.
   const scarfed = hasChoiceScarf(pokemon.item);
-  const speedBeforeScarf = calculateOtherStat(baseStats.spe, evs.spe, multiplierFor("spe"));
+  const ironBalled = hasIronBall(pokemon.item);
+  const speedItemMultiplier = scarfed
+    ? CHOICE_SCARF_SPEED_MULTIPLIER
+    : ironBalled
+      ? IRON_BALL_SPEED_MULTIPLIER
+      : 1;
+  const speedBeforeItem = calculateOtherStat(baseStats.spe, evs.spe, multiplierFor("spe"));
 
   return {
     hp: calculateHp(baseStats.hp, evs.hp),
@@ -119,10 +133,11 @@ export function calculateFinalStats(pokemon: ParsedPokemon): FinalStats | null {
     def: calculateOtherStat(baseStats.def, evs.def, multiplierFor("def")),
     spa: calculateOtherStat(baseStats.spa, evs.spa, multiplierFor("spa")),
     spd: calculateOtherStat(baseStats.spd, evs.spd, multiplierFor("spd")),
-    spe: scarfed ? Math.floor(speedBeforeScarf * CHOICE_SCARF_SPEED_MULTIPLIER) : speedBeforeScarf,
+    spe: Math.floor(speedBeforeItem * speedItemMultiplier),
     increasedStat: natureModifier?.increased,
     decreasedStat: natureModifier?.decreased,
     speedBoostedByChoiceScarf: scarfed,
+    speedHalvedByIronBall: ironBalled,
   };
 }
 

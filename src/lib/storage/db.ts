@@ -2,6 +2,7 @@ import { openDB, type IDBPDatabase } from "idb";
 import { normalizeOpponent } from "@/lib/opponent";
 import { normalizeTeam } from "@/lib/team";
 import { auth, createCollectionSync, pullMetaDoc, pushMetaDoc } from "@/lib/firebase";
+import { createKeyedDebouncer } from "@/lib/keyedDebounce";
 import type { Opponent, Team, Tournament } from "@/types";
 
 const DB_NAME = "vgc-match-planner";
@@ -21,6 +22,19 @@ const TOURNAMENTS_STORE = "tournaments";
 const teamsSync = createCollectionSync<Team>("teams");
 const opponentsSync = createCollectionSync<Opponent>("opponents");
 const tournamentsSync = createCollectionSync<Tournament>("tournaments");
+
+// Every save* below writes to IndexedDB immediately (cheap, local, no reason
+// to delay it) but debounces the Firestore push per record — a notes
+// textarea's onChange fires on every keystroke, and pushing on every one of
+// those used to flood Firestore's write stream fast enough to throw
+// "resource-exhausted: Write stream exhausted maximum allowed queued
+// writes" (see keyedDebounce.ts's doc comment for the full story). One
+// instance per collection since a plain id is already unique within it, no
+// need to prefix keys.
+const CLOUD_PUSH_DEBOUNCE_MS = 800;
+const teamCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
+const opponentCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
+const tournamentCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
 
 function currentUid(): string | null {
   return auth.currentUser?.uid ?? null;
@@ -118,11 +132,16 @@ async function deleteTeamLocal(id: string): Promise<void> {
 export async function saveMyTeam(team: Team): Promise<void> {
   await putTeamLocal(team);
   const uid = currentUid();
-  if (uid) void teamsSync.push(uid, team).catch((error) => logCloudSyncError("push team", error));
+  if (uid) {
+    teamCloudPushDebouncer.schedule(team.id, () => {
+      void teamsSync.push(uid, team).catch((error) => logCloudSyncError("push team", error));
+    });
+  }
 }
 
 export async function deleteMyTeam(id: string): Promise<void> {
   await deleteTeamLocal(id);
+  teamCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) void teamsSync.remove(uid, id).catch((error) => logCloudSyncError("remove team", error));
 }
@@ -175,12 +194,15 @@ export async function saveOpponent(opponent: Opponent): Promise<void> {
   await putOpponentLocal(opponent);
   const uid = currentUid();
   if (uid) {
-    void opponentsSync.push(uid, opponent).catch((error) => logCloudSyncError("push opponent", error));
+    opponentCloudPushDebouncer.schedule(opponent.id, () => {
+      void opponentsSync.push(uid, opponent).catch((error) => logCloudSyncError("push opponent", error));
+    });
   }
 }
 
 export async function deleteOpponent(id: string): Promise<void> {
   await deleteOpponentLocal(id);
+  opponentCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) {
     void opponentsSync.remove(uid, id).catch((error) => logCloudSyncError("remove opponent", error));
@@ -196,6 +218,7 @@ export async function deleteOpponent(id: string): Promise<void> {
  */
 export async function deleteOpponents(ids: string[]): Promise<void> {
   const db = await getDb();
+  for (const id of ids) opponentCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) {
     void Promise.all(ids.map((id) => opponentsSync.remove(uid, id))).catch((error) =>
@@ -285,14 +308,17 @@ export async function saveTournament(tournament: Tournament): Promise<void> {
   await putTournamentLocal(tournament);
   const uid = currentUid();
   if (uid) {
-    void tournamentsSync
-      .push(uid, tournament)
-      .catch((error) => logCloudSyncError("push tournament", error));
+    tournamentCloudPushDebouncer.schedule(tournament.id, () => {
+      void tournamentsSync
+        .push(uid, tournament)
+        .catch((error) => logCloudSyncError("push tournament", error));
+    });
   }
 }
 
 export async function deleteTournament(id: string): Promise<void> {
   await deleteTournamentLocal(id);
+  tournamentCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) {
     void tournamentsSync.remove(uid, id).catch((error) => logCloudSyncError("remove tournament", error));

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useTournaments } from "@/hooks/useTournaments";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { TournamentsSection } from "@/components/TournamentsSection";
+import { REGULATIONS } from "@/data/regulations";
 
 export default function TournamentsPage() {
   const {
@@ -20,6 +22,9 @@ export default function TournamentsPage() {
   const { tournaments, isLoading: isTournamentsLoading, addTournament, removeTournament } =
     useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
+  const [selectedRegulationId, setSelectedRegulationId] = useState(
+    REGULATIONS[0]?.id ?? "",
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -32,6 +37,7 @@ export default function TournamentsPage() {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="tournaments"
+        selectedRegulationId={selectedRegulationId}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
@@ -44,6 +50,8 @@ export default function TournamentsPage() {
           isLoading={isTeamsLoading || isTournamentsLoading}
           addTournament={addTournament}
           removeTournament={removeTournament}
+          selectedRegulationId={selectedRegulationId}
+          setSelectedRegulationId={setSelectedRegulationId}
         />
       </div>
     </div>

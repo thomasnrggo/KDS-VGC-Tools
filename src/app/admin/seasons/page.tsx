@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { deleteSeason, getSeasons, saveSeason } from "@/lib/firebase";
 import { parseTeamFolder } from "@/lib/teamFolder";
 import { generateId } from "@/lib/id";
@@ -11,11 +12,6 @@ import { AuthMenu } from "@/components/AuthMenu";
 import { Modal } from "@/components/Modal";
 import { toast } from "@/components/Toast";
 import type { Season } from "@/types";
-
-// Client-side gate only, for hiding the page from everyone else — the real
-// enforcement is firestore.rules' write:admin-uid-only rule, which rejects
-// the request regardless of what this check does.
-const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
 
 interface SeasonFormState {
   regulationId: string;
@@ -44,7 +40,7 @@ export default function AdminSeasonsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const isAdmin = !!user && !!ADMIN_UID && user.uid === ADMIN_UID;
+  const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -149,11 +145,11 @@ export default function AdminSeasonsPage() {
   if (!user) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
-        <p className="text-mauve-700">Sign in to continue.</p>
+        <p className="text-zinc-700">Sign in to continue.</p>
         <button
           type="button"
           onClick={signInWithGoogle}
-          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white hover:bg-mauve-700"
+          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
         >
           Sign in with Google
         </button>
@@ -164,11 +160,11 @@ export default function AdminSeasonsPage() {
   if (!isAdmin) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
-        <p className="text-lg font-semibold text-mauve-900">Not authorized</p>
-        <p className="text-sm text-mauve-600">This page is only available to the site admin.</p>
+        <p className="text-lg font-semibold text-zinc-900">Not authorized</p>
+        <p className="text-sm text-zinc-600">This page is only available to the site admin.</p>
         <Link
           href="/matchup-planner"
-          className="text-sm font-medium text-mauve-600 hover:underline"
+          className="text-sm font-medium text-zinc-600 hover:underline"
         >
           ← Back to Matchup Planner
         </Link>
@@ -178,31 +174,34 @@ export default function AdminSeasonsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-mauve-200 bg-mauve-600 px-6 py-4">
+      <header className="flex items-center justify-between border-b border-zinc-200 bg-zinc-600 dark:bg-zinc-400 px-6 py-4">
         <div className="flex items-center gap-4">
           <Link
             href="/matchup-planner"
-            className="text-sm font-medium text-mauve-100 hover:text-white"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
           >
             ← Matchup Planner
           </Link>
           <h1 className="text-lg font-semibold text-white">Admin: Seasons</h1>
+          <Link href="/admin/features" className="text-sm font-medium text-zinc-100 hover:text-white">
+            Features →
+          </Link>
         </div>
         <AuthMenu user={user} isLoading={isAuthLoading} onSignIn={signInWithGoogle} onSignOut={signOut} />
       </header>
 
       <div className="flex flex-col gap-6 p-6 md:flex-row">
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3 md:max-w-md">
-          <h2 className="text-sm font-semibold text-mauve-900">
+          <h2 className="text-sm font-semibold text-zinc-900">
             {editingId ? `Editing ${editingId}` : "New season"}
           </h2>
 
-          <label className="flex flex-col gap-1 text-sm text-mauve-700">
+          <label className="flex flex-col gap-1 text-sm text-zinc-700">
             Regulation
             <select
               value={form.regulationId}
               onChange={(event) => setForm((f) => ({ ...f, regulationId: event.target.value }))}
-              className="rounded-lg border border-mauve-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
             >
               {REGULATIONS.map((regulation) => (
                 <option key={regulation.id} value={regulation.id}>
@@ -212,39 +211,39 @@ export default function AdminSeasonsPage() {
             </select>
           </label>
 
-          <label className="flex flex-col gap-1 text-sm text-mauve-700">
+          <label className="flex flex-col gap-1 text-sm text-zinc-700">
             Label
             <input
               type="text"
               value={form.label}
               onChange={(event) => setForm((f) => ({ ...f, label: event.target.value }))}
               placeholder="M-5"
-              className="rounded-lg border border-mauve-300 px-3 py-2 text-sm"
+              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
             />
           </label>
 
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1 text-sm text-mauve-700">
+            <label className="flex flex-1 flex-col gap-1 text-sm text-zinc-700">
               Start date
               <input
                 type="date"
                 value={form.startDate}
                 onChange={(event) => setForm((f) => ({ ...f, startDate: event.target.value }))}
-                className="rounded-lg border border-mauve-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
             </label>
-            <label className="flex flex-1 flex-col gap-1 text-sm text-mauve-700">
+            <label className="flex flex-1 flex-col gap-1 text-sm text-zinc-700">
               End date
               <input
                 type="date"
                 value={form.endDate}
                 onChange={(event) => setForm((f) => ({ ...f, endDate: event.target.value }))}
-                className="rounded-lg border border-mauve-300 px-3 py-2 text-sm"
+                className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
               />
             </label>
           </div>
 
-          <label className="flex flex-col gap-1 text-sm text-mauve-700">
+          <label className="flex flex-col gap-1 text-sm text-zinc-700">
             Default team set — Showdown&apos;s &ldquo;Team Folder&rdquo; export, each team
             preceded by its own <code className="text-xs">=== [format] Title ===</code> header line
             (a plain single-team paste won&apos;t work)
@@ -253,10 +252,10 @@ export default function AdminSeasonsPage() {
               onChange={(event) => setForm((f) => ({ ...f, rawPaste: event.target.value }))}
               rows={12}
               placeholder={"=== [gen9championsvgc2026regmb] Team Name ===\n\nSpecies @ Item\n...\n\n=== [gen9championsvgc2026regmb] Another Team ===\n\n..."}
-              className="rounded-lg border border-mauve-300 px-3 py-2 font-mono text-xs"
+              className="rounded-lg border border-zinc-300 px-3 py-2 font-mono text-xs"
             />
             {form.rawPaste.trim() && (
-              <span className="text-xs text-mauve-500">
+              <span className="text-xs text-zinc-500">
                 {parseTeamFolder(form.rawPaste.trim()).length} team
                 {parseTeamFolder(form.rawPaste.trim()).length === 1 ? "" : "s"} detected
               </span>
@@ -267,7 +266,7 @@ export default function AdminSeasonsPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white hover:bg-mauve-700 disabled:opacity-50"
+              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:opacity-50"
             >
               {editingId ? "Save changes" : "Add season"}
             </button>
@@ -275,7 +274,7 @@ export default function AdminSeasonsPage() {
               <button
                 type="button"
                 onClick={startAdding}
-                className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
                 Cancel
               </button>
@@ -284,25 +283,25 @@ export default function AdminSeasonsPage() {
         </form>
 
         <div className="flex w-full flex-col gap-2">
-          <h2 className="text-sm font-semibold text-mauve-900">Existing seasons</h2>
+          <h2 className="text-sm font-semibold text-zinc-900">Existing seasons</h2>
           {isLoading ? (
-            <p className="text-sm text-mauve-500">Loading…</p>
+            <p className="text-sm text-zinc-500">Loading…</p>
           ) : seasons.length === 0 ? (
-            <p className="text-sm text-mauve-500">No seasons yet.</p>
+            <p className="text-sm text-zinc-500">No seasons yet.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {seasons.map((season) => (
                 <li
                   key={season.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-mauve-200 p-3"
+                  className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 p-3"
                 >
                   <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-mauve-900">
+                    <span className="text-sm font-semibold text-zinc-900">
                       {season.label} ·{" "}
                       {REGULATIONS.find((r) => r.id === season.regulationId)?.label ??
                         season.regulationId}
                     </span>
-                    <span className="text-xs text-mauve-500">
+                    <span className="text-xs text-zinc-500">
                       {season.startDate} – {season.endDate}
                     </span>
                   </div>
@@ -310,7 +309,7 @@ export default function AdminSeasonsPage() {
                     <button
                       type="button"
                       onClick={() => startEditing(season)}
-                      className="text-sm font-medium text-mauve-600 hover:underline"
+                      className="text-sm font-medium text-zinc-600 hover:underline"
                     >
                       Edit
                     </button>
@@ -333,11 +332,11 @@ export default function AdminSeasonsPage() {
         <Modal onClose={() => setConfirmDeleteId(null)} labelledBy="confirm-delete-season-title">
           <h2
             id="confirm-delete-season-title"
-            className="mb-2 text-lg font-semibold text-mauve-900"
+            className="mb-2 text-lg font-semibold text-zinc-900"
           >
             Delete season {confirmDeleteSeason.label}?
           </h2>
-          <p className="mb-4 text-sm text-mauve-600">This can&apos;t be undone.</p>
+          <p className="mb-4 text-sm text-zinc-600">This can&apos;t be undone.</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -349,7 +348,7 @@ export default function AdminSeasonsPage() {
             <button
               type="button"
               onClick={() => setConfirmDeleteId(null)}
-              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               Cancel
             </button>

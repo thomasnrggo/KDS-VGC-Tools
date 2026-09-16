@@ -131,8 +131,8 @@ export function SearchableSelect({
           autoFocus={autoFocus}
           className={
             compact
-              ? `w-full rounded border border-mauve-300 bg-white py-0.5 pl-1 text-xs text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400 ${onClear ? "pr-5" : "pr-1"}`
-              : `w-full rounded-lg border border-mauve-300 bg-white py-2 pl-2 text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400 ${onClear ? "pr-8" : "pr-2"}`
+              ? `w-full rounded border border-zinc-300 bg-zinc-50 py-0.5 pl-1 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-5" : "pr-1"}`
+              : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-8" : "pr-2"}`
           }
         />
         {onClear && value && (
@@ -150,8 +150,8 @@ export function SearchableSelect({
             aria-label={`Clear ${ariaLabel}`}
             className={
               compact
-                ? "absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-mauve-400 hover:bg-mauve-100 hover:text-mauve-600"
-                : "absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-mauve-400 hover:bg-mauve-100 hover:text-mauve-600"
+                ? "absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                : "absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
             }
           >
             <Icon name={IconName.Close} size={compact ? 10 : 12} />
@@ -165,10 +165,10 @@ export function SearchableSelect({
           role="listbox"
           aria-label={ariaLabel}
           style={{ ...style, width: dropdownWidth }}
-          className="z-20 max-h-72 overflow-y-auto rounded-lg border border-mauve-200 bg-white p-1 shadow-lg"
+          className="z-20 max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-lg"
         >
           {filtered.length === 0 ? (
-            <p className="p-2 text-xs text-mauve-500">No matches.</p>
+            <p className="p-2 text-xs text-zinc-500">No matches.</p>
           ) : (
             filtered.map((option) => (
               <button
@@ -179,12 +179,12 @@ export function SearchableSelect({
                 onClick={() => pick(option)}
                 className={
                   compact
-                    ? "flex w-full items-center gap-2 rounded-md p-1 text-left text-xs text-mauve-900 hover:bg-mauve-100 focus:outline-none focus:ring-2 focus:ring-mauve-400"
-                    : "flex w-full items-center gap-2 rounded-md p-1.5 text-left text-sm text-mauve-900 hover:bg-mauve-100 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+                    ? "flex w-full items-center gap-2 rounded-md p-1 text-left text-xs text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                    : "flex w-full items-center gap-2 rounded-md p-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                 }
               >
                 {option.sprite && (
-                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-mauve-50">
+                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
                     <PokemonSprite species={option.sprite} fill />
                   </span>
                 )}

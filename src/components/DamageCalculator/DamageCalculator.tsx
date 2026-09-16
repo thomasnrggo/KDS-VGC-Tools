@@ -133,8 +133,8 @@ function ToggleButton({ label, active, onClick, className = "" }: ToggleButtonPr
       aria-pressed={active}
       className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
         active
-          ? "border-mauve-600 bg-mauve-600 text-white"
-          : "border-mauve-300 text-mauve-700 hover:bg-mauve-100"
+          ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
+          : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
       } ${className}`}
     >
       {label}
@@ -151,7 +151,7 @@ interface SegmentedToggleProps<T extends string> {
 /** A single connected pill split into mutually-exclusive segments (only one can be active) — visually distinct from ToggleButton's separate-pill rows, matching the reference calculator's "Singles / Doubles" control. Used for the battle format toggle; a generic 2+ option component rather than hardcoding two buttons since the shared border between segments needs each button to know its position in the row. */
 function SegmentedToggle<T extends string>({ options, value, onChange }: SegmentedToggleProps<T>) {
   return (
-    <div className="inline-flex overflow-hidden rounded-full border border-mauve-300">
+    <div className="inline-flex overflow-hidden rounded-full border border-zinc-300">
       {options.map((option, index) => (
         <button
           key={option}
@@ -160,9 +160,9 @@ function SegmentedToggle<T extends string>({ options, value, onChange }: Segment
           aria-pressed={value === option}
           className={`px-4 py-1 text-xs font-medium transition-colors ${
             value === option
-              ? "bg-mauve-600 text-white"
-              : "text-mauve-700 hover:bg-mauve-100"
-          } ${index > 0 ? "border-l border-mauve-300" : ""}`}
+              ? "bg-zinc-600 dark:bg-zinc-400 text-white"
+              : "text-zinc-700 hover:bg-zinc-100"
+          } ${index > 0 ? "border-l border-zinc-300" : ""}`}
         >
           {option}
         </button>
@@ -689,7 +689,7 @@ export function DamageCalculator() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-mauve-500">Loading…</p>;
+    return <p className="text-sm text-zinc-500">Loading…</p>;
   }
 
   return (
@@ -752,8 +752,8 @@ export function DamageCalculator() {
           onMovesChange={attackerMovesChange}
         />
 
-        <div className="flex flex-col gap-3 rounded-lg border border-mauve-200 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+        <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
             Field
           </h3>
 
@@ -766,7 +766,7 @@ export function DamageCalculator() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-mauve-600">Weather</span>
+            <span className="text-xs font-medium text-zinc-600">Weather</span>
             <div className="flex flex-wrap justify-center gap-2">
               {WEATHER_OPTIONS.map((option) => (
                 <ToggleButton
@@ -780,7 +780,7 @@ export function DamageCalculator() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-mauve-600">Terrain</span>
+            <span className="text-xs font-medium text-zinc-600">Terrain</span>
             <div className="flex flex-wrap justify-center gap-2">
               {TERRAIN_OPTIONS.map((option) => (
                 <ToggleButton
@@ -799,7 +799,7 @@ export function DamageCalculator() {
             <ToggleButton label="Gravity" active={gravity} onClick={() => setGravity((v) => !v)} />
           </div>
 
-          <div className="mt-2 grid grid-cols-2 gap-3 border-t border-mauve-200 pt-3">
+          <div className="mt-2 grid grid-cols-2 gap-3 border-t border-zinc-200 pt-3">
             <SideConditionsPanel
               title={`${attackerPokemon?.species ?? "Attacker"} side`}
               conditions={attackerSide}
@@ -872,14 +872,14 @@ function ResultPanel({
         <h3 className="text-xs font-semibold uppercase tracking-wide">Result</h3>
         <p className="text-[11px]">click a move to see details</p>
       </div>
-      <div className="flex flex-col justify-center gap-2 rounded-lg border border-mauve-200 bg-mauve-50 p-4">
+      <div className="flex flex-col justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         {!selectedMove || !attacker || !defender ? (
-          <p className="text-sm text-mauve-500">
+          <p className="text-sm text-zinc-500">
             Click a move on either side to see the calculation.
           </p>
         ) : result ? (
           <>
-            <p className="text-sm text-mauve-900">
+            <p className="text-sm text-zinc-900">
               {formatCalculationLabel(
                 attacker,
                 defender,
@@ -897,7 +897,7 @@ function ResultPanel({
             </p>
             {result.recoilMinPercent !== undefined && (
               <p
-                className="text-xs text-mauve-500"
+                className="text-xs text-zinc-500"
                 title="Self-damage the attacker takes from this move's own recoil and/or Life Orb, as a percent of the ATTACKER's own max HP — not the defender's."
               >
                 Recoil to {attacker?.species}:{" "}
@@ -907,7 +907,7 @@ function ResultPanel({
               </p>
             )}
             <p
-              className="text-xs text-mauve-500"
+              className="text-xs text-zinc-500"
               title="Every hit's damage varies by a random 85%-100% factor — these are the 16 possible exact damage values for this move right now, lowest to highest."
             >
               Possible damage rolls: {result.rolls.join(", ")}
@@ -934,7 +934,7 @@ interface SideConditionsPanelProps {
 function SideConditionsPanel({ title, conditions, onToggle }: SideConditionsPanelProps) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-mauve-600">{title}</span>
+      <span className="text-xs font-medium text-zinc-600">{title}</span>
       <div className="flex flex-col gap-1.5">
         <ToggleButton
           label="Protect"
@@ -1015,18 +1015,18 @@ function MoveList({ title, pokemon, results, side, selectedMove, onSelect }: Mov
   return (
     <div className="flex flex-col gap-1.5">
       <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
           {title}
         </h3>
-        <p className="text-[11px] text-mauve-400">click a move to see details</p>
+        <p className="text-[11px] text-zinc-400">click a move to see details</p>
       </div>
       {results.length === 0 ? (
-        <p className="text-sm text-mauve-500">
+        <p className="text-sm text-zinc-500">
           No moves were parsed for this Pokémon — the pasted export may not
           have listed any.
         </p>
       ) : (
-        <div className="flex flex-col divide-y divide-mauve-100 overflow-hidden rounded-lg border border-mauve-200">
+        <div className="flex flex-col divide-y divide-zinc-100 overflow-hidden rounded-lg border border-zinc-200">
           {results.map(({ move, result }, index) => {
             const isSelected = selectedMove?.side === side && selectedMove.move === move;
             return (
@@ -1037,12 +1037,12 @@ function MoveList({ title, pokemon, results, side, selectedMove, onSelect }: Mov
                 aria-pressed={isSelected}
                 className={`flex items-center justify-between px-3 py-2 text-sm transition-colors ${
                   isSelected
-                    ? "bg-mauve-100 font-semibold text-mauve-900"
-                    : "text-mauve-700 hover:bg-mauve-50"
+                    ? "bg-zinc-100 font-semibold text-zinc-900"
+                    : "text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
                 <span>{move}</span>
-                <span className="text-mauve-500">{formatMoveResultLabel(result)}</span>
+                <span className="text-zinc-500">{formatMoveResultLabel(result)}</span>
               </button>
             );
           })}

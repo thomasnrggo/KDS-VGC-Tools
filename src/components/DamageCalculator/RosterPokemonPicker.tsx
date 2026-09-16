@@ -359,14 +359,14 @@ export function RosterPokemonPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-mauve-200 p-4">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
         {title}
       </h3>
 
-      <div className="flex flex-col gap-1 border-b border-mauve-200 pb-3">
+      <div className="flex flex-col gap-1 border-b border-zinc-200 pb-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-mauve-500">
+          <span className="text-xs font-medium text-zinc-500">
             Regulation: {REGULATIONS[0].label}
           </span>
           <div className="flex shrink-0 items-center gap-3">
@@ -376,7 +376,7 @@ export function RosterPokemonPicker({
                 onClick={() => setIsLoadOpponentOpen(true)}
                 aria-label={`Load a saved opponent's team onto ${title}`}
                 title="Load a saved opponent's team"
-                className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+                className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
               >
                 <Icon name={IconName.Download} size={14} />
                 Load Team
@@ -388,7 +388,7 @@ export function RosterPokemonPicker({
                 onClick={() => setIsExportTeamOpen(true)}
                 aria-label={`Export the whole ${title} team as Showdown export text`}
                 title="Export team as Showdown export text"
-                className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+                className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
               >
                 <Icon name={IconName.ContentCopy} size={14} />
                 Export Team
@@ -400,7 +400,7 @@ export function RosterPokemonPicker({
                 onClick={() => copyPokemonExportText(pokemon)}
                 aria-label={`Export ${title} as Showdown export text`}
                 title="Export as Showdown export text"
-                className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+                className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
               >
                 <Icon name={IconName.ContentCopy} size={14} />
                 Export Set
@@ -414,7 +414,7 @@ export function RosterPokemonPicker({
               }}
               aria-label={`Import a ${title} Pokémon from Showdown export text`}
               title="Import from Showdown export text"
-              className="flex items-center gap-1 text-xs font-medium text-mauve-500 hover:text-mauve-700"
+              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
             >
               <Icon name={IconName.ContentPaste} size={14} />
               Import
@@ -445,8 +445,8 @@ export function RosterPokemonPicker({
               aria-pressed={mega}
               className={`shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors ${
                 mega
-                  ? "border-mauve-600 bg-mauve-600 text-white"
-                  : "border-mauve-300 text-mauve-500 hover:bg-mauve-100"
+                  ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
+                  : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
               }`}
             >
               Mega
@@ -457,10 +457,10 @@ export function RosterPokemonPicker({
 
       {isImportOpen && (
         <Modal onClose={closeImport} labelledBy={importModalTitleId}>
-          <h2 id={importModalTitleId} className="mb-1 text-lg font-semibold text-mauve-900">
+          <h2 id={importModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
             Import {title}
           </h2>
-          <p className="mb-4 text-sm text-mauve-600">
+          <p className="mb-4 text-sm text-zinc-600">
             Paste one Pokémon, or a full team (blank line between each) to replace this side&apos;s
             whole roster.
           </p>
@@ -476,7 +476,7 @@ export function RosterPokemonPicker({
             rows={12}
             autoFocus
             aria-label={`${title} Showdown export text to import`}
-            className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+            className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
           {importError && (
             <p role="alert" className="mt-2 text-sm text-red-600">
@@ -487,14 +487,14 @@ export function RosterPokemonPicker({
             <button
               type="button"
               onClick={submitImport}
-              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
               Import
             </button>
             <button
               type="button"
               onClick={closeImport}
-              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               Cancel
             </button>
@@ -504,14 +504,14 @@ export function RosterPokemonPicker({
 
       {isLoadOpponentOpen && loadableOpponents && (
         <Modal onClose={() => setIsLoadOpponentOpen(false)} labelledBy={loadOpponentModalTitleId}>
-          <h2 id={loadOpponentModalTitleId} className="mb-1 text-lg font-semibold text-mauve-900">
+          <h2 id={loadOpponentModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
             Load {title} Team
           </h2>
-          <p className="mb-4 text-sm text-mauve-600">
+          <p className="mb-4 text-sm text-zinc-600">
             Pick a saved opponent from the Matchup Planner to replace this side&apos;s whole roster.
           </p>
           {loadableOpponents.length === 0 ? (
-            <p className="text-sm text-mauve-600">
+            <p className="text-sm text-zinc-600">
               No opponents saved yet — add one in the Matchup Planner first.
             </p>
           ) : (
@@ -521,10 +521,10 @@ export function RosterPokemonPicker({
                   key={opponent.id}
                   type="button"
                   onClick={() => loadOpponentTeam(opponent)}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-mauve-200 px-3 py-2 text-left hover:bg-mauve-100"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-left hover:bg-zinc-100"
                 >
-                  <span className="truncate text-sm font-medium text-mauve-900">{opponent.label}</span>
-                  <span className="shrink-0 text-xs text-mauve-500">
+                  <span className="truncate text-sm font-medium text-zinc-900">{opponent.label}</span>
+                  <span className="shrink-0 text-xs text-zinc-500">
                     {opponent.team.pokemon.length} Pokémon
                   </span>
                 </button>
@@ -535,7 +535,7 @@ export function RosterPokemonPicker({
             <button
               type="button"
               onClick={() => setIsLoadOpponentOpen(false)}
-              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               Cancel
             </button>
@@ -545,10 +545,10 @@ export function RosterPokemonPicker({
 
       {isExportTeamOpen && (
         <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId}>
-          <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-mauve-900">
+          <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
             Export {title} Team
           </h2>
-          <p className="mb-4 text-sm text-mauve-600">
+          <p className="mb-4 text-sm text-zinc-600">
             The whole {title.toLowerCase()} roster ({sidebar.length} Pokémon) as Showdown export text.
           </p>
           <textarea
@@ -557,20 +557,20 @@ export function RosterPokemonPicker({
             rows={12}
             onFocus={(event) => event.target.select()}
             aria-label={`${title} team Showdown export text`}
-            className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+            className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
           <div className="mt-4 flex gap-2">
             <button
               type="button"
               onClick={copyTeamExportText}
-              className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
               Copy to clipboard
             </button>
             <button
               type="button"
               onClick={() => setIsExportTeamOpen(false)}
-              className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
               Close
             </button>
@@ -592,13 +592,13 @@ export function RosterPokemonPicker({
                   }}
                   aria-label={`Save ${title} as a new roster entry`}
                   title="Save as a new roster entry"
-                  className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-mauve-400 transition-colors hover:bg-mauve-100 hover:text-mauve-700"
+                  className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
                 >
                   <Icon name={IconName.Add} size={14} />
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-2 text-xs text-mauve-500">
+            <div className="flex items-center gap-2 text-xs text-zinc-500">
               {onAbilityChange ? (
                 <div className="min-w-0 flex-1">
                   <SearchableSelect
@@ -648,9 +648,9 @@ export function RosterPokemonPicker({
 
           {breakdown ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[280px] text-xs text-mauve-700">
+              <table className="w-full min-w-[280px] text-xs text-zinc-700">
                 <thead>
-                  <tr className="text-mauve-500">
+                  <tr className="text-zinc-500">
                     <th className="py-0.5 text-left font-normal">Stat</th>
                     <th className="text-right font-normal">Base</th>
                     <th className="text-right font-normal">SP</th>
@@ -668,13 +668,13 @@ export function RosterPokemonPicker({
                         <td className="py-0.5">
                           {STAT_LABELS[stat]}
                           {isIncreased && (
-                            <span className="text-mauve-900" title="Boosted by nature">
+                            <span className="text-zinc-900" title="Boosted by nature">
                               {" "}
                               ↑
                             </span>
                           )}
                           {isDecreased && (
-                            <span className="text-mauve-400" title="Lowered by nature">
+                            <span className="text-zinc-400" title="Lowered by nature">
                               {" "}
                               ↓
                             </span>
@@ -689,7 +689,7 @@ export function RosterPokemonPicker({
                             value={breakdown.statPoints[stat]}
                             onChange={(event) => updateSp(stat, Number(event.target.value))}
                             aria-label={`${title} ${STAT_LABELS[stat]} Stat Points`}
-                            className="w-12 rounded border border-mauve-300 bg-white px-1 py-0.5 text-right text-xs text-mauve-900"
+                            className="w-12 rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-right text-xs text-zinc-900"
                           />
                         </td>
                         <td className="text-right font-medium">
@@ -698,7 +698,7 @@ export function RosterPokemonPicker({
                               title={`${speedLabelParts.join(", ")} multiplies Speed by ×${roundedSpeedMultiplier}`}
                             >
                               {effectiveSpe}{" "}
-                              <span className="text-mauve-500">
+                              <span className="text-zinc-500">
                                 (×{roundedSpeedMultiplier} {speedLabelParts.join(", ")})
                               </span>
                             </span>
@@ -714,7 +714,7 @@ export function RosterPokemonPicker({
                                 updateBattleState({ [stageKey]: Number(event.target.value) })
                               }
                               aria-label={`${title} ${STAT_LABELS[stat]} stage`}
-                              className="rounded border border-mauve-300 bg-white px-1 py-0.5 text-xs text-mauve-900"
+                              className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
                             >
                               {STAGE_OPTIONS.map((stage) => (
                                 <option key={stage} value={stage}>
@@ -739,14 +739,14 @@ export function RosterPokemonPicker({
           {breakdown && (
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 text-xs font-medium text-mauve-600">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600">
                   Status
                   <select
                     value={battleState.status}
                     onChange={(event) =>
                       updateBattleState({ status: event.target.value as PokemonStatus })
                     }
-                    className="rounded border border-mauve-300 bg-white px-1 py-0.5 text-xs text-mauve-900"
+                    className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
                   >
                     {STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
@@ -758,7 +758,7 @@ export function RosterPokemonPicker({
               </div>
 
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-mauve-600">
+                <span className="text-xs font-medium text-zinc-600">
                   Current HP: {currentHp}/{maxHp} ({battleState.currentHpPercent}%)
                 </span>
                 <input
@@ -770,7 +770,7 @@ export function RosterPokemonPicker({
                     updateBattleState({ currentHpPercent: Number(event.target.value) })
                   }
                   aria-label={`${title} current HP percent`}
-                  className="w-full accent-mauve-600"
+                  className="w-full accent-zinc-600"
                 />
               </div>
             </div>
@@ -778,7 +778,7 @@ export function RosterPokemonPicker({
 
           {onMovesChange && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-mauve-600">Moves</span>
+              <span className="text-xs font-medium text-zinc-600">Moves</span>
               <div className="grid grid-cols-2 gap-1.5">
                 {[0, 1, 2, 3].map((slot) => {
                   const moves = pokemon.moves ?? [];
@@ -823,7 +823,7 @@ export function RosterPokemonPicker({
         )}
 
         <div
-          className="flex shrink-0 flex-col gap-1.5 border-l border-mauve-200 pl-3"
+          className="flex shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3"
           role="listbox"
           aria-label={`${title} sidebar`}
         >
@@ -841,10 +841,10 @@ export function RosterPokemonPicker({
                       : entry.pokemon.species
                   }
                   onClick={() => onSelectIndex(index)}
-                  className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 bg-mauve-50 transition-colors ${
+                  className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors ${
                     isSelected
-                      ? "border-mauve-600"
-                      : "border-transparent hover:border-mauve-300"
+                      ? "border-zinc-600"
+                      : "border-transparent hover:border-zinc-300"
                   }`}
                 >
                   <PokemonSprite species={entry.pokemon.species} fill />
@@ -860,7 +860,7 @@ export function RosterPokemonPicker({
                     onClick={() => copyPokemonExportText(entry.pokemon)}
                     aria-label={`Copy ${entry.pokemon.species} as Showdown export text`}
                     title="Copy as Showdown export text"
-                    className="flex h-5 w-5 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
                   >
                     <Icon name={IconName.ContentCopy} size={11} />
                   </button>
@@ -869,7 +869,7 @@ export function RosterPokemonPicker({
                     onClick={() => onRemovePokemon(index)}
                     aria-label={`Remove ${entry.pokemon.species}`}
                     title={`Remove ${entry.pokemon.species}`}
-                    className="flex h-5 w-5 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-red-600"
+                    className="flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-red-600"
                   >
                     <Icon name={IconName.Close} size={11} />
                   </button>

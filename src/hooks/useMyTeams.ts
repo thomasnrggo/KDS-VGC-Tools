@@ -13,6 +13,7 @@ import {
   archiveTeam as toArchived,
   createTeam,
   isTeamArchived,
+  reorderTeams as reorderTeamsList,
   unarchiveTeam as toActive,
   validateTeamSize,
 } from "@/lib/team";
@@ -25,9 +26,11 @@ async function loadLocalOnly(): Promise<{ teams: Team[]; activeTeamId: string | 
   return { teams, activeTeamId };
 }
 
-function sortByUpdatedAtAsc(teams: Team[]): Team[] {
-  // Oldest-first (creation order) so switching teams doesn't reorder the tabs.
-  return [...teams].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
+function sortByCustomOrder(teams: Team[]): Team[] {
+  // Highest sortOrder first — a freshly created team (sortOrder: Date.now())
+  // lands at the top by default; dragging to reorder (see reorderTeams) is
+  // what changes this afterward. See Team.sortOrder's doc comment.
+  return [...teams].sort((a, b) => b.sortOrder - a.sortOrder);
 }
 
 export function useMyTeams() {
@@ -47,7 +50,7 @@ export function useMyTeams() {
       : loadLocalOnly;
     load().then((loaded) => {
       if (cancelled) return;
-      const sorted = sortByUpdatedAtAsc(loaded.teams);
+      const sorted = sortByCustomOrder(loaded.teams);
       // An archived team can never be "the active team" — this both picks
       // the initial one and recovers if the persisted id points at a team
       // that's since been archived (e.g. archived from another device).
@@ -99,7 +102,7 @@ export function useMyTeams() {
       // archived teams too — re-pasting one you'd archived should surface
       // the same message rather than silently making a second copy.
       const duplicate = teams.find(
-        (team) => team.regulationId === regulationId && team.rawPaste === newTeam.rawPaste,
+        (team) => team.regulationIds.includes(regulationId) && team.rawPaste === newTeam.rawPaste,
       );
       if (duplicate) {
         return `"${duplicate.name}" already has this exact roster under this regulation.`;
@@ -113,7 +116,7 @@ export function useMyTeams() {
     [teams, setActiveTeamId],
   );
 
-  /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id and regulationId. Returns an error message, or null on success. */
+  /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id and regulationIds — editing a team's paste doesn't touch which regulations it's tagged with (see addRegulationTag/removeRegulationTag for that). Returns an error message, or null on success. */
   const editTeam = useCallback(
     (id: string, rawPaste: string, name: string): string | null => {
       const trimmed = rawPaste.trim();
@@ -125,14 +128,24 @@ export function useMyTeams() {
       const reparsed = createTeam(
         trimmed,
         name.trim() || "Team",
-        existing?.regulationId ?? REGULATIONS[0].id,
+        existing?.regulationIds[0] ?? REGULATIONS[0].id,
       );
       const sizeError = validateTeamSize(reparsed.pokemon);
       if (sizeError) {
         return sizeError;
       }
 
-      const updated: Team = { ...existing, ...reparsed, id };
+      const updated: Team = {
+        ...existing,
+        ...reparsed,
+        id,
+        regulationIds: existing?.regulationIds ?? reparsed.regulationIds,
+        // reparsed comes from createTeam, which stamps a brand-new sortOrder
+        // (Date.now()) meant for newly created teams — an edit shouldn't
+        // silently jump the team to the top of the list, so keep its
+        // existing position.
+        sortOrder: existing?.sortOrder ?? reparsed.sortOrder,
+      };
       setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
       void saveMyTeam(updated);
       return null;
@@ -197,9 +210,31 @@ export function useMyTeams() {
     [teams],
   );
 
-  const activeTeams = teams.filter((team) => !isTeamArchived(team));
-  const archivedTeams = teams.filter((team) => isTeamArchived(team));
+  // Re-sorted on every render (not just on load) so a drag reorder — which
+  // only patches sortOrder values, not array position — is reflected
+  // immediately regardless of where in `teams` each team happens to sit.
+  const activeTeams = sortByCustomOrder(teams.filter((team) => !isTeamArchived(team)));
+  const archivedTeams = sortByCustomOrder(teams.filter((team) => isTeamArchived(team)));
   const activeTeam = activeTeams.find((team) => team.id === activeTeamId) ?? null;
+
+  /**
+   * Persists a drag-and-drop reorder. `orderedIds` is one visible list (the
+   * Active or Archived tab, already filtered to whatever regulation tab is
+   * showing) in its new top-to-bottom order — see reorderTeams in
+   * src/lib/team.ts for why only that subset's sortOrder values ever change.
+   */
+  const reorderTeams = useCallback(
+    (orderedIds: string[]) => {
+      const changed = reorderTeamsList(teams, orderedIds);
+      if (changed.length === 0) return;
+      const changedById = new Map(changed.map((team) => [team.id, team]));
+      setTeams((prev) => prev.map((team) => changedById.get(team.id) ?? team));
+      for (const team of changed) {
+        void saveMyTeam(team);
+      }
+    },
+    [teams],
+  );
 
   return {
     teams,
@@ -215,5 +250,6 @@ export function useMyTeams() {
     archiveTeam,
     unarchiveTeam,
     setActiveTeamId,
+    reorderTeams,
   };
 }

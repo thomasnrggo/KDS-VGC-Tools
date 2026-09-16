@@ -12,6 +12,7 @@ import { TeamRoster } from "../TeamRoster";
 import { PokemonSlotPicker } from "../PokemonSlotPicker";
 import { RowActionsMenu } from "../RowActionsMenu";
 import { Icon } from "../Icon";
+import { toast } from "../Toast";
 import { IconName } from "@/enums";
 import {
   Collapsible,
@@ -23,18 +24,20 @@ interface OpponentCardProps {
   opponent: Opponent;
   myTeamPokemon: ParsedPokemon[];
   activeTeamId: string | null;
+  /** False when there's an active team but it isn't tagged for the page's currently selected regulation — blocks Lead/Back picking with an explanatory message instead of letting you plan with an off-regulation team (see MyTeamHeader's matching warning badge on the team switcher). */
+  activeTeamMatchesRegulation: boolean;
   onEdit: () => void;
   onRemove: () => void;
   onUpdatePlan: (updater: (plan: MatchupPlan) => MatchupPlan) => void;
   isMatch?: (mon: ParsedPokemon) => boolean;
 }
 
-const COLUMN_CLASSES = "flex min-w-0 flex-col border-r-1 border-mauve-300";
+const COLUMN_CLASSES = "flex min-w-0 flex-col border-r-1 border-zinc-300";
 // h-7 + items-center: matches the roster column's edit/delete icon buttons
 // (also h-7) so every column header — icons or not — centers on the same
 // line, instead of icon-less headers sitting a few px higher.
 const COLUMN_TITLE_CLASSES =
-  "flex h-7 items-center text-xs font-semibold uppercase tracking-wide text-mauve-500";
+  "flex h-7 items-center text-xs font-semibold uppercase tracking-wide text-zinc-500";
 
 /**
  * Its own component (rather than inline JSX reused at both the mobile and
@@ -82,7 +85,7 @@ function GamePlanNotes({
             : "Add your own team above to add notes."
         }
         aria-label="Notes"
-        className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-transparent disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-transparent disabled:cursor-not-allowed disabled:opacity-60"
       />
     </>
   );
@@ -92,6 +95,7 @@ export function OpponentCard({
   opponent,
   myTeamPokemon,
   activeTeamId,
+  activeTeamMatchesRegulation,
   onEdit,
   onRemove,
   onUpdatePlan,
@@ -128,9 +132,23 @@ export function OpponentCard({
     onUpdatePlan((p) => ({ ...p, backMega: next }));
   }
 
+  async function copyRawPaste() {
+    try {
+      await navigator.clipboard.writeText(opponent.team.rawPaste);
+      toast.success(`Copied ${opponent.label} to clipboard`);
+    } catch {
+      toast.error("Couldn't copy to clipboard.");
+    }
+  }
+
   const leadBackContent = !activeTeamId ? (
     <p className="max-w-48 text-sm text-amber-600">
       Add your own team above to pick lead/back Pokémon.
+    </p>
+  ) : !activeTeamMatchesRegulation ? (
+    <p className="max-w-48 text-sm text-amber-600">
+      Your active team isn&apos;t tagged for this regulation — switch to one
+      that is, or tag this one, to pick lead/back Pokémon.
     </p>
   ) : (
     // Stacked (Lead row, then Back row) ONLY in the medium/tablet range —
@@ -203,7 +221,7 @@ export function OpponentCard({
               <div className="flex min-w-0 flex-1 items-center gap-1">
                 <span
                   title={opponent.label}
-                  className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-mauve-600"
+                  className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-zinc-600"
                 >
                   {opponent.label}
                 </span>
@@ -214,20 +232,29 @@ export function OpponentCard({
                     rel="noopener noreferrer"
                     aria-label="Open Poképaste"
                     title="Open Poképaste"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                   >
                     <Icon name={IconName.OpenInNew} size={16} />
                   </a>
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <RowActionsMenu onEdit={onEdit} onRemove={onRemove} label="Opponent options" />
+                <RowActionsMenu
+                  onEdit={onEdit}
+                  onRemove={onRemove}
+                  label="Opponent options"
+                  middleAction={{
+                    label: "Copy",
+                    icon: IconName.ContentCopy,
+                    onClick: copyRawPaste,
+                  }}
+                />
                 <CollapsibleTrigger
                   aria-label={
                     isExpanded ? "Collapse team details" : "Expand team details"
                   }
                   title={isExpanded ? "Collapse" : "Expand"}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                 >
                   <Icon
                     name={isExpanded ? IconName.ExpandLess : IconName.ExpandMore}
@@ -239,8 +266,8 @@ export function OpponentCard({
             <TeamRoster pokemon={opponent.team.pokemon} isMatch={isMatch} />
           </div>
           <CollapsibleContent>
-            <div className="border-t border-mauve-300 p-4">{leadBackContent}</div>
-            <div className="border-t border-mauve-300 p-4">
+            <div className="border-t border-zinc-300 p-4">{leadBackContent}</div>
+            <div className="border-t border-zinc-300 p-4">
               <GamePlanNotes
                 notes={plan.notes}
                 activeTeamId={activeTeamId}
@@ -259,7 +286,7 @@ export function OpponentCard({
               <div className="flex min-w-0 flex-1 items-center gap-1">
                 <span
                   title={opponent.label}
-                  className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-mauve-600 md:max-w-36 lg:max-w-xs"
+                  className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-zinc-600 md:max-w-36 lg:max-w-xs"
                 >
                   {opponent.label}
                 </span>
@@ -270,7 +297,7 @@ export function OpponentCard({
                     rel="noopener noreferrer"
                     aria-label="Open Poképaste"
                     title="Open Poképaste"
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                   >
                     <Icon name={IconName.OpenInNew} size={16} />
                   </a>
@@ -280,7 +307,16 @@ export function OpponentCard({
                 {/* "Open in Damage Calculator" link hidden — feature has known
                     bugs, not ready to publish yet. Re-add once stable (see
                     PLANNING.md). */}
-                <RowActionsMenu onEdit={onEdit} onRemove={onRemove} label="Opponent options" />
+                <RowActionsMenu
+                  onEdit={onEdit}
+                  onRemove={onRemove}
+                  label="Opponent options"
+                  middleAction={{
+                    label: "Copy",
+                    icon: IconName.ContentCopy,
+                    onClick: copyRawPaste,
+                  }}
+                />
               </div>
             </div>
             <TeamRoster pokemon={opponent.team.pokemon} isMatch={isMatch} />

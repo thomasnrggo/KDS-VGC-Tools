@@ -8,3 +8,4 @@ export * from "./stats";
 export * from "./season";
 export * from "./damage";
 export * from "./tournament";
+export * from "./featureFlags";

@@ -2,7 +2,8 @@
  * Regulation M-A (Pokémon Champions, 2026-04-08 to 2026-06-17 UTC) legality
  * data — a now-historical regulation, kept for reference/theorycrafting
  * against past-season opponent data rather than as the app's active ruleset
- * (M-B, still `REGULATIONS[0]`, is current).
+ * (M-C, `REGULATIONS[0]`, is current as of 2026-09-09; M-B held that spot
+ * from 2026-06-17 until then — see regulationMC.ts).
  *
  * CORRECTION (2026-08-22): the first version of this file shipped two real
  * errors, caught by a user who actually played M-A: it re-exported M-B's

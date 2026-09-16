@@ -21,4 +21,6 @@ export interface FinalStats extends BaseStats {
   decreasedStat?: NatureAffectedStatKey;
   /** True when `spe` already has the held Choice Scarf's ×1.5 folded in — for display (e.g. bolding). */
   speedBoostedByChoiceScarf?: boolean;
+  /** True when `spe` already has the held Iron Ball's ×0.5 folded in — for display (e.g. flagging why it's unusually low). */
+  speedHalvedByIronBall?: boolean;
 }

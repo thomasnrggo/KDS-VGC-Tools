@@ -1,0 +1,1 @@
+export { OpponentTeamPreview } from "./OpponentTeamPreview";

@@ -84,6 +84,41 @@
 }
 
 .dark {
+  /*
+   * Dark mode is a palette-level swap, not a per-component dark: sweep —
+   * every existing bg-zinc-*, text-zinc-*, border-zinc-* class across the
+   * app keeps working unchanged, because Tailwind utilities resolve to
+   * var(--color-zinc-N), and this block just points those same variables
+   * at different values while .dark is active on <html>.
+   *
+   * The mapping mirrors the light scale (50 = lightest ... 950 = darkest)
+   * end-for-end (50↔950, 100↔900, ...) so every bg/text/border pairing that
+   * was already high-contrast in light mode — light bg + dark text, or dark
+   * bg + light text — stays high-contrast here too, just with the absolute
+   * lightness direction flipped. 500 is left at its own original value
+   * since it's already a true middle tone.
+   *
+   * The one place this swap alone isn't enough: bg-zinc-600 + text-white
+   * (primary buttons, active tab pills) — swapped, zinc-600 becomes the
+   * *light* end of the scale (original 400's value, ~71% lightness), which
+   * white text can't read against. Rather than fight that here, those
+   * specific components get a targeted dark:bg-zinc-400 (which lands
+   * exactly on original zinc-600's own value — the same lightness this
+   * button already uses successfully in light mode) — see
+   * MyTeamHeader/MyTeamsSection/etc.'s "Add team"-style CTA buttons.
+   */
+  --color-zinc-50: oklch(14.1% 0.005 285.823);
+  --color-zinc-100: oklch(21% 0.006 285.885);
+  --color-zinc-200: oklch(27.4% 0.006 286.033);
+  --color-zinc-300: oklch(37% 0.013 285.805);
+  --color-zinc-400: oklch(44.2% 0.017 285.786);
+  --color-zinc-500: oklch(55.2% 0.016 285.938);
+  --color-zinc-600: oklch(70.5% 0.015 286.067);
+  --color-zinc-700: oklch(87.1% 0.006 286.286);
+  --color-zinc-800: oklch(92% 0.004 286.32);
+  --color-zinc-900: oklch(96.7% 0.001 286.375);
+  --color-zinc-950: oklch(98.5% 0 none);
+
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);

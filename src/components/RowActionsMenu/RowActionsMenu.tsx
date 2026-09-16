@@ -67,7 +67,7 @@ export function RowActionsMenu({
         aria-expanded={isOpen}
         aria-label={label}
         title="More options"
-        className="flex h-7 w-7 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-400 text-zinc-400 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-500"
       >
         <Icon name={IconName.MoreVert} size={16} />
       </button>
@@ -77,7 +77,7 @@ export function RowActionsMenu({
           role="menu"
           aria-label={label}
           onClick={(event) => event.stopPropagation()}
-          className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           <button
             type="button"
@@ -86,7 +86,7 @@ export function RowActionsMenu({
               onEdit();
               setIsOpen(false);
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
           >
             <Icon name={IconName.Edit} size={16} />
             {editLabel}
@@ -99,7 +99,7 @@ export function RowActionsMenu({
                 middleAction.onClick();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
             >
               <Icon name={middleAction.icon} size={16} />
               {middleAction.label}
@@ -112,7 +112,7 @@ export function RowActionsMenu({
               onRemove();
               setIsOpen(false);
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
           >
             <Icon name={IconName.Delete} size={16} />
             {removeLabel}

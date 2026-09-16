@@ -60,10 +60,10 @@ export function TeamCombinationCard({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-b border-mauve-200 pb-4 last:border-b-0 last:pb-0 md:flex-row md:items-start md:gap-6">
+    <div className="flex flex-col gap-3 border-b border-zinc-200 pb-4 last:border-b-0 last:pb-0 md:flex-row md:items-start md:gap-6">
       <div className="flex flex-wrap gap-6">
         <div className="flex flex-col gap-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
             Leads
           </h3>
           <div className="flex gap-2">
@@ -86,7 +86,7 @@ export function TeamCombinationCard({
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
             Back
           </h3>
           <div className="flex gap-2">
@@ -112,7 +112,7 @@ export function TeamCombinationCard({
 
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
             Notes
           </h3>
           <button
@@ -120,7 +120,7 @@ export function TeamCombinationCard({
             onClick={onRemove}
             aria-label="Remove combination"
             title="Remove combination"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-mauve-500 hover:bg-red-50 hover:text-red-600"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600"
           >
             <Icon name={IconName.Delete} size={14} />
           </button>
@@ -135,7 +135,7 @@ export function TeamCombinationCard({
           rows={2}
           placeholder="When would you use this combination?"
           aria-label="Combination notes"
-          className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+          className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
         />
       </div>
     </div>

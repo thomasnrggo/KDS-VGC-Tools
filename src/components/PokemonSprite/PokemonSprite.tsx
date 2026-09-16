@@ -36,8 +36,8 @@ export function PokemonSprite({
         aria-label={species}
         className={
           fill
-            ? "absolute inset-0 flex items-center justify-center rounded-full bg-mauve-200 text-mauve-500"
-            : "flex shrink-0 items-center justify-center rounded-full bg-mauve-200 text-mauve-500"
+            ? "absolute inset-0 flex items-center justify-center rounded-full bg-zinc-200 text-zinc-500"
+            : "flex shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-500"
         }
         style={fill ? undefined : { width: size, height: size }}
         title={species}

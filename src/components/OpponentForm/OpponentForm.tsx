@@ -19,7 +19,7 @@ interface OpponentFormProps {
 }
 
 const INPUT_CLASSES =
-  "w-full rounded-lg border border-mauve-300 bg-white p-2 text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400";
+  "w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
 
 export function OpponentForm({
   initialLabel = "",
@@ -86,7 +86,7 @@ export function OpponentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`flex flex-col gap-3 ${bordered ? "rounded-lg border border-mauve-200 p-4" : ""}`}
+      className={`flex flex-col gap-3 ${bordered ? "rounded-lg border border-zinc-200 p-4" : ""}`}
     >
       <input
         value={label}
@@ -119,14 +119,14 @@ export function OpponentForm({
         <button
           type="submit"
           disabled={isFetching}
-          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isFetching ? "Loading…" : submitLabel}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+          className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
         >
           Cancel
         </button>

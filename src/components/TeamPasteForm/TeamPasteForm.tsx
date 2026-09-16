@@ -61,7 +61,7 @@ export function TeamPasteForm({
         onChange={(event) => setName(event.target.value)}
         placeholder="Team name (e.g. Regionals Team)"
         aria-label="Team name"
-        className="w-full rounded-lg border border-mauve-300 bg-white p-2 text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+        className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
       />
       <textarea
         value={value}
@@ -69,7 +69,7 @@ export function TeamPasteForm({
         rows={16}
         placeholder="Paste your Pokémon Showdown team export here… (or a Poképaste link)"
         aria-label="Pokémon Showdown team export or Poképaste link"
-        className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+        className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
       />
       {error && (
         <p role="alert" className="text-sm text-red-600">
@@ -80,7 +80,7 @@ export function TeamPasteForm({
         <button
           type="submit"
           disabled={isFetching}
-          className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isFetching ? "Loading…" : "Save team"}
         </button>
@@ -88,7 +88,7 @@ export function TeamPasteForm({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+            className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
           >
             Cancel
           </button>

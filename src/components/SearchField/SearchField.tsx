@@ -37,7 +37,7 @@ export function SearchField({
       <Icon
         name={IconName.Search}
         size={18}
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mauve-400"
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
       />
       <input
         ref={inputRef}
@@ -46,7 +46,7 @@ export function SearchField({
         onChange={(event) => onQueryChange(event.target.value)}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="w-full rounded-full border border-mauve-300 bg-white py-2 pl-9 pr-9 text-sm text-mauve-800 placeholder:text-mauve-400 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+        className="w-full rounded-full border border-zinc-300 bg-zinc-50 py-2 pl-9 pr-9 text-sm text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400"
       />
       {/* Doubles as "close search" (once the query is empty) when onClose is
           given — used where a leading toggle icon is the only other way to
@@ -58,7 +58,7 @@ export function SearchField({
           onClick={() => (query ? onQueryChange("") : onClose?.())}
           aria-label={query ? "Clear search" : "Close search"}
           title={query ? "Clear search" : "Close search"}
-          className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-mauve-400 hover:bg-mauve-100 hover:text-mauve-700"
+          className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
         >
           <Icon name={IconName.Close} size={14} />
         </button>

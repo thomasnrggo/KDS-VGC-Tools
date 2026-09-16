@@ -8,6 +8,7 @@ import {
   speedQueryTier,
   type SpeedQueryTier,
 } from "@/lib/stats/speedQuery";
+import { matchesAnySearchTerm, parseSearchTerms } from "@/lib/pokemonMatchesQuery";
 import { PokemonSprite } from "../PokemonSprite";
 import { SearchField } from "../SearchField";
 import { GroupModeToggle } from "../GroupModeToggle";
@@ -127,13 +128,13 @@ function groupValueForSort(group: RowGroup, key: SortKey): number | string | nul
 function tierRowClass(tier: SpeedQueryTier | null): string {
   switch (tier) {
     case "exact":
-      return "bg-amber-50 hover:bg-amber-100/70";
+      return "bg-amber-50 hover:bg-amber-100/70 dark:bg-amber-950 dark:hover:bg-amber-900/70";
     case "higher":
-      return "bg-green-50 hover:bg-green-100/70";
+      return "bg-green-50 hover:bg-green-100/70 dark:bg-green-950 dark:hover:bg-green-900/70";
     case "lower":
-      return "bg-red-50 hover:bg-red-100/70";
+      return "bg-red-50 hover:bg-red-100/70 dark:bg-red-950 dark:hover:bg-red-900/70";
     default:
-      return "hover:bg-mauve-50/60";
+      return "hover:bg-zinc-50/60";
   }
 }
 
@@ -146,7 +147,7 @@ function defaultDirectionFor(key: SortKey): SortDirection {
 function StaticHeader({ label }: { label: string }) {
   return (
     <th className="p-0 font-normal">
-      <span className="flex w-full items-center justify-end px-3 py-2 text-xs font-semibold uppercase tracking-wide text-mauve-500 whitespace-nowrap">
+      <span className="flex w-full items-center justify-end px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 whitespace-nowrap">
         {label}
       </span>
     </th>
@@ -172,7 +173,7 @@ function SortableHeader({
         type="button"
         onClick={onClick}
         className={`flex w-full items-center gap-0.5 px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap ${
-          active ? "text-mauve-900" : "text-mauve-500 hover:text-mauve-800"
+          active ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-800"
         } ${align === "right" ? "justify-end" : "justify-start"}`}
       >
         {align === "right" && active && (
@@ -225,16 +226,17 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
   // sorted by name, since name has no numeric value to compare.
   const numericSortKey: SortKey = sortKey === "name" ? "maxSpeed" : sortKey;
 
+  const searchTerms = useMemo(() => parseSearchTerms(query), [query]);
+
   const visibleGroups = useMemo(() => {
-    const trimmedQuery = query.trim().toLowerCase();
     const filtered =
       numericQuery !== null
         ? rows.filter((row) => {
             const value = valueForSort(row, numericSortKey);
             return typeof value === "number" && matchesSpeedQuery(value, numericQuery);
           })
-        : trimmedQuery
-          ? rows.filter((row) => row.name.toLowerCase().includes(trimmedQuery))
+        : searchTerms.length
+          ? rows.filter((row) => matchesAnySearchTerm(row.name, searchTerms))
           : rows;
 
     const groups = groupMode ? groupRows(filtered) : filtered.map(toSingletonGroup);
@@ -258,7 +260,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
     });
 
     return sorted;
-  }, [rows, query, numericQuery, numericSortKey, sortKey, sortDirection, groupMode]);
+  }, [rows, searchTerms, numericQuery, numericSortKey, sortKey, sortDirection, groupMode]);
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -275,20 +277,20 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
         <SearchField
           query={query}
           onQueryChange={setQuery}
-          placeholder="Search Pokémon or Speed…"
+          placeholder='Search Pokémon or Speed… (e.g. "charizard garchomp")'
           ariaLabel="Search Pokémon or Speed"
           className="max-w-xs"
         />
         <GroupModeToggle grouped={groupMode} onChange={setGroupMode} className="ml-auto" />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-mauve-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-zinc-50">
         <div className="max-h-[70vh] overflow-y-auto">
           <table className="w-full min-w-[1060px] border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-mauve-50">
-              <tr className="border-b border-mauve-200">
+            <thead className="sticky top-0 z-10 bg-zinc-50">
+              <tr className="border-b border-zinc-200">
                 <th className="w-10 p-0 font-normal">
-                  <span className="flex w-full items-center pl-3 pr-1 py-2 text-left text-xs font-semibold uppercase tracking-wide text-mauve-500">
+                  <span className="flex w-full items-center pl-3 pr-1 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     #
                   </span>
                 </th>
@@ -326,9 +328,9 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                 return (
                   <tr
                     key={group.id}
-                    className={`border-b border-mauve-100 last:border-b-0 ${tierRowClass(tier)}`}
+                    className={`border-b border-zinc-100 last:border-b-0 ${tierRowClass(tier)}`}
                   >
-                    <td className="w-10 pl-3 pr-1 py-1.5 text-mauve-400">{index + 1}</td>
+                    <td className="w-10 pl-3 pr-1 py-1.5 text-zinc-400">{index + 1}</td>
                     <td className="px-3 py-1.5">
                       {groupMode ? (
                         // max-w caps the row at 7 sprites (7 * 56px sprite + 6 * 6px gap) before wrapping to a new line.
@@ -347,26 +349,26 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                           <span className="relative h-14 w-14 shrink-0">
                             <PokemonSprite species={representative.speciesName} item={representative.item} fill />
                           </span>
-                          <span className="truncate font-medium text-mauve-900">
+                          <span className="truncate font-medium text-zinc-900">
                             {representative.name}
                           </span>
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-mauve-700">{representative.baseSpe}</td>
-                    <td className="px-3 py-1.5 text-right font-semibold text-mauve-900">
+                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.baseSpe}</td>
+                    <td className="px-3 py-1.5 text-right font-semibold text-zinc-900">
                       {representative.maxSpeed}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-mauve-700">{representative.neutral32}</td>
-                    <td className="px-3 py-1.5 text-right text-mauve-700">{representative.neutral0}</td>
-                    <td className="px-3 py-1.5 text-right text-mauve-700">{representative.minSpeed}</td>
-                    <td className="px-3 py-1.5 text-right font-semibold text-mauve-900">
+                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.neutral32}</td>
+                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.neutral0}</td>
+                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.minSpeed}</td>
+                    <td className="px-3 py-1.5 text-right font-semibold text-zinc-900">
                       {group.maxScarf ?? "–"}
                       {group.scarfNotApplicable && (
                         <Tooltip>
                           <TooltipTrigger
                             render={
-                              <sup className="ml-0.5 cursor-help text-xs font-normal text-mauve-400" />
+                              <sup className="ml-0.5 cursor-help text-xs font-normal text-zinc-400" />
                             }
                           >
                             *
@@ -375,13 +377,13 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                         </Tooltip>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-mauve-700">
+                    <td className="px-3 py-1.5 text-right text-zinc-700">
                       {group.neutral32Scarf ?? "–"}
                       {group.scarfNotApplicable && (
                         <Tooltip>
                           <TooltipTrigger
                             render={
-                              <sup className="ml-0.5 cursor-help text-xs font-normal text-mauve-400" />
+                              <sup className="ml-0.5 cursor-help text-xs font-normal text-zinc-400" />
                             }
                           >
                             *
@@ -395,7 +397,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
               })}
               {visibleGroups.length === 0 && (
                 <tr>
-                  <td colSpan={COLUMNS.length + 2} className="px-3 py-6 text-center text-mauve-400">
+                  <td colSpan={COLUMNS.length + 2} className="px-3 py-6 text-center text-zinc-400">
                     No Pokémon match &quot;{query}&quot;.
                   </td>
                 </tr>

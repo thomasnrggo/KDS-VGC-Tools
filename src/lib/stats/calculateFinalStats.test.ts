@@ -21,6 +21,7 @@ describe("calculateFinalStats", () => {
       increasedStat: "spe",
       decreasedStat: "spa",
       speedBoostedByChoiceScarf: false,
+      speedHalvedByIronBall: false,
     });
   });
 
@@ -37,6 +38,7 @@ describe("calculateFinalStats", () => {
       increasedStat: undefined,
       decreasedStat: undefined,
       speedBoostedByChoiceScarf: false,
+      speedHalvedByIronBall: false,
     });
   });
 
@@ -64,6 +66,21 @@ describe("calculateFinalStats", () => {
     expect(scarfed?.spe).toBe(Math.floor(unscarfed!.spe * 1.5));
     // Only Speed changes — Choice Scarf isn't Choice Band/Specs.
     expect(scarfed?.atk).toBe(unscarfed?.atk);
+  });
+
+  it("folds a held Iron Ball's ×0.5 into Speed and flags it, applied after nature", () => {
+    const unheld = calculateFinalStats({ species: "Garchomp", nature: "Jolly", evs: "32 Spe" });
+    const ironBalled = calculateFinalStats({
+      species: "Garchomp",
+      item: "Iron Ball",
+      nature: "Jolly",
+      evs: "32 Spe",
+    });
+    expect(unheld?.speedHalvedByIronBall).toBe(false);
+    expect(ironBalled?.speedHalvedByIronBall).toBe(true);
+    expect(ironBalled?.spe).toBe(Math.floor(unheld!.spe * 0.5));
+    // Only Speed changes.
+    expect(ironBalled?.atk).toBe(unheld?.atk);
   });
 
   it("resolves the Mega form's (different) base stats when holding the matching Mega Stone", () => {

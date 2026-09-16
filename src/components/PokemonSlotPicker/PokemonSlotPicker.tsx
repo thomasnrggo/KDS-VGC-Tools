@@ -82,7 +82,7 @@ export function PokemonSlotPicker({
               ? `${label}: ${selected.species}. Click to change.`
               : `${label}: none picked. Click to choose.`
           }
-          className="flex h-16 w-16 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-mauve-600"
+          className="flex h-16 w-16 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-600"
         >
           {selected ? (
             <PokemonHoverCard
@@ -92,19 +92,19 @@ export function PokemonSlotPicker({
               megaEnabled={megaEnabled}
               onMegaToggle={onMegaToggle}
             >
-              {(showMega) => (
-                <div className="relative h-full w-full overflow-hidden rounded-lg bg-mauve-500/20">
+              {(displayPokemon) => (
+                <div className="relative h-full w-full overflow-hidden rounded-lg bg-zinc-500/20">
                   <PokemonSprite
-                    species={selected.species}
-                    item={showMega ? selected.item : undefined}
+                    species={displayPokemon.species}
+                    item={displayPokemon.item}
                     fill
                   />
                 </div>
               )}
             </PokemonHoverCard>
           ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-mauve-500 transition-all hover:border-mauve-600 hover:bg-mauve-300/50 cursor-pointer">
-              <Icon className="text-mauve-500" name={IconName.Add} size={24} />
+            <span className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-zinc-500 transition-all hover:border-zinc-600 hover:bg-zinc-300/50 cursor-pointer">
+              <Icon className="text-zinc-500" name={IconName.Add} size={24} />
             </span>
           )}
         </button>
@@ -114,7 +114,7 @@ export function PokemonSlotPicker({
             onClick={() => onChange(null)}
             aria-label={`Clear ${label}`}
             title={`Clear ${label}`}
-            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-mauve-400 text-mauve-700 hover:bg-mauve-500 hover:text-mauve-200 cursor-pointer"
+            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-400 text-zinc-700 hover:bg-zinc-500 hover:text-zinc-200 cursor-pointer"
           >
             <Icon name={IconName.Close} size={12} />
           </button>
@@ -127,10 +127,10 @@ export function PokemonSlotPicker({
           role="listbox"
           aria-label={label}
           style={style}
-          className="z-20 grid w-max grid-cols-3 gap-1 rounded-lg border border-mauve-200 bg-white p-2 shadow-lg"
+          className="z-20 grid w-max grid-cols-3 gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-2 shadow-lg"
         >
           {myTeamPokemon.length === 0 ? (
-            <p className="col-span-3 max-w-40 p-1 text-xs text-mauve-500">
+            <p className="col-span-3 max-w-40 p-1 text-xs text-zinc-500">
               Add your own team first.
             </p>
           ) : (
@@ -142,8 +142,8 @@ export function PokemonSlotPicker({
                 aria-selected={value === index}
                 onClick={() => pick(index)}
                 title={mon.species}
-                className={`flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-mauve-100 focus:outline-none focus:ring-2 focus:ring-mauve-400 ${
-                  value === index ? "bg-mauve-200" : ""
+                className={`flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
+                  value === index ? "bg-zinc-200" : ""
                 }`}
               >
                 <PokemonSprite species={mon.species} size={48} />

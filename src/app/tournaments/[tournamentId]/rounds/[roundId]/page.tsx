@@ -8,10 +8,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { OpponentPokemonCard } from "@/components/OpponentPokemonCard";
 import { TournamentGameCard } from "@/components/TournamentGameCard";
+import { RoundSpeedLine } from "@/components/RoundSpeedLine";
 import { Modal } from "@/components/Modal";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { parseRoundOpponentTeam } from "@/lib/tournament";
+import { REGULATIONS } from "@/data/regulations";
+import { isAdminUid } from "@/lib/admin";
 import type { TournamentGame, TournamentRound } from "@/types";
 
 interface RoundPageProps {
@@ -32,6 +35,7 @@ export default function RoundPage({ params }: RoundPageProps) {
   } = useMyTeams();
   const { tournaments, isLoading: isTournamentsLoading, updateTournament } = useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
+  const isAdmin = isAdminUid(user?.uid);
   const [isEditingRoster, setIsEditingRoster] = useState(false);
   const [rosterDraft, setRosterDraft] = useState("");
 
@@ -39,6 +43,10 @@ export default function RoundPage({ params }: RoundPageProps) {
   const round = tournament?.rounds.find((r) => r.id === roundId) ?? null;
   const team = tournament ? (teams.find((t) => t.id === tournament.teamId) ?? null) : null;
   const isLoading = isTeamsLoading || isTournamentsLoading;
+  // No regulation selector on this page (it's one specific round) — default
+  // the header switcher to whichever regulation the parent tournament was
+  // recorded under.
+  const selectedRegulationId = tournament?.regulationId ?? REGULATIONS[0]?.id ?? "";
 
   function updateRound(updater: (round: TournamentRound) => TournamentRound) {
     updateTournament(tournamentId, (t) => ({
@@ -52,6 +60,19 @@ export default function RoundPage({ params }: RoundPageProps) {
       ...r,
       games: r.games.map((g, i) => (i === gameIndex ? updater(g) : g)) as TournamentRound["games"],
     }));
+  }
+
+  /** Toggles a walkover/bye win on/off — clicking the already-active option clears it back to the normal (game-count-based) result. */
+  function setRoundOutcome(outcome: "walkover" | "bye") {
+    updateRound((r) => {
+      const next = { ...r };
+      if (next.roundOutcome === outcome) {
+        delete next.roundOutcome;
+      } else {
+        next.roundOutcome = outcome;
+      }
+      return next;
+    });
   }
 
   function openRosterEditor() {
@@ -80,6 +101,7 @@ export default function RoundPage({ params }: RoundPageProps) {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="tournaments"
+        selectedRegulationId={selectedRegulationId}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
@@ -87,86 +109,139 @@ export default function RoundPage({ params }: RoundPageProps) {
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-mauve-500">Loading…</p>
+        <p className="p-6 text-sm text-zinc-500">Loading…</p>
       ) : !tournament || !round ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
-          <p className="text-lg font-semibold text-mauve-900">Round not found</p>
-          <p className="text-sm text-mauve-600">It may have been removed on another device.</p>
-          <Link href="/tournaments" className="text-sm font-medium text-mauve-600 hover:underline">
+          <p className="text-lg font-semibold text-zinc-900">Round not found</p>
+          <p className="text-sm text-zinc-600">It may have been removed on another device.</p>
+          <Link href="/tournaments" className="text-sm font-medium text-zinc-600 hover:underline">
             ← Back to Tournaments
           </Link>
         </div>
       ) : (
         <div className="flex w-full flex-col gap-6 p-6">
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/tournaments/${tournamentId}`}
-              aria-label="Back to tournament"
-              title="Back to tournament"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
-            >
-              <Icon name={IconName.ExpandMore} size={20} className="rotate-90" />
-            </Link>
-            <h1 className="text-xl font-semibold text-mauve-900">
-              {round.label} — {tournament.name}
-            </h1>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-mauve-900">Opponent&apos;s team</h2>
-              <button
-                type="button"
-                onClick={openRosterEditor}
-                className="rounded-full border border-mauve-300 px-3 py-1 text-xs font-medium text-mauve-700 hover:bg-mauve-100"
-              >
-                {round.opponentTeam.length > 0 ? "Edit roster" : "Add roster"}
-              </button>
-            </div>
-            {round.opponentTeam.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-mauve-300 bg-mauve-50 px-6 py-8 text-center text-sm text-mauve-600">
-                Paste whatever the team sheet revealed — species, item, ability, nature, and moves.
-                Stat Points aren&apos;t usually shown, so that&apos;s fine to leave out.
-              </p>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {round.opponentTeam.map((mon, index) => (
-                  <OpponentPokemonCard
-                    key={`${mon.species}-${index}`}
-                    pokemon={mon}
-                    note={round.opponentPokemonNotes?.[index] ?? ""}
-                    onNoteChange={(note) =>
-                      updateRound((r) => ({
-                        ...r,
-                        opponentPokemonNotes: { ...r.opponentPokemonNotes, [index]: note },
-                      }))
-                    }
-                  />
-                ))}
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/tournaments/${tournamentId}`}
+                  aria-label="Back to tournament"
+                  title="Back to tournament"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                >
+                  <Icon name={IconName.ExpandMore} size={20} className="rotate-90" />
+                </Link>
+                <h1 className="text-xl font-semibold text-zinc-900">
+                  {round.label} — {tournament.name}
+                </h1>
               </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setRoundOutcome("walkover")}
+                  aria-pressed={round.roundOutcome === "walkover"}
+                  title="The opponent was paired with you but didn't show up"
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    round.roundOutcome === "walkover"
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
+                  }`}
+                >
+                  Walkover
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoundOutcome("bye")}
+                  aria-pressed={round.roundOutcome === "bye"}
+                  title="No opponent to pair with this round (odd number of players)"
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    round.roundOutcome === "bye"
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
+                  }`}
+                >
+                  Bye
+                </button>
+              </div>
+            </div>
+            {round.roundOutcome && (
+              <p className="text-xs text-zinc-500">
+                Recorded as a win without playing any games — the games below are disabled while
+                this is set.
+              </p>
             )}
           </div>
 
-          {team && (
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-              {round.games.map((game, index) => (
-                <TournamentGameCard
-                  key={game.id}
-                  label={`Game ${index + 1}`}
-                  game={game}
-                  opponentTeam={round.opponentTeam}
-                  myTeam={team.pokemon}
-                  onUpdate={(updater) => updateGame(index, updater)}
-                />
-              ))}
+          {/* A bye has no opponent by definition — skip the roster section entirely rather
+              than show an empty-state prompt to paste a team that will never exist. */}
+          {round.roundOutcome !== "bye" && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-zinc-900">Opponent&apos;s team</h2>
+                <button
+                  type="button"
+                  onClick={openRosterEditor}
+                  className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
+                >
+                  {round.opponentTeam.length > 0 ? "Edit roster" : "Add roster"}
+                </button>
+              </div>
+              {round.opponentTeam.length === 0 ? (
+                <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-8 text-center text-sm text-zinc-600">
+                  Paste whatever the team sheet revealed — species, item, ability, nature, and
+                  moves. Stat Points aren&apos;t usually shown, so that&apos;s fine to leave out.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {round.opponentTeam.map((mon, index) => (
+                    <OpponentPokemonCard
+                      key={`${mon.species}-${index}`}
+                      pokemon={mon}
+                      note={round.opponentPokemonNotes?.[index] ?? ""}
+                      onNoteChange={(note) =>
+                        updateRound((r) => ({
+                          ...r,
+                          opponentPokemonNotes: { ...r.opponentPokemonNotes, [index]: note },
+                        }))
+                      }
+                    />
+                  ))}
+                </div>
+              )}
             </div>
+          )}
+
+          {isAdmin && team && round.opponentTeam.length > 0 && (
+            <RoundSpeedLine myTeam={team.pokemon} opponentTeam={round.opponentTeam} />
+          )}
+
+          {team && round.roundOutcome ? (
+            <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-8 text-center text-sm text-zinc-600">
+              No games to log — this round was decided by a {round.roundOutcome}. Clear the toggle
+              above to log games instead.
+            </p>
+          ) : (
+            team && (
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                {round.games.map((game, index) => (
+                  <TournamentGameCard
+                    key={game.id}
+                    label={`Game ${index + 1}`}
+                    game={game}
+                    opponentTeam={round.opponentTeam}
+                    myTeam={team.pokemon}
+                    onUpdate={(updater) => updateGame(index, updater)}
+                  />
+                ))}
+              </div>
+            )
           )}
         </div>
       )}
 
       {isEditingRoster && (
         <Modal onClose={() => setIsEditingRoster(false)} labelledBy="edit-roster-modal-title">
-          <h2 id="edit-roster-modal-title" className="mb-4 text-lg font-semibold text-mauve-900">
+          <h2 id="edit-roster-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
             Opponent&apos;s team
           </h2>
           <div className="flex flex-col gap-3">
@@ -176,20 +251,20 @@ export default function RoundPage({ params }: RoundPageProps) {
               rows={16}
               placeholder="Paste whatever the team sheet revealed — Stat Points are optional…"
               aria-label="Opponent's team"
-              className="w-full resize-y rounded-lg border border-mauve-300 bg-white p-3 font-mono text-sm text-mauve-900 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+              className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={saveRoster}
-                className="rounded-full bg-mauve-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-mauve-700"
+                className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setIsEditingRoster(false)}
-                className="rounded-full border border-mauve-300 px-5 py-2 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
                 Cancel
               </button>

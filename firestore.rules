@@ -19,5 +19,15 @@ service cloud.firestore {
       allow write: if request.auth != null
         && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
     }
+
+    // Admin-controlled per-section on/off switches (see src/types/featureFlags.ts,
+    // src/lib/firebase/featureFlags.ts, and /admin/features) — same
+    // everyone-reads/admin-writes shape as seasons above. Keep this uid in
+    // sync with NEXT_PUBLIC_ADMIN_UID.
+    match /appConfig/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+    }
   }
 }

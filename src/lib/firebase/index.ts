@@ -4,3 +4,4 @@ export { auth, signInWithGoogle, signOutUser } from "./auth";
 export { db } from "./firestore";
 export { createCollectionSync, pushMetaDoc, pullMetaDoc, type SyncableRecord } from "./cloudSync";
 export { getSeasons, saveSeason, deleteSeason } from "./seasons";
+export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";

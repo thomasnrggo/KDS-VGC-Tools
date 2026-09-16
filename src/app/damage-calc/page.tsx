@@ -5,6 +5,7 @@ import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { DamageCalculator } from "@/components/DamageCalculator";
+import { REGULATIONS } from "@/data/regulations";
 
 export default function DamageCalcPage() {
   const {
@@ -29,13 +30,14 @@ export default function DamageCalcPage() {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="damage-calc"
+        selectedRegulationId={REGULATIONS[0]?.id ?? ""}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-4 p-6">
-        <h2 className="text-xl font-semibold text-mauve-900">
+        <h2 className="text-xl font-semibold text-zinc-900">
           Damage Calculator
         </h2>
         {/* DamageCalculator reads ?opponentId= via useSearchParams — Next.js

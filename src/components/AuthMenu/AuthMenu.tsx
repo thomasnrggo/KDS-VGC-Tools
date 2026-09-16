@@ -74,7 +74,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
       <button
         type="button"
         onClick={onSignIn}
-        className="flex h-8 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-sm font-medium text-mauve-700 transition-colors hover:bg-mauve-100 md:h-9"
+        className="flex h-8 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900 md:h-9"
       >
         <GoogleLogo />
         <span className="hidden sm:inline">Sign in</span>
@@ -92,7 +92,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
         aria-haspopup="menu"
         aria-expanded={isMenuOpen}
         aria-label="Account menu"
-        className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-mauve-100 text-sm font-semibold text-mauve-700 md:h-9 md:w-9"
+        className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 md:h-9 md:w-9"
       >
         {user.photoURL ? (
           <Image
@@ -114,13 +114,13 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
           ref={dropdownRef}
           role="menu"
           aria-label="Account menu"
-          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-mauve-200 bg-white py-1 shadow-lg"
+          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
-          <div className="truncate px-3 py-2 text-sm font-medium text-mauve-900">
+          <div className="truncate px-3 py-2 text-sm font-medium text-zinc-900">
             {user.displayName ?? "Signed in"}
           </div>
           {user.email && (
-            <div className="truncate px-3 pb-2 text-xs text-mauve-500">{user.email}</div>
+            <div className="truncate px-3 pb-2 text-xs text-zinc-500">{user.email}</div>
           )}
           <button
             type="button"
@@ -128,7 +128,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
               setIsMenuOpen(false);
               onSignOut();
             }}
-            className="block w-full border-t border-mauve-200 px-3 py-2 text-left text-sm text-mauve-700 hover:bg-mauve-100"
+            className="block w-full border-t border-zinc-200 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
           >
             Sign out
           </button>

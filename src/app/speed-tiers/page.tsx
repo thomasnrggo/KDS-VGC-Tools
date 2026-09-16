@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { SpeedTiersTable } from "@/components/SpeedTiersTable";
 import { SpeedTiersList } from "@/components/SpeedTiersList";
+import { SpeedLine } from "@/components/SpeedLine";
 import { REGULATIONS } from "@/data/regulations";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 
-type View = "table" | "list";
+type View = "table" | "list" | "speedline";
 
 export default function SpeedTiersPage() {
   const {
@@ -23,6 +25,7 @@ export default function SpeedTiersPage() {
     setActiveTeamId,
   } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   const [selectedRegulationId, setSelectedRegulationId] = useState(
     REGULATIONS[0]?.id ?? "",
@@ -32,6 +35,13 @@ export default function SpeedTiersPage() {
     REGULATIONS[0];
 
   const [view, setView] = useState<View>("table");
+  // Belt-and-suspenders: the tab below only ever lets an admin select
+  // "speedline", but if admin status changes out from under an already-open
+  // tab (e.g. signing out), derive back to Table for render rather than
+  // leaving a non-admin viewing a view they can no longer reach through the
+  // UI — computed here instead of synced via an effect, so there's no
+  // separate "wrong view for a tick" render to worry about.
+  const effectiveView: View = view === "speedline" && !isAdmin ? "table" : view;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -44,6 +54,7 @@ export default function SpeedTiersPage() {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="speed-tiers"
+        selectedRegulationId={selectedRegulationId}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
@@ -51,14 +62,14 @@ export default function SpeedTiersPage() {
       />
       <div className="flex w-full flex-col gap-4 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-mauve-900">Speed Tiers</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">Speed Tiers</h2>
           {REGULATIONS.length > 1 ? (
             <div className="relative shrink-0">
               <select
                 value={selectedRegulationId}
                 onChange={(event) => setSelectedRegulationId(event.target.value)}
                 aria-label="Regulation"
-                className="appearance-none rounded-full border border-mauve-300 bg-white py-1 pl-3 pr-8 text-xs font-medium text-mauve-700"
+                className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
               >
                 {REGULATIONS.map((regulation) => (
                   <option key={regulation.id} value={regulation.id}>
@@ -69,11 +80,11 @@ export default function SpeedTiersPage() {
               <Icon
                 name={IconName.ExpandMore}
                 size={14}
-                className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-mauve-500"
+                className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
               />
             </div>
           ) : (
-            <span className="shrink-0 rounded-full border border-mauve-200 bg-mauve-50 px-3 py-1 text-xs font-medium text-mauve-500">
+            <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
               {REGULATIONS[0]?.label}
             </span>
           )}
@@ -82,17 +93,21 @@ export default function SpeedTiersPage() {
         {/* Table = one row per Pokémon, every config as its own column.
             Tiers ("list" internally) = one row per (Pokémon, config) record,
             all sorted together by real Speed value — the pikalytics-style
-            true speed tier list, vs. Table's full per-Pokémon stat spread. */}
+            true speed tier list, vs. Table's full per-Pokémon stat spread.
+            SpeedLine ("speedline" internally) = not the hypothetical-spread
+            reference data the other two views show — your active team's
+            actual Speed (real pasted item/nature/Stat Points) against one
+            saved opponent's, on a shared horizontal line. */}
         <div role="tablist" aria-label="Speed Tiers view" className="flex gap-1.5">
           <button
             type="button"
             role="tab"
-            aria-selected={view === "table"}
+            aria-selected={effectiveView === "table"}
             onClick={() => setView("table")}
             className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              view === "table"
-                ? "bg-mauve-600 text-white"
-                : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
+              effectiveView === "table"
+                ? "bg-zinc-600 dark:bg-zinc-400 text-white"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
             }`}
           >
             Table
@@ -100,28 +115,50 @@ export default function SpeedTiersPage() {
           <button
             type="button"
             role="tab"
-            aria-selected={view === "list"}
+            aria-selected={effectiveView === "list"}
             onClick={() => setView("list")}
             className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-              view === "list"
-                ? "bg-mauve-600 text-white"
-                : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
+              effectiveView === "list"
+                ? "bg-zinc-600 dark:bg-zinc-400 text-white"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
             }`}
           >
             Tiers
           </button>
+          {isAdmin && (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "speedline"}
+              onClick={() => setView("speedline")}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                view === "speedline"
+                  ? "bg-zinc-600 dark:bg-zinc-400 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+              }`}
+            >
+              SpeedLine
+            </button>
+          )}
         </div>
 
-        {selectedRegulation && view === "table" && (
+        {selectedRegulation && effectiveView === "table" && (
           <SpeedTiersTable
             speciesKeys={selectedRegulation.speciesKeys}
             megaStoneItemsForSpecies={selectedRegulation.megaStoneItemsForSpecies}
           />
         )}
-        {selectedRegulation && view === "list" && (
+        {selectedRegulation && effectiveView === "list" && (
           <SpeedTiersList
             speciesKeys={selectedRegulation.speciesKeys}
             megaStoneItemsForSpecies={selectedRegulation.megaStoneItemsForSpecies}
+          />
+        )}
+        {isAdmin && view === "speedline" && (
+          <SpeedLine
+            myTeams={activeTeams}
+            defaultTeamId={activeTeamId ?? undefined}
+            regulationId={selectedRegulationId}
           />
         )}
       </div>

@@ -1,0 +1,1 @@
+export { TeamRegulationTags } from "./TeamRegulationTags";

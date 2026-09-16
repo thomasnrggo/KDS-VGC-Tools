@@ -25,7 +25,7 @@ export function ItemIcon({ item, size = 24 }: ItemIconProps) {
         role="img"
         aria-label={item}
         title={item}
-        className="flex shrink-0 items-center justify-center rounded-full bg-mauve-200/90 text-mauve-500"
+        className="flex shrink-0 items-center justify-center rounded-full bg-zinc-200/90 text-zinc-500"
         style={{ width: size, height: size }}
       >
         <span aria-hidden="true" className="text-[8px] font-bold">
@@ -38,7 +38,7 @@ export function ItemIcon({ item, size = 24 }: ItemIconProps) {
   const src = useFallback ? resolved.fallbackImageUrl! : resolved.imageUrl;
 
   return (
-    <div className="flex shrink-0 items-center justify-center rounded-full bg-mauve-200/90">
+    <div className="flex shrink-0 items-center justify-center rounded-full bg-zinc-200/90">
       <Image
         // Remounts the <Image> when switching from the PokeAPI URL to the
         // local fallback — otherwise Next can keep treating it as the same

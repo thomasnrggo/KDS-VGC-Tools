@@ -26,7 +26,7 @@ export function GroupModeToggle({ grouped, onChange, className = "" }: GroupMode
           aria-label="Grouped"
           onClick={() => onChange(true)}
           className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-            grouped ? "bg-mauve-600 text-white" : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
+            grouped ? "bg-zinc-600 dark:bg-zinc-400 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
           <Group size={18} aria-hidden="true" />
@@ -41,7 +41,7 @@ export function GroupModeToggle({ grouped, onChange, className = "" }: GroupMode
           aria-label="By Pokémon"
           onClick={() => onChange(false)}
           className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-            !grouped ? "bg-mauve-600 text-white" : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
+            !grouped ? "bg-zinc-600 dark:bg-zinc-400 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
           }`}
         >
           <Ungroup size={18} aria-hidden="true" />

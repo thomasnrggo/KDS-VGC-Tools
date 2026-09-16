@@ -25,7 +25,7 @@ export function TypeIcon({ type, size = 16 }: TypeIconProps) {
         role="img"
         aria-label={type}
         title={type}
-        className="flex shrink-0 items-center justify-center rounded bg-mauve-200 text-[8px] font-bold text-mauve-500"
+        className="flex shrink-0 items-center justify-center rounded bg-zinc-200 text-[8px] font-bold text-zinc-500"
         style={{ width: size, height: size }}
       >
         ?

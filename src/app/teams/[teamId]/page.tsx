@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useTournaments } from "@/hooks/useTournaments";
@@ -9,11 +9,13 @@ import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportRow } from "@/components/PokemonReportRow";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
 import { PokemonSprite } from "@/components/PokemonSprite";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { createEmptyCombination } from "@/constants";
 import { computeTeamUsageStats } from "@/lib/tournament";
 import { isTeamArchived } from "@/lib/team";
+import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 
 interface TeamReportPageProps {
@@ -46,18 +48,12 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
 
   const team = teams.find((t) => t.id === teamId) ?? null;
+  // No regulation selector on this page (it's one specific team's own
+  // report) — default the header switcher to whichever regulation this
+  // team itself is tagged for, so it at least includes this team.
+  const selectedRegulationId = team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? "";
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [activeTab, setActiveTab] = useState<ReportTab>("report");
-
-  const notesRef = useRef<HTMLTextAreaElement>(null);
-  const weaknessesRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    for (const el of [notesRef.current, weaknessesRef.current]) {
-      if (!el) continue;
-      el.style.height = "auto";
-      el.style.height = `${el.scrollHeight}px`;
-    }
-  }, [team?.notes, team?.weaknesses]);
 
   function updatePokemonNote(index: number, note: string) {
     updateTeam(teamId, (t) => ({
@@ -103,6 +99,7 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="teams"
+        selectedRegulationId={selectedRegulationId}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
@@ -110,16 +107,16 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-mauve-500">Loading…</p>
+        <p className="p-6 text-sm text-zinc-500">Loading…</p>
       ) : !team ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
-          <p className="text-lg font-semibold text-mauve-900">Team not found</p>
-          <p className="text-sm text-mauve-600">
+          <p className="text-lg font-semibold text-zinc-900">Team not found</p>
+          <p className="text-sm text-zinc-600">
             It may have been removed on another device.
           </p>
           <Link
             href="/teams"
-            className="text-sm font-medium text-mauve-600 hover:underline"
+            className="text-sm font-medium text-zinc-600 hover:underline"
           >
             ← Back to My Teams
           </Link>
@@ -131,26 +128,26 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
               href="/teams"
               aria-label="Back to My Teams"
               title="Back to My Teams"
-              className="flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
             >
               <Icon name={IconName.ExpandMore} size={20} className="rotate-90" />
             </Link>
-            <h1 className="text-xl font-semibold text-mauve-900">
+            <h1 className="text-xl font-semibold text-zinc-900">
               Team report — {team.name}
             </h1>
           </div>
 
           {isTeamArchived(team) && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-mauve-200 bg-mauve-50 px-4 py-3">
-              <span className="flex items-center gap-2 text-sm text-mauve-700">
-                <Icon name={IconName.Archive} size={18} className="shrink-0 text-mauve-500" />
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+              <span className="flex items-center gap-2 text-sm text-zinc-700">
+                <Icon name={IconName.Archive} size={18} className="shrink-0 text-zinc-500" />
                 This team is archived — it&apos;s hidden from the team switcher and can&apos;t be
                 set active until you unarchive it.
               </span>
               <button
                 type="button"
                 onClick={() => unarchiveTeam(team.id)}
-                className="shrink-0 rounded-full border border-mauve-300 px-4 py-1.5 text-sm font-medium text-mauve-700 hover:bg-mauve-100"
+                className="shrink-0 rounded-full border border-zinc-300 px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
                 Unarchive
               </button>
@@ -167,8 +164,8 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
                 onClick={() => setActiveTab(tab.id)}
                 className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? "bg-mauve-600 text-white"
-                    : "bg-mauve-100 text-mauve-700 hover:bg-mauve-200"
+                    ? "bg-zinc-600 dark:bg-zinc-400 text-white"
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                 }`}
               >
                 {tab.label}
@@ -185,23 +182,16 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
                 const slice = team.pokemon.slice(start, end);
                 if (slice.length === 0) return null;
                 return (
-                  <div
-                    key={column}
-                    className="flex flex-col overflow-hidden rounded-lg border border-mauve-200"
-                  >
+                  <div key={column} className="flex flex-col gap-4">
                     {slice.map((mon, i) => {
                       const index = start + i;
                       return (
-                        <div
+                        <PokemonReportRow
                           key={`${mon.species}-${index}`}
-                          className={index % 2 === 0 ? "bg-mauve-200" : "bg-mauve-100"}
-                        >
-                          <PokemonReportRow
-                            pokemon={mon}
-                            note={team.pokemonNotes?.[index] ?? ""}
-                            onNoteChange={(note) => updatePokemonNote(index, note)}
-                          />
-                        </div>
+                          pokemon={mon}
+                          note={team.pokemonNotes?.[index] ?? ""}
+                          onNoteChange={(note) => updatePokemonNote(index, note)}
+                        />
                       );
                     })}
                   </div>
@@ -211,9 +201,9 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
           )}
 
           {activeTab === "strategy" && (
-            <div className="flex flex-col gap-3 rounded-lg border border-mauve-200 bg-white p-4">
+            <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-mauve-900">
+                <h2 className="text-sm font-semibold text-zinc-900">
                   Common combinations
                 </h2>
                 <button
@@ -221,13 +211,13 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
                   onClick={addCombination}
                   aria-label="Add combination"
                   title="Add combination"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-mauve-500 hover:bg-mauve-100 hover:text-mauve-700"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                 >
                   <Icon name={IconName.Add} size={18} />
                 </button>
               </div>
               {(team.combinations ?? []).length === 0 ? (
-                <p className="text-sm text-mauve-500">
+                <p className="text-sm text-zinc-500">
                   No combinations yet — add one to save a lead/back pairing you like using with
                   this team.
                 </p>
@@ -243,38 +233,28 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
                 ))
               )}
 
-              <div className="grid grid-cols-1 gap-4 border-t border-mauve-200 pt-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4 md:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Notes
                   </h2>
-                  <textarea
-                    ref={notesRef}
+                  <RichTextEditor
                     value={team.notes ?? ""}
-                    onChange={(event) =>
-                      updateTeam(teamId, (t) => ({ ...t, notes: event.target.value }))
-                    }
-                    rows={3}
+                    onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
                     placeholder="How does this team play? What's the game plan?"
-                    aria-label="Team notes"
-                    className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+                    ariaLabel="Team notes"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <h2 className="text-xs font-semibold uppercase tracking-wide text-mauve-500">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Weaknesses
                   </h2>
-                  <textarea
-                    ref={weaknessesRef}
+                  <RichTextEditor
                     value={team.weaknesses ?? ""}
-                    onChange={(event) =>
-                      updateTeam(teamId, (t) => ({ ...t, weaknesses: event.target.value }))
-                    }
-                    rows={3}
+                    onChange={(weaknesses) => updateTeam(teamId, (t) => ({ ...t, weaknesses }))}
                     placeholder="What does this team struggle against?"
-                    aria-label="Team weaknesses"
-                    className="min-h-20 max-h-64 w-full resize-none overflow-y-auto rounded-lg border border-mauve-200 bg-mauve-100 p-2 text-sm text-mauve-800 focus:outline-none focus:ring-2 focus:ring-mauve-400"
+                    ariaLabel="Team weaknesses"
                   />
                 </div>
               </div>
@@ -282,20 +262,20 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
           )}
 
           {activeTab === "stats" && (
-            <div className="flex flex-col gap-2 rounded-lg border border-mauve-200 bg-white p-4">
+            <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
               {usageStats.every((stat) => stat.timesPicked === 0) ? (
-                <p className="text-sm text-mauve-500">
+                <p className="text-sm text-zinc-500">
                   No games logged with this team yet — Pokémon usage and win/loss stats
                   accumulate here as you log{" "}
-                  <Link href="/tournaments" className="text-mauve-600 hover:underline">
+                  <Link href="/tournaments" className="text-zinc-600 hover:underline">
                     tournament
                   </Link>{" "}
                   games.
                 </p>
               ) : (
-                <table className="w-full text-xs text-mauve-700">
+                <table className="w-full text-xs text-zinc-700">
                   <thead>
-                    <tr className="text-mauve-500">
+                    <tr className="text-zinc-500">
                       <th className="py-1 text-left font-normal">Pokémon</th>
                       <th className="text-right font-normal">Picked</th>
                       <th className="text-right font-normal">Wins</th>
@@ -305,12 +285,12 @@ export default function TeamReportPage({ params }: TeamReportPageProps) {
                   </thead>
                   <tbody>
                     {usageStats.map((stat) => (
-                      <tr key={stat.index} className="border-t border-mauve-100">
+                      <tr key={stat.index} className="border-t border-zinc-100">
                         <td className="flex items-center gap-2 py-1.5">
                           <span className="relative h-6 w-6 shrink-0">
                             <PokemonSprite species={stat.pokemon.species} fill />
                           </span>
-                          <span className="truncate font-medium text-mauve-900">
+                          <span className="truncate font-medium text-zinc-900">
                             {stat.pokemon.species}
                           </span>
                         </td>

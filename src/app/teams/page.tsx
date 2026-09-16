@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { MyTeamsSection } from "@/components/MyTeamsSection";
+import { REGULATIONS } from "@/data/regulations";
 
 export default function TeamsPage() {
   const {
@@ -13,12 +15,17 @@ export default function TeamsPage() {
     isLoading,
     addTeam,
     editTeam,
+    updateTeam,
     removeTeam,
     archiveTeam,
     unarchiveTeam,
     setActiveTeamId,
+    reorderTeams,
   } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
+  const [selectedRegulationId, setSelectedRegulationId] = useState(
+    REGULATIONS[0]?.id ?? "",
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -31,6 +38,7 @@ export default function TeamsPage() {
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
         currentPage="teams"
+        selectedRegulationId={selectedRegulationId}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
@@ -42,9 +50,13 @@ export default function TeamsPage() {
           isLoading={isLoading}
           addTeam={addTeam}
           editTeam={editTeam}
+          updateTeam={updateTeam}
           removeTeam={removeTeam}
           archiveTeam={archiveTeam}
           unarchiveTeam={unarchiveTeam}
+          reorderTeams={reorderTeams}
+          selectedRegulationId={selectedRegulationId}
+          setSelectedRegulationId={setSelectedRegulationId}
         />
       </div>
     </div>

@@ -3,9 +3,16 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { calculateFinalStats } from "@/lib/stats/calculateFinalStats";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
+import { speciesNamesMegaForm, stripMegaSuffix } from "@/lib/species/megaForm";
+import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { isLikelyMegaStoneItem } from "@/constants";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
+import { TypeIcon } from "../TypeIcon";
+import movesData from "@/data/moves.json";
 import type { ParsedPokemon, StatKey } from "@/types";
+import type { MoveData } from "@/types/damage";
+
+const MOVES = movesData as unknown as Record<string, MoveData>;
 
 // Two side-by-side stat columns, matching how VGC players read a stat screen.
 const LEFT_STATS: StatKey[] = ["hp", "def", "spd"];
@@ -41,12 +48,14 @@ function subscribe(listener: () => void) {
 interface PokemonHoverCardProps {
   pokemon: ParsedPokemon;
   /**
-   * Plain content, or a render function receiving whether the Mega form is
-   * currently toggled on — only meaningful (and only ever passed `false`) for
-   * a Pokémon holding a Mega Stone, so the trigger's own sprite can switch
-   * forms together with the panel's stats. Non-mega holders always get `true`.
+   * Plain content, or a render function receiving the Pokémon as it should
+   * currently be displayed — the original `pokemon` prop when its Mega form
+   * (if it has one) is toggled on, or a base-form copy (species/item both
+   * reverted) when toggled off, so the trigger's own sprite switches forms
+   * together with the panel's stats. A Pokémon with no Mega form always
+   * just gets the original `pokemon` back, unchanged.
    */
-  children: ReactNode | ((showMega: boolean) => ReactNode);
+  children: ReactNode | ((displayPokemon: ParsedPokemon) => ReactNode);
   /** Extra classes for the trigger wrapper — e.g. "h-full w-full" so it fills a responsive grid cell instead of shrink-wrapping to its (fixed-size) children. */
   triggerClassName?: string;
   /**
@@ -112,8 +121,20 @@ export function PokemonHoverCard({
     pokemon.ability || pokemon.nature || pokemon.evs || pokemon.moves?.length,
   );
 
+  // A Mega form shows up in a paste two ways: the far more common "base
+  // species + Mega Stone item" (candidateFormKeys below), or the species
+  // name *itself* already naming the Mega form (e.g. "Golisopod-Mega") —
+  // what Showdown exports when a team was built with the Mega pre-evolved,
+  // common enough in real pasted opponent sheets to need its own check (see
+  // megaForm.ts). Both need to count toward hasMegaForm, and the
+  // already-suffixed case needs its OWN species name stripped when toggled
+  // off — stripping just the item (the old, only, behavior here) is a
+  // no-op for a species string that names the Mega form directly, since
+  // that string alone still resolves straight to the Mega sprite/stats
+  // regardless of item.
+  const speciesIsMegaForm = speciesNamesMegaForm(pokemon.species);
   const hasMegaForm =
-    candidateFormKeys(pokemon.species, pokemon.item).length > 1;
+    speciesIsMegaForm || candidateFormKeys(pokemon.species, pokemon.item).length > 1;
   const holdsUnsupportedMegaStone =
     !hasMegaForm &&
     Boolean(pokemon.item) &&
@@ -128,13 +149,12 @@ export function PokemonHoverCard({
       setInternalShowMega((value) => !value);
     }
   }
-  const effectivePokemon =
-    hasMegaForm && !showMega ? { ...pokemon, item: undefined } : pokemon;
+  const baseSpecies = speciesIsMegaForm ? stripMegaSuffix(pokemon.species) : pokemon.species;
+  const effectivePokemon: ParsedPokemon =
+    hasMegaForm && !showMega ? { ...pokemon, species: baseSpecies, item: undefined } : pokemon;
   const finalStats = hasInfo ? calculateFinalStats(effectivePokemon) : null;
   const resolvedChildren =
-    typeof children === "function"
-      ? children(hasMegaForm ? showMega : true)
-      : children;
+    typeof children === "function" ? children(effectivePokemon) : children;
 
   useEffect(() => {
     if (trigger !== "click" || !isOpen) return;
@@ -176,7 +196,12 @@ export function PokemonHoverCard({
     };
   }, []);
 
-  if (!hasInfo) {
+  // A Mega-eligible Pokémon still needs its popover even with nothing else
+  // parsed (ability/nature/evs/moves) — that's exactly the common case for a
+  // Round's opponent roster, which often reveals only species + item — since
+  // the Mega toggle below is the only way to mark it as the side's Mega for
+  // that game (see TournamentGameCard's single-Mega-per-side logic).
+  if (!hasInfo && !hasMegaForm) {
     return <>{resolvedChildren}</>;
   }
 
@@ -185,7 +210,7 @@ export function PokemonHoverCard({
     const lowered = finalStats && stat === finalStats.decreasedStat;
     const scarfed = stat === "spe" && finalStats?.speedBoostedByChoiceScarf;
     return [
-      boosted ? "text-red-600" : lowered ? "text-blue-600" : "text-mauve-800",
+      boosted ? "text-red-600" : lowered ? "text-blue-600" : "text-zinc-800",
       boosted || lowered || scarfed ? "font-bold" : "font-medium",
     ].join(" ");
   }
@@ -252,12 +277,12 @@ export function PokemonHoverCard({
           ref={tooltipRef}
           role="tooltip"
           style={style}
-          className="pointer-events-auto z-30 flex w-80 cursor-auto overflow-hidden rounded-xl border border-mauve-200 bg-white text-left shadow-lg"
+          className="pointer-events-auto z-30 flex w-80 cursor-auto overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 text-left shadow-lg"
         >
           <div className="min-w-0 flex-1 p-3">
             <div className="mb-0.5 flex items-center justify-between gap-2">
-              <p className="truncate text-base font-bold text-mauve-900">
-                {pokemon.species}
+              <p className="truncate text-base font-bold text-zinc-900">
+                {effectivePokemon.species}
               </p>
               {hasMegaForm && (
                 // A real <button> here can end up nested inside another
@@ -283,8 +308,8 @@ export function PokemonHoverCard({
                   aria-pressed={showMega}
                   className={`shrink-0 cursor-pointer select-none rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${
                     showMega
-                      ? "border-mauve-600 bg-mauve-600 text-white"
-                      : "border-mauve-300 text-mauve-500 hover:bg-mauve-100"
+                      ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
+                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
                   }`}
                 >
                   Mega
@@ -293,14 +318,14 @@ export function PokemonHoverCard({
               {holdsUnsupportedMegaStone && (
                 <span
                   title={`Holding ${pokemon.item} — this Mega form isn't in our sprite/stats data yet`}
-                  className="shrink-0 cursor-help rounded-full border border-mauve-200 px-2.5 py-0.5 text-xs font-semibold text-mauve-400"
+                  className="shrink-0 cursor-help rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-400"
                 >
                   Mega?
                 </span>
               )}
             </div>
             {pokemon.ability && (
-              <p className="mb-2 truncate text-sm text-mauve-400">
+              <p className="mb-2 truncate text-sm text-zinc-400">
                 {pokemon.ability}
               </p>
             )}
@@ -321,7 +346,7 @@ export function PokemonHoverCard({
                     </div>
                   ))}
                 </dl>
-                <div className="w-px shrink-0 bg-mauve-200" />
+                <div className="w-px shrink-0 bg-zinc-200" />
                 <dl className="flex flex-1 flex-col gap-1 pl-2">
                   {RIGHT_STATS.map((stat) => (
                     <div
@@ -347,7 +372,7 @@ export function PokemonHoverCard({
               </div>
             )}
             {/* {(pokemon.nature || pokemon.evs) && (
-              <div className="mt-2 flex flex-col gap-0.5 border-t border-mauve-100 pt-2 text-[11px] text-mauve-400">
+              <div className="mt-2 flex flex-col gap-0.5 border-t border-zinc-100 pt-2 text-[11px] text-zinc-400">
                 {pokemon.nature && <p className="truncate">{pokemon.nature} Nature</p>}
                 {pokemon.evs && <p className="truncate">EVs: {pokemon.evs}</p>}
               </div>
@@ -355,16 +380,24 @@ export function PokemonHoverCard({
           </div>
           {pokemon.moves && pokemon.moves.length > 0 && (
             <>
-              <div className="w-px shrink-0 bg-mauve-200" />
+              <div className="w-px shrink-0 bg-zinc-200" />
               <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
-                {pokemon.moves.map((move) => (
-                  <div
-                    key={move}
-                    className="rounded-md bg-mauve-100 px-2.5 py-1.5 text-xs text-mauve-700"
-                  >
-                    {move}
-                  </div>
-                ))}
+                {pokemon.moves.map((move) => {
+                  const type = MOVES[normalizeSpeciesKey(move)]?.type;
+                  return (
+                    <div
+                      key={move}
+                      className="flex h-7 min-w-0 items-center overflow-hidden rounded-md bg-zinc-100 text-xs text-zinc-700"
+                    >
+                      {type ? (
+                        <TypeIcon type={type} size={28} />
+                      ) : (
+                        <span className="h-7 w-7 shrink-0 bg-zinc-300" />
+                      )}
+                      <span className="min-w-0 truncate px-2">{move}</span>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
