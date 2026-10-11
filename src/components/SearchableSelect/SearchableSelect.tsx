@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PokemonSprite } from "../PokemonSprite";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
@@ -9,9 +9,12 @@ import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 export interface SearchableSelectOption {
   /** Stable key AND the value handed back to onSelect. */
   id: string;
+  /** Displayed as the input's current text once picked, and what substring search filters against — always plain text, even when `content` renders something richer. */
   label: string;
-  /** Species name to render a sprite next to the label (species search) — omitted for options with no natural icon (move search). */
+  /** Species name to render a sprite next to the label (species search) — ignored when `content` is set. */
   sprite?: string;
+  /** Custom rendering for this option's row in the dropdown (e.g. a Showdown-style move/species/item card with type/stats/description) — defaults to a plain `label` (with optional `sprite` thumbnail) when omitted. Built by the caller, since only it knows the shape of whatever data (MoveData, base stats, item/ability descriptions, ...) the row needs. */
+  content?: ReactNode;
 }
 
 interface SearchableSelectProps {
@@ -165,7 +168,7 @@ export function SearchableSelect({
           role="listbox"
           aria-label={ariaLabel}
           style={{ ...style, width: dropdownWidth }}
-          className="z-20 max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-lg"
+          className="z-20 max-h-96 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-lg"
         >
           {filtered.length === 0 ? (
             <p className="p-2 text-xs text-zinc-500">No matches.</p>
@@ -183,12 +186,16 @@ export function SearchableSelect({
                     : "flex w-full items-center gap-2 rounded-md p-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
                 }
               >
-                {option.sprite && (
-                  <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
-                    <PokemonSprite species={option.sprite} fill />
-                  </span>
+                {option.content ?? (
+                  <>
+                    {option.sprite && (
+                      <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
+                        <PokemonSprite species={option.sprite} fill />
+                      </span>
+                    )}
+                    <span className="truncate">{option.label}</span>
+                  </>
                 )}
-                <span className="truncate">{option.label}</span>
               </button>
             ))
           )}

@@ -3,6 +3,7 @@ export * from "./opponent";
 export * from "./teamFolder";
 export * from "./species";
 export * from "./items";
+export * from "./abilities";
 export * from "./bulkImport";
 export * from "./stats";
 export * from "./season";

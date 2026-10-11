@@ -3,8 +3,9 @@ import { calculateFinalStats, resolveBaseStats } from "./calculateFinalStats";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { WEATHER_SPEED_DOUBLING_ABILITIES, MEGA_FORM_ABILITY_BY_FORM_KEY } from "@/constants";
+import type { SpeciesAbility } from "@/types";
 
-const ABILITIES_DATA = abilitiesData as unknown as Record<string, string[]>;
+const ABILITIES_DATA = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
 
 /**
  * Any Speed-boosting/lowering nature works identically for this table —
@@ -106,7 +107,7 @@ function candidateAbilities(speciesKey: string, speciesName: string, item: strin
       if (override) return [override];
     }
   }
-  return ABILITIES_DATA[speciesKey] ?? [];
+  return (ABILITIES_DATA[speciesKey] ?? []).map((ability) => ability.name);
 }
 
 function findSpecialCondition(

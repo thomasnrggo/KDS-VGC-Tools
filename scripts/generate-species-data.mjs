@@ -1,19 +1,29 @@
 // One-off generator for src/data/species.json, src/data/baseStats.json,
-// src/data/speciesTypes.json, and src/data/abilities.json — not a runtime
-// dependency of the app. Pulls species/variety/form/stat/type/ability data
-// from PokeAPI's bulk CSV export (much cheaper than thousands of individual
-// REST calls) and joins them into flat `showdown-style-slug -> { ... }`
-// lookup tables, keyed identically across all four (so a form like
-// "charizard-mega-x" resolves consistently in each).
+// src/data/speciesTypes.json, src/data/abilities.json, and
+// src/data/abilityDescriptions.json — not a runtime dependency of the app.
+// Pulls species/variety/form/stat/type/ability data from PokeAPI's bulk CSV
+// export (much cheaper than thousands of individual REST calls) and joins
+// them into flat `showdown-style-slug -> { ... }` lookup tables, keyed
+// identically across the first four (so a form like "charizard-mega-x"
+// resolves consistently in each).
 //
 // Re-run with `npm run generate:species` when new Pokemon/forms need to be added
 // (e.g. a new game release). See PLANNING.md section 5 for the resolution rules
 // this feeds into, including the hand-maintained alias table for the cases where
 // PokeAPI's naming and Showdown's naming genuinely diverge.
+//
+// Ability *description* text (abilityDescriptions.json) comes from a second
+// source, @pkmn/dex (Smogon/Showdown's own data layer) rather than PokeAPI,
+// since it's Showdown's exact shortDesc wording the team builder's ability
+// picker is meant to display — see docs/team-builder.md §3a for the
+// data-source decision and coverage check (311 abilities checked, only
+// Calyrex's split "As One" doesn't resolve — a known Showdown naming
+// divergence, left with an empty description).
 
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Dex } from "@pkmn/dex";
 
 const CSV_BASE =
   "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv";
@@ -23,6 +33,27 @@ const SPECIES_OUTPUT_PATH = path.join(__dirname, "../src/data/species.json");
 const BASE_STATS_OUTPUT_PATH = path.join(__dirname, "../src/data/baseStats.json");
 const SPECIES_TYPES_OUTPUT_PATH = path.join(__dirname, "../src/data/speciesTypes.json");
 const ABILITIES_OUTPUT_PATH = path.join(__dirname, "../src/data/abilities.json");
+const ABILITY_DESCRIPTIONS_OUTPUT_PATH = path.join(
+  __dirname,
+  "../src/data/abilityDescriptions.json",
+);
+
+/**
+ * Mirrors src/lib/species/normalize.ts's normalizeSpeciesKey — generator
+ * scripts run as plain Node ESM and can't import the app's TypeScript source
+ * directly, so this (short, stable) normalization logic is duplicated here.
+ * Keep in sync if that function's rules change.
+ */
+function normalizeKey(name) {
+  return name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[.'%]/g, "")
+    .replace(/[\s:]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 /** PokeAPI's local_language_id for English, shared by every *_names.csv table. */
 const ENGLISH_LANGUAGE_ID = "9";
@@ -68,6 +99,26 @@ function capitalizeSegments(slug) {
 function capitalize(word) {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
+
+/**
+ * Manual post-generation overrides for species.json's `formSuffix` — cases
+ * where the naive `capitalizeSegments(formIdentifier)` value doesn't match
+ * the actual sprite filename in public/pokemon-sprites/thumbnails-compressed/.
+ * Meowstic's Mega Evolution has one shared, gender-neutral sprite
+ * (0678-Mega.png) despite PokeAPI splitting male/female varieties into
+ * separate rows (identifiers "male-mega"/"female-mega", which would
+ * otherwise capitalize to "Male-Mega"/"Female-Mega") — see PLANNING.md's
+ * Mega Stone section and src/constants/speciesAliases.ts's
+ * meowstic-mega/meowstic-f-mega aliases, which route both genders'
+ * candidate keys to these two species.json keys. Same
+ * "small starting subset, grows as gaps are found" spirit as this app's
+ * other hand-curated tables (see generate-move-data.mjs's
+ * MANUAL_RECOIL_OVERRIDES).
+ */
+const FORM_SUFFIX_OVERRIDES = {
+  "meowstic-male-mega": "Mega",
+  "meowstic-female-mega": "Mega",
+};
 
 async function main() {
   const [
@@ -183,7 +234,8 @@ async function main() {
 
       key = `${species}-${formIdentifier}`;
       if (!(key in speciesOutput)) {
-        speciesOutput[key] = { dexId, formSuffix: capitalizeSegments(formIdentifier) };
+        const formSuffix = FORM_SUFFIX_OVERRIDES[key] ?? capitalizeSegments(formIdentifier);
+        speciesOutput[key] = { dexId, formSuffix };
       }
     }
 
@@ -205,10 +257,23 @@ async function main() {
       const abilities = abilitiesByPokemonId.get(row.id);
       if (abilities && abilities.length > 0) {
         abilitiesOutput[key] = [
-          ...abilities.filter((a) => !a.isHidden).map((a) => a.name),
-          ...abilities.filter((a) => a.isHidden).map((a) => a.name),
+          ...abilities.filter((a) => !a.isHidden).map((a) => ({ name: a.name, isHidden: false })),
+          ...abilities.filter((a) => a.isHidden).map((a) => ({ name: a.name, isHidden: true })),
         ];
       }
+    }
+  }
+
+  const abilityDescriptionsOutput = {};
+  for (const abilities of Object.values(abilitiesOutput)) {
+    for (const { name } of abilities) {
+      const key = normalizeKey(name);
+      if (key in abilityDescriptionsOutput) continue;
+      const dexAbility = Dex.abilities.get(name);
+      abilityDescriptionsOutput[key] = {
+        name,
+        shortDesc: dexAbility.exists ? (dexAbility.shortDesc || dexAbility.desc || "") : "",
+      };
     }
   }
 
@@ -224,6 +289,7 @@ async function main() {
   const sortedBaseStats = sorted(baseStatsOutput);
   const sortedSpeciesTypes = sorted(speciesTypesOutput);
   const sortedAbilities = sorted(abilitiesOutput);
+  const sortedAbilityDescriptions = sorted(abilityDescriptionsOutput);
 
   await writeFile(SPECIES_OUTPUT_PATH, JSON.stringify(sortedSpecies, null, 2) + "\n");
   await writeFile(BASE_STATS_OUTPUT_PATH, JSON.stringify(sortedBaseStats, null, 2) + "\n");
@@ -232,6 +298,10 @@ async function main() {
     JSON.stringify(sortedSpeciesTypes, null, 2) + "\n",
   );
   await writeFile(ABILITIES_OUTPUT_PATH, JSON.stringify(sortedAbilities, null, 2) + "\n");
+  await writeFile(
+    ABILITY_DESCRIPTIONS_OUTPUT_PATH,
+    JSON.stringify(sortedAbilityDescriptions, null, 2) + "\n",
+  );
 
   console.log(
     `Wrote ${Object.keys(sortedSpecies).length} entries to ${path.relative(process.cwd(), SPECIES_OUTPUT_PATH)} (${skipped} rows skipped, no resolvable form)`,
@@ -244,6 +314,9 @@ async function main() {
   );
   console.log(
     `Wrote ${Object.keys(sortedAbilities).length} entries to ${path.relative(process.cwd(), ABILITIES_OUTPUT_PATH)}`,
+  );
+  console.log(
+    `Wrote ${Object.keys(sortedAbilityDescriptions).length} entries to ${path.relative(process.cwd(), ABILITY_DESCRIPTIONS_OUTPUT_PATH)}`,
   );
 }
 

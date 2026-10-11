@@ -1,0 +1,2082 @@
+{
+  "ability-shield": {
+    "name": "Ability Shield",
+    "shortDesc": "Holder's Ability cannot be changed, suppressed, or ignored by any effect."
+  },
+  "abomasite": {
+    "name": "Abomasite",
+    "shortDesc": "If held by an Abomasnow, this item allows it to Mega Evolve in battle."
+  },
+  "absolite": {
+    "name": "Absolite",
+    "shortDesc": "If held by an Absol, this item allows it to Mega Evolve into Mega Absol in battle."
+  },
+  "absolite-z": {
+    "name": "Absolite Z",
+    "shortDesc": "If held by an Absol, this item allows it to Mega Evolve into Mega Absol Z in battle."
+  },
+  "absorb-bulb": {
+    "name": "Absorb Bulb",
+    "shortDesc": "Raises holder's Sp. Atk by 1 stage if hit by a Water-type attack. Single use."
+  },
+  "adamant-crystal": {
+    "name": "Adamant Crystal",
+    "shortDesc": "If held by a Dialga, its Steel- and Dragon-type attacks have 1.2x power."
+  },
+  "adamant-orb": {
+    "name": "Adamant Orb",
+    "shortDesc": "If held by a Dialga, its Steel- and Dragon-type attacks have 1.2x power."
+  },
+  "adrenaline-orb": {
+    "name": "Adrenaline Orb",
+    "shortDesc": "Raises holder's Speed by 1 stage if it gets affected by Intimidate. Single use."
+  },
+  "aerodactylite": {
+    "name": "Aerodactylite",
+    "shortDesc": "If held by an Aerodactyl, this item allows it to Mega Evolve in battle."
+  },
+  "aggronite": {
+    "name": "Aggronite",
+    "shortDesc": "If held by an Aggron, this item allows it to Mega Evolve in battle."
+  },
+  "aguav-berry": {
+    "name": "Aguav Berry",
+    "shortDesc": "Restores 1/3 max HP at 1/4 max HP or less; confuses if -SpD Nature. Single use."
+  },
+  "air-balloon": {
+    "name": "Air Balloon",
+    "shortDesc": "Holder is immune to Ground-type attacks. Pops when holder is hit."
+  },
+  "alakazite": {
+    "name": "Alakazite",
+    "shortDesc": "If held by an Alakazam, this item allows it to Mega Evolve in battle."
+  },
+  "altarianite": {
+    "name": "Altarianite",
+    "shortDesc": "If held by an Altaria, this item allows it to Mega Evolve in battle."
+  },
+  "ampharosite": {
+    "name": "Ampharosite",
+    "shortDesc": "If held by an Ampharos, this item allows it to Mega Evolve in battle."
+  },
+  "apicot-berry": {
+    "name": "Apicot Berry",
+    "shortDesc": "Raises holder's Sp. Def by 1 stage when at 1/4 max HP or less. Single use."
+  },
+  "armor-fossil": {
+    "name": "Armor Fossil",
+    "shortDesc": "Can be revived into Shieldon."
+  },
+  "aspear-berry": {
+    "name": "Aspear Berry",
+    "shortDesc": "Holder is cured if it is frozen. Single use."
+  },
+  "assault-vest": {
+    "name": "Assault Vest",
+    "shortDesc": "Holder's Sp. Def is 1.5x, but it can only select damaging moves."
+  },
+  "audinite": {
+    "name": "Audinite",
+    "shortDesc": "If held by an Audino, this item allows it to Mega Evolve in battle."
+  },
+  "auspicious-armor": {
+    "name": "Auspicious Armor",
+    "shortDesc": "Evolves Charcadet into Armarouge when used."
+  },
+  "babiri-berry": {
+    "name": "Babiri Berry",
+    "shortDesc": "Halves damage taken from a supereffective Steel-type attack. Single use."
+  },
+  "banettite": {
+    "name": "Banettite",
+    "shortDesc": "If held by a Banette, this item allows it to Mega Evolve in battle."
+  },
+  "barbaracite": {
+    "name": "Barbaracite",
+    "shortDesc": "If held by a Barbaracle, this item allows it to Mega Evolve in battle."
+  },
+  "baxcalibrite": {
+    "name": "Baxcalibrite",
+    "shortDesc": "If held by a Baxcalibur, this item allows it to Mega Evolve in battle."
+  },
+  "beedrillite": {
+    "name": "Beedrillite",
+    "shortDesc": "If held by a Beedrill, this item allows it to Mega Evolve in battle."
+  },
+  "belue-berry": {
+    "name": "Belue Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "berry": {
+    "name": "Berry",
+    "shortDesc": "(Gen 2) Restores 10 HP when at 1/2 max HP or less. Single use."
+  },
+  "berry-juice": {
+    "name": "Berry Juice",
+    "shortDesc": "Restores 20 HP when at 1/2 max HP or less. Single use."
+  },
+  "berry-sweet": {
+    "name": "Berry Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "berserk-gene": {
+    "name": "Berserk Gene",
+    "shortDesc": "(Gen 2) On switch-in, raises holder's Attack by 2 and confuses it. Single use."
+  },
+  "big-nugget": {
+    "name": "Big Nugget",
+    "shortDesc": "A big nugget of pure gold that gives off a lustrous gleam."
+  },
+  "big-root": {
+    "name": "Big Root",
+    "shortDesc": "Holder gains 1.3x HP from draining/Aqua Ring/Ingrain/Leech Seed/Strength Sap."
+  },
+  "binding-band": {
+    "name": "Binding Band",
+    "shortDesc": "Holder's partial-trapping moves deal 1/6 max HP per turn instead of 1/8."
+  },
+  "bitter-berry": {
+    "name": "Bitter Berry",
+    "shortDesc": "(Gen 2) Holder is cured if it is confused. Single use."
+  },
+  "black-belt": {
+    "name": "Black Belt",
+    "shortDesc": "Holder's Fighting-type attacks have 1.2x power."
+  },
+  "black-glasses": {
+    "name": "Black Glasses",
+    "shortDesc": "Holder's Dark-type attacks have 1.2x power."
+  },
+  "black-sludge": {
+    "name": "Black Sludge",
+    "shortDesc": "Each turn, if holder is a Poison type, restores 1/16 max HP; loses 1/8 if not."
+  },
+  "blastoisinite": {
+    "name": "Blastoisinite",
+    "shortDesc": "If held by a Blastoise, this item allows it to Mega Evolve in battle."
+  },
+  "blazikenite": {
+    "name": "Blazikenite",
+    "shortDesc": "If held by a Blaziken, this item allows it to Mega Evolve in battle."
+  },
+  "blue-orb": {
+    "name": "Blue Orb",
+    "shortDesc": "If held by a Kyogre, this item triggers its Primal Reversion in battle."
+  },
+  "bluk-berry": {
+    "name": "Bluk Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "blunder-policy": {
+    "name": "Blunder Policy",
+    "shortDesc": "If the holder misses due to accuracy, its Speed is raised by 2 stages. Single use."
+  },
+  "booster-energy": {
+    "name": "Booster Energy",
+    "shortDesc": "Activates the Protosynthesis or Quark Drive Abilities. Single use."
+  },
+  "bottle-cap": {
+    "name": "Bottle Cap",
+    "shortDesc": "Used for Hyper Training. One of a Pokemon's stats is calculated with an IV of 31."
+  },
+  "bright-powder": {
+    "name": "Bright Powder",
+    "shortDesc": "The accuracy of attacks against the holder is 0.9x."
+  },
+  "bug-gem": {
+    "name": "Bug Gem",
+    "shortDesc": "Holder's first successful Bug-type attack will have 1.3x power. Single use."
+  },
+  "bug-memory": {
+    "name": "Bug Memory",
+    "shortDesc": "Holder's Multi-Attack is Bug type."
+  },
+  "burn-drive": {
+    "name": "Burn Drive",
+    "shortDesc": "Holder's Techno Blast is Fire type."
+  },
+  "burnt-berry": {
+    "name": "Burnt Berry",
+    "shortDesc": "(Gen 2) Holder is cured if it is frozen. Single use."
+  },
+  "cameruptite": {
+    "name": "Cameruptite",
+    "shortDesc": "If held by a Camerupt, this item allows it to Mega Evolve in battle."
+  },
+  "cell-battery": {
+    "name": "Cell Battery",
+    "shortDesc": "Raises holder's Attack by 1 if hit by an Electric-type attack. Single use."
+  },
+  "chandelurite": {
+    "name": "Chandelurite",
+    "shortDesc": "If held by a Chandelure, this item allows it to Mega Evolve in battle."
+  },
+  "charcoal": {
+    "name": "Charcoal",
+    "shortDesc": "Holder's Fire-type attacks have 1.2x power."
+  },
+  "charizardite-x": {
+    "name": "Charizardite X",
+    "shortDesc": "If held by a Charizard, this item allows it to Mega Evolve into Mega Charizard X."
+  },
+  "charizardite-y": {
+    "name": "Charizardite Y",
+    "shortDesc": "If held by a Charizard, this item allows it to Mega Evolve into Mega Charizard Y."
+  },
+  "charti-berry": {
+    "name": "Charti Berry",
+    "shortDesc": "Halves damage taken from a supereffective Rock-type attack. Single use."
+  },
+  "cheri-berry": {
+    "name": "Cheri Berry",
+    "shortDesc": "Holder cures itself if it is paralyzed. Single use."
+  },
+  "chesnaughtite": {
+    "name": "Chesnaughtite",
+    "shortDesc": "If held by a Chesnaught, this item allows it to Mega Evolve in battle."
+  },
+  "chesto-berry": {
+    "name": "Chesto Berry",
+    "shortDesc": "Holder wakes up if it is asleep. Single use."
+  },
+  "chilan-berry": {
+    "name": "Chilan Berry",
+    "shortDesc": "Halves damage taken from a Normal-type attack. Single use."
+  },
+  "chill-drive": {
+    "name": "Chill Drive",
+    "shortDesc": "Holder's Techno Blast is Ice type."
+  },
+  "chimechite": {
+    "name": "Chimechite",
+    "shortDesc": "If held by a Chimecho, this item allows it to Mega Evolve in battle."
+  },
+  "chipped-pot": {
+    "name": "Chipped Pot",
+    "shortDesc": "Evolves Sinistea-Antique into Polteageist-Antique when used."
+  },
+  "choice-band": {
+    "name": "Choice Band",
+    "shortDesc": "Holder's Attack is 1.5x, but it can only select the first move it executes."
+  },
+  "choice-scarf": {
+    "name": "Choice Scarf",
+    "shortDesc": "Holder's Speed is 1.5x, but it can only select the first move it executes."
+  },
+  "choice-specs": {
+    "name": "Choice Specs",
+    "shortDesc": "Holder's Sp. Atk is 1.5x, but it can only select the first move it executes."
+  },
+  "chople-berry": {
+    "name": "Chople Berry",
+    "shortDesc": "Halves damage taken from a supereffective Fighting-type attack. Single use."
+  },
+  "claw-fossil": {
+    "name": "Claw Fossil",
+    "shortDesc": "Can be revived into Anorith."
+  },
+  "clear-amulet": {
+    "name": "Clear Amulet",
+    "shortDesc": "Prevents other Pokemon from lowering the holder's stat stages."
+  },
+  "clefablite": {
+    "name": "Clefablite",
+    "shortDesc": "If held by a Clefable, this item allows it to Mega Evolve in battle."
+  },
+  "clover-sweet": {
+    "name": "Clover Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "coba-berry": {
+    "name": "Coba Berry",
+    "shortDesc": "Halves damage taken from a supereffective Flying-type attack. Single use."
+  },
+  "colbur-berry": {
+    "name": "Colbur Berry",
+    "shortDesc": "Halves damage taken from a supereffective Dark-type attack. Single use."
+  },
+  "cornerstone-mask": {
+    "name": "Cornerstone Mask",
+    "shortDesc": "Ogerpon-Cornerstone: 1.2x power attacks; Terastallize to gain Embody Aspect."
+  },
+  "cornn-berry": {
+    "name": "Cornn Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "cover-fossil": {
+    "name": "Cover Fossil",
+    "shortDesc": "Can be revived into Tirtouga."
+  },
+  "covert-cloak": {
+    "name": "Covert Cloak",
+    "shortDesc": "Holder is not affected by the secondary effect of another Pokemon's attack."
+  },
+  "crabominite": {
+    "name": "Crabominite",
+    "shortDesc": "If held by a Crabominable, this item allows it to Mega Evolve in battle."
+  },
+  "cracked-pot": {
+    "name": "Cracked Pot",
+    "shortDesc": "Evolves Sinistea into Polteageist when used."
+  },
+  "crucibellite": {
+    "name": "Crucibellite",
+    "shortDesc": "If held by a Crucibelle, this item allows it to Mega Evolve in battle."
+  },
+  "custap-berry": {
+    "name": "Custap Berry",
+    "shortDesc": "Holder moves first in its priority bracket when at 1/4 max HP or less. Single use."
+  },
+  "damp-rock": {
+    "name": "Damp Rock",
+    "shortDesc": "Holder's use of Rain Dance lasts 8 turns instead of 5."
+  },
+  "dark-gem": {
+    "name": "Dark Gem",
+    "shortDesc": "Holder's first successful Dark-type attack will have 1.3x power. Single use."
+  },
+  "dark-memory": {
+    "name": "Dark Memory",
+    "shortDesc": "Holder's Multi-Attack is Dark type."
+  },
+  "darkranite": {
+    "name": "Darkranite",
+    "shortDesc": "If held by a Darkrai, this item allows it to Mega Evolve in battle."
+  },
+  "dawn-stone": {
+    "name": "Dawn Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "deep-sea-scale": {
+    "name": "Deep Sea Scale",
+    "shortDesc": "If held by a Clamperl, its Sp. Def is doubled."
+  },
+  "deep-sea-tooth": {
+    "name": "Deep Sea Tooth",
+    "shortDesc": "If held by a Clamperl, its Sp. Atk is doubled."
+  },
+  "delphoxite": {
+    "name": "Delphoxite",
+    "shortDesc": "If held by a Delphox, this item allows it to Mega Evolve in battle."
+  },
+  "destiny-knot": {
+    "name": "Destiny Knot",
+    "shortDesc": "If holder becomes infatuated, the other Pokemon also becomes infatuated."
+  },
+  "diancite": {
+    "name": "Diancite",
+    "shortDesc": "If held by a Diancie, this item allows it to Mega Evolve in battle."
+  },
+  "dome-fossil": {
+    "name": "Dome Fossil",
+    "shortDesc": "Can be revived into Kabuto."
+  },
+  "douse-drive": {
+    "name": "Douse Drive",
+    "shortDesc": "Holder's Techno Blast is Water type."
+  },
+  "draco-plate": {
+    "name": "Draco Plate",
+    "shortDesc": "Holder's Dragon-type attacks have 1.2x power. Judgment is Dragon type."
+  },
+  "dragalgite": {
+    "name": "Dragalgite",
+    "shortDesc": "If held by a Dragalge, this item allows it to Mega Evolve in battle."
+  },
+  "dragon-fang": {
+    "name": "Dragon Fang",
+    "shortDesc": "Holder's Dragon-type attacks have 1.2x power."
+  },
+  "dragon-gem": {
+    "name": "Dragon Gem",
+    "shortDesc": "Holder's first successful Dragon-type attack will have 1.3x power. Single use."
+  },
+  "dragon-memory": {
+    "name": "Dragon Memory",
+    "shortDesc": "Holder's Multi-Attack is Dragon type."
+  },
+  "dragon-scale": {
+    "name": "Dragon Scale",
+    "shortDesc": "Evolves Seadra into Kingdra when traded."
+  },
+  "dragoninite": {
+    "name": "Dragoninite",
+    "shortDesc": "If held by a Dragonite, this item allows it to Mega Evolve in battle."
+  },
+  "drampanite": {
+    "name": "Drampanite",
+    "shortDesc": "If held by a Drampa, this item allows it to Mega Evolve in battle."
+  },
+  "dread-plate": {
+    "name": "Dread Plate",
+    "shortDesc": "Holder's Dark-type attacks have 1.2x power. Judgment is Dark type."
+  },
+  "dubious-disc": {
+    "name": "Dubious Disc",
+    "shortDesc": "Evolves Porygon2 into Porygon-Z when traded."
+  },
+  "durin-berry": {
+    "name": "Durin Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "dusk-stone": {
+    "name": "Dusk Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "earth-plate": {
+    "name": "Earth Plate",
+    "shortDesc": "Holder's Ground-type attacks have 1.2x power. Judgment is Ground type."
+  },
+  "eelektrossite": {
+    "name": "Eelektrossite",
+    "shortDesc": "If held by an Eelektross, this item allows it to Mega Evolve in battle."
+  },
+  "eject-button": {
+    "name": "Eject Button",
+    "shortDesc": "If holder survives a hit, it immediately switches out to a chosen ally. Single use."
+  },
+  "eject-pack": {
+    "name": "Eject Pack",
+    "shortDesc": "If the holder's stat stages are lowered, it switches to a chosen ally. Single use."
+  },
+  "electirizer": {
+    "name": "Electirizer",
+    "shortDesc": "Evolves Electabuzz into Electivire when traded."
+  },
+  "electric-gem": {
+    "name": "Electric Gem",
+    "shortDesc": "Holder's first successful Electric-type attack will have 1.3x power. Single use."
+  },
+  "electric-memory": {
+    "name": "Electric Memory",
+    "shortDesc": "Holder's Multi-Attack is Electric type."
+  },
+  "electric-seed": {
+    "name": "Electric Seed",
+    "shortDesc": "If the terrain is Electric Terrain, raises holder's Defense by 1 stage. Single use."
+  },
+  "emboarite": {
+    "name": "Emboarite",
+    "shortDesc": "If held by an Emboar, this item allows it to Mega Evolve in battle."
+  },
+  "enigma-berry": {
+    "name": "Enigma Berry",
+    "shortDesc": "Restores 1/4 max HP after holder is hit by a supereffective move. Single use."
+  },
+  "eviolite": {
+    "name": "Eviolite",
+    "shortDesc": "If holder's species can evolve, its Defense and Sp. Def are 1.5x."
+  },
+  "excadrite": {
+    "name": "Excadrite",
+    "shortDesc": "If held by an Excadrill, this item allows it to Mega Evolve in battle."
+  },
+  "expert-belt": {
+    "name": "Expert Belt",
+    "shortDesc": "Holder's attacks that are super effective against the target do 1.2x damage."
+  },
+  "fairy-feather": {
+    "name": "Fairy Feather",
+    "shortDesc": "Holder's Fairy-type attacks have 1.2x power."
+  },
+  "fairy-gem": {
+    "name": "Fairy Gem",
+    "shortDesc": "Holder's first successful Fairy-type attack will have 1.3x power. Single use."
+  },
+  "fairy-memory": {
+    "name": "Fairy Memory",
+    "shortDesc": "Holder's Multi-Attack is Fairy type."
+  },
+  "falinksite": {
+    "name": "Falinksite",
+    "shortDesc": "If held by a Falinks, this item allows it to Mega Evolve in battle."
+  },
+  "feraligite": {
+    "name": "Feraligite",
+    "shortDesc": "If held by a Feraligatr, this item allows it to Mega Evolve in battle."
+  },
+  "fighting-gem": {
+    "name": "Fighting Gem",
+    "shortDesc": "Holder's first successful Fighting-type attack will have 1.3x power. Single use."
+  },
+  "fighting-memory": {
+    "name": "Fighting Memory",
+    "shortDesc": "Holder's Multi-Attack is Fighting type."
+  },
+  "figy-berry": {
+    "name": "Figy Berry",
+    "shortDesc": "Restores 1/3 max HP at 1/4 max HP or less; confuses if -Atk Nature. Single use."
+  },
+  "fire-gem": {
+    "name": "Fire Gem",
+    "shortDesc": "Holder's first successful Fire-type attack will have 1.3x power. Single use."
+  },
+  "fire-memory": {
+    "name": "Fire Memory",
+    "shortDesc": "Holder's Multi-Attack is Fire type."
+  },
+  "fire-stone": {
+    "name": "Fire Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "fist-plate": {
+    "name": "Fist Plate",
+    "shortDesc": "Holder's Fighting-type attacks have 1.2x power. Judgment is Fighting type."
+  },
+  "flame-orb": {
+    "name": "Flame Orb",
+    "shortDesc": "At the end of every turn, this item attempts to burn the holder."
+  },
+  "flame-plate": {
+    "name": "Flame Plate",
+    "shortDesc": "Holder's Fire-type attacks have 1.2x power. Judgment is Fire type."
+  },
+  "float-stone": {
+    "name": "Float Stone",
+    "shortDesc": "Holder's weight is halved."
+  },
+  "floettite": {
+    "name": "Floettite",
+    "shortDesc": "If held by an Eternal Flower Floette, this item allows it to Mega Evolve in battle."
+  },
+  "flower-sweet": {
+    "name": "Flower Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "flying-gem": {
+    "name": "Flying Gem",
+    "shortDesc": "Holder's first successful Flying-type attack will have 1.3x power. Single use."
+  },
+  "flying-memory": {
+    "name": "Flying Memory",
+    "shortDesc": "Holder's Multi-Attack is Flying type."
+  },
+  "focus-band": {
+    "name": "Focus Band",
+    "shortDesc": "Holder has a 10% chance to survive an attack that would KO it with 1 HP."
+  },
+  "focus-sash": {
+    "name": "Focus Sash",
+    "shortDesc": "If holder's HP is full, will survive an attack that would KO it with 1 HP. Single use."
+  },
+  "fossilized-bird": {
+    "name": "Fossilized Bird",
+    "shortDesc": "Can revive into Dracozolt with Fossilized Drake or Arctozolt with Fossilized Dino."
+  },
+  "fossilized-dino": {
+    "name": "Fossilized Dino",
+    "shortDesc": "Can revive into Arctovish with Fossilized Fish or Arctozolt with Fossilized Bird."
+  },
+  "fossilized-drake": {
+    "name": "Fossilized Drake",
+    "shortDesc": "Can revive into Dracozolt with Fossilized Bird or Dracovish with Fossilized Fish."
+  },
+  "fossilized-fish": {
+    "name": "Fossilized Fish",
+    "shortDesc": "Can revive into Dracovish with Fossilized Drake or Arctovish with Fossilized Dino."
+  },
+  "froslassite": {
+    "name": "Froslassite",
+    "shortDesc": "If held by a Froslass, this item allows it to Mega Evolve in battle."
+  },
+  "full-incense": {
+    "name": "Full Incense",
+    "shortDesc": "Holder moves last in its priority bracket."
+  },
+  "galarica-cuff": {
+    "name": "Galarica Cuff",
+    "shortDesc": "Evolves Galarian Slowpoke into Galarian Slowbro when used."
+  },
+  "galarica-wreath": {
+    "name": "Galarica Wreath",
+    "shortDesc": "Evolves Galarian Slowpoke into Galarian Slowking when used."
+  },
+  "galladite": {
+    "name": "Galladite",
+    "shortDesc": "If held by a Gallade, this item allows it to Mega Evolve in battle."
+  },
+  "ganlon-berry": {
+    "name": "Ganlon Berry",
+    "shortDesc": "Raises holder's Defense by 1 stage when at 1/4 max HP or less. Single use."
+  },
+  "garchompite": {
+    "name": "Garchompite",
+    "shortDesc": "If held by a Garchomp, this item allows it to Mega Evolve into Mega Garchomp."
+  },
+  "garchompite-z": {
+    "name": "Garchompite Z",
+    "shortDesc": "If held by a Garchomp, this item allows it to Mega Evolve into Mega Garchomp Z."
+  },
+  "gardevoirite": {
+    "name": "Gardevoirite",
+    "shortDesc": "If held by a Gardevoir, this item allows it to Mega Evolve in battle."
+  },
+  "gengarite": {
+    "name": "Gengarite",
+    "shortDesc": "If held by a Gengar, this item allows it to Mega Evolve in battle."
+  },
+  "ghost-gem": {
+    "name": "Ghost Gem",
+    "shortDesc": "Holder's first successful Ghost-type attack will have 1.3x power. Single use."
+  },
+  "ghost-memory": {
+    "name": "Ghost Memory",
+    "shortDesc": "Holder's Multi-Attack is Ghost type."
+  },
+  "glalitite": {
+    "name": "Glalitite",
+    "shortDesc": "If held by a Glalie, this item allows it to Mega Evolve in battle."
+  },
+  "glimmoranite": {
+    "name": "Glimmoranite",
+    "shortDesc": "If held by a Glimmora, this item allows it to Mega Evolve in battle."
+  },
+  "gold-berry": {
+    "name": "Gold Berry",
+    "shortDesc": "(Gen 2) Restores 30 HP when at 1/2 max HP or less. Single use."
+  },
+  "gold-bottle-cap": {
+    "name": "Gold Bottle Cap",
+    "shortDesc": "Used for Hyper Training. All of a Pokemon's stats are calculated with an IV of 31."
+  },
+  "golisopite": {
+    "name": "Golisopite",
+    "shortDesc": "If held by a Golisopod, this item allows it to Mega Evolve in battle."
+  },
+  "golurkite": {
+    "name": "Golurkite",
+    "shortDesc": "If held by a Golurk, this item allows it to Mega Evolve in battle."
+  },
+  "grass-gem": {
+    "name": "Grass Gem",
+    "shortDesc": "Holder's first successful Grass-type attack will have 1.3x power. Single use."
+  },
+  "grass-memory": {
+    "name": "Grass Memory",
+    "shortDesc": "Holder's Multi-Attack is Grass type."
+  },
+  "grassy-seed": {
+    "name": "Grassy Seed",
+    "shortDesc": "If the terrain is Grassy Terrain, raises holder's Defense by 1 stage. Single use."
+  },
+  "greninjite": {
+    "name": "Greninjite",
+    "shortDesc": "If held by a Greninja, this item allows it to Mega Evolve in battle."
+  },
+  "grepa-berry": {
+    "name": "Grepa Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "grip-claw": {
+    "name": "Grip Claw",
+    "shortDesc": "Holder's partial-trapping moves always last 7 turns."
+  },
+  "griseous-core": {
+    "name": "Griseous Core",
+    "shortDesc": "If held by a Giratina, its Ghost- and Dragon-type attacks have 1.2x power."
+  },
+  "griseous-orb": {
+    "name": "Griseous Orb",
+    "shortDesc": "If held by a Giratina, its Ghost- and Dragon-type attacks have 1.2x power."
+  },
+  "ground-gem": {
+    "name": "Ground Gem",
+    "shortDesc": "Holder's first successful Ground-type attack will have 1.3x power. Single use."
+  },
+  "ground-memory": {
+    "name": "Ground Memory",
+    "shortDesc": "Holder's Multi-Attack is Ground type."
+  },
+  "gyaradosite": {
+    "name": "Gyaradosite",
+    "shortDesc": "If held by a Gyarados, this item allows it to Mega Evolve in battle."
+  },
+  "haban-berry": {
+    "name": "Haban Berry",
+    "shortDesc": "Halves damage taken from a supereffective Dragon-type attack. Single use."
+  },
+  "hard-stone": {
+    "name": "Hard Stone",
+    "shortDesc": "Holder's Rock-type attacks have 1.2x power."
+  },
+  "hawluchanite": {
+    "name": "Hawluchanite",
+    "shortDesc": "If held by a Hawlucha, this item allows it to Mega Evolve in battle."
+  },
+  "hearthflame-mask": {
+    "name": "Hearthflame Mask",
+    "shortDesc": "Ogerpon-Hearthflame: 1.2x power attacks; Terastallize to gain Embody Aspect."
+  },
+  "heat-rock": {
+    "name": "Heat Rock",
+    "shortDesc": "Holder's use of Sunny Day lasts 8 turns instead of 5."
+  },
+  "heatranite": {
+    "name": "Heatranite",
+    "shortDesc": "If held by a Heatran, this item allows it to Mega Evolve in battle."
+  },
+  "heavy-duty-boots": {
+    "name": "Heavy-Duty Boots",
+    "shortDesc": "When switching in, the holder is unaffected by hazards on its side of the field."
+  },
+  "helix-fossil": {
+    "name": "Helix Fossil",
+    "shortDesc": "Can be revived into Omanyte."
+  },
+  "heracronite": {
+    "name": "Heracronite",
+    "shortDesc": "If held by a Heracross, this item allows it to Mega Evolve in battle."
+  },
+  "hondew-berry": {
+    "name": "Hondew Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "houndoominite": {
+    "name": "Houndoominite",
+    "shortDesc": "If held by a Houndoom, this item allows it to Mega Evolve in battle."
+  },
+  "iapapa-berry": {
+    "name": "Iapapa Berry",
+    "shortDesc": "Restores 1/3 max HP at 1/4 max HP or less; confuses if -Def Nature. Single use."
+  },
+  "ice-berry": {
+    "name": "Ice Berry",
+    "shortDesc": "(Gen 2) Holder is cured if it is burned. Single use."
+  },
+  "ice-gem": {
+    "name": "Ice Gem",
+    "shortDesc": "Holder's first successful Ice-type attack will have 1.3x power. Single use."
+  },
+  "ice-memory": {
+    "name": "Ice Memory",
+    "shortDesc": "Holder's Multi-Attack is Ice type."
+  },
+  "ice-stone": {
+    "name": "Ice Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "icicle-plate": {
+    "name": "Icicle Plate",
+    "shortDesc": "Holder's Ice-type attacks have 1.2x power. Judgment is Ice type."
+  },
+  "icy-rock": {
+    "name": "Icy Rock",
+    "shortDesc": "Holder's use of Snowscape lasts 8 turns instead of 5."
+  },
+  "insect-plate": {
+    "name": "Insect Plate",
+    "shortDesc": "Holder's Bug-type attacks have 1.2x power. Judgment is Bug type."
+  },
+  "iron-ball": {
+    "name": "Iron Ball",
+    "shortDesc": "Holder is grounded, Speed halved. If Flying type, takes neutral Ground damage."
+  },
+  "iron-plate": {
+    "name": "Iron Plate",
+    "shortDesc": "Holder's Steel-type attacks have 1.2x power. Judgment is Steel type."
+  },
+  "jaboca-berry": {
+    "name": "Jaboca Berry",
+    "shortDesc": "If holder is hit by a physical move, attacker loses 1/8 of its max HP. Single use."
+  },
+  "jaw-fossil": {
+    "name": "Jaw Fossil",
+    "shortDesc": "Can be revived into Tyrunt."
+  },
+  "kangaskhanite": {
+    "name": "Kangaskhanite",
+    "shortDesc": "If held by a Kangaskhan, this item allows it to Mega Evolve in battle."
+  },
+  "kasib-berry": {
+    "name": "Kasib Berry",
+    "shortDesc": "Halves damage taken from a supereffective Ghost-type attack. Single use."
+  },
+  "kebia-berry": {
+    "name": "Kebia Berry",
+    "shortDesc": "Halves damage taken from a supereffective Poison-type attack. Single use."
+  },
+  "kee-berry": {
+    "name": "Kee Berry",
+    "shortDesc": "Raises holder's Defense by 1 stage after it is hit by a physical attack. Single use."
+  },
+  "kelpsy-berry": {
+    "name": "Kelpsy Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "kings-rock": {
+    "name": "King's Rock",
+    "shortDesc": "Holder's attacks without a chance to flinch gain a 10% chance to flinch."
+  },
+  "lagging-tail": {
+    "name": "Lagging Tail",
+    "shortDesc": "Holder moves last in its priority bracket."
+  },
+  "lansat-berry": {
+    "name": "Lansat Berry",
+    "shortDesc": "Holder gains the Focus Energy effect when at 1/4 max HP or less. Single use."
+  },
+  "latiasite": {
+    "name": "Latiasite",
+    "shortDesc": "If held by a Latias, this item allows it to Mega Evolve in battle."
+  },
+  "latiosite": {
+    "name": "Latiosite",
+    "shortDesc": "If held by a Latios, this item allows it to Mega Evolve in battle."
+  },
+  "lax-incense": {
+    "name": "Lax Incense",
+    "shortDesc": "The accuracy of attacks against the holder is 0.9x."
+  },
+  "leaf-stone": {
+    "name": "Leaf Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "leek": {
+    "name": "Leek",
+    "shortDesc": "If held by a Farfetch’d or Sirfetch’d, its critical hit ratio is raised by 2 stages."
+  },
+  "leftovers": {
+    "name": "Leftovers",
+    "shortDesc": "At the end of every turn, holder restores 1/16 of its max HP."
+  },
+  "leppa-berry": {
+    "name": "Leppa Berry",
+    "shortDesc": "Restores 10 PP to the first of the holder's moves to reach 0 PP. Single use."
+  },
+  "liechi-berry": {
+    "name": "Liechi Berry",
+    "shortDesc": "Raises holder's Attack by 1 stage when at 1/4 max HP or less. Single use."
+  },
+  "life-orb": {
+    "name": "Life Orb",
+    "shortDesc": "Holder's attacks do 1.3x damage, and it loses 1/10 its max HP after the attack."
+  },
+  "light-ball": {
+    "name": "Light Ball",
+    "shortDesc": "If held by a Pikachu, its Attack and Sp. Atk are doubled."
+  },
+  "light-clay": {
+    "name": "Light Clay",
+    "shortDesc": "Holder's use of Aurora Veil, Light Screen, or Reflect lasts 8 turns instead of 5."
+  },
+  "loaded-dice": {
+    "name": "Loaded Dice",
+    "shortDesc": "Holder's moves that hit 2-5 times hit 4-5 times; Population Bomb hits 4-10 times."
+  },
+  "lopunnite": {
+    "name": "Lopunnite",
+    "shortDesc": "If held by a Lopunny, this item allows it to Mega Evolve in battle."
+  },
+  "love-sweet": {
+    "name": "Love Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "lucarionite": {
+    "name": "Lucarionite",
+    "shortDesc": "If held by a Lucario, this item allows it to Mega Evolve into Mega Lucario in battle."
+  },
+  "lucarionite-z": {
+    "name": "Lucarionite Z",
+    "shortDesc": "If held by a Lucario, this item allows it to Mega Evolve into Mega Lucario Z in battle."
+  },
+  "lucky-punch": {
+    "name": "Lucky Punch",
+    "shortDesc": "If held by a Chansey, its critical hit ratio is raised by 2 stages."
+  },
+  "lum-berry": {
+    "name": "Lum Berry",
+    "shortDesc": "Holder cures itself if it has a non-volatile status or is confused. Single use."
+  },
+  "luminous-moss": {
+    "name": "Luminous Moss",
+    "shortDesc": "Raises holder's Sp. Def by 1 stage if hit by a Water-type attack. Single use."
+  },
+  "lustrous-globe": {
+    "name": "Lustrous Globe",
+    "shortDesc": "If held by a Palkia, its Water- and Dragon-type attacks have 1.2x power."
+  },
+  "lustrous-orb": {
+    "name": "Lustrous Orb",
+    "shortDesc": "If held by a Palkia, its Water- and Dragon-type attacks have 1.2x power."
+  },
+  "macho-brace": {
+    "name": "Macho Brace",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "magearnite": {
+    "name": "Magearnite",
+    "shortDesc": "If held by a Magearna, this item allows it to Mega Evolve in battle."
+  },
+  "magmarizer": {
+    "name": "Magmarizer",
+    "shortDesc": "Evolves Magmar into Magmortar when traded."
+  },
+  "magnet": {
+    "name": "Magnet",
+    "shortDesc": "Holder's Electric-type attacks have 1.2x power."
+  },
+  "mago-berry": {
+    "name": "Mago Berry",
+    "shortDesc": "Restores 1/3 max HP at 1/4 max HP or less; confuses if -Spe Nature. Single use."
+  },
+  "magost-berry": {
+    "name": "Magost Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "mail": {
+    "name": "Mail",
+    "shortDesc": "Cannot be given to or taken from a Pokemon, except by Covet/Knock Off/Thief."
+  },
+  "malamarite": {
+    "name": "Malamarite",
+    "shortDesc": "If held by a Malamar, this item allows it to Mega Evolve in battle."
+  },
+  "malicious-armor": {
+    "name": "Malicious Armor",
+    "shortDesc": "Evolves Charcadet into Ceruledge when used."
+  },
+  "manectite": {
+    "name": "Manectite",
+    "shortDesc": "If held by a Manectric, this item allows it to Mega Evolve in battle."
+  },
+  "maranga-berry": {
+    "name": "Maranga Berry",
+    "shortDesc": "Raises holder's Sp. Def by 1 stage after it is hit by a special attack. Single use."
+  },
+  "masterpiece-teacup": {
+    "name": "Masterpiece Teacup",
+    "shortDesc": "Evolves Poltchageist-Artisan into Sinistcha-Masterpiece when used."
+  },
+  "mawilite": {
+    "name": "Mawilite",
+    "shortDesc": "If held by a Mawile, this item allows it to Mega Evolve in battle."
+  },
+  "meadow-plate": {
+    "name": "Meadow Plate",
+    "shortDesc": "Holder's Grass-type attacks have 1.2x power. Judgment is Grass type."
+  },
+  "medichamite": {
+    "name": "Medichamite",
+    "shortDesc": "If held by a Medicham, this item allows it to Mega Evolve in battle."
+  },
+  "meganiumite": {
+    "name": "Meganiumite",
+    "shortDesc": "If held by a Meganium, this item allows it to Mega Evolve in battle."
+  },
+  "mental-herb": {
+    "name": "Mental Herb",
+    "shortDesc": "Cures holder of Attract, Disable, Encore, Heal Block, Taunt, Torment. Single use."
+  },
+  "meowsticite": {
+    "name": "Meowsticite",
+    "shortDesc": "If held by a Meowstic, this item allows it to Mega Evolve in battle."
+  },
+  "metagrossite": {
+    "name": "Metagrossite",
+    "shortDesc": "If held by a Metagross, this item allows it to Mega Evolve in battle."
+  },
+  "metal-alloy": {
+    "name": "Metal Alloy",
+    "shortDesc": "Evolves Duraludon into Archaludon when used."
+  },
+  "metal-coat": {
+    "name": "Metal Coat",
+    "shortDesc": "Holder's Steel-type attacks have 1.2x power."
+  },
+  "metal-powder": {
+    "name": "Metal Powder",
+    "shortDesc": "If held by a Ditto that hasn't Transformed, its Defense is doubled."
+  },
+  "metronome": {
+    "name": "Metronome",
+    "shortDesc": "Damage of moves used on consecutive turns is increased. Max 2x after 5 turns."
+  },
+  "mewtwonite-x": {
+    "name": "Mewtwonite X",
+    "shortDesc": "If held by a Mewtwo, this item allows it to Mega Evolve into Mega Mewtwo X in battle."
+  },
+  "mewtwonite-y": {
+    "name": "Mewtwonite Y",
+    "shortDesc": "If held by a Mewtwo, this item allows it to Mega Evolve into Mega Mewtwo Y in battle."
+  },
+  "micle-berry": {
+    "name": "Micle Berry",
+    "shortDesc": "Holder's next move has 1.2x accuracy when at 1/4 max HP or less. Single use."
+  },
+  "mind-plate": {
+    "name": "Mind Plate",
+    "shortDesc": "Holder's Psychic-type attacks have 1.2x power. Judgment is Psychic type."
+  },
+  "mint-berry": {
+    "name": "Mint Berry",
+    "shortDesc": "(Gen 2) Holder wakes up if it is asleep. Single use."
+  },
+  "miracle-berry": {
+    "name": "Miracle Berry",
+    "shortDesc": "(Gen 2) Holder cures itself if it is confused or has a status condition. Single use."
+  },
+  "miracle-seed": {
+    "name": "Miracle Seed",
+    "shortDesc": "Holder's Grass-type attacks have 1.2x power."
+  },
+  "mirror-herb": {
+    "name": "Mirror Herb",
+    "shortDesc": "When an opposing Pokemon raises a stat stage, the holder copies it. Single use."
+  },
+  "misty-seed": {
+    "name": "Misty Seed",
+    "shortDesc": "If the terrain is Misty Terrain, raises holder's Sp. Def by 1 stage. Single use."
+  },
+  "moon-stone": {
+    "name": "Moon Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "muscle-band": {
+    "name": "Muscle Band",
+    "shortDesc": "Holder's physical attacks have 1.1x power."
+  },
+  "mystery-berry": {
+    "name": "Mystery Berry",
+    "shortDesc": "(Gen 2) Restores 5 PP to the first of the holder's moves to reach 0 PP. Single use."
+  },
+  "mystic-water": {
+    "name": "Mystic Water",
+    "shortDesc": "Holder's Water-type attacks have 1.2x power."
+  },
+  "nanab-berry": {
+    "name": "Nanab Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "never-melt-ice": {
+    "name": "Never-Melt Ice",
+    "shortDesc": "Holder's Ice-type attacks have 1.2x power."
+  },
+  "nomel-berry": {
+    "name": "Nomel Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "normal-gem": {
+    "name": "Normal Gem",
+    "shortDesc": "Holder's first successful Normal-type attack will have 1.3x power. Single use."
+  },
+  "occa-berry": {
+    "name": "Occa Berry",
+    "shortDesc": "Halves damage taken from a supereffective Fire-type attack. Single use."
+  },
+  "odd-incense": {
+    "name": "Odd Incense",
+    "shortDesc": "Holder's Psychic-type attacks have 1.2x power."
+  },
+  "old-amber": {
+    "name": "Old Amber",
+    "shortDesc": "Can be revived into Aerodactyl."
+  },
+  "oran-berry": {
+    "name": "Oran Berry",
+    "shortDesc": "Restores 10 HP when at 1/2 max HP or less. Single use."
+  },
+  "oval-stone": {
+    "name": "Oval Stone",
+    "shortDesc": "Evolves Happiny into Chansey when held and leveled up during the day."
+  },
+  "pamtre-berry": {
+    "name": "Pamtre Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "passho-berry": {
+    "name": "Passho Berry",
+    "shortDesc": "Halves damage taken from a supereffective Water-type attack. Single use."
+  },
+  "payapa-berry": {
+    "name": "Payapa Berry",
+    "shortDesc": "Halves damage taken from a supereffective Psychic-type attack. Single use."
+  },
+  "pecha-berry": {
+    "name": "Pecha Berry",
+    "shortDesc": "Holder is cured if it is poisoned. Single use."
+  },
+  "persim-berry": {
+    "name": "Persim Berry",
+    "shortDesc": "Holder is cured if it is confused. Single use."
+  },
+  "petaya-berry": {
+    "name": "Petaya Berry",
+    "shortDesc": "Raises holder's Sp. Atk by 1 stage when at 1/4 max HP or less. Single use."
+  },
+  "pidgeotite": {
+    "name": "Pidgeotite",
+    "shortDesc": "If held by a Pidgeot, this item allows it to Mega Evolve in battle."
+  },
+  "pinap-berry": {
+    "name": "Pinap Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "pink-bow": {
+    "name": "Pink Bow",
+    "shortDesc": "(Gen 2) Holder's Normal-type attacks have 1.1x power."
+  },
+  "pinsirite": {
+    "name": "Pinsirite",
+    "shortDesc": "If held by a Pinsir, this item allows it to Mega Evolve in battle."
+  },
+  "pixie-plate": {
+    "name": "Pixie Plate",
+    "shortDesc": "Holder's Fairy-type attacks have 1.2x power. Judgment is Fairy type."
+  },
+  "plume-fossil": {
+    "name": "Plume Fossil",
+    "shortDesc": "Can be revived into Archen."
+  },
+  "poison-barb": {
+    "name": "Poison Barb",
+    "shortDesc": "Holder's Poison-type attacks have 1.2x power."
+  },
+  "poison-gem": {
+    "name": "Poison Gem",
+    "shortDesc": "Holder's first successful Poison-type attack will have 1.3x power. Single use."
+  },
+  "poison-memory": {
+    "name": "Poison Memory",
+    "shortDesc": "Holder's Multi-Attack is Poison type."
+  },
+  "polkadot-bow": {
+    "name": "Polkadot Bow",
+    "shortDesc": "(Gen 2) Holder's Normal-type attacks have 1.1x power."
+  },
+  "pomeg-berry": {
+    "name": "Pomeg Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "power-anklet": {
+    "name": "Power Anklet",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "power-band": {
+    "name": "Power Band",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "power-belt": {
+    "name": "Power Belt",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "power-bracer": {
+    "name": "Power Bracer",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "power-herb": {
+    "name": "Power Herb",
+    "shortDesc": "Holder's two-turn moves complete in one turn (except Sky Drop). Single use."
+  },
+  "power-lens": {
+    "name": "Power Lens",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "power-weight": {
+    "name": "Power Weight",
+    "shortDesc": "Holder's Speed is halved. The Klutz Ability does not ignore this effect."
+  },
+  "pretty-feather": {
+    "name": "Pretty Feather",
+    "shortDesc": "Though this feather is beautiful, it's just a regular feather and has no effect."
+  },
+  "prism-scale": {
+    "name": "Prism Scale",
+    "shortDesc": "Evolves Feebas into Milotic when traded."
+  },
+  "protective-pads": {
+    "name": "Protective Pads",
+    "shortDesc": "Holder's moves are protected from adverse contact effects, except Pickpocket."
+  },
+  "protector": {
+    "name": "Protector",
+    "shortDesc": "Evolves Rhydon into Rhyperior when traded."
+  },
+  "prz-cure-berry": {
+    "name": "PRZ Cure Berry",
+    "shortDesc": "(Gen 2) Holder cures itself if it is paralyzed. Single use."
+  },
+  "psn-cure-berry": {
+    "name": "PSN Cure Berry",
+    "shortDesc": "(Gen 2) Holder is cured if it is poisoned. Single use."
+  },
+  "psychic-gem": {
+    "name": "Psychic Gem",
+    "shortDesc": "Holder's first successful Psychic-type attack will have 1.3x power. Single use."
+  },
+  "psychic-memory": {
+    "name": "Psychic Memory",
+    "shortDesc": "Holder's Multi-Attack is Psychic type."
+  },
+  "psychic-seed": {
+    "name": "Psychic Seed",
+    "shortDesc": "If the terrain is Psychic Terrain, raises holder's Sp. Def by 1 stage. Single use."
+  },
+  "punching-glove": {
+    "name": "Punching Glove",
+    "shortDesc": "Holder's punch-based attacks have 1.1x power and do not make contact."
+  },
+  "pyroarite": {
+    "name": "Pyroarite",
+    "shortDesc": "If held by a Pyroar, this item allows it to Mega Evolve in battle."
+  },
+  "qualot-berry": {
+    "name": "Qualot Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "quick-claw": {
+    "name": "Quick Claw",
+    "shortDesc": "Each turn, holder has a 20% chance to move first in its priority bracket."
+  },
+  "quick-powder": {
+    "name": "Quick Powder",
+    "shortDesc": "If held by a Ditto that hasn't Transformed, its Speed is doubled."
+  },
+  "rabuta-berry": {
+    "name": "Rabuta Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "raichunite-x": {
+    "name": "Raichunite X",
+    "shortDesc": "If held by a Raichu, this item allows it to Mega Evolve into Mega Raichu X in battle."
+  },
+  "raichunite-y": {
+    "name": "Raichunite Y",
+    "shortDesc": "If held by a Raichu, this item allows it to Mega Evolve into Mega Raichu Y in battle."
+  },
+  "rare-bone": {
+    "name": "Rare Bone",
+    "shortDesc": "No competitive use other than when used with Fling."
+  },
+  "rawst-berry": {
+    "name": "Rawst Berry",
+    "shortDesc": "Holder is cured if it is burned. Single use."
+  },
+  "razor-claw": {
+    "name": "Razor Claw",
+    "shortDesc": "Holder's critical hit ratio is raised by 1 stage."
+  },
+  "razor-fang": {
+    "name": "Razor Fang",
+    "shortDesc": "Holder's attacks without a chance to flinch gain a 10% chance to flinch."
+  },
+  "razz-berry": {
+    "name": "Razz Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "reaper-cloth": {
+    "name": "Reaper Cloth",
+    "shortDesc": "Evolves Dusclops into Dusknoir when traded."
+  },
+  "red-card": {
+    "name": "Red Card",
+    "shortDesc": "If holder survives a hit, attacker is forced to switch to a random ally. Single use."
+  },
+  "red-orb": {
+    "name": "Red Orb",
+    "shortDesc": "If held by a Groudon, this item triggers its Primal Reversion in battle."
+  },
+  "ribbon-sweet": {
+    "name": "Ribbon Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "rindo-berry": {
+    "name": "Rindo Berry",
+    "shortDesc": "Halves damage taken from a supereffective Grass-type attack. Single use."
+  },
+  "ring-target": {
+    "name": "Ring Target",
+    "shortDesc": "The holder's type immunities granted solely by its typing are negated."
+  },
+  "rock-gem": {
+    "name": "Rock Gem",
+    "shortDesc": "Holder's first successful Rock-type attack will have 1.3x power. Single use."
+  },
+  "rock-incense": {
+    "name": "Rock Incense",
+    "shortDesc": "Holder's Rock-type attacks have 1.2x power."
+  },
+  "rock-memory": {
+    "name": "Rock Memory",
+    "shortDesc": "Holder's Multi-Attack is Rock type."
+  },
+  "rocky-helmet": {
+    "name": "Rocky Helmet",
+    "shortDesc": "If holder is hit by a contact move, the attacker loses 1/6 of its max HP."
+  },
+  "room-service": {
+    "name": "Room Service",
+    "shortDesc": "If Trick Room is active, the holder's Speed is lowered by 1 stage. Single use."
+  },
+  "root-fossil": {
+    "name": "Root Fossil",
+    "shortDesc": "Can be revived into Lileep."
+  },
+  "rose-incense": {
+    "name": "Rose Incense",
+    "shortDesc": "Holder's Grass-type attacks have 1.2x power."
+  },
+  "roseli-berry": {
+    "name": "Roseli Berry",
+    "shortDesc": "Halves damage taken from a supereffective Fairy-type attack. Single use."
+  },
+  "rowap-berry": {
+    "name": "Rowap Berry",
+    "shortDesc": "If holder is hit by a special move, attacker loses 1/8 of its max HP. Single use."
+  },
+  "rusted-shield": {
+    "name": "Rusted Shield",
+    "shortDesc": "If held by a Zamazenta, this item changes its forme to Crowned Shield."
+  },
+  "rusted-sword": {
+    "name": "Rusted Sword",
+    "shortDesc": "If held by a Zacian, this item changes its forme to Crowned Sword."
+  },
+  "sablenite": {
+    "name": "Sablenite",
+    "shortDesc": "If held by a Sableye, this item allows it to Mega Evolve in battle."
+  },
+  "sachet": {
+    "name": "Sachet",
+    "shortDesc": "Evolves Spritzee into Aromatisse when traded."
+  },
+  "safety-goggles": {
+    "name": "Safety Goggles",
+    "shortDesc": "Holder is immune to powder moves and damage from Sandstorm or Hail."
+  },
+  "sail-fossil": {
+    "name": "Sail Fossil",
+    "shortDesc": "Can be revived into Amaura."
+  },
+  "salac-berry": {
+    "name": "Salac Berry",
+    "shortDesc": "Raises holder's Speed by 1 stage when at 1/4 max HP or less. Single use."
+  },
+  "salamencite": {
+    "name": "Salamencite",
+    "shortDesc": "If held by a Salamence, this item allows it to Mega Evolve in battle."
+  },
+  "sceptilite": {
+    "name": "Sceptilite",
+    "shortDesc": "If held by a Sceptile, this item allows it to Mega Evolve in battle."
+  },
+  "scizorite": {
+    "name": "Scizorite",
+    "shortDesc": "If held by a Scizor, this item allows it to Mega Evolve in battle."
+  },
+  "scolipite": {
+    "name": "Scolipite",
+    "shortDesc": "If held by a Scolipede, this item allows it to Mega Evolve in battle."
+  },
+  "scope-lens": {
+    "name": "Scope Lens",
+    "shortDesc": "Holder's critical hit ratio is raised by 1 stage."
+  },
+  "scovillainite": {
+    "name": "Scovillainite",
+    "shortDesc": "If held by a Scovillain, this item allows it to Mega Evolve in battle."
+  },
+  "scraftinite": {
+    "name": "Scraftinite",
+    "shortDesc": "If held by a Scrafty, this item allows it to Mega Evolve in battle."
+  },
+  "sea-incense": {
+    "name": "Sea Incense",
+    "shortDesc": "Holder's Water-type attacks have 1.2x power."
+  },
+  "sharp-beak": {
+    "name": "Sharp Beak",
+    "shortDesc": "Holder's Flying-type attacks have 1.2x power."
+  },
+  "sharpedonite": {
+    "name": "Sharpedonite",
+    "shortDesc": "If held by a Sharpedo, this item allows it to Mega Evolve in battle."
+  },
+  "shed-shell": {
+    "name": "Shed Shell",
+    "shortDesc": "Holder cannot be prevented from choosing to switch out by any effect."
+  },
+  "shell-bell": {
+    "name": "Shell Bell",
+    "shortDesc": "After an attack, holder gains 1/8 of the damage in HP dealt to other Pokemon."
+  },
+  "shiny-stone": {
+    "name": "Shiny Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "shock-drive": {
+    "name": "Shock Drive",
+    "shortDesc": "Holder's Techno Blast is Electric type."
+  },
+  "shuca-berry": {
+    "name": "Shuca Berry",
+    "shortDesc": "Halves damage taken from a supereffective Ground-type attack. Single use."
+  },
+  "silk-scarf": {
+    "name": "Silk Scarf",
+    "shortDesc": "Holder's Normal-type attacks have 1.2x power."
+  },
+  "silver-powder": {
+    "name": "Silver Powder",
+    "shortDesc": "Holder's Bug-type attacks have 1.2x power."
+  },
+  "sitrus-berry": {
+    "name": "Sitrus Berry",
+    "shortDesc": "Restores 1/4 max HP when at 1/2 max HP or less. Single use."
+  },
+  "skarmorite": {
+    "name": "Skarmorite",
+    "shortDesc": "If held by a Skarmory, this item allows it to Mega Evolve in battle."
+  },
+  "skull-fossil": {
+    "name": "Skull Fossil",
+    "shortDesc": "Can be revived into Cranidos."
+  },
+  "sky-plate": {
+    "name": "Sky Plate",
+    "shortDesc": "Holder's Flying-type attacks have 1.2x power. Judgment is Flying type."
+  },
+  "slowbronite": {
+    "name": "Slowbronite",
+    "shortDesc": "If held by a Slowbro, this item allows it to Mega Evolve in battle."
+  },
+  "smooth-rock": {
+    "name": "Smooth Rock",
+    "shortDesc": "Holder's use of Sandstorm lasts 8 turns instead of 5."
+  },
+  "snowball": {
+    "name": "Snowball",
+    "shortDesc": "Raises holder's Attack by 1 if hit by an Ice-type attack. Single use."
+  },
+  "soft-sand": {
+    "name": "Soft Sand",
+    "shortDesc": "Holder's Ground-type attacks have 1.2x power."
+  },
+  "soul-dew": {
+    "name": "Soul Dew",
+    "shortDesc": "If held by a Latias/Latios, its Dragon- and Psychic-type moves have 1.2x power."
+  },
+  "spell-tag": {
+    "name": "Spell Tag",
+    "shortDesc": "Holder's Ghost-type attacks have 1.2x power."
+  },
+  "spelon-berry": {
+    "name": "Spelon Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "splash-plate": {
+    "name": "Splash Plate",
+    "shortDesc": "Holder's Water-type attacks have 1.2x power. Judgment is Water type."
+  },
+  "spooky-plate": {
+    "name": "Spooky Plate",
+    "shortDesc": "Holder's Ghost-type attacks have 1.2x power. Judgment is Ghost type."
+  },
+  "star-sweet": {
+    "name": "Star Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "staraptite": {
+    "name": "Staraptite",
+    "shortDesc": "If held by a Staraptor, this item allows it to Mega Evolve in battle."
+  },
+  "starf-berry": {
+    "name": "Starf Berry",
+    "shortDesc": "Raises a random stat by 2 when at 1/4 max HP or less (not acc/eva). Single use."
+  },
+  "starminite": {
+    "name": "Starminite",
+    "shortDesc": "If held by a Starmie, this item allows it to Mega Evolve in battle."
+  },
+  "steel-gem": {
+    "name": "Steel Gem",
+    "shortDesc": "Holder's first successful Steel-type attack will have 1.3x power. Single use."
+  },
+  "steel-memory": {
+    "name": "Steel Memory",
+    "shortDesc": "Holder's Multi-Attack is Steel type."
+  },
+  "steelixite": {
+    "name": "Steelixite",
+    "shortDesc": "If held by a Steelix, this item allows it to Mega Evolve in battle."
+  },
+  "stick": {
+    "name": "Stick",
+    "shortDesc": "If held by a Farfetch’d, its critical hit ratio is raised by 2 stages."
+  },
+  "sticky-barb": {
+    "name": "Sticky Barb",
+    "shortDesc": "Each turn, holder loses 1/8 max HP. An attacker making contact can receive it."
+  },
+  "stone-plate": {
+    "name": "Stone Plate",
+    "shortDesc": "Holder's Rock-type attacks have 1.2x power. Judgment is Rock type."
+  },
+  "strawberry-sweet": {
+    "name": "Strawberry Sweet",
+    "shortDesc": "Evolves Milcery into Alcremie when held and spun around."
+  },
+  "sun-stone": {
+    "name": "Sun Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "swampertite": {
+    "name": "Swampertite",
+    "shortDesc": "If held by a Swampert, this item allows it to Mega Evolve in battle."
+  },
+  "sweet-apple": {
+    "name": "Sweet Apple",
+    "shortDesc": "Evolves Applin into Appletun when used."
+  },
+  "syrupy-apple": {
+    "name": "Syrupy Apple",
+    "shortDesc": "Evolves Applin into Dipplin when used."
+  },
+  "tamato-berry": {
+    "name": "Tamato Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "tanga-berry": {
+    "name": "Tanga Berry",
+    "shortDesc": "Halves damage taken from a supereffective Bug-type attack. Single use."
+  },
+  "tart-apple": {
+    "name": "Tart Apple",
+    "shortDesc": "Evolves Applin into Flapple when used."
+  },
+  "tatsugirinite": {
+    "name": "Tatsugirinite",
+    "shortDesc": "If held by a Tatsugiri, this item allows it to Mega Evolve in battle."
+  },
+  "terrain-extender": {
+    "name": "Terrain Extender",
+    "shortDesc": "Holder's use of Electric/Grassy/Misty/Psychic Terrain lasts 8 turns instead of 5."
+  },
+  "thick-club": {
+    "name": "Thick Club",
+    "shortDesc": "If held by a Cubone or a Marowak, its Attack is doubled."
+  },
+  "throat-spray": {
+    "name": "Throat Spray",
+    "shortDesc": "Raises holder's Special Attack by 1 stage after it uses a sound move. Single use."
+  },
+  "thunder-stone": {
+    "name": "Thunder Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "toxic-orb": {
+    "name": "Toxic Orb",
+    "shortDesc": "At the end of every turn, this item attempts to badly poison the holder."
+  },
+  "toxic-plate": {
+    "name": "Toxic Plate",
+    "shortDesc": "Holder's Poison-type attacks have 1.2x power. Judgment is Poison type."
+  },
+  "tr00": {
+    "name": "TR00",
+    "shortDesc": "Teaches certain Pokemon the move Swords Dance. One use."
+  },
+  "tr01": {
+    "name": "TR01",
+    "shortDesc": "Teaches certain Pokemon the move Body Slam. One use."
+  },
+  "tr02": {
+    "name": "TR02",
+    "shortDesc": "Teaches certain Pokemon the move Flamethrower. One use."
+  },
+  "tr03": {
+    "name": "TR03",
+    "shortDesc": "Teaches certain Pokemon the move Hydro Pump. One use."
+  },
+  "tr04": {
+    "name": "TR04",
+    "shortDesc": "Teaches certain Pokemon the move Surf. One use."
+  },
+  "tr05": {
+    "name": "TR05",
+    "shortDesc": "Teaches certain Pokemon the move Ice Beam. One use."
+  },
+  "tr06": {
+    "name": "TR06",
+    "shortDesc": "Teaches certain Pokemon the move Blizzard. One use."
+  },
+  "tr07": {
+    "name": "TR07",
+    "shortDesc": "Teaches certain Pokemon the move Low Kick. One use."
+  },
+  "tr08": {
+    "name": "TR08",
+    "shortDesc": "Teaches certain Pokemon the move Thunderbolt. One use."
+  },
+  "tr09": {
+    "name": "TR09",
+    "shortDesc": "Teaches certain Pokemon the move Thunder. One use."
+  },
+  "tr10": {
+    "name": "TR10",
+    "shortDesc": "Teaches certain Pokemon the move Earthquake. One use."
+  },
+  "tr11": {
+    "name": "TR11",
+    "shortDesc": "Teaches certain Pokemon the move Psychic. One use."
+  },
+  "tr12": {
+    "name": "TR12",
+    "shortDesc": "Teaches certain Pokemon the move Agility. One use."
+  },
+  "tr13": {
+    "name": "TR13",
+    "shortDesc": "Teaches certain Pokemon the move Focus Energy. One use."
+  },
+  "tr14": {
+    "name": "TR14",
+    "shortDesc": "Teaches certain Pokemon the move Metronome. One use."
+  },
+  "tr15": {
+    "name": "TR15",
+    "shortDesc": "Teaches certain Pokemon the move Fire Blast. One use."
+  },
+  "tr16": {
+    "name": "TR16",
+    "shortDesc": "Teaches certain Pokemon the move Waterfall. One use."
+  },
+  "tr17": {
+    "name": "TR17",
+    "shortDesc": "Teaches certain Pokemon the move Amnesia. One use."
+  },
+  "tr18": {
+    "name": "TR18",
+    "shortDesc": "Teaches certain Pokemon the move Leech Life. One use."
+  },
+  "tr19": {
+    "name": "TR19",
+    "shortDesc": "Teaches certain Pokemon the move Tri Attack. One use."
+  },
+  "tr20": {
+    "name": "TR20",
+    "shortDesc": "Teaches certain Pokemon the move Substitute. One use."
+  },
+  "tr21": {
+    "name": "TR21",
+    "shortDesc": "Teaches certain Pokemon the move Reversal. One use."
+  },
+  "tr22": {
+    "name": "TR22",
+    "shortDesc": "Teaches certain Pokemon the move Sludge Bomb. One use."
+  },
+  "tr23": {
+    "name": "TR23",
+    "shortDesc": "Teaches certain Pokemon the move Spikes. One use."
+  },
+  "tr24": {
+    "name": "TR24",
+    "shortDesc": "Teaches certain Pokemon the move Outrage. One use."
+  },
+  "tr25": {
+    "name": "TR25",
+    "shortDesc": "Teaches certain Pokemon the move Psyshock. One use."
+  },
+  "tr26": {
+    "name": "TR26",
+    "shortDesc": "Teaches certain Pokemon the move Endure. One use."
+  },
+  "tr27": {
+    "name": "TR27",
+    "shortDesc": "Teaches certain Pokemon the move Sleep Talk. One use."
+  },
+  "tr28": {
+    "name": "TR28",
+    "shortDesc": "Teaches certain Pokemon the move Megahorn. One use."
+  },
+  "tr29": {
+    "name": "TR29",
+    "shortDesc": "Teaches certain Pokemon the move Baton Pass. One use."
+  },
+  "tr30": {
+    "name": "TR30",
+    "shortDesc": "Teaches certain Pokemon the move Encore. One use."
+  },
+  "tr31": {
+    "name": "TR31",
+    "shortDesc": "Teaches certain Pokemon the move Iron Tail. One use."
+  },
+  "tr32": {
+    "name": "TR32",
+    "shortDesc": "Teaches certain Pokemon the move Crunch. One use."
+  },
+  "tr33": {
+    "name": "TR33",
+    "shortDesc": "Teaches certain Pokemon the move Shadow Ball. One use."
+  },
+  "tr34": {
+    "name": "TR34",
+    "shortDesc": "Teaches certain Pokemon the move Future Sight. One use."
+  },
+  "tr35": {
+    "name": "TR35",
+    "shortDesc": "Teaches certain Pokemon the move Uproar. One use."
+  },
+  "tr36": {
+    "name": "TR36",
+    "shortDesc": "Teaches certain Pokemon the move Heat Wave. One use."
+  },
+  "tr37": {
+    "name": "TR37",
+    "shortDesc": "Teaches certain Pokemon the move Taunt. One use."
+  },
+  "tr38": {
+    "name": "TR38",
+    "shortDesc": "Teaches certain Pokemon the move Trick. One use."
+  },
+  "tr39": {
+    "name": "TR39",
+    "shortDesc": "Teaches certain Pokemon the move Superpower. One use."
+  },
+  "tr40": {
+    "name": "TR40",
+    "shortDesc": "Teaches certain Pokemon the move Skill Swap. One use."
+  },
+  "tr41": {
+    "name": "TR41",
+    "shortDesc": "Teaches certain Pokemon the move Blaze Kick. One use."
+  },
+  "tr42": {
+    "name": "TR42",
+    "shortDesc": "Teaches certain Pokemon the move Hyper Voice. One use."
+  },
+  "tr43": {
+    "name": "TR43",
+    "shortDesc": "Teaches certain Pokemon the move Overheat. One use."
+  },
+  "tr44": {
+    "name": "TR44",
+    "shortDesc": "Teaches certain Pokemon the move Cosmic Power. One use."
+  },
+  "tr45": {
+    "name": "TR45",
+    "shortDesc": "Teaches certain Pokemon the move Muddy Water. One use."
+  },
+  "tr46": {
+    "name": "TR46",
+    "shortDesc": "Teaches certain Pokemon the move Iron Defense. One use."
+  },
+  "tr47": {
+    "name": "TR47",
+    "shortDesc": "Teaches certain Pokemon the move Dragon Claw. One use."
+  },
+  "tr48": {
+    "name": "TR48",
+    "shortDesc": "Teaches certain Pokemon the move Bulk Up. One use."
+  },
+  "tr49": {
+    "name": "TR49",
+    "shortDesc": "Teaches certain Pokemon the move Calm Mind. One use."
+  },
+  "tr50": {
+    "name": "TR50",
+    "shortDesc": "Teaches certain Pokemon the move Leaf Blade. One use."
+  },
+  "tr51": {
+    "name": "TR51",
+    "shortDesc": "Teaches certain Pokemon the move Dragon Dance. One use."
+  },
+  "tr52": {
+    "name": "TR52",
+    "shortDesc": "Teaches certain Pokemon the move Gyro Ball. One use."
+  },
+  "tr53": {
+    "name": "TR53",
+    "shortDesc": "Teaches certain Pokemon the move Close Combat. One use."
+  },
+  "tr54": {
+    "name": "TR54",
+    "shortDesc": "Teaches certain Pokemon the move Toxic Spikes. One use."
+  },
+  "tr55": {
+    "name": "TR55",
+    "shortDesc": "Teaches certain Pokemon the move Flare Blitz. One use."
+  },
+  "tr56": {
+    "name": "TR56",
+    "shortDesc": "Teaches certain Pokemon the move Aura Sphere. One use."
+  },
+  "tr57": {
+    "name": "TR57",
+    "shortDesc": "Teaches certain Pokemon the move Poison Jab. One use."
+  },
+  "tr58": {
+    "name": "TR58",
+    "shortDesc": "Teaches certain Pokemon the move Dark Pulse. One use."
+  },
+  "tr59": {
+    "name": "TR59",
+    "shortDesc": "Teaches certain Pokemon the move Seed Bomb. One use."
+  },
+  "tr60": {
+    "name": "TR60",
+    "shortDesc": "Teaches certain Pokemon the move X-Scissor. One use."
+  },
+  "tr61": {
+    "name": "TR61",
+    "shortDesc": "Teaches certain Pokemon the move Bug Buzz. One use."
+  },
+  "tr62": {
+    "name": "TR62",
+    "shortDesc": "Teaches certain Pokemon the move Dragon Pulse. One use."
+  },
+  "tr63": {
+    "name": "TR63",
+    "shortDesc": "Teaches certain Pokemon the move Power Gem. One use."
+  },
+  "tr64": {
+    "name": "TR64",
+    "shortDesc": "Teaches certain Pokemon the move Focus Blast. One use."
+  },
+  "tr65": {
+    "name": "TR65",
+    "shortDesc": "Teaches certain Pokemon the move Energy Ball. One use."
+  },
+  "tr66": {
+    "name": "TR66",
+    "shortDesc": "Teaches certain Pokemon the move Brave Bird. One use."
+  },
+  "tr67": {
+    "name": "TR67",
+    "shortDesc": "Teaches certain Pokemon the move Earth Power. One use."
+  },
+  "tr68": {
+    "name": "TR68",
+    "shortDesc": "Teaches certain Pokemon the move Nasty Plot. One use."
+  },
+  "tr69": {
+    "name": "TR69",
+    "shortDesc": "Teaches certain Pokemon the move Zen Headbutt. One use."
+  },
+  "tr70": {
+    "name": "TR70",
+    "shortDesc": "Teaches certain Pokemon the move Flash Cannon. One use."
+  },
+  "tr71": {
+    "name": "TR71",
+    "shortDesc": "Teaches certain Pokemon the move Leaf Storm. One use."
+  },
+  "tr72": {
+    "name": "TR72",
+    "shortDesc": "Teaches certain Pokemon the move Power Whip. One use."
+  },
+  "tr73": {
+    "name": "TR73",
+    "shortDesc": "Teaches certain Pokemon the move Gunk Shot. One use."
+  },
+  "tr74": {
+    "name": "TR74",
+    "shortDesc": "Teaches certain Pokemon the move Iron Head. One use."
+  },
+  "tr75": {
+    "name": "TR75",
+    "shortDesc": "Teaches certain Pokemon the move Stone Edge. One use."
+  },
+  "tr76": {
+    "name": "TR76",
+    "shortDesc": "Teaches certain Pokemon the move Stealth Rock. One use."
+  },
+  "tr77": {
+    "name": "TR77",
+    "shortDesc": "Teaches certain Pokemon the move Grass Knot. One use."
+  },
+  "tr78": {
+    "name": "TR78",
+    "shortDesc": "Teaches certain Pokemon the move Sludge Wave. One use."
+  },
+  "tr79": {
+    "name": "TR79",
+    "shortDesc": "Teaches certain Pokemon the move Heavy Slam. One use."
+  },
+  "tr80": {
+    "name": "TR80",
+    "shortDesc": "Teaches certain Pokemon the move Electro Ball. One use."
+  },
+  "tr81": {
+    "name": "TR81",
+    "shortDesc": "Teaches certain Pokemon the move Foul Play. One use."
+  },
+  "tr82": {
+    "name": "TR82",
+    "shortDesc": "Teaches certain Pokemon the move Stored Power. One use."
+  },
+  "tr83": {
+    "name": "TR83",
+    "shortDesc": "Teaches certain Pokemon the move Ally Switch. One use."
+  },
+  "tr84": {
+    "name": "TR84",
+    "shortDesc": "Teaches certain Pokemon the move Scald. One use."
+  },
+  "tr85": {
+    "name": "TR85",
+    "shortDesc": "Teaches certain Pokemon the move Work Up. One use."
+  },
+  "tr86": {
+    "name": "TR86",
+    "shortDesc": "Teaches certain Pokemon the move Wild Charge. One use."
+  },
+  "tr87": {
+    "name": "TR87",
+    "shortDesc": "Teaches certain Pokemon the move Drill Run. One use."
+  },
+  "tr88": {
+    "name": "TR88",
+    "shortDesc": "Teaches certain Pokemon the move Heat Crash. One use."
+  },
+  "tr89": {
+    "name": "TR89",
+    "shortDesc": "Teaches certain Pokemon the move Hurricane. One use."
+  },
+  "tr90": {
+    "name": "TR90",
+    "shortDesc": "Teaches certain Pokemon the move Play Rough. One use."
+  },
+  "tr91": {
+    "name": "TR91",
+    "shortDesc": "Teaches certain Pokemon the move Venom Drench. One use."
+  },
+  "tr92": {
+    "name": "TR92",
+    "shortDesc": "Teaches certain Pokemon the move Dazzling Gleam. One use."
+  },
+  "tr93": {
+    "name": "TR93",
+    "shortDesc": "Teaches certain Pokemon the move Darkest Lariat. One use."
+  },
+  "tr94": {
+    "name": "TR94",
+    "shortDesc": "Teaches certain Pokemon the move High Horsepower. One use."
+  },
+  "tr95": {
+    "name": "TR95",
+    "shortDesc": "Teaches certain Pokemon the move Throat Chop. One use."
+  },
+  "tr96": {
+    "name": "TR96",
+    "shortDesc": "Teaches certain Pokemon the move Pollen Puff. One use."
+  },
+  "tr97": {
+    "name": "TR97",
+    "shortDesc": "Teaches certain Pokemon the move Psychic Fangs. One use."
+  },
+  "tr98": {
+    "name": "TR98",
+    "shortDesc": "Teaches certain Pokemon the move Liquidation. One use."
+  },
+  "tr99": {
+    "name": "TR99",
+    "shortDesc": "Teaches certain Pokemon the move Body Press. One use."
+  },
+  "twisted-spoon": {
+    "name": "Twisted Spoon",
+    "shortDesc": "Holder's Psychic-type attacks have 1.2x power."
+  },
+  "tyranitarite": {
+    "name": "Tyranitarite",
+    "shortDesc": "If held by a Tyranitar, this item allows it to Mega Evolve in battle."
+  },
+  "unremarkable-teacup": {
+    "name": "Unremarkable Teacup",
+    "shortDesc": "Evolves Poltchageist into Sinistcha when used."
+  },
+  "up-grade": {
+    "name": "Up-Grade",
+    "shortDesc": "Evolves Porygon into Porygon2 when traded."
+  },
+  "utility-umbrella": {
+    "name": "Utility Umbrella",
+    "shortDesc": "The holder ignores rain- and sun-based effects."
+  },
+  "venusaurite": {
+    "name": "Venusaurite",
+    "shortDesc": "If held by a Venusaur, this item allows it to Mega Evolve in battle."
+  },
+  "victreebelite": {
+    "name": "Victreebelite",
+    "shortDesc": "If held by a Victreebel, this item allows it to Mega Evolve in battle."
+  },
+  "vile-vial": {
+    "name": "Vile Vial",
+    "shortDesc": "If held by a Venomicon, its Poison- and Flying-type attacks have 1.2x power."
+  },
+  "wacan-berry": {
+    "name": "Wacan Berry",
+    "shortDesc": "Halves damage taken from a supereffective Electric-type attack. Single use."
+  },
+  "water-gem": {
+    "name": "Water Gem",
+    "shortDesc": "Holder's first successful Water-type attack will have 1.3x power. Single use."
+  },
+  "water-memory": {
+    "name": "Water Memory",
+    "shortDesc": "Holder's Multi-Attack is Water type."
+  },
+  "water-stone": {
+    "name": "Water Stone",
+    "shortDesc": "Evolves certain species of Pokemon when used."
+  },
+  "watmel-berry": {
+    "name": "Watmel Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "wave-incense": {
+    "name": "Wave Incense",
+    "shortDesc": "Holder's Water-type attacks have 1.2x power."
+  },
+  "weakness-policy": {
+    "name": "Weakness Policy",
+    "shortDesc": "If holder is hit super effectively, raises Attack, Sp. Atk by 2 stages. Single use."
+  },
+  "wellspring-mask": {
+    "name": "Wellspring Mask",
+    "shortDesc": "Ogerpon-Wellspring: 1.2x power attacks; Terastallize to gain Embody Aspect."
+  },
+  "wepear-berry": {
+    "name": "Wepear Berry",
+    "shortDesc": "Cannot be eaten by the holder. No effect when eaten with Bug Bite or Pluck."
+  },
+  "whipped-dream": {
+    "name": "Whipped Dream",
+    "shortDesc": "Evolves Swirlix into Slurpuff when traded."
+  },
+  "white-herb": {
+    "name": "White Herb",
+    "shortDesc": "Restores all lowered stat stages to 0 when one is less than 0. Single use."
+  },
+  "wide-lens": {
+    "name": "Wide Lens",
+    "shortDesc": "The accuracy of attacks by the holder is 1.1x."
+  },
+  "wiki-berry": {
+    "name": "Wiki Berry",
+    "shortDesc": "Restores 1/3 max HP at 1/4 max HP or less; confuses if -SpA Nature. Single use."
+  },
+  "wise-glasses": {
+    "name": "Wise Glasses",
+    "shortDesc": "Holder's special attacks have 1.1x power."
+  },
+  "yache-berry": {
+    "name": "Yache Berry",
+    "shortDesc": "Halves damage taken from a supereffective Ice-type attack. Single use."
+  },
+  "zap-plate": {
+    "name": "Zap Plate",
+    "shortDesc": "Holder's Electric-type attacks have 1.2x power. Judgment is Electric type."
+  },
+  "zeraorite": {
+    "name": "Zeraorite",
+    "shortDesc": "If held by a Zeraora, this item allows it to Mega Evolve in battle."
+  },
+  "zoom-lens": {
+    "name": "Zoom Lens",
+    "shortDesc": "The accuracy of attacks by the holder is 1.2x if it moves after its target."
+  },
+  "zygardite": {
+    "name": "Zygardite",
+    "shortDesc": "If held by a Zygarde in Complete Forme, this item allows it to Mega Evolve in battle."
+  }
+}

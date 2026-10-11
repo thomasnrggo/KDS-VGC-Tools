@@ -37,7 +37,7 @@ interface MyTeamHeaderProps {
   removeTeam: (id: string) => void;
   setActiveTeamId: (id: string | null) => void;
   /** Which page this header is rendered on — swaps the nav links so the current page never links to itself. */
-  currentPage: "matchup-planner" | "damage-calc" | "teams" | "tournaments" | "speed-tiers";
+  currentPage: "matchup-planner" | "damage-calc" | "teams" | "tournaments" | "speed-tiers" | "team-builder";
   /**
    * The regulation currently selected on this page (each page owns its own
    * "Regulation" dropdown — see OpponentsSection/MyTeamsSection/

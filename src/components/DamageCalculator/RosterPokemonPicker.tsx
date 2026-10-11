@@ -1,56 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { calculateStatBreakdown } from "@/lib/stats/calculateFinalStats";
-import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
-import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
-import { normalizeSpeciesKey } from "@/lib/species/normalize";
-import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
-import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
+import type { StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { parseTeam } from "@/lib/parseTeam";
 import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
-import { WEATHER_SPEED_DOUBLING_ABILITIES, NATURE_MODIFIERS } from "@/constants";
-import { REGULATIONS, megaStoneItemsForSpecies } from "@/data/regulations";
-import abilitiesData from "@/data/abilities.json";
-import movesData from "@/data/moves.json";
+import { WEATHER_SPEED_DOUBLING_ABILITIES } from "@/constants";
+import { REGULATIONS } from "@/data/regulations";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
 import { Modal } from "../Modal";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
-import { SearchableSelect, type SearchableSelectOption } from "./SearchableSelect";
-import type { DamageCalcOptions, MoveData, Opponent, ParsedPokemon, StatKey } from "@/types";
-
-const NATURE_NAMES = Object.keys(NATURE_MODIFIERS);
-const ABILITIES = abilitiesData as unknown as Record<string, string[]>;
-const MOVES = movesData as unknown as Record<string, MoveData>;
-
-/** Every legal Regulation M-B species — only one regulation exists today, see src/data/regulations/index.ts. This is the *only* way to pick a Pokémon's identity now (team/opponent selection is deliberately omitted, see PLANNING.md) — the header's active team is reachable only via the side "teammates" strip. */
-const SPECIES_OPTIONS: SearchableSelectOption[] = REGULATIONS[0].speciesKeys.map((key) => {
-  const label = formatSpeciesDisplayName(key);
-  return { id: key, label, sprite: label };
-});
-
-/** Every move in the data set, for the move-search combobox — moves aren't Regulation-gated (this app doesn't enforce per-species learnsets, see PLANNING.md). */
-const MOVE_OPTIONS: SearchableSelectOption[] = Object.entries(MOVES).map(([key, move]) => ({
-  id: key,
-  label: move.name ?? key,
-}));
-
-
-/** Builds a fresh from-scratch Pokémon for a given species.json key — defaults to its first (non-hidden) ability, no item, Hardy nature, no moves. Shared by the species search here and by DamageCalculator's "no active team" default. */
-export function buildCustomPokemon(speciesKey: string): ParsedPokemon {
-  return {
-    species: formatSpeciesDisplayName(speciesKey),
-    ability: ABILITIES[speciesKey]?.[0],
-    nature: "Hardy",
-    moves: [],
-  };
-}
-
-/** The very first Regulation M-B species (used as the ultimate fallback default when no team is active). */
-export const DEFAULT_SPECIES_KEY = REGULATIONS[0].speciesKeys[0];
+import { PokemonEditor, STAT_LABELS, computePokemonBuild } from "../PokemonEditor";
+import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/types";
 
 /** One entry in a side's sidebar — the working roster for that side, up to MAX_SIDEBAR_POKEMON. `isCustom` tracks whether this entry came from the species search (freely editable ability/item/moves) or was loaded from a real pasted team (read-only identity). */
 export interface SidebarEntry {
@@ -59,34 +22,6 @@ export interface SidebarEntry {
 }
 
 export const MAX_SIDEBAR_POKEMON = 6;
-
-export const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
-const STAT_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
-
-function natureLabel(name: string): string {
-  const modifier = NATURE_MODIFIERS[name];
-  const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
-  if (!modifier?.increased || !modifier.decreased) return capitalized;
-  return `${capitalized} (+${STAT_LABELS[modifier.increased]}, -${STAT_LABELS[modifier.decreased]})`;
-}
-
-function clampStatPoints(value: number): number {
-  if (Number.isNaN(value)) return 0;
-  return Math.max(0, Math.min(32, Math.round(value)));
-}
-
-/** All 25 natures, for the nature search combobox — id is the lowercase key `applyStatOverrides` expects, label is the human-readable "+/-" form `natureLabel` already produces. */
-const NATURE_OPTIONS: SearchableSelectOption[] = NATURE_NAMES.map((name) => ({
-  id: name,
-  label: natureLabel(name),
-}));
 
 /** The standard 7-value status list — only Burned (damage) and Paralyzed (Speed) currently change any computed number; the rest are tracked for reference only, same as the reference calculator's dropdown. */
 export type PokemonStatus =
@@ -271,61 +206,12 @@ export function RosterPokemonPicker({
     }
   }
 
-  const hasMegaForm = pokemon
-    ? candidateFormKeys(pokemon.species, pokemon.item).length > 1
-    : false;
-  const effectivePokemon =
-    pokemon && hasMegaForm && !mega ? { ...pokemon, item: undefined } : pokemon;
-  // Edited Stat Points/nature layer on top of the pasted build — theorycraft
-  // only, never written back to the saved team.
-  const overriddenPokemon = effectivePokemon
-    ? applyStatOverrides(effectivePokemon, statOverrides)
-    : undefined;
-  const breakdown = overriddenPokemon ? calculateStatBreakdown(overriddenPokemon) : null;
-  const finalStats = breakdown?.final ?? null;
-  const effectiveAbility = effectivePokemon
-    ? resolveEffectiveAbility(
-        effectivePokemon.species,
-        effectivePokemon.item,
-        effectivePokemon.ability,
-      )
-    : undefined;
-  const currentNature = overriddenPokemon?.nature ?? "Hardy";
-  // Ability options for the current FORM (mega-aware — Charizard-Mega-X only
-  // has Tough Claws, not Blaze/Solar Power) — only meaningful when
-  // onAbilityChange is provided (a custom Pokémon), since a pasted team's
-  // ability line is read-only.
-  const abilityFormKey = effectivePokemon
-    ? candidateFormKeys(effectivePokemon.species, effectivePokemon.item)[0]
-    : undefined;
-  const abilityOptions = abilityFormKey ? (ABILITIES[abilityFormKey] ?? []) : [];
-  const abilitySelectOptions: SearchableSelectOption[] = abilityOptions.map((name) => ({
-    id: name,
-    label: name,
-  }));
-  const megaStoneOptions = pokemon ? megaStoneItemsForSpecies(normalizeSpeciesKey(pokemon.species)) : [];
-  // Flat, searchable item list (mirrors MOVE_OPTIONS' shape) — a real
-  // pasted team's item might not be in the Regulation M-B list (an
-  // older/off-meta paste), so it's injected as its own option first so the
-  // combobox still reflects it accurately instead of silently dropping it.
-  const itemOptions: SearchableSelectOption[] = pokemon
-    ? [
-        ...(pokemon.item &&
-        !megaStoneOptions.includes(pokemon.item) &&
-        !REGULATIONS[0].items.includes(pokemon.item)
-          ? [{ id: pokemon.item, label: pokemon.item }]
-          : []),
-        ...megaStoneOptions.map((item) => ({ id: item, label: `${item} (Mega Stone)` })),
-        ...REGULATIONS[0].items.map((item) => ({ id: item, label: item })),
-      ]
-    : [];
-
-  function updateSp(stat: StatKey, value: number) {
-    onStatOverridesChange({
-      ...statOverrides,
-      sp: { ...statOverrides.sp, [stat]: clampStatPoints(value) },
-    });
-  }
+  // Same derivation PokemonEditor uses internally — called again here (pure,
+  // cheap) rather than threaded back out of it, since this component also
+  // needs the breakdown/effectiveAbility for battle-state-dependent values
+  // (the Speed multiplier row, the HP bar) that the editor itself has no
+  // concept of.
+  const { breakdown, effectiveAbility } = computePokemonBuild(pokemon, mega, statOverrides);
 
   const speedDoublingAbility = weather ? WEATHER_SPEED_DOUBLING_ABILITIES[weather] : undefined;
   const abilityDoublesSpeed = !!effectiveAbility && effectiveAbility === speedDoublingAbility;
@@ -345,6 +231,7 @@ export function RosterPokemonPicker({
       : null,
     battleState.status === "Paralyzed" ? "Paralyzed" : null,
   ].filter((source): source is string => !!source);
+  const finalStats = breakdown?.final ?? null;
   const effectiveSpe = finalStats ? Math.floor(finalStats.spe * totalSpeedMultiplier) : 0;
   // Display-only rounding — a -4 stage's exact multiplier is a repeating
   // decimal (1/3 = 0.3333...), which reads as noise in the UI; the actual
@@ -364,94 +251,60 @@ export function RosterPokemonPicker({
         {title}
       </h3>
 
-      <div className="flex flex-col gap-1 border-b border-zinc-200 pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-zinc-500">
-            Regulation: {REGULATIONS[0].label}
-          </span>
-          <div className="flex shrink-0 items-center gap-3">
-            {loadableOpponents && (
-              <button
-                type="button"
-                onClick={() => setIsLoadOpponentOpen(true)}
-                aria-label={`Load a saved opponent's team onto ${title}`}
-                title="Load a saved opponent's team"
-                className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-              >
-                <Icon name={IconName.Download} size={14} />
-                Load Team
-              </button>
-            )}
-            {sidebar.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsExportTeamOpen(true)}
-                aria-label={`Export the whole ${title} team as Showdown export text`}
-                title="Export team as Showdown export text"
-                className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-              >
-                <Icon name={IconName.ContentCopy} size={14} />
-                Export Team
-              </button>
-            )}
-            {pokemon && (
-              <button
-                type="button"
-                onClick={() => copyPokemonExportText(pokemon)}
-                aria-label={`Export ${title} as Showdown export text`}
-                title="Export as Showdown export text"
-                className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-              >
-                <Icon name={IconName.ContentCopy} size={14} />
-                Export Set
-              </button>
-            )}
+      <div className="flex items-center justify-between gap-2 border-b border-zinc-200 pb-3">
+        <span className="text-xs font-medium text-zinc-500">
+          Regulation: {REGULATIONS[0].label}
+        </span>
+        <div className="flex shrink-0 items-center gap-3">
+          {loadableOpponents && (
             <button
               type="button"
-              onClick={() => {
-                setIsImportOpen(true);
-                setImportError(null);
-              }}
-              aria-label={`Import a ${title} Pokémon from Showdown export text`}
-              title="Import from Showdown export text"
+              onClick={() => setIsLoadOpponentOpen(true)}
+              aria-label={`Load a saved opponent's team onto ${title}`}
+              title="Load a saved opponent's team"
               className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
             >
-              <Icon name={IconName.ContentPaste} size={14} />
-              Import
-            </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <SearchableSelect
-              options={SPECIES_OPTIONS}
-              placeholder="Search for a Pokémon…"
-              ariaLabel={`${title} Pokémon`}
-              value={pokemon?.species}
-              onSelect={(option) => {
-                const newPokemon = buildCustomPokemon(option.id);
-                if (selectedIndex !== null) {
-                  onReplacePokemon(newPokemon);
-                } else {
-                  onAddPokemon(newPokemon);
-                }
-              }}
-            />
-          </div>
-          {hasMegaForm && (
-            <button
-              type="button"
-              onClick={() => onMegaChange(!mega)}
-              aria-pressed={mega}
-              className={`shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors ${
-                mega
-                  ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
-                  : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-              }`}
-            >
-              Mega
+              <Icon name={IconName.Download} size={14} />
+              Load Team
             </button>
           )}
+          {sidebar.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsExportTeamOpen(true)}
+              aria-label={`Export the whole ${title} team as Showdown export text`}
+              title="Export team as Showdown export text"
+              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
+            >
+              <Icon name={IconName.ContentCopy} size={14} />
+              Export Team
+            </button>
+          )}
+          {pokemon && (
+            <button
+              type="button"
+              onClick={() => copyPokemonExportText(pokemon)}
+              aria-label={`Export ${title} as Showdown export text`}
+              title="Export as Showdown export text"
+              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
+            >
+              <Icon name={IconName.ContentCopy} size={14} />
+              Export Set
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setIsImportOpen(true);
+              setImportError(null);
+            }}
+            aria-label={`Import a ${title} Pokémon from Showdown export text`}
+            title="Import from Showdown export text"
+            className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
+          >
+            <Icon name={IconName.ContentPaste} size={14} />
+            Import
+          </button>
         </div>
       </div>
 
@@ -579,248 +432,116 @@ export function RosterPokemonPicker({
       )}
 
       <div className="flex gap-3">
-        {pokemon && (
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            {sidebar.length < MAX_SIDEBAR_POKEMON && (
-              <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSaveToSidebar();
-                    toast.success(`Saved ${pokemon.species} to the ${title} roster`);
-                  }}
-                  aria-label={`Save ${title} as a new roster entry`}
-                  title="Save as a new roster entry"
-                  className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+          {pokemon && sidebar.length < MAX_SIDEBAR_POKEMON && (
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  onSaveToSidebar();
+                  toast.success(`Saved ${pokemon.species} to the ${title} roster`);
+                }}
+                aria-label={`Save ${title} as a new roster entry`}
+                title="Save as a new roster entry"
+                className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+              >
+                <Icon name={IconName.Add} size={14} />
+              </button>
+            </div>
+          )}
+
+          <PokemonEditor
+            title={title}
+            pokemon={pokemon}
+            onSpeciesChange={(newPokemon) => {
+              if (selectedIndex !== null) {
+                onReplacePokemon(newPokemon);
+              } else {
+                onAddPokemon(newPokemon);
+              }
+            }}
+            mega={mega}
+            onMegaChange={onMegaChange}
+            statOverrides={statOverrides}
+            onStatOverridesChange={onStatOverridesChange}
+            onAbilityChange={onAbilityChange}
+            onItemChange={onItemChange}
+            onMovesChange={onMovesChange}
+            renderStatRowExtra={(stat) => {
+              const stageKey = STAGE_KEY_BY_STAT[stat];
+              if (!stageKey) return null;
+              return (
+                <select
+                  value={battleState[stageKey]}
+                  onChange={(event) =>
+                    updateBattleState({ [stageKey]: Number(event.target.value) })
+                  }
+                  aria-label={`${title} ${STAT_LABELS[stat]} stage`}
+                  className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
                 >
-                  <Icon name={IconName.Add} size={14} />
-                </button>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-xs text-zinc-500">
-              {onAbilityChange ? (
-                <div className="min-w-0 flex-1">
-                  <SearchableSelect
-                    options={abilitySelectOptions}
-                    placeholder="Select ability…"
-                    ariaLabel={`${title} ability`}
-                    // Shows the CURRENTLY ACTIVE ability (mega-aware —
-                    // Mega Blastoise displays "Mega Launcher", not the
-                    // pasted base form's "Torrent") even though picking a
-                    // new option still writes to the base pokemon.ability
-                    // field, same as before — a Mega form only ever has
-                    // one ability anyway, so this only changes what's
-                    // shown while mega is toggled on, not what gets saved.
-                    value={effectiveAbility}
-                    onSelect={(option) => onAbilityChange(option.id)}
-                    compact
+                  {STAGE_OPTIONS.map((stage) => (
+                    <option key={stage} value={stage}>
+                      {stage > 0 ? `+${stage}` : stage === 0 ? "--" : stage}
+                    </option>
+                  ))}
+                </select>
+              );
+            }}
+            renderFinalCell={(stat, value) => {
+              if (stat !== "spe" || totalSpeedMultiplier === 1) return value;
+              return (
+                <span
+                  title={`${speedLabelParts.join(", ")} multiplies Speed by ×${roundedSpeedMultiplier}`}
+                >
+                  {effectiveSpe}{" "}
+                  <span className="text-zinc-500">
+                    (×{roundedSpeedMultiplier} {speedLabelParts.join(", ")})
+                  </span>
+                </span>
+              );
+            }}
+          >
+            {breakdown && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600">
+                    Status
+                    <select
+                      value={battleState.status}
+                      onChange={(event) =>
+                        updateBattleState({ status: event.target.value as PokemonStatus })
+                      }
+                      className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
+                    >
+                      {STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-medium text-zinc-600">
+                    Current HP: {currentHp}/{maxHp} ({battleState.currentHpPercent}%)
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={battleState.currentHpPercent}
+                    onChange={(event) =>
+                      updateBattleState({ currentHpPercent: Number(event.target.value) })
+                    }
+                    aria-label={`${title} current HP percent`}
+                    className="w-full accent-zinc-600"
                   />
                 </div>
-              ) : (
-                effectiveAbility && <span className="truncate">{effectiveAbility}</span>
-              )}
-              <div className="min-w-0 flex-1">
-                <SearchableSelect
-                  options={NATURE_OPTIONS}
-                  placeholder="Select nature…"
-                  ariaLabel={`${title} nature`}
-                  value={natureLabel(currentNature.toLowerCase())}
-                  onSelect={(option) =>
-                    onStatOverridesChange({ ...statOverrides, nature: option.id })
-                  }
-                  compact
-                />
               </div>
-            </div>
-            {onItemChange && (
-              <SearchableSelect
-                options={itemOptions}
-                placeholder="Add a held item…"
-                ariaLabel={`${title} held item`}
-                value={pokemon.item}
-                onSelect={(option) => onItemChange(option.id)}
-                onClear={() => onItemChange(undefined)}
-                compact
-              />
             )}
-          </div>
-
-          {breakdown ? (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[280px] text-xs text-zinc-700">
-                <thead>
-                  <tr className="text-zinc-500">
-                    <th className="py-0.5 text-left font-normal">Stat</th>
-                    <th className="text-right font-normal">Base</th>
-                    <th className="text-right font-normal">SP</th>
-                    <th className="text-right font-normal">Final</th>
-                    <th className="pl-2 text-right font-normal">Stage</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {STAT_ORDER.map((stat) => {
-                    const stageKey = STAGE_KEY_BY_STAT[stat];
-                    const isIncreased = breakdown.final.increasedStat === stat;
-                    const isDecreased = breakdown.final.decreasedStat === stat;
-                    return (
-                      <tr key={stat}>
-                        <td className="py-0.5">
-                          {STAT_LABELS[stat]}
-                          {isIncreased && (
-                            <span className="text-zinc-900" title="Boosted by nature">
-                              {" "}
-                              ↑
-                            </span>
-                          )}
-                          {isDecreased && (
-                            <span className="text-zinc-400" title="Lowered by nature">
-                              {" "}
-                              ↓
-                            </span>
-                          )}
-                        </td>
-                        <td className="text-right">{breakdown.base[stat]}</td>
-                        <td className="text-right">
-                          <input
-                            type="number"
-                            min={0}
-                            max={32}
-                            value={breakdown.statPoints[stat]}
-                            onChange={(event) => updateSp(stat, Number(event.target.value))}
-                            aria-label={`${title} ${STAT_LABELS[stat]} Stat Points`}
-                            className="w-12 rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-right text-xs text-zinc-900"
-                          />
-                        </td>
-                        <td className="text-right font-medium">
-                          {stat === "spe" && totalSpeedMultiplier !== 1 ? (
-                            <span
-                              title={`${speedLabelParts.join(", ")} multiplies Speed by ×${roundedSpeedMultiplier}`}
-                            >
-                              {effectiveSpe}{" "}
-                              <span className="text-zinc-500">
-                                (×{roundedSpeedMultiplier} {speedLabelParts.join(", ")})
-                              </span>
-                            </span>
-                          ) : (
-                            breakdown.final[stat]
-                          )}
-                        </td>
-                        <td className="pl-2 text-right">
-                          {stageKey ? (
-                            <select
-                              value={battleState[stageKey]}
-                              onChange={(event) =>
-                                updateBattleState({ [stageKey]: Number(event.target.value) })
-                              }
-                              aria-label={`${title} ${STAT_LABELS[stat]} stage`}
-                              className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
-                            >
-                              {STAGE_OPTIONS.map((stage) => (
-                                <option key={stage} value={stage}>
-                                  {stage > 0 ? `+${stage}` : stage === 0 ? "--" : stage}
-                                </option>
-                              ))}
-                            </select>
-                          ) : null}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-xs text-amber-600">
-              No base stats found for this species/form.
-            </p>
-          )}
-
-          {breakdown && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600">
-                  Status
-                  <select
-                    value={battleState.status}
-                    onChange={(event) =>
-                      updateBattleState({ status: event.target.value as PokemonStatus })
-                    }
-                    className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-zinc-600">
-                  Current HP: {currentHp}/{maxHp} ({battleState.currentHpPercent}%)
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={battleState.currentHpPercent}
-                  onChange={(event) =>
-                    updateBattleState({ currentHpPercent: Number(event.target.value) })
-                  }
-                  aria-label={`${title} current HP percent`}
-                  className="w-full accent-zinc-600"
-                />
-              </div>
-            </div>
-          )}
-
-          {onMovesChange && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-zinc-600">Moves</span>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[0, 1, 2, 3].map((slot) => {
-                  const moves = pokemon.moves ?? [];
-                  const move = moves[slot];
-                  // A Pokémon can't know the same move twice — excluding
-                  // whatever's already picked in the OTHER slots (not this
-                  // one, so re-opening a slot still shows its own current
-                  // move) also sidesteps the duplicate-value React key
-                  // collision that caused stale/overlapping rows above.
-                  const usedElsewhere = moves.filter((_, i) => i !== slot);
-                  const availableOptions = MOVE_OPTIONS.filter(
-                    (option) => !usedElsewhere.includes(option.label),
-                  );
-                  return (
-                    <SearchableSelect
-                      key={slot}
-                      options={availableOptions}
-                      placeholder="Add a move…"
-                      ariaLabel={`${title} move ${slot + 1}`}
-                      value={move}
-                      onSelect={(option) => {
-                        if (slot < moves.length) {
-                          const next = [...moves];
-                          next[slot] = option.label;
-                          onMovesChange(next);
-                        } else {
-                          onMovesChange([...moves, option.label]);
-                        }
-                      }}
-                      onClear={() => {
-                        const next = [...moves];
-                        next.splice(slot, 1);
-                        onMovesChange(next);
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          </PokemonEditor>
         </div>
-        )}
 
         <div
           className="flex shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3"

@@ -42,10 +42,22 @@
 // (Wave Crash, a Gen 8 move, confirmed 1/4 recoil per Bulbapedia) — same
 // "small starting subset, grows as gaps are found" spirit as this app's
 // other hand-curated tables (see abilityDamageModifiers.ts).
+//
+// `accuracy`/`pp` come from moves.csv's own columns (already fetched, just
+// not previously extracted) — `accuracy` is absent (not `null`) for moves
+// that can't miss (e.g. Swift, Aerial Ace), matching minHits/maxHits' "only
+// present when it varies from the implicit default" shape.
+//
+// `shortDesc` comes from a second source, @pkmn/dex (Smogon/Showdown's own
+// data layer), since it's Showdown's exact wording the move picker is meant
+// to display — see docs/team-builder.md §3a. Absent for the ~50 Z-Move
+// physical/special CSV-duplicate entries @pkmn/dex doesn't recognize
+// (Z-Moves aren't modeled anywhere else in this app either).
 
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Dex } from "@pkmn/dex";
 
 const CSV_BASE =
   "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv";
@@ -165,6 +177,8 @@ async function main() {
       continue;
     }
 
+    const dexMove = Dex.moves.get(row.identifier);
+
     // Later CSV rows win on a duplicate identifier — none currently exist
     // (verified against the live export), but this keeps regeneration safe
     // if PokeAPI ever adds a versioned duplicate.
@@ -173,6 +187,9 @@ async function main() {
       type,
       category,
       name: nameById.get(row.id),
+      pp: row.pp ? Number(row.pp) : undefined,
+      ...(row.accuracy ? { accuracy: Number(row.accuracy) } : {}),
+      ...(dexMove.exists ? { shortDesc: dexMove.shortDesc || dexMove.desc } : {}),
       ...hitsById.get(row.id),
       ...spreadById.get(row.id),
       ...recoilById.get(row.id),

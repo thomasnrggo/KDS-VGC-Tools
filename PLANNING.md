@@ -4,6 +4,11 @@ This is the living source of truth for what this app is and how it's built. Upda
 change — it should always reflect the current plan, not the history of how we got there (that's what
 git log is for).
 
+**Per-feature docs**: as of 2026-09-16, large in-progress features get their own planning doc under
+`docs/` instead of growing §7 further — this file's §7 roadmap had grown past 2500 lines. Each such
+doc gets a one-line pointer where it's relevant below; the doc itself is the source of truth for that
+feature's scope/decisions. First one: [docs/team-builder.md](./docs/team-builder.md).
+
 ## 1. Vision
 
 A personal tool for planning Pokémon VGC matchups. You paste your team once (Pokémon Showdown export
@@ -34,9 +39,11 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   a single flat row per opponent — roster, lead pair, back pair, and notes always visible, no plan name,
   no accordion. Simpler and denser; revisit if multiple strategies per opponent turns out to be needed
   after all.
-- **Showdown export paste is the only import method for now.** No manual team builder UI, no
-  Poképaste API integration (the user pastes the exported text themselves, even if it originated from
-  a Poképaste link). The one exception (2026-08-08): a **bulk import** for opponents accepts a Showdown
+- **Showdown export paste is the only import method for now.** No manual team builder UI *(superseded
+  2026-09-16 — a Team Builder is now planned, see [docs/team-builder.md](./docs/team-builder.md); it
+  ships as a separate flow first, not replacing paste-in)*, no Poképaste API integration (the user
+  pastes the exported text themselves, even if it originated from a Poképaste link). The one exception
+  (2026-08-08): a **bulk import** for opponents accepts a Showdown
   *team folder* export — multiple teams in one paste, each preceded by a `=== [format] Name ===` header
   (what Showdown's teambuilder produces when exporting a whole folder) — and creates one opponent per
   team (`parseTeamFolder`, `addOpponentsFromFolder`). Entries that fail to parse into a valid 1-6
@@ -333,7 +340,8 @@ working yet:
 - Cross-team speed-tier comparison charts (basic single-hit damage calculation, added 2026-08-12, is
   now in scope — see §7's Damage Calculator phase)
 - Editing a parsed Pokémon's fields in the UI (EVs, moves, etc.) — paste-in is the only way to change
-  a team; if a paste was wrong, re-paste it
+  a team; if a paste was wrong, re-paste it *(superseded 2026-09-16 — the planned Team Builder,
+  [docs/team-builder.md](./docs/team-builder.md), becomes the general editor for any team once shipped)*
 
 ## 3. Data model
 

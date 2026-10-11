@@ -13,6 +13,12 @@ export interface MoveData {
   isSpread?: boolean;
   /** Only present for moves with real recoil (Take Down: 0.25, Double-Edge/Flare Blitz/Volt Tackle/Brave Bird/Wood Hammer: 1/3, Head Smash: 0.5, ...) — the fraction of damage DEALT the attacker takes back. Absent for drain moves (Giga Drain heals instead) and flat-self-cost moves (Mind Blown, Struggle) — see generate-move-data.mjs's file header for the full scoping. */
   recoilFraction?: number;
+  /** Max PP at 0 PP Ups, e.g. 5 for Blizzard, 40 for Tackle. */
+  pp?: number;
+  /** 0-100. Absent (not a number) for moves that can't miss, e.g. Swift, Aerial Ace. */
+  accuracy?: number;
+  /** Showdown's exact move description text (from @pkmn/dex), e.g. "10% chance to freeze foe(s). Can't miss in Snow." for Blizzard. Absent for the handful of Z-Move CSV entries @pkmn/dex doesn't recognize. */
+  shortDesc?: string;
 }
 
 export interface DamageResult {

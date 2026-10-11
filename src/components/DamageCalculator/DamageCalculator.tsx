@@ -11,14 +11,12 @@ import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import { WEATHER_SETTING_ABILITIES } from "@/constants";
 import {
   DEFAULT_BATTLE_STATE,
-  DEFAULT_SPECIES_KEY,
   MAX_SIDEBAR_POKEMON,
   RosterPokemonPicker,
-  STAT_LABELS,
-  buildCustomPokemon,
   type PokemonBattleState,
   type SidebarEntry,
 } from "./RosterPokemonPicker";
+import { DEFAULT_SPECIES_KEY, STAT_LABELS, buildCustomPokemon } from "../PokemonEditor";
 import type { DamageCalcOptions, DamageResult, ParsedPokemon } from "@/types";
 
 type StageField = "atkStage" | "defStage" | "spaStage" | "spdStage";

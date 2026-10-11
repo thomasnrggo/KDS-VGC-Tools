@@ -14,8 +14,12 @@ import { parseTeam } from "@/lib/parseTeam";
 import { useAuth } from "./useAuth";
 import type { BulkImportResult, MatchupPlan, Opponent, TeamFolderEntry } from "@/types";
 
-function sortByUpdatedAtDesc(opponents: Opponent[]): Opponent[] {
-  return [...opponents].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+/**
+ * Newest-added first. Sorts on createdAt, not updatedAt, so editing a plan or
+ * a team doesn't jump that opponent to the top and reshuffle the list.
+ */
+function sortByCreatedAtDesc(opponents: Opponent[]): Opponent[] {
+  return [...opponents].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 /**
@@ -53,7 +57,7 @@ export function useOpponents() {
       : getOpponents;
     load().then((loaded) => {
       if (!cancelled) {
-        setOpponents(sortByUpdatedAtDesc(loaded));
+        setOpponents(sortByCreatedAtDesc(loaded));
         setIsLoading(false);
       }
     });
@@ -92,7 +96,7 @@ export function useOpponents() {
         return `"${duplicate.label}" already has this exact team under this regulation.`;
       }
 
-      setOpponents((prev) => sortByUpdatedAtDesc([opponent, ...prev]));
+      setOpponents((prev) => sortByCreatedAtDesc([opponent, ...prev]));
       void saveOpponent(opponent);
       return opponent;
     },
@@ -117,9 +121,20 @@ export function useOpponents() {
           .map((opponent) => opponent.team.rawPaste),
       );
 
+      // Every opponent created in this loop would otherwise get the same
+      // millisecond timestamp, and ties in sortByCreatedAtDesc fall back to
+      // IndexedDB's key order (random UUIDs) on reload. Staggering by 1ms per
+      // entry stores the paste order in the data itself, first entry on top.
+      const importedAt = Date.now();
+
       for (const entry of entries) {
         const label = entry.label.trim() || "Unnamed team";
-        const opponent = createOpponent(label, entry.rawPaste, regulationId);
+        const timestamp = new Date(importedAt - created.length).toISOString();
+        const opponent = {
+          ...createOpponent(label, entry.rawPaste, regulationId),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+        };
         const sizeError = validateTeamSize(opponent.team.pokemon);
         if (sizeError) {
           skipped.push(`${label}: ${sizeError}`);
@@ -134,7 +149,7 @@ export function useOpponents() {
       }
 
       if (created.length > 0) {
-        setOpponents((prev) => sortByUpdatedAtDesc([...created, ...prev]));
+        setOpponents((prev) => sortByCreatedAtDesc([...created, ...prev]));
         created.forEach((opponent) => void saveOpponent(opponent));
       }
 
