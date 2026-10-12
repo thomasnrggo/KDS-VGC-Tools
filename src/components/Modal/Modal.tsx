@@ -7,9 +7,11 @@ interface ModalProps {
   onClose: () => void;
   labelledBy: string;
   children: React.ReactNode;
+  /** "wide" for content that needs more than the default form width, e.g. a roster next to a picker. */
+  size?: "default" | "wide";
 }
 
-export function Modal({ onClose, labelledBy, children }: ModalProps) {
+export function Modal({ onClose, labelledBy, children, size = "default" }: ModalProps) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -30,7 +32,7 @@ export function Modal({ onClose, labelledBy, children }: ModalProps) {
         aria-modal="true"
         aria-labelledby={labelledBy}
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-xl rounded-lg bg-zinc-50 p-6 shadow-xl"
+        className={`w-full ${size === "wide" ? "max-w-3xl" : "max-w-xl"} rounded-lg bg-zinc-50 p-6 shadow-xl`}
       >
         {children}
       </div>

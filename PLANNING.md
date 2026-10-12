@@ -7,7 +7,8 @@ git log is for).
 **Per-feature docs**: as of 2026-09-16, large in-progress features get their own planning doc under
 `docs/` instead of growing §7 further — this file's §7 roadmap had grown past 2500 lines. Each such
 doc gets a one-line pointer where it's relevant below; the doc itself is the source of truth for that
-feature's scope/decisions. First one: [docs/team-builder.md](./docs/team-builder.md).
+feature's scope/decisions. First one: [docs/team-builder.md](./docs/team-builder.md), then
+[docs/opponent-organization.md](./docs/opponent-organization.md) (manual order, tags, variants).
 
 ## 1. Vision
 
@@ -398,6 +399,10 @@ interface Opponent {
   team: Team;      // the 6 Pokémon (species + item, + display-only ability/moves/nature/EVs)
   pokepasteUrl?: string;
   plansByTeamId: Record<string, MatchupPlan>; // keyed by which of your Teams is planning this matchup
+  sortOrder: number; // manual list order, highest first — see docs/opponent-organization.md
+  tags: string[];    // strategy tags (rain, sun, perish, …), searchable — see docs/opponent-organization.md
+  variantOf?: string; // set on a variant: its group's main opponent id
+  copiedPlanFrom?: Record<string, string>; // your team id → opponent the plan was copied from ("Copied from" badge)
   createdAt: string;
   updatedAt: string;
 }
@@ -2530,6 +2535,10 @@ leads/backs) is complete and working end to end.
       everything except `baseSpe`) instead of hardcoding the initial `activeMetrics` Set to "all of
       them," so future metrics can each declare their own sensible default instead of always defaulting
       to on.
+
+- [x] **Opponent organization** — manual order + Reverse, tags, semantic duplicate detection, and
+      team variants. Scope/decisions in [docs/opponent-organization.md](./docs/opponent-organization.md).
+      All four steps done 2026-10-12.
 
 ## 8. Attribution
 

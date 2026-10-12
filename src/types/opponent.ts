@@ -21,6 +21,14 @@ export interface Opponent {
   regulationId: string;
   /** Lead/back picks + notes, keyed by which of your (possibly several) teams is planning against this opponent. */
   plansByTeamId: Record<string, MatchupPlan>;
+  /** Manual list position, highest first (same convention as Team.sortOrder) — set by drag/Move up/down, see docs/opponent-organization.md. Opponents saved before this field existed are backfilled from createdAt by normalizeOpponent. */
+  sortOrder: number;
+  /** Strategy tags (rain, sun, perish, …), normalized via normalizeTag in src/lib/opponentTags.ts — searchable alongside Pokémon/items. Backfilled to [] by normalizeOpponent. */
+  tags: string[];
+  /** Set on a variant: the id of its group's main opponent. Absent on a main. One level deep — a main is never itself a variant. See docs/opponent-organization.md. */
+  variantOf?: string;
+  /** Your team id → the opponent id a plan was copied from when this became a variant. Drives the "Copied from …" badge; an entry is dropped once that plan is edited. */
+  copiedPlanFrom?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }

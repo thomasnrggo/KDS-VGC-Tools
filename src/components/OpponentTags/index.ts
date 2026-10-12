@@ -1,0 +1,1 @@
+export { OpponentTags } from "./OpponentTags";

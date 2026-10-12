@@ -1,19 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useOpponents } from "@/hooks/useOpponents";
+import { useOpponentListReversed } from "@/hooks/useOpponentListReversed";
 import { useSeasons } from "@/hooks/useSeasons";
 import { parseTeamFolder } from "@/lib/teamFolder";
 import { REGULATIONS } from "@/data/regulations";
-import type { ParsedPokemon, Season, TeamFolderEntry } from "@/types";
+import type {
+  BulkImportResult,
+  Opponent,
+  ParsedPokemon,
+  Season,
+  TeamFolderEntry,
+} from "@/types";
 import {
   parseSearchTerms,
   pokemonMatchesQuery,
 } from "@/lib/pokemonMatchesQuery";
+import { tagsMatchQuery } from "@/lib/opponentTags";
+import {
+  defaultDecision,
+  importNeedsReview,
+  type ImportDecision,
+  type ImportEntry,
+  type ImportRow,
+} from "@/lib/opponentImport";
+import { groupOpponents, type OpponentGroup } from "@/lib/opponentVariants";
 import { OpponentForm } from "../OpponentForm";
-import { OpponentCard } from "../OpponentCard";
+import { OpponentCard, type OpponentCardProps } from "../OpponentCard";
 import { BulkImportForm } from "../BulkImportForm";
+import { ImportReview } from "../ImportReview";
+import { MakeVariantPicker } from "../MakeVariantPicker";
+import type { RowAction } from "../RowActionsMenu";
 import { Modal } from "../Modal";
 import { SearchField } from "../SearchField";
 import { Icon } from "../Icon";
@@ -158,14 +177,26 @@ export function OpponentsSection({
   const {
     opponents,
     isLoading,
-    addOpponent,
-    addOpponentsFromFolder,
+    analyzeOpponentImport,
+    importOpponents,
     removeOpponent,
     removeOpponents,
+    moveOpponent,
+    setGroupMain,
+    makeVariant,
+    detachVariant,
     updateOpponentPlan,
+    setOpponentTags,
     editOpponentTeam,
   } = useOpponents();
   const { seasons, currentSeasonId } = useSeasons();
+  const { isReversed, toggleReversed } = useOpponentListReversed();
+  // Drag only starts from the handle (armedId is set on pointerdown there) —
+  // the row itself is full of pickers and a notes editor, so making the whole
+  // row draggable like My Teams' rows would hijack text selection.
+  const [armedId, setArmedId] = useState<string | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isBulkImporting, setIsBulkImporting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -174,6 +205,13 @@ export function OpponentsSection({
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  /** An import waiting on the review step (only opened when some team has a variant candidate). */
+  const [pendingImport, setPendingImport] = useState<{
+    rows: ImportRow[];
+    regulationId: string;
+  } | null>(null);
+  const [variantPickerId, setVariantPickerId] = useState<string | null>(null);
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(() => new Set());
 
   // Regulation filter comes first — everything below (search, the empty-state
   // check, "Clear all data") operates on the currently-viewed regulation's
@@ -186,54 +224,190 @@ export function OpponentsSection({
   );
 
   // Space-separated terms are ANDed together per opponent — "charizard basculegion"
-  // only matches a team that has a Pokémon/item for *each* term, not either one.
+  // only matches a team that has a Pokémon/item/tag for *each* term, not either one
+  // ("rain scarf" = a rain-tagged team with a Choice Scarf on someone).
   const searchTerms = parseSearchTerms(searchQuery);
   const isSearching = searchTerms.length > 0;
-  const visibleOpponents = isSearching
-    ? regulationOpponents.filter((opponent) =>
-        searchTerms.every((term) =>
-          opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term)),
-        ),
-      )
-    : regulationOpponents;
+  function matchesSearch(opponent: Opponent): boolean {
+    return searchTerms.every(
+      (term) =>
+        opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term)) ||
+        tagsMatchQuery(opponent.tags, term),
+    );
+  }
+  const knownTags = [...new Set(regulationOpponents.flatMap((opponent) => opponent.tags))].sort();
+  const labelById = new Map(opponents.map((opponent) => [opponent.id, opponent.label]));
 
-  function handleSubmit(label: string, rawPaste: string, pokepasteUrl: string) {
-    const result = addOpponent(label, rawPaste, selectedRegulationId, pokepasteUrl);
-    if (typeof result === "string") {
-      return result;
-    }
-    setIsAdding(false);
-    return null;
+  // Mains in list order, each with its variants (see groupOpponents). While
+  // searching, a group shows if its main or any variant matches, with only
+  // the matching variants listed — and those shown expanded.
+  const groups = groupOpponents(regulationOpponents);
+  const visibleGroups = isSearching
+    ? groups.flatMap((group) => {
+        const variants = group.variants.filter(matchesSearch);
+        return matchesSearch(group.main) || variants.length > 0 ? [{ ...group, variants }] : [];
+      })
+    : groups;
+  // Reverse is view-only — sortOrder never changes, so flipping back is free.
+  // It flips the groups; variants keep their order under their main.
+  const displayedGroups = isReversed ? [...visibleGroups].reverse() : visibleGroups;
+  // Only mains take part in the list order. Disabled while searching: the
+  // filtered list isn't the full order a move is positioned against.
+  const canReorder = !isSearching && groups.length > 1;
+
+  function isGroupExpanded(group: OpponentGroup): boolean {
+    return isSearching ? group.variants.length > 0 : expandedGroupIds.has(group.main.id);
   }
 
-  function reportImportResult(importedCount: number, skipped: string[]) {
+  function toggleGroup(mainId: string) {
+    setExpandedGroupIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(mainId)) next.delete(mainId);
+      else next.add(mainId);
+      return next;
+    });
+  }
+
+  /** Moves main `movedId` to `toDisplayIndex` of the list as shown, translating a reversed view back to list order. */
+  function moveInDisplay(movedId: string, toDisplayIndex: number) {
+    const displayIds = displayedGroups
+      .map((group) => group.main.id)
+      .filter((id) => id !== movedId);
+    displayIds.splice(toDisplayIndex, 0, movedId);
+    const listIds = isReversed ? displayIds.reverse() : displayIds;
+    moveOpponent(
+      groups.map((group) => group.main.id),
+      movedId,
+      listIds.indexOf(movedId),
+    );
+  }
+
+  function endDrag() {
+    setArmedId(null);
+    setDraggedId(null);
+    setDragOverId(null);
+  }
+
+  /** Moves variant `movedId` to `toIndex` among its group's variants — their order is separate from the main list's, and Reverse doesn't flip it. */
+  function moveVariant(group: OpponentGroup, movedId: string, toIndex: number) {
+    moveOpponent(
+      group.variants.map((variant) => variant.id),
+      movedId,
+      toIndex,
+    );
+  }
+
+  // A dragged variant can only be dropped among its own group's variants; a
+  // dragged main only among the mains (dropping it on a variant row drops it
+  // on that variant's group).
+  const draggedVariantGroup = draggedId
+    ? groups.find((group) => group.variants.some((variant) => variant.id === draggedId))
+    : undefined;
+
+  /** Dropping onto a row takes that row's place: below it when dragging down, above it when dragging up. */
+  function handleDrop(targetId: string) {
+    if (draggedId && draggedId !== targetId && !draggedVariantGroup) {
+      moveInDisplay(
+        draggedId,
+        displayedGroups.findIndex((group) => group.main.id === targetId),
+      );
+    }
+    endDrag();
+  }
+
+  function handleVariantDrop(group: OpponentGroup, targetId: string) {
+    if (draggedId && draggedId !== targetId) {
+      moveVariant(
+        group,
+        draggedId,
+        group.variants.findIndex((variant) => variant.id === targetId),
+      );
+    }
+    endDrag();
+  }
+
+  // Hidden below md: HTML5 drag-and-drop doesn't fire on most touch devices,
+  // so mobile reorders through the ⋮ menu's Move items instead.
+  function dragHandle(id: string) {
+    return (
+      <span
+        onPointerDown={() => setArmedId(id)}
+        onPointerUp={() => setArmedId(null)}
+        title="Drag to reorder"
+        className="-ml-1 hidden shrink-0 cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing md:flex"
+      >
+        <Icon name={IconName.DragIndicator} size={16} />
+      </span>
+    );
+  }
+
+  function reportImportResult({ importedCount, variantCount, skipped }: BulkImportResult) {
     if (importedCount === 0 && skipped.length === 0) {
       setImportNotice(
         "Couldn't import any teams from that paste — check the format and try again.",
       );
-    } else if (skipped.length > 0) {
-      setImportNotice(
-        `Imported ${importedCount} team${importedCount === 1 ? "" : "s"}. Skipped ${skipped.length}: ${skipped.join("; ")}`,
-      );
+      return;
+    }
+    const imported = `Imported ${importedCount} team${importedCount === 1 ? "" : "s"}${
+      variantCount > 0 ? ` (${variantCount} as variant${variantCount === 1 ? "" : "s"})` : ""
+    }.`;
+    setImportNotice(
+      skipped.length > 0
+        ? `${imported} Skipped ${skipped.length}: ${skipped.join("; ")}`
+        : imported,
+    );
+  }
+
+  /** Analyzes `entries`; opens the review step if any team could be a variant, otherwise imports straight away. */
+  function runImport(entries: ImportEntry[], regulationId: string) {
+    const rows = analyzeOpponentImport(entries, regulationId);
+    if (importNeedsReview(rows)) {
+      setPendingImport({ rows, regulationId });
     } else {
-      setImportNotice(
-        `Imported ${importedCount} team${importedCount === 1 ? "" : "s"}.`,
-      );
+      reportImportResult(importOpponents(rows, rows.map(defaultDecision), regulationId));
     }
   }
 
+  function confirmImportReview(decisions: ImportDecision[]) {
+    if (!pendingImport) return;
+    reportImportResult(importOpponents(pendingImport.rows, decisions, pendingImport.regulationId));
+    setPendingImport(null);
+  }
+
+  function handleSubmit(label: string, rawPaste: string, pokepasteUrl: string) {
+    if (!label.trim()) {
+      return "Give this opponent a name.";
+    }
+    if (!rawPaste.trim()) {
+      return "Paste the opponent's Showdown export.";
+    }
+    const rows = analyzeOpponentImport(
+      [{ label, rawPaste, pokepasteUrl: pokepasteUrl || undefined }],
+      selectedRegulationId,
+    );
+    const [row] = rows;
+    if (row.error) {
+      return row.error;
+    }
+    if (row.duplicateOf !== undefined) {
+      return `"${row.duplicateOf}" is already this exact team (same Pokémon, items, and moves) under this regulation.`;
+    }
+    setIsAdding(false);
+    if (importNeedsReview(rows)) {
+      setPendingImport({ rows, regulationId: selectedRegulationId });
+    } else {
+      importOpponents(rows, rows.map(defaultDecision), selectedRegulationId);
+    }
+    return null;
+  }
+
   function handleBulkImport(entries: TeamFolderEntry[]) {
-    const { importedCount, skipped } = addOpponentsFromFolder(entries, selectedRegulationId);
     setIsBulkImporting(false);
-    reportImportResult(importedCount, skipped);
+    runImport(entries, selectedRegulationId);
   }
 
   function loadPreset(rawPaste: string, regulationId: string) {
-    const { importedCount, skipped } = addOpponentsFromFolder(
-      parseTeamFolder(rawPaste),
-      regulationId,
-    );
-    reportImportResult(importedCount, skipped);
+    runImport(parseTeamFolder(rawPaste), regulationId);
   }
 
   function toggleSearch() {
@@ -278,8 +452,95 @@ export function OpponentsSection({
     setConfirmRemoveId(null);
   }
 
+  /** Move up/down/top/bottom for the row at `index` of a `count`-row list as shown — the mains, or one group's variants. */
+  function moveActions(
+    index: number,
+    count: number,
+    move: (toIndex: number) => void,
+  ): RowAction[] {
+    const lastIndex = count - 1;
+    return [
+      {
+        label: "Move to top",
+        icon: IconName.VerticalAlignTop,
+        onClick: () => move(0),
+        disabled: index === 0,
+      },
+      {
+        label: "Move up",
+        icon: IconName.ArrowUpward,
+        onClick: () => move(index - 1),
+        disabled: index === 0,
+      },
+      {
+        label: "Move down",
+        icon: IconName.ArrowDownward,
+        onClick: () => move(index + 1),
+        disabled: index === lastIndex,
+      },
+      {
+        label: "Move to bottom",
+        icon: IconName.VerticalAlignBottom,
+        onClick: () => move(lastIndex),
+        disabled: index === lastIndex,
+      },
+    ];
+  }
+
+  function renderCard(
+    opponent: Opponent,
+    options: {
+      dragHandle?: ReactNode;
+      extraActions: RowAction[];
+      variantToggle?: OpponentCardProps["variantToggle"];
+      isVariant?: boolean;
+    },
+  ) {
+    const copiedFromId = activeTeamId ? opponent.copiedPlanFrom?.[activeTeamId] : undefined;
+    return (
+      <OpponentCard
+        opponent={opponent}
+        myTeamPokemon={myTeamPokemon}
+        activeTeamId={activeTeamId}
+        activeTeamMatchesRegulation={activeTeamMatchesRegulation}
+        onEdit={() => startEditing(opponent.id)}
+        onRemove={() => setConfirmRemoveId(opponent.id)}
+        dragHandle={options.dragHandle}
+        extraActions={options.extraActions}
+        variantToggle={options.variantToggle}
+        isVariant={options.isVariant}
+        copiedFromLabel={
+          copiedFromId ? (labelById.get(copiedFromId) ?? "the main team") : undefined
+        }
+        onUpdateTags={(tags) => setOpponentTags(opponent.id, tags)}
+        knownTags={knownTags}
+        onUpdatePlan={(updater) => {
+          if (activeTeamId) {
+            updateOpponentPlan(opponent.id, activeTeamId, updater);
+          }
+        }}
+        isMatch={
+          isSearching
+            ? (mon) => searchTerms.some((term) => pokemonMatchesQuery(mon, term))
+            : undefined
+        }
+        isTagMatch={
+          isSearching ? (tag) => searchTerms.some((term) => tag.includes(term)) : undefined
+        }
+      />
+    );
+  }
+
   const confirmRemoveOpponent = confirmRemoveId
     ? (opponents.find((opponent) => opponent.id === confirmRemoveId) ?? null)
+    : null;
+  // Removing a main with variants promotes its first variant (see removeOpponent).
+  const confirmRemoveSuccessor = confirmRemoveId
+    ? groups.find((group) => group.main.id === confirmRemoveId)?.variants[0]
+    : undefined;
+
+  const variantPickerOpponent = variantPickerId
+    ? (opponents.find((opponent) => opponent.id === variantPickerId) ?? null)
     : null;
 
   const editingOpponent = editingId
@@ -324,10 +585,27 @@ export function OpponentsSection({
       onClick={toggleSearch}
       aria-label="Search opponents"
       aria-expanded={isSearchOpen}
-      title="Search by Pokémon or item"
+      title="Search by Pokémon, item, or tag"
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
     >
       <Icon name={IconName.Search} size={18} />
+    </button>
+  );
+
+  const reverseButton = canSearch && regulationOpponents.length > 1 && (
+    <button
+      type="button"
+      onClick={toggleReversed}
+      aria-pressed={isReversed}
+      aria-label="Reverse order"
+      title={isReversed ? "Showing reversed — click for original order" : "Reverse order"}
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+        isReversed
+          ? "bg-zinc-200 text-zinc-900"
+          : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+      }`}
+    >
+      <Icon name={IconName.SwapVert} size={18} />
     </button>
   );
 
@@ -349,8 +627,8 @@ export function OpponentsSection({
             <SearchField
               query={searchQuery}
               onQueryChange={setSearchQuery}
-              placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
-              ariaLabel="Search opponents by Pokémon or item"
+              placeholder='Search by Pokémon, item, or tag… (e.g. "rain scarf")'
+              ariaLabel="Search opponents by Pokémon, item, or tag"
               onClose={toggleSearch}
               autoFocus
               className="min-w-0 flex-1"
@@ -358,6 +636,7 @@ export function OpponentsSection({
           )}
           {!isAdding && !isBulkImporting && (
             <div className="ml-auto flex gap-2">
+              {reverseButton}
               <button
                 type="button"
                 onClick={startAdding}
@@ -391,6 +670,7 @@ export function OpponentsSection({
         </div>
         {!isAdding && !isBulkImporting && (
           <div className="flex gap-2">
+            {reverseButton}
             <button
               type="button"
               onClick={startAdding}
@@ -418,8 +698,8 @@ export function OpponentsSection({
         <SearchField
           query={searchQuery}
           onQueryChange={setSearchQuery}
-          placeholder='Search by Pokémon or item… (e.g. "charizard scarf")'
-          ariaLabel="Search opponents by Pokémon or item"
+          placeholder='Search by Pokémon, item, or tag… (e.g. "rain scarf")'
+          ariaLabel="Search opponents by Pokémon, item, or tag"
           className="hidden md:block"
         />
       )}
@@ -533,6 +813,27 @@ export function OpponentsSection({
         </Modal>
       )}
 
+      {pendingImport && (
+        <ImportReview
+          rows={pendingImport.rows}
+          onConfirm={confirmImportReview}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
+
+      {variantPickerOpponent && (
+        <MakeVariantPicker
+          opponent={variantPickerOpponent}
+          groups={groups.filter((group) => group.main.id !== variantPickerOpponent.id)}
+          onPick={(mainId) => {
+            makeVariant(variantPickerOpponent.id, mainId);
+            setExpandedGroupIds((prev) => new Set(prev).add(mainId));
+            setVariantPickerId(null);
+          }}
+          onCancel={() => setVariantPickerId(null)}
+        />
+      )}
+
       {confirmRemoveOpponent && (
         <Modal
           onClose={() => setConfirmRemoveId(null)}
@@ -547,6 +848,13 @@ export function OpponentsSection({
           <p className="mb-4 text-sm text-zinc-600">
             This can&apos;t be undone — you&apos;ll need to re-add or re-import
             this team.
+            {confirmRemoveSuccessor && (
+              <>
+                {" "}
+                Its variant &ldquo;{confirmRemoveSuccessor.label}&rdquo; becomes the
+                group&apos;s main team.
+              </>
+            )}
           </p>
           <div className="flex gap-2">
             <button
@@ -618,41 +926,149 @@ export function OpponentsSection({
             once →
           </button>
         </div>
-      ) : isSearching && visibleOpponents.length === 0 ? (
+      ) : isSearching && displayedGroups.length === 0 ? (
         <p className="py-12 text-center text-sm text-zinc-500">
-          No opponents have a Pokémon or item matching &ldquo;
+          No opponents have a Pokémon, item, or tag matching &ldquo;
           {searchQuery.trim()}&rdquo;.
         </p>
       ) : (
         <ul className="flex flex-col">
-          {visibleOpponents.map((opponent, index) => (
-            <div
-              key={opponent.id}
-              className={index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"}
-            >
-              <OpponentCard
-                opponent={opponent}
-                myTeamPokemon={myTeamPokemon}
-                activeTeamId={activeTeamId}
-                activeTeamMatchesRegulation={activeTeamMatchesRegulation}
-                onEdit={() => startEditing(opponent.id)}
-                onRemove={() => setConfirmRemoveId(opponent.id)}
-                onUpdatePlan={(updater) => {
-                  if (activeTeamId) {
-                    updateOpponentPlan(opponent.id, activeTeamId, updater);
-                  }
+          {displayedGroups.map((group, index) => {
+            const { main, variants } = group;
+            const isExpanded = isGroupExpanded(group);
+            // Same as canReorder: the filtered variants aren't the full order.
+            const canReorderVariants = !isSearching && variants.length > 1;
+            return (
+              <div
+                key={main.id}
+                draggable={armedId === main.id}
+                onPointerUp={() => setArmedId(null)}
+                onDragStart={(event) => {
+                  // Sprites inside the row are natively draggable images, and
+                  // their dragstart bubbles here too — only a drag that began
+                  // on this row's handle is a reorder.
+                  if (armedId !== main.id) return;
+                  setDraggedId(main.id);
+                  event.dataTransfer.effectAllowed = "move";
                 }}
-                isMatch={
-                  isSearching
-                    ? (mon) =>
-                        searchTerms.some((term) =>
-                          pokemonMatchesQuery(mon, term),
+                onDragEnd={endDrag}
+                onDragOver={(event) => {
+                  if (!draggedId || draggedVariantGroup) return;
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (dragOverId !== main.id) setDragOverId(main.id);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleDrop(main.id);
+                }}
+                className={`${index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"} ${
+                  draggedId === main.id ? "opacity-40" : ""
+                } ${
+                  dragOverId === main.id && draggedId !== main.id
+                    ? "outline outline-2 -outline-offset-2 outline-zinc-500"
+                    : ""
+                }`}
+              >
+                {renderCard(main, {
+                  dragHandle: canReorder && dragHandle(main.id),
+                  // Hidden while searching — matching variants are shown
+                  // expanded automatically then.
+                  variantToggle:
+                    variants.length > 0 && !isSearching
+                      ? {
+                          count: variants.length,
+                          isExpanded,
+                          onToggle: () => toggleGroup(main.id),
+                        }
+                      : undefined,
+                  extraActions: [
+                    ...(canReorder
+                      ? moveActions(index, displayedGroups.length, (toIndex) =>
+                          moveInDisplay(main.id, toIndex),
                         )
-                    : undefined
-                }
-              />
-            </div>
-          ))}
+                      : []),
+                    ...(groups.length > 1
+                      ? [
+                          {
+                            label: "Make variant of…",
+                            icon: IconName.Merge,
+                            onClick: () => setVariantPickerId(main.id),
+                          },
+                        ]
+                      : []),
+                  ],
+                })}
+                {isExpanded &&
+                  variants.map((variant, variantIndex) => (
+                    // An inset left bar (a shadow, so it takes no layout
+                    // space) marks a variant as part of the main row above it
+                    // while keeping its columns aligned with every other row.
+                    // Its drag events stop here when they're a variant
+                    // reorder within this group; a dragged main bubbles on up
+                    // to the group's wrapper.
+                    <div
+                      key={variant.id}
+                      draggable={armedId === variant.id}
+                      onPointerUp={() => setArmedId(null)}
+                      onDragStart={(event) => {
+                        if (armedId !== variant.id) return;
+                        event.stopPropagation();
+                        setDraggedId(variant.id);
+                        event.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(event) => {
+                        if (draggedVariantGroup?.main.id !== main.id) return;
+                        event.stopPropagation();
+                        event.preventDefault();
+                        event.dataTransfer.dropEffect = "move";
+                        if (dragOverId !== variant.id) setDragOverId(variant.id);
+                      }}
+                      onDrop={(event) => {
+                        if (draggedVariantGroup?.main.id !== main.id) return;
+                        event.stopPropagation();
+                        event.preventDefault();
+                        handleVariantDrop(group, variant.id);
+                      }}
+                      className={`border-t border-zinc-300 shadow-[inset_4px_0_0_0_var(--color-zinc-400)] ${
+                        draggedId === variant.id ? "opacity-40" : ""
+                      } ${
+                        dragOverId === variant.id && draggedId !== variant.id
+                          ? "outline outline-2 -outline-offset-2 outline-zinc-500"
+                          : ""
+                      }`}
+                    >
+                      {renderCard(variant, {
+                        isVariant: true,
+                        dragHandle: canReorderVariants && dragHandle(variant.id),
+                        extraActions: [
+                          ...(canReorderVariants
+                            ? moveActions(variantIndex, variants.length, (toIndex) =>
+                                moveVariant(group, variant.id, toIndex),
+                              )
+                            : []),
+                          {
+                            label: "Set as main",
+                            icon: IconName.Star,
+                            onClick: () => {
+                              setGroupMain(main.id, variant.id);
+                              // Expansion is tracked by main id — carry it over
+                              // so the group stays open under its new main.
+                              setExpandedGroupIds((prev) => new Set(prev).add(variant.id));
+                            },
+                          },
+                          {
+                            label: "Remove from group",
+                            icon: IconName.CallSplit,
+                            onClick: () => detachVariant(variant.id),
+                          },
+                        ],
+                      })}
+                    </div>
+                  ))}
+              </div>
+            );
+          })}
         </ul>
       )}
     </section>

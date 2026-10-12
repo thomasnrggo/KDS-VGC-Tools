@@ -17,6 +17,15 @@ interface RowActionsMenuProps {
     icon: IconName;
     onClick: () => void;
   };
+  /** Further items after the middle one (before Remove), e.g. an opponent's Move up/down. A disabled item stays visible but greyed out. */
+  extraActions?: RowAction[];
+}
+
+export interface RowAction {
+  label: string;
+  icon: IconName;
+  onClick: () => void;
+  disabled?: boolean;
 }
 
 /** A "..." button that opens a small Edit/Remove dropdown (plus an optional middle item) — shared by any row that used to show separate edit/delete icon buttons (opponents, teams). */
@@ -27,6 +36,7 @@ export function RowActionsMenu({
   editLabel = "Edit",
   removeLabel = "Remove",
   middleAction,
+  extraActions = [],
 }: RowActionsMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -77,7 +87,7 @@ export function RowActionsMenu({
           role="menu"
           aria-label={label}
           onClick={(event) => event.stopPropagation()}
-          className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+          className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           <button
             type="button"
@@ -105,6 +115,22 @@ export function RowActionsMenu({
               {middleAction.label}
             </button>
           )}
+          {extraActions.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              role="menuitem"
+              disabled={action.disabled}
+              onClick={() => {
+                action.onClick();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
+            >
+              <Icon name={action.icon} size={16} />
+              {action.label}
+            </button>
+          ))}
           <button
             type="button"
             role="menuitem"

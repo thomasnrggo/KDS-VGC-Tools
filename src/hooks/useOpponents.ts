@@ -8,37 +8,37 @@ import {
   saveOpponent,
   syncOpponentsWithCloud,
 } from "@/lib/storage/db";
-import { createOpponent, getPlanForTeam } from "@/lib/opponent";
+import {
+  compareOpponentOrder,
+  getPlanForTeam,
+  moveOpponent as moveOpponentInList,
+  topSortOrder,
+} from "@/lib/opponent";
+import {
+  analyzeImport,
+  buildImport,
+  type ImportDecision,
+  type ImportEntry,
+  type ImportRow,
+} from "@/lib/opponentImport";
+import {
+  asVariantOf,
+  clearCopiedPlanFlag,
+  detachVariant as detachVariantFromGroup,
+  groupOpponents,
+  promoteVariant,
+} from "@/lib/opponentVariants";
 import { createTeam, validateTeamSize } from "@/lib/team";
 import { parseTeam } from "@/lib/parseTeam";
 import { useAuth } from "./useAuth";
-import type { BulkImportResult, MatchupPlan, Opponent, TeamFolderEntry } from "@/types";
+import type { BulkImportResult, MatchupPlan, Opponent } from "@/types";
 
-/**
- * Newest-added first. Sorts on createdAt, not updatedAt, so editing a plan or
- * a team doesn't jump that opponent to the top and reshuffle the list.
- */
-function sortByCreatedAtDesc(opponents: Opponent[]): Opponent[] {
-  return [...opponents].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+function sortByListOrder(opponents: Opponent[]): Opponent[] {
+  return [...opponents].sort(compareOpponentOrder);
 }
 
-/**
- * A duplicate is the same regulation + byte-identical raw paste — e.g.
- * clicking "Load default set" for the same season twice (once per device,
- * or just by habit) creates fresh `crypto.randomUUID()` ids each time with
- * otherwise-identical content, and cloud sync's merge-by-id has no way to
- * know two different ids are "the same" opponent, so both survive and both
- * show up. Catching it here — before an id even exists to merge — is
- * simpler and more reliable than trying to detect it during sync.
- */
-function findDuplicate(
-  opponents: Opponent[],
-  regulationId: string,
-  rawPaste: string,
-): Opponent | undefined {
-  return opponents.find(
-    (opponent) => opponent.regulationId === regulationId && opponent.team.rawPaste === rawPaste,
-  );
+function opponentsInRegulation(opponents: Opponent[], regulationId: string): Opponent[] {
+  return opponents.filter((opponent) => opponent.regulationId === regulationId);
 }
 
 export function useOpponents() {
@@ -57,7 +57,7 @@ export function useOpponents() {
       : getOpponents;
     load().then((loaded) => {
       if (!cancelled) {
-        setOpponents(sortByCreatedAtDesc(loaded));
+        setOpponents(loaded);
         setIsLoading(false);
       }
     });
@@ -66,102 +66,73 @@ export function useOpponents() {
     };
   }, [user]);
 
-  /** Returns the created Opponent on success, or an error message string on failure. */
-  const addOpponent = useCallback(
-    (
-      label: string,
-      rawPaste: string,
-      regulationId: string,
-      pokepasteUrl?: string,
-    ): Opponent | string => {
-      const trimmedLabel = label.trim();
-      const trimmedPaste = rawPaste.trim();
-
-      if (!trimmedLabel) {
-        return "Give this opponent a name.";
-      }
-      if (!trimmedPaste) {
-        return "Paste the opponent's Showdown export.";
-      }
-
-      const opponent = createOpponent(trimmedLabel, trimmedPaste, regulationId, pokepasteUrl || undefined);
-
-      const sizeError = validateTeamSize(opponent.team.pokemon);
-      if (sizeError) {
-        return sizeError;
-      }
-
-      const duplicate = findDuplicate(opponents, regulationId, opponent.team.rawPaste);
-      if (duplicate) {
-        return `"${duplicate.label}" already has this exact team under this regulation.`;
-      }
-
-      setOpponents((prev) => sortByCreatedAtDesc([opponent, ...prev]));
-      void saveOpponent(opponent);
-      return opponent;
-    },
-    [opponents],
-  );
+  /** Optimistically merges `changed` into state and persists each. */
+  const applyChanges = useCallback((changed: Opponent[]) => {
+    if (changed.length === 0) return;
+    const changedById = new Map(changed.map((opponent) => [opponent.id, opponent]));
+    setOpponents((prev) => {
+      const known = new Set(prev.map((opponent) => opponent.id));
+      return [
+        ...prev.map((opponent) => changedById.get(opponent.id) ?? opponent),
+        ...changed.filter((opponent) => !known.has(opponent.id)),
+      ];
+    });
+    changed.forEach((opponent) => void saveOpponent(opponent));
+  }, []);
 
   /**
-   * Creates one opponent per entry (e.g. from a pasted Showdown team-folder export).
-   * Entries that don't parse into a valid 1-6 Pokémon team are skipped, not blocking,
-   * so a mostly-good paste still imports everything that's valid.
+   * Step one of adding opponents (single add, mass import, or a default
+   * set): sorts each incoming team into can't-import / exact duplicate /
+   * importable-with-variant-candidates — see analyzeImport. Catching
+   * duplicates here, before an id even exists, matters: e.g. loading the
+   * same default set twice (once per device, or just by habit) would
+   * otherwise create fresh ids with identical content, and cloud sync's
+   * merge-by-id can't tell they're "the same" opponent.
    */
-  const addOpponentsFromFolder = useCallback(
-    (entries: TeamFolderEntry[], regulationId: string): BulkImportResult => {
-      const created: Opponent[] = [];
-      const skipped: string[] = [];
-      // Guards against both "this exact team is already an opponent" and
-      // "the pasted folder itself lists the same team twice" — the latter
-      // wouldn't be caught by checking only against `opponents`.
-      const seenRawPastes = new Set(
-        opponents
-          .filter((opponent) => opponent.regulationId === regulationId)
-          .map((opponent) => opponent.team.rawPaste),
-      );
-
-      // Every opponent created in this loop would otherwise get the same
-      // millisecond timestamp, and ties in sortByCreatedAtDesc fall back to
-      // IndexedDB's key order (random UUIDs) on reload. Staggering by 1ms per
-      // entry stores the paste order in the data itself, first entry on top.
-      const importedAt = Date.now();
-
-      for (const entry of entries) {
-        const label = entry.label.trim() || "Unnamed team";
-        const timestamp = new Date(importedAt - created.length).toISOString();
-        const opponent = {
-          ...createOpponent(label, entry.rawPaste, regulationId),
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-        const sizeError = validateTeamSize(opponent.team.pokemon);
-        if (sizeError) {
-          skipped.push(`${label}: ${sizeError}`);
-          continue;
-        }
-        if (seenRawPastes.has(opponent.team.rawPaste)) {
-          skipped.push(`${label}: already exists under this regulation`);
-          continue;
-        }
-        seenRawPastes.add(opponent.team.rawPaste);
-        created.push(opponent);
-      }
-
-      if (created.length > 0) {
-        setOpponents((prev) => sortByCreatedAtDesc([...created, ...prev]));
-        created.forEach((opponent) => void saveOpponent(opponent));
-      }
-
-      return { importedCount: created.length, skipped };
-    },
+  const analyzeOpponentImport = useCallback(
+    (entries: ImportEntry[], regulationId: string): ImportRow[] =>
+      analyzeImport(entries, sortByListOrder(opponentsInRegulation(opponents, regulationId))),
     [opponents],
   );
 
-  const removeOpponent = useCallback((id: string) => {
-    setOpponents((prev) => prev.filter((opponent) => opponent.id !== id));
-    void deleteOpponent(id);
-  }, []);
+  /** Step two: saves the analyzed rows per the (possibly user-reviewed) decisions. */
+  const importOpponents = useCallback(
+    (rows: ImportRow[], decisions: ImportDecision[], regulationId: string): BulkImportResult => {
+      const { created, result } = buildImport(
+        rows,
+        decisions,
+        opponentsInRegulation(opponents, regulationId),
+        regulationId,
+      );
+      applyChanges(created);
+      return result;
+    },
+    [opponents, applyChanges],
+  );
+
+  /** One regulation's opponents as groups (mains in list order, each with its variants). */
+  const groupsIn = useCallback(
+    (regulationId: string) =>
+      groupOpponents(sortByListOrder(opponentsInRegulation(opponents, regulationId))),
+    [opponents],
+  );
+
+  /** Removing a main that has variants promotes its first variant rather than orphaning the group. */
+  const removeOpponent = useCallback(
+    (id: string) => {
+      const target = opponents.find((opponent) => opponent.id === id);
+      const group = target && groupsIn(target.regulationId).find((g) => g.main.id === id);
+      if (group && group.variants.length > 0) {
+        const now = new Date().toISOString();
+        applyChanges(
+          promoteVariant(group, group.variants[0].id, now).filter((opponent) => opponent.id !== id),
+        );
+      }
+      setOpponents((prev) => prev.filter((opponent) => opponent.id !== id));
+      void deleteOpponent(id);
+    },
+    [opponents, groupsIn, applyChanges],
+  );
 
   /** Removes exactly the given opponent ids — the caller decides scope (e.g. "every opponent under the currently-viewed regulation"), not this hook. */
   const removeOpponents = useCallback((ids: string[]) => {
@@ -169,6 +140,65 @@ export function useOpponents() {
     setOpponents((prev) => prev.filter((opponent) => !idSet.has(opponent.id)));
     void deleteOpponents(ids);
   }, []);
+
+  /** Makes variant `newMainId` the main of the group `mainId` currently heads. */
+  const setGroupMain = useCallback(
+    (mainId: string, newMainId: string) => {
+      const main = opponents.find((opponent) => opponent.id === mainId);
+      const group = main && groupsIn(main.regulationId).find((g) => g.main.id === mainId);
+      if (group) applyChanges(promoteVariant(group, newMainId, new Date().toISOString()));
+    },
+    [opponents, groupsIn, applyChanges],
+  );
+
+  /**
+   * Files opponent `id` — and any variants of its own, keeping groups one
+   * level deep — under the group `mainId` heads, at the top of its variants
+   * (newest on top, like the main list). Plans the main has that they don't
+   * are copied over (see asVariantOf).
+   */
+  const makeVariant = useCallback(
+    (id: string, mainId: string) => {
+      const target = opponents.find((opponent) => opponent.id === id);
+      const main = opponents.find((opponent) => opponent.id === mainId);
+      if (!target || !main || id === mainId) return;
+      const groups = groupsIn(target.regulationId);
+      const ownGroup = groups.find((g) => g.main.id === id);
+      const joining = [target, ...(ownGroup?.variants ?? [])];
+      const top = topSortOrder(groups.find((g) => g.main.id === mainId)?.variants ?? []);
+      const now = new Date().toISOString();
+      applyChanges(
+        joining.map((opponent, index) => ({
+          ...asVariantOf(opponent, main, now),
+          sortOrder: top + joining.length - 1 - index,
+        })),
+      );
+    },
+    [opponents, groupsIn, applyChanges],
+  );
+
+  /** Takes variant `id` out of its group, placing it in the list right below its old main. */
+  const detachVariant = useCallback(
+    (id: string) => {
+      const variant = opponents.find((opponent) => opponent.id === id);
+      if (!variant?.variantOf) return;
+      const now = new Date().toISOString();
+      const detached = detachVariantFromGroup(variant, now);
+      const mains = groupsIn(variant.regulationId).map((group) => group.main);
+      const mainIndex = mains.findIndex((main) => main.id === variant.variantOf);
+      // Position it among the mains via moveOpponent's midpoint logic: append
+      // it, then move it to just below its main.
+      const moved = moveOpponentInList([...mains, detached], id, mainIndex + 1);
+      const placed = moved.find((opponent) => opponent.id === id) ?? {
+        ...detached,
+        // moveOpponent returns nothing when it's already in place — i.e. its
+        // main is the last one; just go below it.
+        sortOrder: (mains[mainIndex]?.sortOrder ?? detached.sortOrder) - 1,
+      };
+      applyChanges([...moved.filter((opponent) => opponent.id !== id), placed]);
+    },
+    [opponents, groupsIn, applyChanges],
+  );
 
   /** Applies `updater` to the opponent with `id`, persisting the result. No-op if not found. */
   const updateOpponent = useCallback((id: string, updater: (opponent: Opponent) => Opponent) => {
@@ -187,6 +217,21 @@ export function useOpponents() {
       return next;
     });
   }, []);
+
+  /**
+   * Moves `movedId` to `toIndex` within `orderedIds` — one regulation's main
+   * opponents in their current list order (not a reversed view; the caller
+   * translates). Persists only the opponents whose sortOrder changed, which
+   * is normally just the moved one (see moveOpponent in src/lib/opponent.ts).
+   */
+  const moveOpponent = useCallback(
+    (orderedIds: string[], movedId: string, toIndex: number) => {
+      const byId = new Map(opponents.map((opponent) => [opponent.id, opponent]));
+      const ordered = orderedIds.flatMap((id) => byId.get(id) ?? []);
+      applyChanges(moveOpponentInList(ordered, movedId, toIndex));
+    },
+    [opponents, applyChanges],
+  );
 
   /** Re-parses `rawPaste` and replaces the opponent's label/team/link. Returns an error message on failure. */
   const editOpponentTeam = useCallback(
@@ -217,29 +262,53 @@ export function useOpponents() {
     [updateOpponent],
   );
 
-  /** Applies `updater` to the matchup plan opponent `id` has for team `teamId`, persisting the result. */
+  const setOpponentTags = useCallback(
+    (id: string, tags: string[]) => {
+      updateOpponent(id, (opponent) => ({ ...opponent, tags }));
+    },
+    [updateOpponent],
+  );
+
+  /**
+   * Applies `updater` to the matchup plan opponent `id` has for team
+   * `teamId`, persisting the result. Editing a plan that was copied from the
+   * group's main makes it this variant's own, so the "Copied from …" badge
+   * goes away.
+   */
   const updateOpponentPlan = useCallback(
     (id: string, teamId: string, updater: (plan: MatchupPlan) => MatchupPlan) => {
-      updateOpponent(id, (opponent) => ({
-        ...opponent,
-        plansByTeamId: {
-          ...opponent.plansByTeamId,
-          [teamId]: updater(getPlanForTeam(opponent, teamId)),
-        },
-      }));
+      updateOpponent(id, (opponent) =>
+        clearCopiedPlanFlag(
+          {
+            ...opponent,
+            plansByTeamId: {
+              ...opponent.plansByTeamId,
+              [teamId]: updater(getPlanForTeam(opponent, teamId)),
+            },
+          },
+          teamId,
+        ),
+      );
     },
     [updateOpponent],
   );
 
   return {
-    opponents,
+    // Sorted on every render (not just on load) so a move — which only patches
+    // sortOrder values, not array position — shows up immediately.
+    opponents: sortByListOrder(opponents),
     isLoading,
-    addOpponent,
-    addOpponentsFromFolder,
+    analyzeOpponentImport,
+    importOpponents,
     removeOpponent,
     removeOpponents,
+    moveOpponent,
+    setGroupMain,
+    makeVariant,
+    detachVariant,
     updateOpponent,
     updateOpponentPlan,
+    setOpponentTags,
     editOpponentTeam,
   };
 }

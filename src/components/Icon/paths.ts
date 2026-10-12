@@ -75,4 +75,24 @@ export const ICON_PATHS: Record<IconName, string> = {
   // that isn't tagged for the page's currently selected regulation.
   [IconName.Warning]:
     "m40-120 440-760 440 760H40Zm138-80h604L480-720 178-200Zm330.5-51.5Q520-263 520-280t-11.5-28.5Q497-320 480-320t-28.5 11.5Q440-297 440-280t11.5 28.5Q463-240 480-240t28.5-11.5ZM440-360h80v-200h-80v200Zm40-100Z",
+  // Fetched from Google's Material Symbols CDN (fonts.gstatic.com,
+  // materialsymbolsoutlined/<name>/default/24px) — same sourcing as
+  // DragIndicator above. Used by the opponent list's Move up/down/top/bottom
+  // menu items and its Reverse order toggle.
+  [IconName.ArrowDownward]: "M440-800v487L216-537l-56 57 320 320 320-320-56-57-224 224v-487h-80Z",
+  [IconName.ArrowUpward]: "M440-160v-487L216-423l-56-57 320-320 320 320-56 57-224-224v487h-80Z",
+  [IconName.SwapVert]:
+    "M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z",
+  [IconName.VerticalAlignBottom]:
+    "M160-120v-80h640v80H160Zm320-160L280-480l56-56 104 104v-408h80v408l104-104 56 56-200 200Z",
+  [IconName.VerticalAlignTop]:
+    "M160-760v-80h640v80H160Zm280 640v-408L336-424l-56-56 200-200 200 200-56 56-104-104v408h-80Z",
+  // Same CDN sourcing as above. Used by the opponent variant actions: Set
+  // as main (Star), Make variant of… (Merge), Remove from group (CallSplit).
+  [IconName.CallSplit]:
+    "M440-160v-304L240-664v104h-80v-240h240v80H296l224 224v336h-80Zm154-376-58-58 128-126H560v-80h240v240h-80v-104L594-536Z",
+  [IconName.Merge]:
+    "m256-120-56-56 193-194q23-23 35-52t12-61v-204l-64 63-56-56 160-160 160 160-56 56-64-63v204q0 32 12 61t35 52l193 194-56 56-224-224-224 224Z",
+  [IconName.Star]:
+    "m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z",
 };

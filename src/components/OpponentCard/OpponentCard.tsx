@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getPlanForTeam } from "@/lib/opponent";
+import { suggestTags } from "@/lib/opponentTags";
 import type {
   MatchupPlan,
   Opponent,
@@ -9,8 +10,9 @@ import type {
   PokemonSlot,
 } from "@/types";
 import { TeamRoster } from "../TeamRoster";
+import { OpponentTags } from "../OpponentTags";
 import { PokemonSlotPicker } from "../PokemonSlotPicker";
-import { RowActionsMenu } from "../RowActionsMenu";
+import { RowActionsMenu, type RowAction } from "../RowActionsMenu";
 import { Icon } from "../Icon";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
@@ -20,7 +22,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-interface OpponentCardProps {
+export interface OpponentCardProps {
   opponent: Opponent;
   myTeamPokemon: ParsedPokemon[];
   activeTeamId: string | null;
@@ -28,8 +30,22 @@ interface OpponentCardProps {
   activeTeamMatchesRegulation: boolean;
   onEdit: () => void;
   onRemove: () => void;
+  /** Extra ⋮ menu items — Move up/down, Make variant of…, Set as main, etc. */
+  extraActions?: RowAction[];
+  /** On a main with variants: the show/hide toggle, shown where desktop's ⋮ menu would otherwise sit. */
+  variantToggle?: { count: number; isExpanded: boolean; onToggle: () => void };
+  /** Shows a "Variant" chip after the name. */
+  isVariant?: boolean;
+  /** Label of the opponent the active team's plan was copied from, if it's still an unedited copy. */
+  copiedFromLabel?: string;
+  /** Drag handle shown before the label; the parent owns the drag-and-drop wiring. */
+  dragHandle?: ReactNode;
   onUpdatePlan: (updater: (plan: MatchupPlan) => MatchupPlan) => void;
+  onUpdateTags: (tags: string[]) => void;
+  /** Every tag used in this regulation — autocomplete for the tag input. */
+  knownTags: string[];
   isMatch?: (mon: ParsedPokemon) => boolean;
+  isTagMatch?: (tag: string) => boolean;
 }
 
 const COLUMN_CLASSES = "flex min-w-0 flex-col border-r-1 border-zinc-300";
@@ -45,14 +61,31 @@ const COLUMN_TITLE_CLASSES =
  * the same `ref` object can't be shared between two simultaneously-mounted
  * DOM nodes.
  */
+/** Flags a variant's plan as still the main's copy — it disappears once the plan is edited (see clearCopiedPlanFlag). */
+function CopiedFromBadge({ label }: { label: string }) {
+  return (
+    <span
+      title={`This plan was copied from ${label} when this team became its variant. Edit it to make it this team's own.`}
+      className="truncate rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+    >
+      Copied from {label}
+    </span>
+  );
+}
+
 function GamePlanNotes({
   notes,
   activeTeamId,
   onUpdatePlan,
+  titleAccessory,
+  copiedFromLabel,
 }: {
   notes: string;
   activeTeamId: string | null;
   onUpdatePlan: (updater: (plan: MatchupPlan) => MatchupPlan) => void;
+  /** Right-aligned on the "Game plan" title row — desktop puts the opponent's tags here. */
+  titleAccessory?: ReactNode;
+  copiedFromLabel?: string;
 }) {
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -69,7 +102,13 @@ function GamePlanNotes({
 
   return (
     <>
-      <h3 className={COLUMN_TITLE_CLASSES}>Game plan</h3>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <h3 className={`${COLUMN_TITLE_CLASSES} shrink-0`}>Game plan</h3>
+          {copiedFromLabel && <CopiedFromBadge label={copiedFromLabel} />}
+        </div>
+        {titleAccessory}
+      </div>
       <textarea
         ref={notesRef}
         value={notes}
@@ -98,8 +137,16 @@ export function OpponentCard({
   activeTeamMatchesRegulation,
   onEdit,
   onRemove,
+  extraActions,
+  variantToggle,
+  isVariant,
+  copiedFromLabel,
+  dragHandle,
   onUpdatePlan,
+  onUpdateTags,
+  knownTags,
   isMatch,
+  isTagMatch,
 }: OpponentCardProps) {
   const plan = getPlanForTeam(opponent, activeTeamId);
   // Mobile only — desktop's 3-column grid (below) always shows everything;
@@ -140,6 +187,50 @@ export function OpponentCard({
       toast.error("Couldn't copy to clipboard.");
     }
   }
+
+  const actionsMenu = (
+    <RowActionsMenu
+      onEdit={onEdit}
+      onRemove={onRemove}
+      label="Opponent options"
+      middleAction={{
+        label: "Copy",
+        icon: IconName.ContentCopy,
+        onClick: copyRawPaste,
+      }}
+      extraActions={extraActions}
+    />
+  );
+
+  const variantToggleButton = variantToggle && (
+    <button
+      type="button"
+      onClick={variantToggle.onToggle}
+      aria-expanded={variantToggle.isExpanded}
+      title={variantToggle.isExpanded ? "Hide variants" : "Show variants"}
+      className="flex h-7 shrink-0 items-center gap-0.5 rounded-full border border-zinc-400 pl-2 pr-1 text-xs font-medium text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100"
+    >
+      {variantToggle.count} variant{variantToggle.count === 1 ? "" : "s"}
+      <Icon
+        name={variantToggle.isExpanded ? IconName.ExpandLess : IconName.ExpandMore}
+        size={16}
+      />
+    </button>
+  );
+
+  // Mobile renders this under the roster; desktop on the Game plan title row,
+  // right-aligned (md:justify-end — each instance only shows at its own
+  // breakpoint, so one node serves both).
+  const tagsContent = (
+    <OpponentTags
+      tags={opponent.tags}
+      suggestions={suggestTags(opponent.team.pokemon)}
+      knownTags={knownTags}
+      onChange={onUpdateTags}
+      isMatch={isTagMatch}
+      className="md:justify-end"
+    />
+  );
 
   const leadBackContent = !activeTeamId ? (
     <p className="max-w-48 text-sm text-amber-600">
@@ -219,12 +310,18 @@ export function OpponentCard({
           <div className="p-4">
             <div className="mb-1 flex h-7 items-center gap-1">
               <div className="flex min-w-0 flex-1 items-center gap-1">
+                {dragHandle}
                 <span
                   title={opponent.label}
                   className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-zinc-600"
                 >
                   {opponent.label}
                 </span>
+                {isVariant && (
+                  <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                    Variant
+                  </span>
+                )}
                 {opponent.pokepasteUrl && (
                   <a
                     href={opponent.pokepasteUrl}
@@ -239,16 +336,8 @@ export function OpponentCard({
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <RowActionsMenu
-                  onEdit={onEdit}
-                  onRemove={onRemove}
-                  label="Opponent options"
-                  middleAction={{
-                    label: "Copy",
-                    icon: IconName.ContentCopy,
-                    onClick: copyRawPaste,
-                  }}
-                />
+                {variantToggleButton}
+                {actionsMenu}
                 <CollapsibleTrigger
                   aria-label={
                     isExpanded ? "Collapse team details" : "Expand team details"
@@ -264,6 +353,7 @@ export function OpponentCard({
               </div>
             </div>
             <TeamRoster pokemon={opponent.team.pokemon} isMatch={isMatch} />
+            <div className="mt-2">{tagsContent}</div>
           </div>
           <CollapsibleContent>
             <div className="border-t border-zinc-300 p-4">{leadBackContent}</div>
@@ -272,6 +362,7 @@ export function OpponentCard({
                 notes={plan.notes}
                 activeTeamId={activeTeamId}
                 onUpdatePlan={onUpdatePlan}
+                copiedFromLabel={copiedFromLabel}
               />
             </div>
           </CollapsibleContent>
@@ -284,12 +375,18 @@ export function OpponentCard({
           <div className="p-4">
             <div className="mb-1 flex h-7 items-center gap-1">
               <div className="flex min-w-0 flex-1 items-center gap-1">
+                {dragHandle}
                 <span
                   title={opponent.label}
                   className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-zinc-600 md:max-w-36 lg:max-w-xs"
                 >
                   {opponent.label}
                 </span>
+                {isVariant && (
+                  <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                    Variant
+                  </span>
+                )}
                 {opponent.pokepasteUrl && (
                   <a
                     href={opponent.pokepasteUrl}
@@ -307,16 +404,9 @@ export function OpponentCard({
                 {/* "Open in Damage Calculator" link hidden — feature has known
                     bugs, not ready to publish yet. Re-add once stable (see
                     PLANNING.md). */}
-                <RowActionsMenu
-                  onEdit={onEdit}
-                  onRemove={onRemove}
-                  label="Opponent options"
-                  middleAction={{
-                    label: "Copy",
-                    icon: IconName.ContentCopy,
-                    onClick: copyRawPaste,
-                  }}
-                />
+                {/* Desktop's ⋮ menu lives on the Game plan title row, next to
+                    the tags; this spot holds the variants toggle instead. */}
+                {variantToggleButton}
               </div>
             </div>
             <TeamRoster pokemon={opponent.team.pokemon} isMatch={isMatch} />
@@ -333,6 +423,13 @@ export function OpponentCard({
               notes={plan.notes}
               activeTeamId={activeTeamId}
               onUpdatePlan={onUpdatePlan}
+              titleAccessory={
+                <div className="flex min-w-0 items-center gap-2">
+                  {tagsContent}
+                  {actionsMenu}
+                </div>
+              }
+              copiedFromLabel={copiedFromLabel}
             />
           </div>
         </div>
