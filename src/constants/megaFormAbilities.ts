@@ -15,9 +15,17 @@
  * keys already used for stats/typing. Only the ~55 Champions Mega roster is
  * covered (matches megaStones.ts's scope); a species/form missing here
  * either keeps its base ability by design (a handful of the newest Champions
- * Megas — Magearna, Zeraora, Tatsugiri, Baxcalibur, and the "Z" variants of
- * Absol/Garchomp/Lucario — don't override it) or just hasn't been curated
- * yet, in which case the base ability is used as a reasonable fallback.
+ * Megas — Magearna, Zeraora, Tatsugiri, Baxcalibur — don't override it) or
+ * just hasn't been curated yet, in which case the base ability is used as a
+ * reasonable fallback.
+ *
+ * The "Z" Megas (Absol, Garchomp, Lucario) were added with their abilities
+ * when Regulation M-C revealed them (2026-09-09): Sharpness, Levitate and
+ * Aura Guard (the official name — some coverage says "Aura Break"). Earlier
+ * versions of this table left them out as keeping their base ability.
+ * Sharpness and Aura Guard are slicing-/contact-move scoped, which the damage
+ * calculator can't model yet (see abilityDamageModifiers.ts) — they show
+ * correctly but don't change damage; Levitate's Ground immunity is modeled.
  *
  * Sourced from NCP-VGC-Damage-Calculator's pokedex.js (MIT licensed) — see
  * PLANNING.md's Damage Calculator entry for why that project is a trusted
@@ -28,6 +36,7 @@
 export const MEGA_FORM_ABILITY_BY_FORM_KEY: Record<string, string> = {
   "abomasnow-mega": "Snow Warning",
   "absol-mega": "Magic Bounce",
+  "absol-mega-z": "Sharpness",
   "aerodactyl-mega": "Tough Claws",
   "aggron-mega": "Filter",
   "alakazam-mega": "Battle Bond",
@@ -61,6 +70,7 @@ export const MEGA_FORM_ABILITY_BY_FORM_KEY: Record<string, string> = {
   "froslass-mega": "Snow Warning",
   "gallade-mega": "Inner Focus",
   "garchomp-mega": "Sand Force",
+  "garchomp-mega-z": "Levitate",
   "gardevoir-mega": "Pixilate",
   "gengar-mega": "Shadow Tag",
   "glalie-mega": "Refrigerate",
@@ -76,6 +86,7 @@ export const MEGA_FORM_ABILITY_BY_FORM_KEY: Record<string, string> = {
   "latios-mega": "Levitate",
   "lopunny-mega": "Scrappy",
   "lucario-mega": "Adaptability",
+  "lucario-mega-z": "Aura Guard",
   "malamar-mega": "Contrary",
   "manectric-mega": "Intimidate",
   "mawile-mega": "Huge Power",
