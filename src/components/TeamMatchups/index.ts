@@ -1,0 +1,1 @@
+export { TeamMatchupsList } from "./TeamMatchupsList";

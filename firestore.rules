@@ -20,6 +20,24 @@ service cloud.firestore {
         && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
     }
 
+    // Public copies of shared Team Reports (see src/types/team.ts's
+    // SharedTeam and src/lib/firebase/sharedTeams.ts) — anyone with the link
+    // reads one; only the signed-in owner named in the doc writes it, and an
+    // update can't hand it to someone else. Deleting a doc that doesn't exist
+    // is allowed so "make private" is safe to repeat.
+    match /sharedTeams/{teamId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.id == teamId;
+      allow update: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.id == teamId;
+      allow delete: if request.auth != null
+        && (resource == null || resource.data.ownerUid == request.auth.uid);
+    }
+
     // Admin-controlled per-section on/off switches (see src/types/featureFlags.ts,
     // src/lib/firebase/featureFlags.ts, and /admin/features) — same
     // everyone-reads/admin-writes shape as seasons above. Keep this uid in

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  hasMatchupReport,
   compareOpponentOrder,
   createOpponent,
   getPlanForTeam,
@@ -8,6 +9,7 @@ import {
   topSortOrder,
 } from "./opponent";
 import { REGULATIONS } from "@/data/regulations";
+import { EMPTY_PLAN } from "@/constants";
 import type { Opponent } from "@/types";
 
 const REG_ID = REGULATIONS[0].id;
@@ -254,5 +256,15 @@ describe("moveOpponent", () => {
       opponentWith("d", 5, "2026-10-01T00:00:00.000Z"),
     ];
     expect(applyMove(tied, "d", 1)).toEqual(["a", "d", "b", "c"]);
+  });
+});
+
+describe("hasMatchupReport", () => {
+  it("counts only report content, not the planner's lead/back or game plan", () => {
+    expect(hasMatchupReport({ ...EMPTY_PLAN, leadPair: [0, 1], notes: "lead fake out" })).toBe(false);
+    expect(hasMatchupReport({ ...EMPTY_PLAN, scoutingNotes: "<p></p>" })).toBe(false);
+    expect(hasMatchupReport({ ...EMPTY_PLAN, pokemonNotes: { 0: "  " } })).toBe(false);
+    expect(hasMatchupReport({ ...EMPTY_PLAN, scoutingNotes: "<p>leads Sneasler</p>" })).toBe(true);
+    expect(hasMatchupReport({ ...EMPTY_PLAN, pokemonNotes: { 2: "Scarf" } })).toBe(true);
   });
 });

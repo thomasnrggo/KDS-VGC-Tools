@@ -67,7 +67,7 @@ function chainMods(mods: number[]): number {
 }
 
 /** Same species+item resolution as calculateFinalStats/resolveSpeciesImage, so typing always agrees with the form shown/computed elsewhere. */
-function resolveTypes(species: string, item?: string): string[] | undefined {
+export function resolveTypes(species: string, item?: string): string[] | undefined {
   for (const key of candidateFormKeys(species, item)) {
     const entry = SPECIES_TYPES[key] ?? SPECIES_TYPES[SPECIES_ALIASES[key]];
     if (entry) return entry;

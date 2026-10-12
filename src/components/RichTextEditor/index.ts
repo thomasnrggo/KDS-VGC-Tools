@@ -1,1 +1,1 @@
-export { RichTextEditor } from "./RichTextEditor";
+export { RichTextEditor, RichTextView } from "./RichTextEditor";

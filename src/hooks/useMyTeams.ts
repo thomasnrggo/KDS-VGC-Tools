@@ -197,7 +197,7 @@ export function useMyTeams() {
           teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null,
         );
       }
-      void deleteMyTeam(id);
+      void deleteMyTeam(id, !!teams.find((team) => team.id === id)?.share);
     },
     [activeTeamId, teams, setActiveTeamId],
   );

@@ -5,7 +5,8 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 
 interface RowActionsMenuProps {
-  onEdit: () => void;
+  /** Omit to leave out the Edit item — e.g. My Teams rows, edited on the team's own page. */
+  onEdit?: () => void;
   onRemove: () => void;
   /** Used for the trigger's aria-label/title and the dropdown's aria-label — e.g. "Opponent options", "Team options". */
   label: string;
@@ -89,18 +90,20 @@ export function RowActionsMenu({
           onClick={(event) => event.stopPropagation()}
           className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onEdit();
-              setIsOpen(false);
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
-          >
-            <Icon name={IconName.Edit} size={16} />
-            {editLabel}
-          </button>
+          {onEdit && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onEdit();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
+            >
+              <Icon name={IconName.Edit} size={16} />
+              {editLabel}
+            </button>
+          )}
           {middleAction && (
             <button
               type="button"

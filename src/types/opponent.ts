@@ -10,6 +10,10 @@ export interface MatchupPlan {
   leadMega: [boolean, boolean];
   backMega: [boolean, boolean];
   notes: string;
+  /** Matchup page notes per opponent Pokémon, keyed by index into the opponent's roster (see docs/team-report.md). */
+  pokemonNotes?: Record<number, string>;
+  /** Matchup page "What they do" — rich text: their likely leads, common plays. */
+  scoutingNotes?: string;
 }
 
 export interface Opponent {

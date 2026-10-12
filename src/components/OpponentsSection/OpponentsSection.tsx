@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useOpponents } from "@/hooks/useOpponents";
 import { useOpponentListReversed } from "@/hooks/useOpponentListReversed";
 import { useSeasons } from "@/hooks/useSeasons";
@@ -37,6 +38,7 @@ import { Modal } from "../Modal";
 import { SearchField } from "../SearchField";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { TEAM_REPORT_PREP_ENABLED } from "@/constants";
 
 interface OpponentsSectionProps {
   myTeamPokemon: ParsedPokemon[];
@@ -190,6 +192,7 @@ export function OpponentsSection({
     editOpponentTeam,
   } = useOpponents();
   const { seasons, currentSeasonId } = useSeasons();
+  const router = useRouter();
   const { isReversed, toggleReversed } = useOpponentListReversed();
   // Drag only starts from the handle (armedId is set on pointerdown there) —
   // the row itself is full of pickers and a notes editor, so making the whole
@@ -506,7 +509,20 @@ export function OpponentsSection({
         onEdit={() => startEditing(opponent.id)}
         onRemove={() => setConfirmRemoveId(opponent.id)}
         dragHandle={options.dragHandle}
-        extraActions={options.extraActions}
+        extraActions={[
+          // The prep page for this opponent vs the selected team — see
+          // docs/team-report.md.
+          ...(activeTeamId && TEAM_REPORT_PREP_ENABLED
+            ? [
+                {
+                  label: "Matchup report",
+                  icon: IconName.Description,
+                  onClick: () => router.push(`/teams/${activeTeamId}/matchups/${opponent.id}`),
+                },
+              ]
+            : []),
+          ...options.extraActions,
+        ]}
         variantToggle={options.variantToggle}
         isVariant={options.isVariant}
         copiedFromLabel={

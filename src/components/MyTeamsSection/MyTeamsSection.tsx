@@ -19,7 +19,6 @@ interface MyTeamsSectionProps {
   teams: Team[];
   isLoading: boolean;
   addTeam: (rawPaste: string, name: string, regulationId: string) => string | null;
-  editTeam: (id: string, rawPaste: string, name: string) => string | null;
   updateTeam: (id: string, updater: (team: Team) => Team) => void;
   removeTeam: (id: string) => void;
   archiveTeam: (id: string) => void;
@@ -37,7 +36,6 @@ export function MyTeamsSection({
   teams,
   isLoading,
   addTeam,
-  editTeam,
   updateTeam,
   removeTeam,
   archiveTeam,
@@ -49,7 +47,6 @@ export function MyTeamsSection({
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("active");
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,7 +120,6 @@ export function MyTeamsSection({
     setDraggedId(null);
   }
 
-  const editingTeam = editingId ? (teams.find((team) => team.id === editingId) ?? null) : null;
   const confirmRemoveTeam = confirmRemoveId
     ? (teams.find((team) => team.id === confirmRemoveId) ?? null)
     : null;
@@ -282,23 +278,6 @@ export function MyTeamsSection({
         </Modal>
       )}
 
-      {editingTeam && (
-        <Modal onClose={() => setEditingId(null)} labelledBy="edit-team-modal-title">
-          <h2 id="edit-team-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
-            Edit team
-          </h2>
-          <TeamPasteForm
-            initialName={editingTeam.name}
-            initialValue={editingTeam.rawPaste}
-            onSubmit={(rawPaste, name) => {
-              const error = editTeam(editingTeam.id, rawPaste, name);
-              if (!error) setEditingId(null);
-              return error;
-            }}
-            onCancel={() => setEditingId(null)}
-          />
-        </Modal>
-      )}
 
       {confirmRemoveTeam && (
         <Modal onClose={() => setConfirmRemoveId(null)} labelledBy="confirm-remove-team-title">
@@ -438,7 +417,8 @@ export function MyTeamsSection({
                 </div>
                 <RowActionsMenu
                   label={`${team.name} options`}
-                  onEdit={() => setEditingId(team.id)}
+                  // No Edit here — name, paste and details are edited on
+                  // the team's own page (the row opens it).
                   onRemove={() => setConfirmRemoveId(team.id)}
                   middleAction={
                     tab === "active"

@@ -22,7 +22,7 @@ interface OpponentPokemonCardProps {
  * One entry in a Round's simplified opponent "team sheet" — species/ability/
  * item/nature and moveset, whatever the paste happened to include (a real
  * tournament team sheet rarely reveals Stat Points, so unlike
- * PokemonReportRow there's no stat table here — nothing to compute a Final
+ * the Team Report's PokemonReportCard there are no stats here — nothing to compute a Final
  * stat from without EVs, and showing one anyway would be misleading), plus
  * a free-text notes box for anything you observe about this specific
  * Pokémon across the round's games.

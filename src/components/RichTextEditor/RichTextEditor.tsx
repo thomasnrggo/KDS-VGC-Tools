@@ -10,11 +10,29 @@ function isEmptyHtml(html: string): boolean {
   return html === "" || html === "<p></p>";
 }
 
+// The formatting both the editor and the read-only view support — only
+// what the toolbar can reach (see RichTextEditor's doc comment).
+function contentExtensions() {
+  return [
+    StarterKit.configure({
+      heading: false,
+      codeBlock: false,
+      blockquote: false,
+      orderedList: false,
+      horizontalRule: false,
+    }),
+  ];
+}
+
+const CONTENT_CLASSES = "[&_ul]:list-disc [&_ul]:pl-5 [&_p]:m-0";
+
 interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder: string;
   ariaLabel: string;
+  /** "tall" for a page's main writing area (e.g. the Strategy tab's notes). */
+  size?: "default" | "tall";
 }
 
 /**
@@ -29,26 +47,22 @@ interface RichTextEditorProps {
  * trigger (e.g. via markdown-style input rules) with no toolbar control to
  * undo it from.
  */
-export function RichTextEditor({ value, onChange, placeholder, ariaLabel }: RichTextEditorProps) {
+export function RichTextEditor({
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+  size = "default",
+}: RichTextEditorProps) {
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        heading: false,
-        codeBlock: false,
-        blockquote: false,
-        orderedList: false,
-        horizontalRule: false,
-      }),
-      Placeholder.configure({ placeholder }),
-    ],
+    extensions: [...contentExtensions(), Placeholder.configure({ placeholder })],
     content: value,
     immediatelyRender: false,
     editorProps: {
       attributes: {
         role: "textbox",
         "aria-label": ariaLabel,
-        class:
-          "min-h-20 max-h-64 w-full overflow-y-auto rounded-b-lg border border-t-0 border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none [&_ul]:list-disc [&_ul]:pl-5 [&_p]:m-0 [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-zinc-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]",
+        class: `${size === "tall" ? "min-h-96 max-h-[48rem]" : "min-h-20 max-h-64"} w-full overflow-y-auto rounded-b-lg border border-t-0 border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none ${CONTENT_CLASSES} [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-zinc-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]`,
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -130,4 +144,28 @@ function ToolbarButton({
       <Icon name={icon} size={16} />
     </button>
   );
+}
+
+/**
+ * Rich text from RichTextEditor shown as formatted text, not an editor —
+ * e.g. a shared report's team overview, which its viewers can't edit. Uses
+ * TipTap read-only rather than injecting the HTML, so only the formatting
+ * the editor supports ever renders (the HTML may come from someone else).
+ */
+export function RichTextView({ html, className = "" }: { html: string; className?: string }) {
+  const editor = useEditor({
+    extensions: contentExtensions(),
+    content: html,
+    editable: false,
+    immediatelyRender: false,
+    editorProps: {
+      attributes: { class: `text-sm text-zinc-800 focus:outline-none ${CONTENT_CLASSES} ${className}` },
+    },
+  });
+
+  if (editor && !editor.isDestroyed && editor.getHTML() !== html) {
+    editor.commands.setContent(html, { emitUpdate: false });
+  }
+
+  return <EditorContent editor={editor} />;
 }

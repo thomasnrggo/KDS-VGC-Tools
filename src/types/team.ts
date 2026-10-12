@@ -40,6 +40,56 @@ export interface TeamCombination {
   notes: string;
 }
 
+/** Which way a calc goes, from the team owner's side: their Pokémon attacking, or being attacked. */
+export type TeamCalcSide = "offensive" | "defensive";
+
+/**
+ * One entry of the Team Report's Calcs tab — usually a pasted Showdown-calc
+ * line, sometimes a free-text comment pasted alongside them. `text` is the
+ * source of truth; attacker/defender/% range are parsed from it when shown
+ * (see src/lib/teamCalcs.ts and docs/team-report.md).
+ */
+export interface TeamCalc {
+  id: string;
+  text: string;
+  /** speciesIdentity of the Pokémon of this team it's filed under, or null if unknown. */
+  species: string | null;
+  side: TeamCalcSide | null;
+}
+
+/**
+ * What a shared Team Report reveals. "open" follows VGC open team sheets —
+ * Pokémon, items, abilities and moves, but no Stat Points or nature (and so
+ * no computed stats, and no Poképaste link, which would show them).
+ * "closed" shares everything the report shows.
+ */
+export type TeamSheetMode = "open" | "closed";
+
+/** Set when the team's report is shared (see src/lib/sharedTeam.ts); absent means private. */
+export interface TeamShare {
+  sheet: TeamSheetMode;
+}
+
+/**
+ * The public copy of a shared Team Report — Firestore `sharedTeams/{teamId}`,
+ * readable by anyone with the link, written only by its owner (see
+ * firestore.rules). Built by toSharedTeam, which strips what an open sheet
+ * hides; the owner's notes, plans and calcs are never included.
+ */
+export interface SharedTeam {
+  id: string;
+  ownerUid: string;
+  name: string;
+  creator?: string;
+  pokepasteUrl?: string;
+  replicaCode?: string;
+  /** The team overview (rich text HTML), when it has any text. */
+  overview?: string;
+  sheet: TeamSheetMode;
+  pokemon: ParsedPokemon[];
+  updatedAt: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -72,6 +122,18 @@ export interface Team {
   pokemonNotes?: Record<number, string>;
   /** "Common combinations" the Team Report page lists — add as many as you want. */
   combinations?: TeamCombination[];
+  /** "Team overview" — rich text (RichTextEditor HTML) describing the team. Unlike notes, it's part of a shared report. */
+  overview?: string;
+  /** Who built the team — shown on the Team Report (and its shared copy). */
+  creator?: string;
+  /** Link to the team on pokepast.es. */
+  pokepasteUrl?: string;
+  /** In-game replica code for renting the team. */
+  replicaCode?: string;
+  /** Present when the report is shared — see TeamShare. */
+  share?: TeamShare;
+  /** Benchmark damage calcs on the Team Report's Calcs tab, in pasted order. */
+  calcs?: TeamCalc[];
   /** ISO timestamp of when this team was archived, or absent/undefined if it's active. Archiving is reversible (see unarchiveTeam) — it just moves the team out of the switcher and the My Teams "Active" tab, it never deletes anything. */
   archivedAt?: string;
   /**

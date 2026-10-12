@@ -49,7 +49,6 @@ export default function TeamsPage() {
           teams={teams}
           isLoading={isLoading}
           addTeam={addTeam}
-          editTeam={editTeam}
           updateTeam={updateTeam}
           removeTeam={removeTeam}
           archiveTeam={archiveTeam}

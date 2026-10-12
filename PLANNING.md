@@ -8,7 +8,8 @@ git log is for).
 `docs/` instead of growing §7 further — this file's §7 roadmap had grown past 2500 lines. Each such
 doc gets a one-line pointer where it's relevant below; the doc itself is the source of truth for that
 feature's scope/decisions. First one: [docs/team-builder.md](./docs/team-builder.md), then
-[docs/opponent-organization.md](./docs/opponent-organization.md) (manual order, tags, variants).
+[docs/opponent-organization.md](./docs/opponent-organization.md) (manual order, tags, variants), then
+[docs/team-report.md](./docs/team-report.md) (Team Report calcs + per-opponent matchup pages).
 
 ## 1. Vision
 
@@ -380,7 +381,29 @@ interface Team {
   name: string;              // user-facing label, e.g. "Regionals Team" — distinguishes your saved teams
   rawPaste: string;          // keep the original text around, even though most of it is unparsed for now
   pokemon: ParsedPokemon[];  // up to 6
+  calcs?: TeamCalc[];        // Team Report "Calcs" tab — see docs/team-report.md
+  creator?: string;          // Team Report details line
+  pokepasteUrl?: string;
+  replicaCode?: string;      // in-game code to rent the team
+  overview?: string;         // "Team overview" rich text — included in shared reports
+  share?: { sheet: "open" | "closed" }; // present = report shared; see "Shareable Team Reports" in §7
   updatedAt: string;         // ISO timestamp
+}
+
+// Firestore sharedTeams/{teamId} — public copy of a shared report (toSharedTeam).
+interface SharedTeam {
+  id: string; ownerUid: string; name: string;
+  creator?: string; pokepasteUrl?: string; replicaCode?: string; overview?: string;
+  sheet: "open" | "closed";
+  pokemon: ParsedPokemon[]; // open sheet: no evs/nature
+  updatedAt: string;
+}
+
+interface TeamCalc {
+  id: string;
+  text: string;                               // the pasted line; attacker/defender/% parsed on display
+  species: string | null;                     // speciesIdentity of your Pokémon it's filed under
+  side: "offensive" | "defensive" | null;
 }
 
 type PokemonSlot = number | null; // index into a Team's pokemon, or "not picked yet"
@@ -391,6 +414,8 @@ interface MatchupPlan {
   leadMega: [boolean, boolean]; // per-slot Mega toggle, persisted; defaults to true via EMPTY_PLAN
   backMega: [boolean, boolean];
   notes: string;
+  pokemonNotes?: Record<number, string>; // matchup page: per opponent Pokémon — see docs/team-report.md
+  scoutingNotes?: string;                // matchup page "What they do" (rich text)
 }
 
 interface Opponent {
@@ -2539,6 +2564,75 @@ leads/backs) is complete and working end to end.
 - [x] **Opponent organization** — manual order + Reverse, tags, semantic duplicate detection, and
       team variants. Scope/decisions in [docs/opponent-organization.md](./docs/opponent-organization.md).
       All four steps done 2026-10-12.
+- [x] **Team Report: compact Pokémon cards.** Per a 2026-10-12 request ("we're using too much space"),
+      with a reference image: the "Team report" tab's wide per-Pokémon rows (`PokemonReportRow`: stat
+      table + moveset + notes box) are replaced by `PokemonReportCard`, six to a row on desktop (3 on
+      tablet, 2/1 on phones). Each card: name; sprite with its types (top-left), held item (bottom-left,
+      name in the tooltip) and a "Mega" pill (bottom-right, Mega shown by default like
+      `PokemonHoverCard`) that switches sprite, types, ability and stats between forms; then ability,
+      moves with type icons, then stats. With Stat Points pasted, a stat table per a second reference
+      image: each stat's label (red/blue for the nature's +/−), a bar for its points out of 32, the
+      points, a +/− marker, and the Final value after a vertical divider (base in the row's tooltip) — the nature line is dropped
+      since the table carries it. Without Stat Points: the nature line (+/− coloured) and a one-line
+      Final stat strip. The per-Pokémon notes box is removed from the page for now —
+      `Team.pokemonNotes` stays saved, just not shown. `resolveTypes` is now exported from
+      `calculateDamage.ts` for the card's typing.
+- [x] **Team Report header, team details, shareable reports.** Per a 2026-10-12 request.
+    - **Header / team post**: a "‹ My Teams" back link left, tabs right. Under it, on every tab, the
+      team's **post** (`TeamPost`): the team name as the title (h1); a quiet details line — creator,
+      Poképaste, replica code (copy button); and the
+      **Team overview** (`Team.overview`) as formatted text (`RichTextView`), no label. The owner gets
+      two outline icons: Share (opens the Share dialog; a green dot marks a shared report, the tooltip
+      names the sheet — no status text on the owner's page) and Edit, which turns the whole card into a
+      form — the title becomes a name field (a blank name keeps the current one), plus creator /
+      Poképaste / replica code fields, the overview's rich-text editor, and below it a **Team paste**
+      box (Showdown export, or a Poképaste link that's fetched on save and fills in an empty Poképaste
+      field; a changed paste is reparsed through `editTeam`, and its errors — e.g. an empty paste —
+      show in the form, which stays open). While the paste differs from the saved one, the Pokémon
+      cards below preview the draft live, under a "Preview — not saved yet" note — rather than hiding
+      or shrinking them during editing — until
+      Save or Cancel (a draft, so Cancel discards). With nothing filled in, the card is just the title
+      and an "Add a creator, links and an overview…" prompt. Replaced the earlier details line + "Edit
+      details" dialog + separate overview editor, which felt off: blank rows when empty, two different
+      edit buttons, and a heavy filled Share button. The Pokémon cards no longer show a name header
+      (screen-reader only), on trial.
+    - **Strategy tab**: no post here — the team post (and its edit mode) shows only on the Team
+      report tab; on Strategy and Tournament stats the team name joins the top row's breadcrumb
+      ("‹ My Teams / Team name", the name being the page's h1) instead of a separate heading. Strategy is two columns
+      on desktop (stacked below `lg`): "Common combinations" left, one general **Notes** editor right
+      (`RichTextEditor size="tall"`). The Weaknesses box is gone — `Team.weaknesses` stays saved but
+      isn't shown. Switching tabs mid-edit drops the post's unsaved edit and its paste preview.
+    - **Move pills**: the Pokémon cards' moves are 22px pills (rounded, light background, the type icon
+      filling the left edge), matching the old report rows' style, instead of a plain icon + text list.
+    - **Z Mega abilities** (fix, 2026-10-12): `MEGA_FORM_ABILITY_BY_FORM_KEY` had left out the Z Megas
+      as "keeping their base ability", so Mega Garchomp Z showed Rough Skin. Added from the Regulation
+      M-C reveal: Garchomp-Mega-Z → Levitate, Absol-Mega-Z → Sharpness, Lucario-Mega-Z → Aura Guard
+      (official name; some coverage says "Aura Break"). The damage calculator uses the same table, so
+      Mega Garchomp Z is now Ground-immune there too; Sharpness/Aura Guard need slicing/contact move
+      flags the calculator doesn't have yet, so they display but don't change damage.
+    - **My Teams rows**: the ⋮ menu is just Archive/Unarchive and Remove — the "Edit team" dialog
+      (name + paste) is gone, since the row opens the team's page, where the post's edit mode covers
+      both. `RowActionsMenu`'s `onEdit` is now optional.
+    - **Sharing**: a "Share" dialog sets the report Private or Shareable, and for shareable an **open
+      team sheet** (Pokémon, items, abilities, moves — no Stat Points, nature, or stats, and no
+      Poképaste link since the paste would reveal them) or a **closed team sheet** (everything the
+      report shows). Sharing needs sign-in. The public copy is a separate Firestore doc,
+      `sharedTeams/{teamId}`, built by `toSharedTeam` (src/lib/sharedTeam.ts) — never the owner's
+      notes, combinations, plans, calcs or tournament stats. `firestore.rules` gives it public read,
+      and create/update/delete only by the `ownerUid` in the doc. **The rules change must be deployed
+      before sharing works.**
+    - The copy follows edits: `saveMyTeam`'s debounced cloud push also republishes a shared team
+      (`publishTeamShare`, skipped when nothing public changed), deleting a shared team unpublishes it,
+      and the Share dialog publishes/unpublishes immediately and shows any failure.
+    - **Public page** `/shared/[teamId]` (no sign-in, outside the `teams` feature gate): the owner's
+      `TeamPost` read-only (no Share/Edit; the sheet type ends its details line; the overview renders
+      via TipTap read-only, never raw HTML, since another user wrote it), then `PokemonReportCard`s — with `sheet="open"` the cards leave out nature and
+      stats. A Poképaste link only renders if it's an http(s) URL, since on this page it's text someone
+      else typed.
+- [ ] **Team Report: calcs + matchups — on hold.** Benchmark calcs per Pokémon (pasted Showdown-calc
+      lines), a Matchups tab, and a prep page per opponent, linked from the Matchup Planner. Built
+      2026-10-12, then hidden behind `TEAM_REPORT_PREP_ENABLED = false` while the opponent-info vs
+      matchup-prep split is rethought. Scope/decisions in [docs/team-report.md](./docs/team-report.md).
 
 ## 8. Attribution
 

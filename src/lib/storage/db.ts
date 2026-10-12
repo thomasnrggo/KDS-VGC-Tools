@@ -1,7 +1,15 @@
 import { openDB, type IDBPDatabase } from "idb";
 import { normalizeOpponent } from "@/lib/opponent";
 import { normalizeTeam } from "@/lib/team";
-import { auth, createCollectionSync, pullMetaDoc, pushMetaDoc } from "@/lib/firebase";
+import {
+  auth,
+  createCollectionSync,
+  publishSharedTeam,
+  pullMetaDoc,
+  pushMetaDoc,
+  unpublishSharedTeam,
+} from "@/lib/firebase";
+import { toSharedTeam } from "@/lib/sharedTeam";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
 import type { Opponent, Team, Tournament } from "@/types";
 
@@ -129,21 +137,54 @@ async function deleteTeamLocal(id: string): Promise<void> {
   await db.delete(MY_TEAMS_STORE, id);
 }
 
+// What each shared team's public copy was last published as (minus its
+// timestamp) — so a save that doesn't change anything public, like typing
+// in the team's notes, doesn't rewrite the shared doc.
+const lastPublishedShare = new Map<string, string>();
+
+/**
+ * Publishes `team`'s public copy (see toSharedTeam) if it's shared and the
+ * copy changed since the last publish from this session. Throws on failure
+ * — the Share dialog awaits it to report e.g. a permissions error.
+ */
+export async function publishTeamShare(team: Team): Promise<void> {
+  const uid = currentUid();
+  if (!uid || !team.share) return;
+  const shared = toSharedTeam(team, team.share, uid);
+  const fingerprint = JSON.stringify({ ...shared, updatedAt: "" });
+  if (lastPublishedShare.get(team.id) === fingerprint) return;
+  await publishSharedTeam(shared);
+  lastPublishedShare.set(team.id, fingerprint);
+}
+
+/** Removes a team's public copy — "make private", or the team was deleted. Throws on failure. */
+export async function unpublishTeamShare(id: string): Promise<void> {
+  lastPublishedShare.delete(id);
+  if (!currentUid()) return;
+  await unpublishSharedTeam(id);
+}
+
 export async function saveMyTeam(team: Team): Promise<void> {
   await putTeamLocal(team);
   const uid = currentUid();
   if (uid) {
     teamCloudPushDebouncer.schedule(team.id, () => {
       void teamsSync.push(uid, team).catch((error) => logCloudSyncError("push team", error));
+      // A shared team's public copy follows every edit (roster, name,
+      // details), on the same debounce as the private push.
+      void publishTeamShare(team).catch((error) => logCloudSyncError("publish shared team", error));
     });
   }
 }
 
-export async function deleteMyTeam(id: string): Promise<void> {
+export async function deleteMyTeam(id: string, wasShared = false): Promise<void> {
   await deleteTeamLocal(id);
   teamCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) void teamsSync.remove(uid, id).catch((error) => logCloudSyncError("remove team", error));
+  if (wasShared) {
+    void unpublishTeamShare(id).catch((error) => logCloudSyncError("unpublish shared team", error));
+  }
 }
 
 export async function getActiveTeamId(): Promise<string | null> {
