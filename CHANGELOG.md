@@ -39,6 +39,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   ability (Mega Raichu X: Electric Surge), not the pasted base ability.
 - Only one Pokémon card is open at a time: hovering a lead/back pick closes an opponent card opened
   by click, and the other way round.
+- Navigating between pages no longer makes the header's team (and the signed-in avatar) disappear
+  and reappear: the signed-in user, teams, opponents and tournaments stay in memory between pages
+  and refresh in the background.
+- Opening a lead/back picker (or a Pokémon card) no longer makes the page jump: for one frame the
+  dropdown sat in the page flow, pushing the rows below it down and back.
 
 ## 2026-10-12
 

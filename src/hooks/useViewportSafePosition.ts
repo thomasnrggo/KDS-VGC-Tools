@@ -5,6 +5,14 @@ import { useEffect, useState, type CSSProperties, type RefObject } from "react";
 const SAFE_MARGIN = 8;
 
 /**
+ * Before the first measurement: already out of the page flow (fixed) but
+ * invisible. Starting from no style at all rendered the element in the flow
+ * for a frame, so opening a dropdown made the rows below it jump down and
+ * back — it looked like the page reloading.
+ */
+const UNMEASURED: CSSProperties = { position: "fixed", left: 0, top: 0, visibility: "hidden" };
+
+/**
  * Positions a floating element (tooltip/dropdown) against its trigger,
  * clamped to stay within the viewport instead of spilling off an edge —
  * centered under the trigger by default, sliding left/right as needed, and
@@ -19,7 +27,7 @@ export function useViewportSafePosition(
   triggerRef: RefObject<HTMLElement | null>,
   contentRef: RefObject<HTMLElement | null>,
 ): CSSProperties {
-  const [style, setStyle] = useState<CSSProperties>({});
+  const [style, setStyle] = useState<CSSProperties>(UNMEASURED);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,7 +59,11 @@ export function useViewportSafePosition(
     }
 
     frameId = requestAnimationFrame(updatePosition);
-    return () => cancelAnimationFrame(frameId);
+    return () => {
+      cancelAnimationFrame(frameId);
+      // Next open starts hidden again, not at this open's (possibly stale) spot.
+      setStyle(UNMEASURED);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refs are stable, don't need to be deps
   }, [isOpen]);
 

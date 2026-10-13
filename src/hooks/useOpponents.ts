@@ -42,10 +42,22 @@ function opponentsInRegulation(opponents: Opponent[], regulationId: string): Opp
   return opponents.filter((opponent) => opponent.regulationId === regulationId);
 }
 
+/**
+ * The last loaded opponents, kept across page navigations so a page's first
+ * render shows them right away instead of an empty "loading" state — each
+ * page mounts its own hook, and the header's team sprites used to blink on
+ * every navigation. The hook still reloads in the background on mount.
+ */
+let cached: Opponent[] | null = null;
+
 export function useOpponents() {
   const { user } = useAuth();
-  const [opponents, setOpponents] = useState<Opponent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [opponents, setOpponents] = useState<Opponent[]>(() => cached ?? []);
+  const [isLoading, setIsLoading] = useState(() => cached === null);
+
+  useEffect(() => {
+    if (!isLoading) cached = opponents;
+  }, [opponents, isLoading]);
 
   useEffect(() => {
     let cancelled = false;

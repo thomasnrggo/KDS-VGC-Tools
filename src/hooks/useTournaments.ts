@@ -10,15 +10,28 @@ import {
 import { createTournament } from "@/lib/tournament";
 import { useAuth } from "./useAuth";
 import type { Tournament } from "@/types";
+import { getMessages } from "@/lib/i18n/settings";
 
 function sortByUpdatedAtDesc(tournaments: Tournament[]): Tournament[] {
   return [...tournaments].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+/**
+ * The last loaded tournaments, kept across page navigations so a page's first
+ * render shows them right away instead of an empty "loading" state — each
+ * page mounts its own hook, and the header's team sprites used to blink on
+ * every navigation. The hook still reloads in the background on mount.
+ */
+let cached: Tournament[] | null = null;
+
 export function useTournaments() {
   const { user } = useAuth();
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [tournaments, setTournaments] = useState<Tournament[]>(() => cached ?? []);
+  const [isLoading, setIsLoading] = useState(() => cached === null);
+
+  useEffect(() => {
+    if (!isLoading) cached = tournaments;
+  }, [tournaments, isLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,7 +55,7 @@ export function useTournaments() {
 
   /** Creates a new tournament for `teamId`/`regulationId` and returns it. */
   const addTournament = useCallback((name: string, teamId: string, regulationId: string): Tournament => {
-    const tournament = createTournament(name.trim() || "Untitled Tournament", teamId, regulationId);
+    const tournament = createTournament(name.trim() || getMessages().errors.untitledTournament, teamId, regulationId);
     setTournaments((prev) => sortByUpdatedAtDesc([tournament, ...prev]));
     void saveTournament(tournament);
     return tournament;

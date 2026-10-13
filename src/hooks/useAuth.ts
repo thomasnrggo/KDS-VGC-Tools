@@ -13,12 +13,22 @@ const POPUP_DISMISSED_CODES = new Set([
   "auth/cancelled-popup-request",
 ]);
 
+/**
+ * The last auth state Firebase reported, kept across page navigations — each
+ * page mounts its own useAuth, and starting from "loading, signed out" every
+ * time made the header's avatar (and everything keyed on the user, like the
+ * cloud team sync) blink on each navigation. Firebase still reports any
+ * change through the listener below.
+ */
+let knownAuth: { user: User | null } | null = null;
+
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => knownAuth?.user ?? null);
+  const [isLoading, setIsLoading] = useState(() => knownAuth === null);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (nextUser) => {
+      knownAuth = { user: nextUser };
       setUser(nextUser);
       setIsLoading(false);
     });

@@ -68,6 +68,7 @@ export const es: Messages = {
     duplicateTeam: (name) => `"${name}" ya tiene exactamente este equipo en esta regulación.`,
     defaultTeamName: (n) => `Equipo ${n}`,
     unnamedTeam: "Equipo sin nombre",
+    untitledTournament: "Torneo sin nombre",
     sameTeamAs: (label) => `mismo equipo que "${label}"`,
     skippedByChoice: "omitido",
     opponentNameRequired: "Ponle un nombre a este rival.",

@@ -34,11 +34,25 @@ function sortByCustomOrder(teams: Team[]): Team[] {
   return [...teams].sort((a, b) => b.sortOrder - a.sortOrder);
 }
 
+/**
+ * The last loaded teams, kept across page navigations so a page's first
+ * render shows them right away instead of an empty "loading" state — each
+ * page mounts its own hook, and the header's team sprites used to blink on
+ * every navigation. The hook still reloads in the background on mount.
+ */
+let cached: { teams: Team[]; activeTeamId: string | null } | null = null;
+
 export function useMyTeams() {
   const { user } = useAuth();
-  const [teams, setTeams] = useState<Team[]>([]);
-  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [teams, setTeams] = useState<Team[]>(() => cached?.teams ?? []);
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(
+    () => cached?.activeTeamId ?? null,
+  );
+  const [isLoading, setIsLoading] = useState(() => cached === null);
+
+  useEffect(() => {
+    if (!isLoading) cached = { teams, activeTeamId };
+  }, [teams, activeTeamId, isLoading]);
 
   useEffect(() => {
     let cancelled = false;

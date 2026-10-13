@@ -66,6 +66,7 @@ export const en = {
     duplicateTeam: (name: string) => `"${name}" already has this exact roster under this regulation.`,
     defaultTeamName: (n: number) => `Team ${n}`,
     unnamedTeam: "Unnamed team",
+    untitledTournament: "Untitled Tournament",
     sameTeamAs: (label: string) => `same team as "${label}"`,
     skippedByChoice: "skipped",
     opponentNameRequired: "Give this opponent a name.",
