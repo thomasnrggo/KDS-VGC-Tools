@@ -3,6 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { PokemonSlotPicker } from "../PokemonSlotPicker";
 import type { ParsedPokemon, TeamPokemonSlot, TournamentGame } from "@/types";
+import { useMessages } from "@/hooks/useLanguage";
+import {
+  duplicateSlots,
+  pickIntoSlot,
+  toggleSlotMega,
+  usedInOtherSlots,
+  type SlotTag,
+} from "@/lib/slotPicks";
+
+type Side = "opponentPicks" | "myPicks";
 
 interface TournamentGameCardProps {
   label: string;
@@ -31,9 +41,10 @@ interface TournamentGameCardProps {
  * pasted item doesn't confirm it actually got used that game. Mega'ing a
  * pick is always an explicit choice via the hover card's Mega toggle (see
  * PokemonHoverCard), and since only one Pokémon per side can actually Mega
- * Evolve in a real game, setMegaForSlot enforces that exclusivity itself —
+ * Evolve in a real game, toggleSlotMega enforces that exclusivity —
  * turning one slot's Mega on always turns off whichever other slot on that
- * same side was on.
+ * same side was on. Each side's 4 picks are different Pokémon: picking one
+ * that's already in another slot swaps the two (pickIntoSlot).
  */
 export function TournamentGameCard({
   label,
@@ -42,8 +53,12 @@ export function TournamentGameCard({
   myTeam,
   onUpdate,
 }: TournamentGameCardProps) {
+  const t = useMessages();
   const notesRef = useRef<HTMLTextAreaElement>(null);
-  const [megaState, setMegaState] = useState<Record<string, boolean>>({});
+  const [megas, setMegas] = useState<Record<Side, boolean[]>>({
+    opponentPicks: [false, false, false, false],
+    myPicks: [false, false, false, false],
+  });
   // Once a result is set, the three Win/Loss/Tie buttons collapse down to
   // just the chosen one — clicking that single pill re-expands the group
   // (rather than clearing the result) so you can pick a different one.
@@ -62,50 +77,38 @@ export function TournamentGameCard({
     setResultExpanded(false);
   }
 
-  function setPick(
-    side: "opponentPicks" | "myPicks",
-    slot: 0 | 1 | 2 | 3,
-    index: TeamPokemonSlot,
-  ) {
-    onUpdate((g) => {
-      const next = [...g[side]] as TournamentGame["opponentPicks"];
-      next[slot] = index;
-      return { ...g, [side]: next };
-    });
+  /** Puts `index` into `slot` on `side` — the 4 picks hold different Pokémon, so one already picked swaps places (see pickIntoSlot). */
+  function setPick(side: Side, roster: ParsedPokemon[], slot: number, index: TeamPokemonSlot) {
+    const next = pickIntoSlot({ picks: game[side], megas: megas[side] }, slot, index, roster, false);
+    onUpdate((g) => ({ ...g, [side]: next.picks as TournamentGame[Side] }));
+    setMegas((prev) => ({ ...prev, [side]: next.megas }));
   }
 
-  /** Marks `slot` as Mega'd (or not) for `side`, clearing any other slot on the same side that's currently Mega'd — VGC only allows one Mega Evolution per side per game, so turning one on always turns the previous one off. */
-  function setMegaForSlot(side: "opponentPicks" | "myPicks", slot: number, enabled: boolean) {
-    setMegaState((prev) => {
-      const next = { ...prev };
-      if (enabled) {
-        for (let other = 0; other < 4; other++) {
-          if (other !== slot) next[`${game.id}-${side}-${other}`] = false;
-        }
-      }
-      next[`${game.id}-${side}-${slot}`] = enabled;
-      return next;
-    });
+  /** Only one Pokémon per side can Mega Evolve in a game — turning one on turns the others off. */
+  function toggleMega(side: Side, slot: number) {
+    setMegas((prev) => ({
+      ...prev,
+      [side]: toggleSlotMega({ picks: game[side], megas: prev[side] }, slot).megas,
+    }));
   }
 
-  function pickerSlots(
-    side: "opponentPicks" | "myPicks",
-    roster: ParsedPokemon[],
-    picks: TournamentGame["opponentPicks"],
-  ) {
+  function pickerSlots(side: Side, roster: ParsedPokemon[], picks: TournamentGame[Side]) {
+    const label = side === "opponentPicks" ? t.game.opponentPick : t.game.yourPick;
+    const tags: SlotTag[] = [1, 2, 3, 4].map((n) => ({ label: label(n), tag: t.game.pickTag(n) }));
+    const duplicates = duplicateSlots(picks);
     return [0, 1, 2, 3].map((slot) => {
-      const key = `${game.id}-${side}-${slot}`;
-      const megaEnabled = megaState[key] === true;
-
       return (
         <PokemonSlotPicker
           key={slot}
-          label={`${side === "opponentPicks" ? "Opponent" : "Your"} pick ${slot + 1}`}
+          label={tags[slot].label}
           myTeamPokemon={roster}
           value={picks[slot]}
-          onChange={(index) => setPick(side, slot as 0 | 1 | 2 | 3, index)}
-          megaEnabled={megaEnabled}
-          onMegaToggle={() => setMegaForSlot(side, slot, !megaEnabled)}
+          onChange={(index) => setPick(side, roster, slot, index)}
+          megaEnabled={megas[side][slot]}
+          onMegaToggle={() => toggleMega(side, slot)}
+          usedIn={usedInOtherSlots(picks, slot, tags)}
+          isDuplicate={duplicates.has(slot)}
+          speedMode={side === "opponentPicks" ? "range" : "exact"}
         />
       );
     });
@@ -128,7 +131,7 @@ export function TournamentGameCard({
                     : "border-zinc-500 text-zinc-300 dark:text-zinc-700 hover:bg-white/10"
                 }`}
               >
-                Win
+                {t.game.win}
               </button>
               <button
                 type="button"
@@ -140,27 +143,27 @@ export function TournamentGameCard({
                     : "border-zinc-500 text-zinc-300 dark:text-zinc-700 hover:bg-white/10"
                 }`}
               >
-                Loss
+                {t.game.loss}
               </button>
               <button
                 type="button"
                 onClick={() => setResult("tie")}
                 aria-pressed={game.result === "tie"}
-                title="Double knockout — both sides' last Pokémon fainted the same turn"
+                title={t.game.tieHint}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                   game.result === "tie"
                     ? "border-zinc-600 bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-400 text-white"
                     : "border-zinc-500 text-zinc-300 dark:text-zinc-700 hover:bg-white/10"
                 }`}
               >
-                Tie
+                {t.game.tie}
               </button>
             </>
           ) : (
             <button
               type="button"
               onClick={() => setResultExpanded(true)}
-              title="Click to change the result"
+              title={t.game.changeResult}
               className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                 game.result === "win"
                   ? "border-green-600 bg-green-600 text-white"
@@ -169,7 +172,7 @@ export function TournamentGameCard({
                     : "border-zinc-600 bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-400 text-white"
               }`}
             >
-              {game.result === "win" ? "Win" : game.result === "loss" ? "Loss" : "Tie"}
+              {game.result === "win" ? t.game.win : game.result === "loss" ? t.game.loss : t.game.tie}
             </button>
           )}
         </div>
@@ -178,7 +181,7 @@ export function TournamentGameCard({
       <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Opponent&apos;s picks
+            {t.game.opponentPicks}
           </span>
           <div className="flex flex-wrap gap-2">
             {pickerSlots("opponentPicks", opponentTeam, game.opponentPicks)}
@@ -187,7 +190,7 @@ export function TournamentGameCard({
 
         <div className="flex flex-col gap-1">
           <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Your picks
+            {t.game.yourPicks}
           </span>
           <div className="flex flex-wrap gap-2">
             {pickerSlots("myPicks", myTeam, game.myPicks)}
@@ -202,8 +205,8 @@ export function TournamentGameCard({
             onUpdate((g) => ({ ...g, notes }));
           }}
           rows={2}
-          placeholder="Add comments here…"
-          aria-label={`${label} notes`}
+          placeholder={t.game.notesPlaceholder}
+          aria-label={t.game.notesLabel(label)}
           className="min-h-16 max-h-40 w-full resize-none overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
         />
       </div>

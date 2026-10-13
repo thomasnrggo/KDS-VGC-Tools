@@ -5,30 +5,44 @@ import { calculateFinalStats } from "@/lib/stats/calculateFinalStats";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { speciesNamesMegaForm, stripMegaSuffix } from "@/lib/species/megaForm";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
-import { isLikelyMegaStoneItem } from "@/constants";
+import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
+import { isLikelyMegaStoneItem, NATURE_MODIFIERS, WEATHER_SPEED_DOUBLING_ABILITIES } from "@/constants";
+import {
+  estimateOpponentSpeedRange,
+  type SpeedRange,
+} from "@/lib/stats/estimateOpponentSpeedRange";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { TypeIcon } from "../TypeIcon";
 import movesData from "@/data/moves.json";
-import type { ParsedPokemon, StatKey } from "@/types";
+import type { ParsedPokemon } from "@/types";
 import type { MoveData } from "@/types/damage";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
-// Two side-by-side stat columns, matching how VGC players read a stat screen.
-const LEFT_STATS: StatKey[] = ["hp", "def", "spd"];
-const RIGHT_STATS: StatKey[] = ["atk", "spa", "spe"];
-const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  atk: "ATK",
-  def: "DEF",
-  spa: "SPA",
-  spd: "SPD",
-  spe: "SPE",
-};
+type Weather = keyof typeof WEATHER_SPEED_DOUBLING_ABILITIES;
+
+/** An ability that doubles Speed — in its weather, or Unburden once its item is gone. */
+function speedDoublerFor(ability: string | undefined): { weather?: Weather } | null {
+  if (!ability) return null;
+  if (ability === "Unburden") return {};
+  const weather = (Object.keys(WEATHER_SPEED_DOUBLING_ABILITIES) as Weather[]).find(
+    (key) => WEATHER_SPEED_DOUBLING_ABILITIES[key] === ability,
+  );
+  return weather ? { weather } : null;
+}
+
+function formatSpeed({ min, max }: SpeedRange): string {
+  return min === max ? String(min) : `${min}–${max}`;
+}
+
+function doubled({ min, max }: SpeedRange): SpeedRange {
+  return { min: min * 2, max: max * 2 };
+}
 
 /**
- * Page-wide "which click-triggered card is open" store, so opening one closes
- * any other — a plain module-level singleton (via useSyncExternalStore) rather
+ * Page-wide "which card is open" store, so opening one — by click or by
+ * hover — closes any other — a plain module-level singleton (via useSyncExternalStore) rather
  * than a Context, since there's no natural single provider all opponent cards
  * share and this needs to coordinate across all of them.
  */
@@ -77,14 +91,21 @@ interface PokemonHoverCardProps {
    */
   megaEnabled?: boolean;
   onMegaToggle?: () => void;
+  /**
+   * "exact" (default): Speed from the paste — your own Pokémon. "range": an
+   * opponent's, whose real Stat Points aren't known — a best-guess range.
+   */
+  speedMode?: "exact" | "range";
 }
 
 /**
- * Wraps a Pokémon sprite/trigger with a popover showing whatever
- * ability/moves/nature/EVs were present in the pasted text, plus (when a
- * nature/EVs/species-with-known-base-stats combination resolves) computed
- * Level 50 stats — see src/lib/stats/calculateFinalStats.ts — with the
- * nature-boosted stat in red and the lowered one in blue. Renders just
+ * Wraps a Pokémon sprite/trigger with a quick-look popover: what you need
+ * at a glance about a Pokémon in a matchup — its ability (the Mega's, when
+ * shown as a Mega) and item, its nature as the stat it raises (red) and
+ * lowers (blue), its Speed, and its moves. Speed is exact for your own
+ * Pokémon and a best-guess range for an opponent's (`speedMode`), with a
+ * note when its ability doubles it (weather abilities, Unburden). The full
+ * stat spread lives on the Team Report cards, not here. Renders just
  * `children` (no wrapper, no listeners) when none of ability/nature/evs/moves
  * were parsed, so there's nothing to show.
  *
@@ -101,7 +122,10 @@ export function PokemonHoverCard({
   disabled = false,
   megaEnabled,
   onMegaToggle,
+  speedMode = "exact",
 }: PokemonHoverCardProps) {
+  const t = useMessages();
+  const text = usePokemonText();
   const [id] = useState(() => Symbol("pokemon-hover-card"));
 
   const [hoverOpen, setHoverOpen] = useState(false);
@@ -111,8 +135,10 @@ export function PokemonHoverCard({
     () => openId,
     () => null,
   );
-  const isOpen =
-    !disabled && (trigger === "click" ? currentOpenId === id : hoverOpen);
+  // Hover cards take part in the page-wide "one card open" store too —
+  // otherwise hovering a lead/back pick while an opponent's card is open
+  // (by click) shows both.
+  const isOpen = !disabled && currentOpenId === id && (trigger === "click" || hoverOpen);
 
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -153,6 +179,25 @@ export function PokemonHoverCard({
   const effectivePokemon: ParsedPokemon =
     hasMegaForm && !showMega ? { ...pokemon, species: baseSpecies, item: undefined } : pokemon;
   const finalStats = hasInfo ? calculateFinalStats(effectivePokemon) : null;
+  const nature = pokemon.nature ? NATURE_MODIFIERS[pokemon.nature.toLowerCase()] : undefined;
+  // Your own Pokémon's Speed is known from its paste; an opponent's real
+  // Stat Points aren't, so theirs is a best-guess range (see
+  // estimateOpponentSpeedRange).
+  const speed: SpeedRange | null =
+    speedMode === "range"
+      ? estimateOpponentSpeedRange(effectivePokemon)
+      : finalStats
+        ? { min: finalStats.spe, max: finalStats.spe }
+        : null;
+  const speedBoostedByScarf = finalStats?.speedBoostedByChoiceScarf ?? false;
+  // A Mega's ability replaces the pasted one (Mega Raichu X has Electric
+  // Surge, not Lightning Rod) — same lookup as PokemonReportCard.
+  const ability = resolveEffectiveAbility(
+    effectivePokemon.species,
+    effectivePokemon.item,
+    pokemon.ability,
+  );
+  const speedDoubler = speedDoublerFor(ability);
   const resolvedChildren =
     typeof children === "function" ? children(effectivePokemon) : children;
 
@@ -182,11 +227,10 @@ export function PokemonHoverCard({
   }, [trigger, isOpen]);
 
   useEffect(() => {
-    if (trigger !== "click") return;
     return () => {
       if (openId === id) setOpenId(null);
     };
-  }, [trigger, id]);
+  }, [id]);
 
   // Cancel any pending hover-close on unmount so it can't fire setState after
   // the component's gone.
@@ -205,14 +249,14 @@ export function PokemonHoverCard({
     return <>{resolvedChildren}</>;
   }
 
-  function statClassName(stat: StatKey): string {
-    const boosted = finalStats && stat === finalStats.increasedStat;
-    const lowered = finalStats && stat === finalStats.decreasedStat;
-    const scarfed = stat === "spe" && finalStats?.speedBoostedByChoiceScarf;
-    return [
-      boosted ? "text-red-600" : lowered ? "text-blue-600" : "text-zinc-800",
-      boosted || lowered || scarfed ? "font-bold" : "font-medium",
-    ].join(" ");
+  function openHover() {
+    setHoverOpen(true);
+    setOpenId(id);
+  }
+
+  function closeHover() {
+    setHoverOpen(false);
+    if (openId === id) setOpenId(null);
   }
 
   const interactionProps =
@@ -252,16 +296,16 @@ export function PokemonHoverCard({
               clearTimeout(closeTimeoutRef.current);
               closeTimeoutRef.current = null;
             }
-            setHoverOpen(true);
+            openHover();
           },
           onMouseLeave: () => {
             if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
-            closeTimeoutRef.current = setTimeout(() => setHoverOpen(false), 200);
+            closeTimeoutRef.current = setTimeout(closeHover, 200);
           },
-          onFocus: () => setHoverOpen(true),
-          onBlur: () => setHoverOpen(false),
+          onFocus: openHover,
+          onBlur: closeHover,
           onKeyDown: (event: React.KeyboardEvent) => {
-            if (event.key === "Escape") setHoverOpen(false);
+            if (event.key === "Escape") closeHover();
           },
         };
 
@@ -277,12 +321,12 @@ export function PokemonHoverCard({
           ref={tooltipRef}
           role="tooltip"
           style={style}
-          className="pointer-events-auto z-30 flex w-80 cursor-auto overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 text-left shadow-lg"
+          className="pointer-events-auto z-30 flex w-[22rem] cursor-auto overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 text-left shadow-lg"
         >
           <div className="min-w-0 flex-1 p-3">
             <div className="mb-0.5 flex items-center justify-between gap-2">
               <p className="truncate text-base font-bold text-zinc-900">
-                {effectivePokemon.species}
+                {text.species(effectivePokemon.species)}
               </p>
               {hasMegaForm && (
                 // A real <button> here can end up nested inside another
@@ -312,76 +356,79 @@ export function PokemonHoverCard({
                       : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
                   }`}
                 >
-                  Mega
+                  {t.pokemonCard.mega}
                 </span>
               )}
               {holdsUnsupportedMegaStone && (
                 <span
-                  title={`Holding ${pokemon.item} — this Mega form isn't in our sprite/stats data yet`}
+                  title={t.hoverCard.unsupportedMega(text.item(pokemon.item ?? ""))}
                   className="shrink-0 cursor-help rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-400"
                 >
                   Mega?
                 </span>
               )}
             </div>
-            {pokemon.ability && (
-              <p className="mb-2 truncate text-sm text-zinc-400">
-                {pokemon.ability}
+            {ability && (
+              <p className="truncate text-sm text-zinc-500">{text.ability(ability)}</p>
+            )}
+            {pokemon.item && (
+              <p className="truncate text-sm text-zinc-500">{text.item(pokemon.item)}</p>
+            )}
+            {pokemon.nature && (
+              <p className="truncate text-sm text-zinc-700">
+                {text.nature(pokemon.nature)}
+                {nature?.increased && nature.decreased && (
+                  <>
+                    {"  "}
+                    <span className="font-semibold text-red-600">
+                      +{t.stats.short[nature.increased]}
+                    </span>{" "}
+                    <span className="font-semibold text-blue-600">
+                      −{t.stats.short[nature.decreased]}
+                    </span>
+                  </>
+                )}
               </p>
             )}
-            {finalStats && (
-              <div className="flex text-sm">
-                <dl className="flex flex-1 flex-col gap-1 pr-2">
-                  {LEFT_STATS.map((stat) => (
-                    <div
-                      key={stat}
-                      className="flex items-center justify-between gap-2"
-                    >
-                      <dt className={statClassName(stat)}>
-                        {STAT_LABELS[stat]}
-                      </dt>
-                      <dd className={statClassName(stat)}>
-                        {finalStats[stat]}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-                <div className="w-px shrink-0 bg-zinc-200" />
-                <dl className="flex flex-1 flex-col gap-1 pl-2">
-                  {RIGHT_STATS.map((stat) => (
-                    <div
-                      key={stat}
-                      className="flex items-center justify-between gap-2"
-                    >
-                      <dt
-                        className={statClassName(stat)}
-                        title={
-                          stat === "spe" && finalStats.speedBoostedByChoiceScarf
-                            ? "Includes Choice Scarf's ×1.5 Speed boost"
-                            : undefined
-                        }
-                      >
-                        {STAT_LABELS[stat]}
-                      </dt>
-                      <dd className={statClassName(stat)}>
-                        {finalStats[stat]}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
+            {speed && (
+              <div
+                title={
+                  speedMode === "range"
+                    ? t.quickCard.rangeHint
+                    : speedBoostedByScarf
+                      ? t.hoverCard.choiceScarfSpeed(text.item("Choice Scarf"))
+                      : undefined
+                }
+                className="mt-2 flex flex-col"
+              >
+                <span className="flex items-baseline gap-2">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    {t.quickCard.speed}
+                  </span>
+                  <span className="text-lg font-bold tabular-nums text-zinc-900">
+                    {formatSpeed(speed)}
+                  </span>
+                </span>
+                {speedDoubler && (
+                  <span className="text-xs text-zinc-500">
+                    {speedDoubler.weather
+                      ? t.quickCard.doubledInWeather(
+                          t.quickCard.weather[speedDoubler.weather],
+                          formatSpeed(doubled(speed)),
+                        )
+                      : t.quickCard.doubledByAbility(
+                          text.ability("Unburden"),
+                          formatSpeed(doubled(speed)),
+                        )}
+                  </span>
+                )}
               </div>
             )}
-            {/* {(pokemon.nature || pokemon.evs) && (
-              <div className="mt-2 flex flex-col gap-0.5 border-t border-zinc-100 pt-2 text-[11px] text-zinc-400">
-                {pokemon.nature && <p className="truncate">{pokemon.nature} Nature</p>}
-                {pokemon.evs && <p className="truncate">EVs: {pokemon.evs}</p>}
-              </div>
-            )} */}
           </div>
           {pokemon.moves && pokemon.moves.length > 0 && (
             <>
               <div className="w-px shrink-0 bg-zinc-200" />
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3">
+              <div className="flex w-40 shrink-0 flex-col gap-1.5 p-3">
                 {pokemon.moves.map((move) => {
                   const type = MOVES[normalizeSpeciesKey(move)]?.type;
                   return (
@@ -394,7 +441,7 @@ export function PokemonHoverCard({
                       ) : (
                         <span className="h-7 w-7 shrink-0 bg-zinc-300" />
                       )}
-                      <span className="min-w-0 truncate px-2">{move}</span>
+                      <span className="min-w-0 truncate px-2">{text.move(move)}</span>
                     </div>
                   );
                 })}

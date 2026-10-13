@@ -32,6 +32,7 @@ import { createTeam, validateTeamSize } from "@/lib/team";
 import { parseTeam } from "@/lib/parseTeam";
 import { useAuth } from "./useAuth";
 import type { BulkImportResult, MatchupPlan, Opponent } from "@/types";
+import { getMessages } from "@/lib/i18n/settings";
 
 function sortByListOrder(opponents: Opponent[]): Opponent[] {
   return [...opponents].sort(compareOpponentOrder);
@@ -240,10 +241,10 @@ export function useOpponents() {
       const trimmedPaste = rawPaste.trim();
 
       if (!trimmedLabel) {
-        return "Give this opponent a name.";
+        return getMessages().errors.opponentNameRequired;
       }
       if (!trimmedPaste) {
-        return "Paste the opponent's Showdown export.";
+        return getMessages().errors.opponentPasteRequired;
       }
 
       const sizeError = validateTeamSize(parseTeam(trimmedPaste));

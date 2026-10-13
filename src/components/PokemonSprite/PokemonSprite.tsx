@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { resolveSpeciesImage } from "@/lib/species/resolveSpeciesImage";
+import { usePokemonText } from "@/hooks/useLanguage";
 
 interface PokemonSpriteProps {
   species: string;
@@ -28,19 +31,21 @@ export function PokemonSprite({
   fill = false,
 }: PokemonSpriteProps) {
   const resolved = resolveSpeciesImage(species, item);
+  // Only the label is translated — `species` itself stays the English name the sprite lookup needs.
+  const label = usePokemonText().species(species);
 
   if (!resolved) {
     return (
       <div
         role="img"
-        aria-label={species}
+        aria-label={label}
         className={
           fill
             ? "absolute inset-0 flex items-center justify-center rounded-full bg-zinc-200 text-zinc-500"
             : "flex shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-500"
         }
         style={fill ? undefined : { width: size, height: size }}
-        title={species}
+        title={label}
       >
         <span aria-hidden="true" className="text-xs">
           ?
@@ -53,8 +58,8 @@ export function PokemonSprite({
     return (
       <Image
         src={resolved.imageUrl}
-        alt={species}
-        title={species}
+        alt={label}
+        title={label}
         fill
         unoptimized
         sizes="(max-width: 768px) 15vw, 80px"
@@ -66,8 +71,8 @@ export function PokemonSprite({
   return (
     <Image
       src={resolved.imageUrl}
-      alt={species}
-      title={species}
+      alt={label}
+      title={label}
       width={size}
       height={size}
       unoptimized

@@ -7,6 +7,10 @@ export interface RegulationLegalityIssue {
   /** Index into the checked `pokemon` array. */
   index: number;
   species: string;
+  /** What's illegal — lets the UI word the message in the app's language. */
+  kind: "species" | "megaStone" | "item";
+  /** The held item, for the "megaStone"/"item" kinds. */
+  item?: string;
   reason: string;
 }
 
@@ -61,6 +65,7 @@ export function getRegulationLegalityIssues(
       issues.push({
         index,
         species: mon.species,
+        kind: "species",
         reason: `${mon.species} isn't legal under ${regulation.label}.`,
       });
       return;
@@ -75,6 +80,8 @@ export function getRegulationLegalityIssues(
         issues.push({
           index,
           species: mon.species,
+          kind: "megaStone",
+          item: mon.item,
           reason: `${mon.item} isn't a legal Mega Stone for ${mon.species} under ${regulation.label}.`,
         });
       }
@@ -82,6 +89,8 @@ export function getRegulationLegalityIssues(
       issues.push({
         index,
         species: mon.species,
+        kind: "item",
+        item: mon.item,
         reason: `${mon.item} isn't a legal held item under ${regulation.label}.`,
       });
     }

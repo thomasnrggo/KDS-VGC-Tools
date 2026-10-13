@@ -4,6 +4,7 @@ import { candidateGroupsFrom, findVariantCandidates, type OpponentGroup } from "
 import type { Opponent } from "@/types";
 import { Modal } from "../Modal";
 import { TeamRoster } from "../TeamRoster";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface MakeVariantPickerProps {
   opponent: Opponent;
@@ -20,6 +21,7 @@ interface MakeVariantPickerProps {
  * other main follows, since the rules are a guide, not a gate.
  */
 export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVariantPickerProps) {
+  const t = useMessages();
   const suggested = findVariantCandidates(opponent.team.pokemon, candidateGroupsFrom(groups));
   const suggestedIds = new Set(suggested.map((candidate) => candidate.main.id));
   const others = groups.map((group) => group.main).filter((main) => !suggestedIds.has(main.id));
@@ -37,7 +39,7 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
             {note && <span className="ml-2 font-normal normal-case text-zinc-500">{note}</span>}
           </span>
           <div className="self-start">
-            <TeamRoster pokemon={main.team.pokemon} />
+            <TeamRoster pokemon={main.team.pokemon} speedMode="range" />
           </div>
         </button>
       </li>
@@ -47,23 +49,22 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
   return (
     <Modal onClose={onCancel} labelledBy="make-variant-title" size="wide">
       <h2 id="make-variant-title" className="mb-1 text-lg font-semibold text-zinc-900">
-        Make &ldquo;{opponent.label}&rdquo; a variant of…
+        {t.makeVariant.title(opponent.label)}
       </h2>
       <p className="mb-4 text-sm text-zinc-600">
-        It&apos;ll be grouped under the team you pick. Plans that team has and this one doesn&apos;t
-        are copied over.
+        {t.makeVariant.intro}
       </p>
       <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
         {suggested.length > 0 && (
           <section>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Suggested
+              {t.makeVariant.suggested}
             </h3>
             <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200">
               {suggested.map(({ main, comparison }) =>
                 option(
                   main,
-                  `${comparison.sharedPokemon} shared${comparison.sharedMegas > 0 ? ", same Mega" : ""}`,
+                  t.makeVariant.shared(comparison.sharedPokemon, comparison.sharedMegas > 0),
                 ),
               )}
             </ul>
@@ -72,7 +73,7 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
         {others.length > 0 && (
           <section>
             <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              {suggested.length > 0 ? "All other teams" : "Teams"}
+              {suggested.length > 0 ? t.makeVariant.allOther : t.makeVariant.teams}
             </h3>
             <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200">
               {others.map((main) => option(main))}
@@ -85,7 +86,7 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
         onClick={onCancel}
         className="mt-4 rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
       >
-        Cancel
+        {t.common.cancel}
       </button>
     </Modal>
   );

@@ -6,9 +6,11 @@ import { ItemIcon } from "../ItemIcon";
 import { TypeIcon } from "../TypeIcon";
 import { NATURE_MODIFIERS } from "@/constants/natures";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
+import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import movesData from "@/data/moves.json";
 import type { ParsedPokemon } from "@/types";
 import type { MoveData } from "@/types/damage";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
@@ -43,11 +45,15 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
     el.style.height = `${el.scrollHeight}px`;
   }, [note]);
 
+  const t = useMessages();
+  const text = usePokemonText();
   const natureModifier = pokemon.nature
     ? NATURE_MODIFIERS[pokemon.nature.toLowerCase()]
     : undefined;
 
-  const hasDetails = Boolean(pokemon.item || pokemon.ability || pokemon.nature);
+  // The sprite shows the Mega form when it holds its stone, so the ability does too.
+  const ability = resolveEffectiveAbility(pokemon.species, pokemon.item, pokemon.ability);
+  const hasDetails = Boolean(pokemon.item || ability || pokemon.nature);
 
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
@@ -63,31 +69,32 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
           )}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-base font-bold text-white">{pokemon.species}</span>
+          <span className="truncate text-base font-bold text-white">{text.species(pokemon.species)}</span>
           {hasDetails && (
             <div className="flex min-w-0 items-center justify-between gap-4 text-sm text-zinc-100 dark:text-zinc-900">
-              {pokemon.item && <span className="min-w-0 truncate">{pokemon.item}</span>}
-              {pokemon.ability && (
+              {pokemon.item && <span className="min-w-0 truncate">{text.item(pokemon.item)}</span>}
+              {ability && (
                 <span className="min-w-0 truncate">
-                  Ability: <span className="font-medium text-white">{pokemon.ability}</span>
+                  {t.pokemonCard.ability}{" "}
+                  <span className="font-medium text-white">{text.ability(ability)}</span>
                 </span>
               )}
               {pokemon.nature && (
                 <span className="min-w-0 truncate">
-                  {pokemon.nature} nature
+                  {t.pokemonCard.natureTitle(text.nature(pokemon.nature))}
                   {natureModifier && (natureModifier.increased || natureModifier.decreased) && (
                     <>
                       {" "}
                       (
                       {natureModifier.increased && (
                         <span className="font-medium text-red-400">
-                          +{natureModifier.increased}
+                          +{t.stats.short[natureModifier.increased]}
                         </span>
                       )}
                       {natureModifier.increased && natureModifier.decreased && " "}
                       {natureModifier.decreased && (
                         <span className="font-medium text-blue-400">
-                          -{natureModifier.decreased}
+                          -{t.stats.short[natureModifier.decreased]}
                         </span>
                       )}
                       )
@@ -103,7 +110,7 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
       <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
         {pokemon.moves && pokemon.moves.length > 0 && (
           <div className="flex flex-col gap-1.5">
-            <h3 className="text-sm font-semibold text-zinc-900">Moveset</h3>
+            <h3 className="text-sm font-semibold text-zinc-900">{t.opponentPokemon.moveset}</h3>
             <div className="flex flex-col gap-1">
               {pokemon.moves.map((move, index) => {
                 const type = MOVES[normalizeSpeciesKey(move)]?.type;
@@ -117,7 +124,7 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
                     ) : (
                       <span className="h-8 w-8 shrink-0 bg-zinc-300" />
                     )}
-                    <span className="truncate px-3">{move}</span>
+                    <span className="truncate px-3">{text.move(move)}</span>
                   </div>
                 );
               })}
@@ -126,14 +133,14 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
         )}
 
         <div className="flex flex-col gap-1.5">
-          <h3 className="text-sm font-semibold text-zinc-900">Notes</h3>
+          <h3 className="text-sm font-semibold text-zinc-900">{t.opponentPokemon.notes}</h3>
           <textarea
             ref={notesRef}
             value={note}
             onChange={(event) => onNoteChange(event.target.value)}
             rows={2}
-            placeholder="Anything you notice about this Pokémon…"
-            aria-label={`${pokemon.species} notes`}
+            placeholder={t.opponentPokemon.notesPlaceholder}
+            aria-label={t.opponentPokemon.notesLabel(text.species(pokemon.species))}
             className="min-h-24 max-h-40 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
         </div>

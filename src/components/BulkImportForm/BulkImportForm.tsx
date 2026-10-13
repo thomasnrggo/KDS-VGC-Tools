@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { parseTeamFolder } from "@/lib/teamFolder";
 import type { TeamFolderEntry } from "@/types";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface BulkImportFormProps {
   onImport: (entries: TeamFolderEntry[]) => void;
@@ -10,6 +11,7 @@ interface BulkImportFormProps {
 }
 
 export function BulkImportForm({ onImport, onCancel }: BulkImportFormProps) {
+  const t = useMessages();
   const [value, setValue] = useState("");
   const entries = useMemo(() => parseTeamFolder(value), [value]);
 
@@ -25,24 +27,22 @@ export function BulkImportForm({ onImport, onCancel }: BulkImportFormProps) {
       className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4"
     >
       <p className="text-sm text-zinc-600">
-        Paste a Showdown team folder export — multiple teams, each starting with a{" "}
-        <code className="text-xs">=== [format] Name ===</code> line — to add them all as
-        opponents at once.
+        {t.bulkImport.introBefore}
+        <code className="text-xs">=== [format] Name ===</code>
+        {t.bulkImport.introAfter}
       </p>
       <textarea
         value={value}
         onChange={(event) => setValue(event.target.value)}
         rows={14}
-        placeholder="Paste a Showdown team folder export here…"
-        aria-label="Showdown team folder export"
+        placeholder={t.bulkImport.placeholder}
+        aria-label={t.bulkImport.label}
         className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
       />
       <p role="status" className="text-sm text-zinc-500">
         {entries.length === 0
-          ? "No teams detected yet."
-          : `Found ${entries.length} team${entries.length === 1 ? "" : "s"}: ${entries
-              .map((entry) => entry.label)
-              .join(", ")}`}
+          ? t.bulkImport.noneDetected
+          : t.bulkImport.found(entries.length, entries.map((entry) => entry.label).join(", "))}
       </p>
       <div className="flex gap-2">
         <button
@@ -50,15 +50,14 @@ export function BulkImportForm({ onImport, onCancel }: BulkImportFormProps) {
           disabled={entries.length === 0}
           className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Import {entries.length > 0 ? entries.length : ""} team
-          {entries.length === 1 ? "" : "s"}
+          {t.bulkImport.importButton(entries.length)}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </form>

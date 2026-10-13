@@ -7,24 +7,14 @@ import { IconName } from "@/enums";
 import { publishTeamShare, unpublishTeamShare } from "@/lib/storage/db";
 import { sharedTeamPath } from "@/lib/sharedTeam";
 import type { Team, TeamSheetMode } from "@/types";
+import { useMessages } from "@/hooks/useLanguage";
 
 const INPUT_CLASSES =
   "w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
-const SHEET_OPTIONS: { value: TeamSheetMode; label: string; description: string }[] = [
-  {
-    value: "open",
-    label: "Open team sheet",
-    description: "Pokémon, items, abilities and moves. No Stat Points, nature or stats.",
-  },
-  {
-    value: "closed",
-    label: "Closed team sheet",
-    description: "Everything on the report, including Stat Points, nature and the Poképaste link.",
-  },
-];
 
 /** Copies `text`, flashing "Copied" on the button for a moment. */
 export function CopyButton({ text, label }: { text: string; label: string }) {
+  const t = useMessages();
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -40,7 +30,7 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
       className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
     >
       <Icon name={copied ? IconName.Check : IconName.ContentCopy} size={14} />
-      {copied && "Copied"}
+      {copied && t.common.copied}
     </button>
   );
 }
@@ -59,6 +49,11 @@ export function ShareDialog({
   onSignIn: () => void;
   onClose: () => void;
 }) {
+  const t = useMessages();
+  const sheetOptions: { value: TeamSheetMode; label: string; description: string }[] = [
+    { value: "open", label: t.share.openSheet, description: t.share.openSheetHint },
+    { value: "closed", label: t.share.closedSheet, description: t.share.closedSheetHint },
+  ];
   const [status, setStatus] = useState<{ kind: "saving" | "error"; message: string } | null>(
     null,
   );
@@ -71,7 +66,7 @@ export function ShareDialog({
   async function apply(sheet: TeamSheetMode | null) {
     const next: Team = { ...team, share: sheet ? { sheet } : undefined };
     onUpdate((t) => ({ ...t, share: next.share }));
-    setStatus({ kind: "saving", message: sheet ? "Publishing…" : "Making private…" });
+    setStatus({ kind: "saving", message: sheet ? t.share.publishing : t.share.makingPrivate });
     try {
       if (sheet) await publishTeamShare(next);
       else await unpublishTeamShare(team.id);
@@ -80,9 +75,7 @@ export function ShareDialog({
       console.error("[share] failed:", error);
       setStatus({
         kind: "error",
-        message: sheet
-          ? "Couldn't publish the shared report. Check your connection — or, if this keeps happening, that the latest firestore.rules are deployed."
-          : "Couldn't remove the shared copy. Check your connection and try again.",
+        message: sheet ? t.share.publishFailed : t.share.unpublishFailed,
       });
     }
   }
@@ -93,36 +86,31 @@ export function ShareDialog({
     <Modal onClose={onClose} labelledBy="share-team-title">
       <div className="flex flex-col gap-4">
         <h2 id="share-team-title" className="text-lg font-semibold text-zinc-900">
-          Share {team.name}
+          {t.share.title(team.name)}
         </h2>
 
         {!isSignedIn ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm text-zinc-600">
-              Sign in to share this report — the shared copy is stored in your account so anyone
-              with the link can open it.
+              {t.share.signInPrompt}
             </p>
             <button
               type="button"
               onClick={onSignIn}
               className="rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-400 dark:hover:bg-zinc-300"
             >
-              Sign in
+              {t.auth.signIn}
             </button>
           </div>
         ) : (
           <>
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Who can see it
+                {t.share.whoCanSee}
               </legend>
               {[
-                { shared: false, label: "Private", description: "Only you, on your devices." },
-                {
-                  shared: true,
-                  label: "Shareable",
-                  description: "Anyone with the link — no account needed.",
-                },
+                { shared: false, label: t.share.private, description: t.share.privateHint },
+                { shared: true, label: t.share.shareable, description: t.share.shareableHint },
               ].map((option) => (
                 <label key={option.label} className="flex cursor-pointer items-start gap-2">
                   <input
@@ -144,9 +132,9 @@ export function ShareDialog({
               <>
                 <fieldset className="flex flex-col gap-2">
                   <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    What it shows
+                    {t.share.whatItShows}
                   </legend>
-                  {SHEET_OPTIONS.map((option) => (
+                  {sheetOptions.map((option) => (
                     <label key={option.value} className="flex cursor-pointer items-start gap-2">
                       <input
                         type="radio"
@@ -165,31 +153,30 @@ export function ShareDialog({
 
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Link
+                    {t.share.link}
                   </span>
                   <div className="flex items-center gap-1">
                     <input
                       readOnly
                       value={url}
                       onFocus={(event) => event.target.select()}
-                      aria-label="Shared report link"
+                      aria-label={t.share.linkLabel}
                       className={`${INPUT_CLASSES} font-mono text-xs`}
                     />
-                    <CopyButton text={url} label="Copy link" />
+                    <CopyButton text={url} label={t.share.copyLink} />
                     <a
                       href={sharedTeamPath(team.id)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Open shared report"
-                      title="Open shared report"
+                      aria-label={t.share.openShared}
+                      title={t.share.openShared}
                       className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                     >
                       <Icon name={IconName.OpenInNew} size={16} />
                     </a>
                   </div>
                   <p className="text-xs text-zinc-500">
-                    The shared copy updates when you edit the team. Notes, combinations and
-                    tournament stats are never shared.
+                    {t.share.updatesHint}
                   </p>
                 </div>
               </>
@@ -211,7 +198,7 @@ export function ShareDialog({
           onClick={onClose}
           className="self-start rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
         >
-          Done
+          {t.share.done}
         </button>
       </div>
     </Modal>

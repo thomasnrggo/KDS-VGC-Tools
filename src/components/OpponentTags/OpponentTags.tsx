@@ -4,6 +4,7 @@ import { useId, useRef, useState } from "react";
 import { addTag, removeTag } from "@/lib/opponentTags";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface OpponentTagsProps {
   tags: string[];
@@ -33,6 +34,7 @@ export function OpponentTags({
   isMatch,
   className = "",
 }: OpponentTagsProps) {
+  const t = useMessages();
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,8 +69,8 @@ export function OpponentTags({
           <button
             type="button"
             onClick={() => onChange(removeTag(tags, tag))}
-            aria-label={`Remove tag ${tag}`}
-            title="Remove tag"
+            aria-label={t.tags.remove(tag)}
+            title={t.tags.removeHint}
             className="-mr-1 flex h-4 w-4 items-center justify-center rounded-full opacity-60 hover:opacity-100"
           >
             <Icon name={IconName.Close} size={12} />
@@ -99,8 +101,8 @@ export function OpponentTags({
             }}
             list={datalistId}
             autoFocus
-            placeholder="Add tag…"
-            aria-label="New tag"
+            placeholder={t.tags.placeholder}
+            aria-label={t.tags.newTag}
             className="h-6 w-28 rounded-full border border-zinc-300 bg-zinc-50 px-2 text-xs text-zinc-700 outline-none focus:border-zinc-500"
           />
           <datalist id={datalistId}>
@@ -117,7 +119,7 @@ export function OpponentTags({
                 onChange(addTag(tags, tag));
                 inputRef.current?.focus();
               }}
-              title="Suggested from this team"
+              title={t.tags.suggested}
               className={`${CHIP_CLASSES} border-dashed border-zinc-400 text-zinc-500 hover:border-zinc-600 hover:text-zinc-700`}
             >
               <Icon name={IconName.Add} size={12} />
@@ -131,15 +133,15 @@ export function OpponentTags({
           onClick={() => setIsEditing(true)}
           title={
             openSuggestions.length > 0
-              ? `Add a tag (suggested: ${openSuggestions.join(", ")})`
-              : "Add a tag"
+              ? t.tags.addWithSuggestions(openSuggestions.join(", "))
+              : t.tags.add
           }
           className={`${CHIP_CLASSES} border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-500 hover:text-zinc-700`}
         >
           <Icon name={IconName.Add} size={12} />
-          Tag
+          {t.tags.tag}
           {openSuggestions.length > 0 && (
-            <span className="text-zinc-400">· {openSuggestions.length} suggested</span>
+            <span className="text-zinc-400">{t.tags.suggestedCount(openSuggestions.length)}</span>
           )}
         </button>
       )}

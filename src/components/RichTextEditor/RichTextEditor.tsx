@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages } from "@/hooks/useLanguage";
 
 function isEmptyHtml(html: string): boolean {
   return html === "" || html === "<p></p>";
@@ -54,6 +56,7 @@ export function RichTextEditor({
   ariaLabel,
   size = "default",
 }: RichTextEditorProps) {
+  const t = useMessages();
   const editor = useEditor({
     extensions: [...contentExtensions(), Placeholder.configure({ placeholder })],
     content: value,
@@ -81,6 +84,16 @@ export function RichTextEditor({
     if (!same) editor.commands.setContent(value, { emitUpdate: false });
   }
 
+  // The editor is created once, so a changed placeholder (e.g. after
+  // switching the app language) is pushed into its extension here.
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const extension = editor.extensionManager.extensions.find((ext) => ext.name === "placeholder");
+    if (!extension || extension.options.placeholder === placeholder) return;
+    extension.options.placeholder = placeholder;
+    editor.view.dispatch(editor.state.tr);
+  }, [editor, placeholder]);
+
   const toolbarState = useEditorState({
     editor,
     selector: ({ editor }) => ({
@@ -96,19 +109,19 @@ export function RichTextEditor({
     <div>
       <div className="flex items-center gap-0.5 rounded-t-lg border border-zinc-200 bg-zinc-50 p-1">
         <ToolbarButton
-          label="Bold"
+          label={t.richText.bold}
           icon={IconName.FormatBold}
           active={toolbarState?.bold ?? false}
           onClick={() => editor.chain().focus().toggleBold().run()}
         />
         <ToolbarButton
-          label="Italic"
+          label={t.richText.italic}
           icon={IconName.FormatItalic}
           active={toolbarState?.italic ?? false}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         />
         <ToolbarButton
-          label="Bullet list"
+          label={t.richText.bulletList}
           icon={IconName.FormatListBulleted}
           active={toolbarState?.bulletList ?? false}
           onClick={() => editor.chain().focus().toggleBulletList().run()}

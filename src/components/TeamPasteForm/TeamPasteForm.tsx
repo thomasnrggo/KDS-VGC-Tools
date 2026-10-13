@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface TeamPasteFormProps {
   initialName?: string;
@@ -16,6 +17,7 @@ export function TeamPasteForm({
   onSubmit,
   onCancel,
 }: TeamPasteFormProps) {
+  const t = useMessages();
   const [name, setName] = useState(initialName);
   const [value, setValue] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function TeamPasteForm({
         setError(
           fetchError instanceof Error
             ? fetchError.message
-            : "Couldn't load that Poképaste.",
+            : t.errors.pokepasteFailed,
         );
         return;
       }
@@ -59,16 +61,16 @@ export function TeamPasteForm({
         type="text"
         value={name}
         onChange={(event) => setName(event.target.value)}
-        placeholder="Team name (e.g. Regionals Team)"
-        aria-label="Team name"
+        placeholder={t.teamPaste.namePlaceholder}
+        aria-label={t.teamPaste.nameLabel}
         className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
       />
       <textarea
         value={value}
         onChange={(event) => setValue(event.target.value)}
         rows={16}
-        placeholder="Paste your Pokémon Showdown team export here… (or a Poképaste link)"
-        aria-label="Pokémon Showdown team export or Poképaste link"
+        placeholder={t.teamPaste.pastePlaceholder}
+        aria-label={t.teamPaste.pasteLabel}
         className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
       />
       {error && (
@@ -82,7 +84,7 @@ export function TeamPasteForm({
           disabled={isFetching}
           className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isFetching ? "Loading…" : "Save team"}
+          {isFetching ? t.common.loading : t.teamPaste.saveTeam}
         </button>
         {onCancel && (
           <button
@@ -90,7 +92,7 @@ export function TeamPasteForm({
             onClick={onCancel}
             className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
           >
-            Cancel
+            {t.common.cancel}
           </button>
         )}
       </div>

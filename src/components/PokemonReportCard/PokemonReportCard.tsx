@@ -14,20 +14,13 @@ import { NATURE_MODIFIERS } from "@/constants/natures";
 import movesData from "@/data/moves.json";
 import type { ParsedPokemon, StatKey, TeamSheetMode } from "@/types";
 import type { MoveData } from "@/types/damage";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
 const STAT_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
 // Stat Points cap per stat in Pokémon Champions — the bar's full width.
 const MAX_STAT_POINTS = 32;
-const STAT_LABELS: Record<StatKey, string> = {
-  hp: "HP",
-  atk: "Atk",
-  def: "Def",
-  spa: "SpA",
-  spd: "SpD",
-  spe: "Spe",
-};
 
 interface PokemonReportCardProps {
   pokemon: ParsedPokemon;
@@ -49,6 +42,9 @@ interface PokemonReportCardProps {
  * sprite, types, ability and stats to the base form and back.
  */
 export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCardProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const STAT_LABELS = t.stats.short;
   const speciesIsMegaForm = speciesNamesMegaForm(pokemon.species);
   const hasMegaForm =
     speciesIsMegaForm || candidateFormKeys(pokemon.species, pokemon.item).length > 1;
@@ -75,7 +71,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
     <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm">
       {/* No visible name header (trying the card without one) — the sprite
           and its tooltip identify the Pokémon; screen readers still get it. */}
-      <h3 className="sr-only">{pokemon.species}</h3>
+      <h3 className="sr-only">{text.species(pokemon.species)}</h3>
 
       <div className="relative h-32 bg-zinc-100">
         {types.length > 0 && (
@@ -94,7 +90,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
         </div>
         {pokemon.item && (
           <span
-            title={pokemon.item}
+            title={text.item(pokemon.item)}
             className="absolute bottom-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 shadow-sm"
           >
             <ItemIcon item={pokemon.item} size={24} />
@@ -105,14 +101,14 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
             type="button"
             onClick={() => setShowMega((value) => !value)}
             aria-pressed={showMega}
-            title={showMega ? "Showing the Mega form — click for the base form" : "Show the Mega form"}
+            title={showMega ? t.pokemonCard.showingMega : t.pokemonCard.showMega}
             className={`absolute bottom-2 right-2 z-10 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${
               showMega
                 ? "border-zinc-600 bg-zinc-600 text-white dark:bg-zinc-400"
                 : "border-zinc-300 bg-zinc-50 text-zinc-500 hover:bg-zinc-100"
             }`}
           >
-            Mega
+            {t.pokemonCard.mega}
           </button>
         )}
       </div>
@@ -120,7 +116,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
       <div className="flex flex-1 flex-col gap-2.5 p-3 text-sm text-zinc-800">
         {ability && (
           <p className="truncate">
-            <span className="text-zinc-500">Ability:</span> {ability}
+            <span className="text-zinc-500">{t.pokemonCard.ability}</span> {text.ability(ability)}
           </p>
         )}
 
@@ -139,7 +135,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
                   ) : (
                     <span className="h-[22px] w-[22px] shrink-0 bg-zinc-300" />
                   )}
-                  <span className="truncate px-2 text-[13px]">{move}</span>
+                  <span className="truncate px-2 text-[13px]">{text.move(move)}</span>
                 </li>
               );
             })}
@@ -148,7 +144,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
 
         {sheet === "open" ? null : breakdown && hasStatPoints ? (
           <div
-            title={pokemon.nature ? `${pokemon.nature} nature` : undefined}
+            title={pokemon.nature ? t.pokemonCard.natureTitle(text.nature(pokemon.nature)) : undefined}
             // No row gap, so the Final column's left border reads as one
             // continuous divider; rows get their spacing from padding.
             className="mt-auto grid grid-cols-[2.25rem_1fr_1.25rem_0.75rem_2.5rem] items-center gap-x-1.5 text-sm tabular-nums"
@@ -159,7 +155,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
               const tone = boosted ? "text-red-600" : lowered ? "text-blue-600" : "";
               const points = breakdown.statPoints[stat];
               return (
-                <div key={stat} title={`Base ${breakdown.base[stat]}`} className="contents">
+                <div key={stat} title={t.pokemonCard.base(breakdown.base[stat])} className="contents">
                   <span className={`py-0.5 ${tone}`}>{STAT_LABELS[stat]}</span>
                   <span className="h-2 overflow-hidden rounded-full bg-zinc-200">
                     <span
@@ -180,7 +176,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
           <>
             {pokemon.nature && (
               <p className="truncate">
-                {pokemon.nature}
+                {text.nature(pokemon.nature)}
                 {nature?.increased && nature.decreased && (
                   <>
                     {" "}(<span className="text-red-600">+{STAT_LABELS[nature.increased]}</span>,{" "}
@@ -202,7 +198,11 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
                   return (
                     <div
                       key={stat}
-                      title={`${STAT_LABELS[stat]}: base ${breakdown.base[stat]}, ${breakdown.statPoints[stat]} Stat Points`}
+                      title={t.pokemonCard.statTooltip(
+                        STAT_LABELS[stat],
+                        breakdown.base[stat],
+                        breakdown.statPoints[stat],
+                      )}
                       className="flex flex-col"
                     >
                       <span className={`text-[10px] text-zinc-500 ${tone}`}>{STAT_LABELS[stat]}</span>

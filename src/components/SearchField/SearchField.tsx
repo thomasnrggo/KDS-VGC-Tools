@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface SearchFieldProps {
   query: string;
@@ -26,6 +27,7 @@ export function SearchField({
   autoFocus = false,
   className,
 }: SearchFieldProps) {
+  const t = useMessages();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -56,8 +58,8 @@ export function SearchField({
         <button
           type="button"
           onClick={() => (query ? onQueryChange("") : onClose?.())}
-          aria-label={query ? "Clear search" : "Close search"}
-          title={query ? "Clear search" : "Close search"}
+          aria-label={query ? t.search.clear : t.search.close}
+          title={query ? t.search.clear : t.search.close}
           className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
         >
           <Icon name={IconName.Close} size={14} />

@@ -16,6 +16,7 @@ import { parseRoundOpponentTeam } from "@/lib/tournament";
 import { REGULATIONS } from "@/data/regulations";
 import { isAdminUid } from "@/lib/admin";
 import type { TournamentGame, TournamentRound } from "@/types";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface RoundPageProps {
   params: Promise<{ tournamentId: string; roundId: string }>;
@@ -23,6 +24,7 @@ interface RoundPageProps {
 
 export default function RoundPage({ params }: RoundPageProps) {
   const { tournamentId, roundId } = use(params);
+  const t = useMessages();
   const {
     teams,
     activeTeams,
@@ -109,13 +111,13 @@ export default function RoundPage({ params }: RoundPageProps) {
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-zinc-500">Loading…</p>
+        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
       ) : !tournament || !round ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
-          <p className="text-lg font-semibold text-zinc-900">Round not found</p>
-          <p className="text-sm text-zinc-600">It may have been removed on another device.</p>
+          <p className="text-lg font-semibold text-zinc-900">{t.round.notFound}</p>
+          <p className="text-sm text-zinc-600">{t.tournament.notFoundBody}</p>
           <Link href="/tournaments" className="text-sm font-medium text-zinc-600 hover:underline">
-            ← Back to Tournaments
+            {t.tournament.backLink}
           </Link>
         </div>
       ) : (
@@ -125,8 +127,8 @@ export default function RoundPage({ params }: RoundPageProps) {
               <div className="flex items-center gap-2">
                 <Link
                   href={`/tournaments/${tournamentId}`}
-                  aria-label="Back to tournament"
-                  title="Back to tournament"
+                  aria-label={t.round.back}
+                  title={t.round.back}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                 >
                   <Icon name={IconName.ExpandMore} size={20} className="rotate-90" />
@@ -140,34 +142,33 @@ export default function RoundPage({ params }: RoundPageProps) {
                   type="button"
                   onClick={() => setRoundOutcome("walkover")}
                   aria-pressed={round.roundOutcome === "walkover"}
-                  title="The opponent was paired with you but didn't show up"
+                  title={t.round.walkoverHint}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                     round.roundOutcome === "walkover"
                       ? "border-green-600 bg-green-600 text-white"
                       : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
                   }`}
                 >
-                  Walkover
+                  {t.round.walkover}
                 </button>
                 <button
                   type="button"
                   onClick={() => setRoundOutcome("bye")}
                   aria-pressed={round.roundOutcome === "bye"}
-                  title="No opponent to pair with this round (odd number of players)"
+                  title={t.round.byeHint}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                     round.roundOutcome === "bye"
                       ? "border-green-600 bg-green-600 text-white"
                       : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
                   }`}
                 >
-                  Bye
+                  {t.round.bye}
                 </button>
               </div>
             </div>
             {round.roundOutcome && (
               <p className="text-xs text-zinc-500">
-                Recorded as a win without playing any games — the games below are disabled while
-                this is set.
+                {t.round.decidedNotice}
               </p>
             )}
           </div>
@@ -177,19 +178,18 @@ export default function RoundPage({ params }: RoundPageProps) {
           {round.roundOutcome !== "bye" && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-zinc-900">Opponent&apos;s team</h2>
+                <h2 className="text-sm font-semibold text-zinc-900">{t.round.opponentTeam}</h2>
                 <button
                   type="button"
                   onClick={openRosterEditor}
                   className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
                 >
-                  {round.opponentTeam.length > 0 ? "Edit roster" : "Add roster"}
+                  {round.opponentTeam.length > 0 ? t.round.editRoster : t.round.addRoster}
                 </button>
               </div>
               {round.opponentTeam.length === 0 ? (
                 <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-8 text-center text-sm text-zinc-600">
-                  Paste whatever the team sheet revealed — species, item, ability, nature, and
-                  moves. Stat Points aren&apos;t usually shown, so that&apos;s fine to leave out.
+                  {t.round.rosterHint}
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -217,8 +217,7 @@ export default function RoundPage({ params }: RoundPageProps) {
 
           {team && round.roundOutcome ? (
             <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-8 text-center text-sm text-zinc-600">
-              No games to log — this round was decided by a {round.roundOutcome}. Clear the toggle
-              above to log games instead.
+              {t.round.noGames(round.roundOutcome)}
             </p>
           ) : (
             team && (
@@ -226,7 +225,7 @@ export default function RoundPage({ params }: RoundPageProps) {
                 {round.games.map((game, index) => (
                   <TournamentGameCard
                     key={game.id}
-                    label={`Game ${index + 1}`}
+                    label={t.round.game(index + 1)}
                     game={game}
                     opponentTeam={round.opponentTeam}
                     myTeam={team.pokemon}
@@ -242,15 +241,15 @@ export default function RoundPage({ params }: RoundPageProps) {
       {isEditingRoster && (
         <Modal onClose={() => setIsEditingRoster(false)} labelledBy="edit-roster-modal-title">
           <h2 id="edit-roster-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
-            Opponent&apos;s team
+            {t.round.opponentTeam}
           </h2>
           <div className="flex flex-col gap-3">
             <textarea
               value={rosterDraft}
               onChange={(event) => setRosterDraft(event.target.value)}
               rows={16}
-              placeholder="Paste whatever the team sheet revealed — Stat Points are optional…"
-              aria-label="Opponent's team"
+              placeholder={t.round.rosterPlaceholder}
+              aria-label={t.round.opponentTeam}
               className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
             <div className="flex gap-2">
@@ -259,14 +258,14 @@ export default function RoundPage({ params }: RoundPageProps) {
                 onClick={saveRoster}
                 className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
               >
-                Save
+                {t.common.save}
               </button>
               <button
                 type="button"
                 onClick={() => setIsEditingRoster(false)}
                 className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Cancel
+                {t.common.cancel}
               </button>
             </div>
           </div>

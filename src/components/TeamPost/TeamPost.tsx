@@ -7,6 +7,7 @@ import { IconName } from "@/enums";
 import { hasRichText } from "@/lib/richText";
 import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
 import { CopyButton } from "./ShareDialog";
+import { useMessages } from "@/hooks/useLanguage";
 
 export interface TeamPostContent {
   creator?: string;
@@ -49,6 +50,7 @@ function DetailsLine({
   replicaCode,
   status,
 }: TeamPostContent & { status?: string }) {
+  const t = useMessages();
   // A shared report shows a link someone else typed — only ever render a
   // real web link, never e.g. a javascript: URL.
   const safePokepasteUrl =
@@ -57,7 +59,7 @@ function DetailsLine({
   if (creator) {
     items.push(
       <span key="creator">
-        by <span className="font-medium text-zinc-800">{creator}</span>
+        {t.teamPost.by} <span className="font-medium text-zinc-800">{creator}</span>
       </span>,
     );
   }
@@ -78,8 +80,9 @@ function DetailsLine({
   if (replicaCode) {
     items.push(
       <span key="replica" className="inline-flex items-center gap-1">
-        Replica code <span className="font-mono font-medium text-zinc-800">{replicaCode}</span>
-        <CopyButton text={replicaCode} label="Copy replica code" />
+        {t.teamPost.replicaCode}{" "}
+        <span className="font-mono font-medium text-zinc-800">{replicaCode}</span>
+        <CopyButton text={replicaCode} label={t.teamPost.copyReplicaCode} />
       </span>,
     );
   }
@@ -107,6 +110,7 @@ function DetailsLine({
  * card without the controls.
  */
 export function TeamPost({ name, rawPaste = "", status, owner, ...content }: TeamPostProps) {
+  const t = useMessages();
   const [draft, setDraft] = useState<
     (TeamPostContent & { name: string; rawPaste: string }) | null
   >(null);
@@ -152,7 +156,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
         owner.onDraftPasteChange?.(paste);
       } catch (fetchError) {
         setIsSaving(false);
-        setError(fetchError instanceof Error ? fetchError.message : "Couldn't load that Poképaste.");
+        setError(fetchError instanceof Error ? fetchError.message : t.errors.pokepasteFailed);
         return;
       }
       setIsSaving(false);
@@ -182,7 +186,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
               value={draft.name ?? ""}
               onChange={(event) => setDraft({ ...draft, name: event.target.value })}
               form="team-post-form"
-              aria-label="Team name"
+              aria-label={t.teamPost.teamName}
               placeholder={name}
               className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-2xl font-semibold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
@@ -211,8 +215,8 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
             <button
               type="button"
               onClick={startEditing}
-              aria-label="Edit team post"
-              title="Edit"
+              aria-label={t.teamPost.editPost}
+              title={t.common.edit}
               className={ICON_BUTTON_CLASSES}
             >
               <Icon name={IconName.Edit} size={16} />
@@ -232,16 +236,16 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
         >
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600">
-              Creator
+              {t.teamPost.creator}
               <input
                 value={draft.creator ?? ""}
                 onChange={(event) => setDraft({ ...draft, creator: event.target.value })}
-                placeholder="Who built this team"
+                placeholder={t.teamPost.creatorPlaceholder}
                 className={INPUT_CLASSES}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600">
-              Poképaste link
+              {t.teamPost.pokepasteLink}
               <input
                 type="url"
                 value={draft.pokepasteUrl ?? ""}
@@ -251,24 +255,24 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600">
-              Replica code
+              {t.teamPost.replicaCode}
               <input
                 value={draft.replicaCode ?? ""}
                 onChange={(event) => setDraft({ ...draft, replicaCode: event.target.value })}
-                placeholder="In-game code to rent this team"
+                placeholder={t.teamPost.replicaPlaceholder}
                 className={`${INPUT_CLASSES} font-mono`}
               />
             </label>
           </div>
-          <span className="-mb-2 text-xs font-medium text-zinc-600">Team overview</span>
+          <span className="-mb-2 text-xs font-medium text-zinc-600">{t.teamPost.overview}</span>
           <RichTextEditor
             value={draft.overview ?? ""}
             onChange={(overview) => setDraft((prev) => (prev ? { ...prev, overview } : prev))}
-            placeholder="What's this team about? Its game plan, key cores, how it wins…"
-            ariaLabel="Team overview"
+            placeholder={t.teamPost.overviewPlaceholder}
+            ariaLabel={t.teamPost.overview}
           />
           <label className="flex flex-col gap-1 text-xs font-medium text-zinc-600">
-            Team paste
+            {t.teamPost.teamPaste}
             <textarea
               value={draft.rawPaste ?? ""}
               onChange={(event) => {
@@ -276,7 +280,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
                 owner?.onDraftPasteChange?.(event.target.value);
               }}
               rows={10}
-              placeholder="Paste your Pokémon Showdown team export here… (or a Poképaste link)"
+              placeholder={t.teamPaste.pastePlaceholder}
               className={`${INPUT_CLASSES} resize-y font-mono`}
             />
           </label>
@@ -291,14 +295,14 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
               disabled={isSaving}
               className="rounded-full bg-zinc-600 px-5 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-400 dark:hover:bg-zinc-300"
             >
-              {isSaving ? "Loading Poképaste…" : "Save"}
+              {isSaving ? t.teamPost.loadingPokepaste : t.common.save}
             </button>
             <button
               type="button"
               onClick={stopEditing}
               className="rounded-full border border-zinc-300 px-5 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </form>
@@ -312,7 +316,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
             onClick={startEditing}
             className="self-start text-sm text-zinc-500 hover:text-zinc-700 hover:underline"
           >
-            Add a creator, links and an overview…
+            {t.teamPost.emptyPrompt}
           </button>
         )
       )}

@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface OpponentFormProps {
   initialLabel?: string;
@@ -25,11 +26,12 @@ export function OpponentForm({
   initialLabel = "",
   initialPokepasteUrl = "",
   initialRawPaste = "",
-  submitLabel = "Add opponent",
+  submitLabel,
   bordered = true,
   onSubmit,
   onCancel,
 }: OpponentFormProps) {
+  const t = useMessages();
   const [label, setLabel] = useState(initialLabel);
   const [pokepasteUrl, setPokepasteUrl] = useState(initialPokepasteUrl);
   const [rawPaste, setRawPaste] = useState(initialRawPaste);
@@ -73,7 +75,7 @@ export function OpponentForm({
         setError(
           fetchError instanceof Error
             ? fetchError.message
-            : "Couldn't load that Poképaste.",
+            : t.errors.pokepasteFailed,
         );
         return;
       }
@@ -91,23 +93,23 @@ export function OpponentForm({
       <input
         value={label}
         onChange={(event) => setLabel(event.target.value)}
-        placeholder='Opponent name (e.g. "Sand toxapex - Wolfey")'
-        aria-label="Opponent name"
+        placeholder={t.opponentForm.namePlaceholder}
+        aria-label={t.opponentForm.nameLabel}
         className={INPUT_CLASSES}
       />
       <input
         value={pokepasteUrl}
         onChange={(event) => setPokepasteUrl(event.target.value)}
-        placeholder="Poképaste link (optional)"
-        aria-label="Poképaste link (optional)"
+        placeholder={t.opponentForm.pokepastePlaceholder}
+        aria-label={t.opponentForm.pokepastePlaceholder}
         className={INPUT_CLASSES}
       />
       <textarea
         value={rawPaste}
         onChange={(event) => setRawPaste(event.target.value)}
         rows={12}
-        placeholder="Paste their Pokémon Showdown team export here… (or a Poképaste link)"
-        aria-label="Opponent's Pokémon Showdown team export or Poképaste link"
+        placeholder={t.opponentForm.pastePlaceholder}
+        aria-label={t.opponentForm.pasteLabel}
         className={`${INPUT_CLASSES} resize-y p-3 font-mono`}
       />
       {error && (
@@ -121,14 +123,14 @@ export function OpponentForm({
           disabled={isFetching}
           className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isFetching ? "Loading…" : submitLabel}
+          {isFetching ? t.common.loading : (submitLabel ?? t.opponents.add)}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </form>

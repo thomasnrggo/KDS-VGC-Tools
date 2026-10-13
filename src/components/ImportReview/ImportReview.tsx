@@ -3,12 +3,12 @@
 import { useState } from "react";
 import {
   defaultDecision,
-  type ImportCandidate,
   type ImportDecision,
   type ImportRow,
 } from "@/lib/opponentImport";
 import { Modal } from "../Modal";
 import { TeamRoster } from "../TeamRoster";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface ImportReviewProps {
   rows: ImportRow[];
@@ -29,12 +29,6 @@ function decisionFromValue(value: string): ImportDecision {
   return { action: "variant", candidateIndex: Number(value) };
 }
 
-function describeMatch(candidate: ImportCandidate): string {
-  const { sharedPokemon, sharedMegas } = candidate.comparison;
-  const megaNote =
-    sharedMegas === 0 ? "" : sharedMegas === 1 ? ", same Mega" : `, same ${sharedMegas} Megas`;
-  return `${sharedPokemon} Pokémon in common${megaNote}`;
-}
 
 /**
  * The import step that asks before grouping: lists every incoming team with
@@ -45,6 +39,7 @@ function describeMatch(candidate: ImportCandidate): string {
  * through.
  */
 export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
+  const t = useMessages();
   const [decisions, setDecisions] = useState<ImportDecision[]>(() => rows.map(defaultDecision));
 
   const importCount = rows.filter(
@@ -55,11 +50,10 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
   return (
     <Modal onClose={onCancel} labelledBy="import-review-title" size="wide">
       <h2 id="import-review-title" className="mb-1 text-lg font-semibold text-zinc-900">
-        Review import
+        {t.importReview.title}
       </h2>
       <p className="mb-4 text-sm text-zinc-600">
-        Some of these look like variants of a team you already have (or of another team in this
-        paste). Variants are grouped under one main team and start with a copy of its plan.
+        {t.importReview.intro}
       </p>
 
       <ul className="flex max-h-[60vh] flex-col divide-y divide-zinc-200 overflow-y-auto rounded-lg border border-zinc-200">
@@ -79,13 +73,13 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
                 <span className="truncate text-xs font-semibold uppercase tracking-wide text-zinc-700">
                   {row.label}
                 </span>
-                {row.pokemon.length > 0 && <TeamRoster pokemon={row.pokemon} />}
+                {row.pokemon.length > 0 && <TeamRoster pokemon={row.pokemon} speedMode="range" />}
               </div>
               {row.error ? (
-                <span className="shrink-0 text-sm text-zinc-500">Can&apos;t import: {row.error}</span>
+                <span className="shrink-0 text-sm text-zinc-500">{t.importReview.cantImport(row.error)}</span>
               ) : row.duplicateOf !== undefined ? (
                 <span className="shrink-0 text-sm text-zinc-500">
-                  Already saved as &ldquo;{row.duplicateOf}&rdquo; — skipped
+                  {t.importReview.alreadySaved(row.duplicateOf)}
                 </span>
               ) : (
                 <div className="flex w-full shrink-0 flex-col gap-1 sm:w-64">
@@ -96,22 +90,25 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
                       next[index] = decisionFromValue(event.target.value);
                       setDecisions(next);
                     }}
-                    aria-label={`What to do with ${row.label}`}
+                    aria-label={t.importReview.whatToDo(row.label)}
                     className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-1.5 text-sm text-zinc-700"
                   >
                     {row.candidates.map((candidate, candidateIndex) => (
                       <option key={candidateIndex} value={String(candidateIndex)}>
-                        Variant of {candidate.label}
+                        {t.importReview.variantOf(candidate.label)}
                       </option>
                     ))}
-                    <option value={NEW}>Add as a new team</option>
-                    <option value={SKIP}>Don&apos;t import</option>
+                    <option value={NEW}>{t.importReview.addAsNew}</option>
+                    <option value={SKIP}>{t.importReview.dontImport}</option>
                   </select>
                   {/* The match detail sits under the picker rather than in
                       the option text, which a native select truncates. */}
                   {chosenCandidate && (
                     <span className="px-1 text-xs text-zinc-500">
-                      {describeMatch(chosenCandidate)}
+                      {t.importReview.inCommon(
+                        chosenCandidate.comparison.sharedPokemon,
+                        chosenCandidate.comparison.sharedMegas,
+                      )}
                     </span>
                   )}
                 </div>
@@ -128,15 +125,14 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
           disabled={importCount === 0}
           className="rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-400 dark:hover:bg-zinc-300"
         >
-          Import {importCount} team{importCount === 1 ? "" : "s"}
-          {variantCount > 0 ? ` (${variantCount} as variant${variantCount === 1 ? "" : "s"})` : ""}
+          {t.importReview.importButton(importCount, variantCount)}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
         >
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
     </Modal>

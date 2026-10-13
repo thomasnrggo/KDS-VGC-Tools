@@ -6,6 +6,7 @@ import { useMyTeams } from "@/hooks/useMyTeams";
 import { useTournaments } from "@/hooks/useTournaments";
 import { useOpponents } from "@/hooks/useOpponents";
 import { useAuth } from "@/hooks/useAuth";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
@@ -31,25 +32,21 @@ interface TeamReportPageProps {
 
 type ReportTab = "report" | "strategy" | "calcs" | "matchups" | "stats";
 
-const ALL_TABS: { id: ReportTab; label: string }[] = [
-  { id: "report", label: "Team report" },
-  { id: "strategy", label: "Strategy" },
-  { id: "calcs", label: "Calcs" },
-  { id: "matchups", label: "Matchups" },
-  { id: "stats", label: "Tournament stats" },
-];
+const ALL_TABS: ReportTab[] = ["report", "strategy", "calcs", "matchups", "stats"];
 // Calcs and Matchups are on hold — see TEAM_REPORT_PREP_ENABLED.
 const TABS = TEAM_REPORT_PREP_ENABLED
   ? ALL_TABS
-  : ALL_TABS.filter((tab) => tab.id !== "calcs" && tab.id !== "matchups");
+  : ALL_TABS.filter((tab) => tab !== "calcs" && tab !== "matchups");
 
 function isReportTab(value: string | undefined): value is ReportTab {
-  return TABS.some((tab) => tab.id === value);
+  return TABS.some((tab) => tab === value);
 }
 
 export default function TeamReportPage({ params, searchParams }: TeamReportPageProps) {
   const { teamId } = use(params);
   const { tab: initialTab } = use(searchParams);
+  const t = useMessages();
+  const pokemonText = usePokemonText();
   const {
     teams,
     activeTeams,
@@ -141,18 +138,18 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-zinc-500">Loading…</p>
+        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
       ) : !team ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
-          <p className="text-lg font-semibold text-zinc-900">Team not found</p>
+          <p className="text-lg font-semibold text-zinc-900">{t.teamPage.notFound}</p>
           <p className="text-sm text-zinc-600">
-            It may have been removed on another device.
+            {t.teamPage.notFoundBody}
           </p>
           <Link
             href="/teams"
             className="text-sm font-medium text-zinc-600 hover:underline"
           >
-            ← Back to My Teams
+            {t.teamPage.backToMyTeams}
           </Link>
         </div>
       ) : (
@@ -162,13 +159,13 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* On the Team report tab the post titles the page; elsewhere the
                 team's name joins the breadcrumb (as the page's h1). */}
-            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1 text-sm">
+            <nav aria-label={t.teamPage.breadcrumb} className="flex min-w-0 items-center gap-1 text-sm">
               <Link
                 href="/teams"
                 className="flex shrink-0 items-center gap-1 rounded-full py-1 pr-1 font-medium text-zinc-500 hover:text-zinc-800"
               >
                 <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
-                My Teams
+                {t.nav.myTeams}
               </Link>
               {activeTab !== "report" && (
                 <>
@@ -181,21 +178,21 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                 </>
               )}
             </nav>
-            <div role="tablist" aria-label="Team report sections" className="flex flex-wrap gap-1.5">
+            <div role="tablist" aria-label={t.teamPage.sections} className="flex flex-wrap gap-1.5">
               {TABS.map((tab) => (
                 <button
-                  key={tab.id}
+                  key={tab}
                   type="button"
                   role="tab"
-                  aria-selected={activeTab === tab.id}
-                  onClick={() => selectTab(tab.id)}
+                  aria-selected={activeTab === tab}
+                  onClick={() => selectTab(tab)}
                   className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                    activeTab === tab.id
+                    activeTab === tab
                       ? "bg-zinc-600 dark:bg-zinc-400 text-white"
                       : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                   }`}
                 >
-                  {tab.label}
+                  {t.teamPage.tabs[tab]}
                 </button>
               ))}
             </div>
@@ -224,8 +221,8 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                 },
                 onShare: () => setIsSharing(true),
                 shareLabel: team.share
-                  ? `Shared · ${team.share.sheet === "open" ? "open" : "closed"} team sheet`
-                  : "Share",
+                  ? t.teamPage.sharedLabel(team.share.sheet)
+                  : t.teamPage.share,
                 isShared: !!team.share,
                 onDraftPasteChange: setDraftPaste,
               }}
@@ -245,15 +242,14 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
               <span className="flex items-center gap-2 text-sm text-zinc-700">
                 <Icon name={IconName.Archive} size={18} className="shrink-0 text-zinc-500" />
-                This team is archived — it&apos;s hidden from the team switcher and can&apos;t be
-                set active until you unarchive it.
+                {t.teamPage.archivedNotice}
               </span>
               <button
                 type="button"
                 onClick={() => unarchiveTeam(team.id)}
                 className="shrink-0 rounded-full border border-zinc-300 px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Unarchive
+                {t.teamPage.unarchive}
               </button>
             </div>
           )}
@@ -265,7 +261,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             <div className="flex flex-col gap-2">
               {isPreviewing && (
                 <p className="text-xs font-medium text-zinc-500">
-                  Preview — not saved yet
+                  {t.teamPage.previewNotSaved}
                 </p>
               )}
               <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
@@ -283,12 +279,12 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
               <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-zinc-900">Common combinations</h2>
+                  <h2 className="text-sm font-semibold text-zinc-900">{t.teamPage.combinations}</h2>
                   <button
                     type="button"
                     onClick={addCombination}
-                    aria-label="Add combination"
-                    title="Add combination"
+                    aria-label={t.teamPage.addCombination}
+                    title={t.teamPage.addCombination}
                     className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                   >
                     <Icon name={IconName.Add} size={18} />
@@ -296,8 +292,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                 </div>
                 {(team.combinations ?? []).length === 0 ? (
                   <p className="text-sm text-zinc-500">
-                    No combinations yet — add one to save a lead/back pairing you like using with
-                    this team.
+                    {t.teamPage.noCombinations}
                   </p>
                 ) : (
                   (team.combinations ?? []).map((combination) => (
@@ -313,12 +308,12 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </section>
 
               <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
-                <h2 className="flex h-8 items-center text-sm font-semibold text-zinc-900">Notes</h2>
+                <h2 className="flex h-8 items-center text-sm font-semibold text-zinc-900">{t.teamPage.notes}</h2>
                 <RichTextEditor
                   value={team.notes ?? ""}
                   onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
-                  placeholder="How does this team play? Game plan, threats, what it struggles against…"
-                  ariaLabel="Team notes"
+                  placeholder={t.teamPage.notesPlaceholder}
+                  ariaLabel={t.teamPage.notesLabel}
                   size="tall"
                 />
               </section>
@@ -347,22 +342,21 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
               {usageStats.every((stat) => stat.timesPicked === 0) ? (
                 <p className="text-sm text-zinc-500">
-                  No games logged with this team yet — Pokémon usage and win/loss stats
-                  accumulate here as you log{" "}
+                  {t.teamPage.noGames.before}
                   <Link href="/tournaments" className="text-zinc-600 hover:underline">
-                    tournament
-                  </Link>{" "}
-                  games.
+                    {t.teamPage.noGames.link}
+                  </Link>
+                  {t.teamPage.noGames.after}
                 </p>
               ) : (
                 <table className="w-full text-xs text-zinc-700">
                   <thead>
                     <tr className="text-zinc-500">
-                      <th className="py-1 text-left font-normal">Pokémon</th>
-                      <th className="text-right font-normal">Picked</th>
-                      <th className="text-right font-normal">Wins</th>
-                      <th className="text-right font-normal">Losses</th>
-                      <th className="text-right font-normal">Win %</th>
+                      <th className="py-1 text-left font-normal">{t.teamPage.statsPokemon}</th>
+                      <th className="text-right font-normal">{t.teamPage.statsPicked}</th>
+                      <th className="text-right font-normal">{t.teamPage.statsWins}</th>
+                      <th className="text-right font-normal">{t.teamPage.statsLosses}</th>
+                      <th className="text-right font-normal">{t.teamPage.statsWinRate}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -373,7 +367,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                             <PokemonSprite species={stat.pokemon.species} fill />
                           </span>
                           <span className="truncate font-medium text-zinc-900">
-                            {stat.pokemon.species}
+                            {pokemonText.species(stat.pokemon.species)}
                           </span>
                         </td>
                         <td className="text-right">{stat.timesPicked}</td>

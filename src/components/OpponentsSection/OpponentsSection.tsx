@@ -39,6 +39,7 @@ import { SearchField } from "../SearchField";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { TEAM_REPORT_PREP_ENABLED } from "@/constants";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface OpponentsSectionProps {
   myTeamPokemon: ParsedPokemon[];
@@ -76,6 +77,7 @@ function OpponentsMoreMenu({
   onBulkImport: () => void;
   onClearAll: () => void;
 }) {
+  const t = useMessages();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -110,8 +112,8 @@ function OpponentsMoreMenu({
         onClick={() => setIsOpen((open) => !open)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        aria-label="More opponent options"
-        title="More options"
+        aria-label={t.opponents.moreOptions}
+        title={t.rowActions.moreOptions}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-zinc-300 text-zinc-700 hover:bg-zinc-100"
       >
         <Icon name={IconName.MoreVert} size={18} />
@@ -120,7 +122,7 @@ function OpponentsMoreMenu({
         <div
           ref={dropdownRef}
           role="menu"
-          aria-label="More opponent options"
+          aria-label={t.opponents.moreOptions}
           className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           {!isLoading &&
@@ -135,8 +137,7 @@ function OpponentsMoreMenu({
                 }}
                 className={MENU_ITEM_CLASSES}
               >
-                Load default set: {season.label}
-                {season.id === currentSeasonId ? " (current)" : ""}
+                {t.opponents.loadDefaultSet(season.label, season.id === currentSeasonId)}
               </button>
             ))}
           <button
@@ -148,7 +149,7 @@ function OpponentsMoreMenu({
             }}
             className={MENU_ITEM_CLASSES}
           >
-            Mass import
+            {t.opponents.massImport}
           </button>
           <button
             type="button"
@@ -160,7 +161,7 @@ function OpponentsMoreMenu({
             disabled={clearDisabled}
             className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
           >
-            Clear all data
+            {t.opponents.clearAll}
           </button>
         </div>
       )}
@@ -176,6 +177,8 @@ export function OpponentsSection({
   selectedRegulationId,
   setSelectedRegulationId,
 }: OpponentsSectionProps) {
+  const t = useMessages();
+  const pokemonText = usePokemonText();
   const {
     opponents,
     isLoading,
@@ -234,7 +237,7 @@ export function OpponentsSection({
   function matchesSearch(opponent: Opponent): boolean {
     return searchTerms.every(
       (term) =>
-        opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term)) ||
+        opponent.team.pokemon.some((mon) => pokemonMatchesQuery(mon, term, pokemonText)) ||
         tagsMatchQuery(opponent.tags, term),
     );
   }
@@ -336,7 +339,7 @@ export function OpponentsSection({
       <span
         onPointerDown={() => setArmedId(id)}
         onPointerUp={() => setArmedId(null)}
-        title="Drag to reorder"
+        title={t.opponents.dragToReorder}
         className="-ml-1 hidden shrink-0 cursor-grab text-zinc-400 hover:text-zinc-600 active:cursor-grabbing md:flex"
       >
         <Icon name={IconName.DragIndicator} size={16} />
@@ -346,17 +349,13 @@ export function OpponentsSection({
 
   function reportImportResult({ importedCount, variantCount, skipped }: BulkImportResult) {
     if (importedCount === 0 && skipped.length === 0) {
-      setImportNotice(
-        "Couldn't import any teams from that paste — check the format and try again.",
-      );
+      setImportNotice(t.opponents.importFailed);
       return;
     }
-    const imported = `Imported ${importedCount} team${importedCount === 1 ? "" : "s"}${
-      variantCount > 0 ? ` (${variantCount} as variant${variantCount === 1 ? "" : "s"})` : ""
-    }.`;
+    const imported = t.opponents.imported(importedCount, variantCount);
     setImportNotice(
       skipped.length > 0
-        ? `${imported} Skipped ${skipped.length}: ${skipped.join("; ")}`
+        ? `${imported} ${t.opponents.skipped(skipped.length, skipped.join("; "))}`
         : imported,
     );
   }
@@ -379,10 +378,10 @@ export function OpponentsSection({
 
   function handleSubmit(label: string, rawPaste: string, pokepasteUrl: string) {
     if (!label.trim()) {
-      return "Give this opponent a name.";
+      return t.errors.opponentNameRequired;
     }
     if (!rawPaste.trim()) {
-      return "Paste the opponent's Showdown export.";
+      return t.errors.opponentPasteRequired;
     }
     const rows = analyzeOpponentImport(
       [{ label, rawPaste, pokepasteUrl: pokepasteUrl || undefined }],
@@ -393,7 +392,7 @@ export function OpponentsSection({
       return row.error;
     }
     if (row.duplicateOf !== undefined) {
-      return `"${row.duplicateOf}" is already this exact team (same Pokémon, items, and moves) under this regulation.`;
+      return t.opponents.duplicate(row.duplicateOf);
     }
     setIsAdding(false);
     if (importNeedsReview(rows)) {
@@ -464,25 +463,25 @@ export function OpponentsSection({
     const lastIndex = count - 1;
     return [
       {
-        label: "Move to top",
+        label: t.opponents.moveToTop,
         icon: IconName.VerticalAlignTop,
         onClick: () => move(0),
         disabled: index === 0,
       },
       {
-        label: "Move up",
+        label: t.opponents.moveUp,
         icon: IconName.ArrowUpward,
         onClick: () => move(index - 1),
         disabled: index === 0,
       },
       {
-        label: "Move down",
+        label: t.opponents.moveDown,
         icon: IconName.ArrowDownward,
         onClick: () => move(index + 1),
         disabled: index === lastIndex,
       },
       {
-        label: "Move to bottom",
+        label: t.opponents.moveToBottom,
         icon: IconName.VerticalAlignBottom,
         onClick: () => move(lastIndex),
         disabled: index === lastIndex,
@@ -515,7 +514,7 @@ export function OpponentsSection({
           ...(activeTeamId && TEAM_REPORT_PREP_ENABLED
             ? [
                 {
-                  label: "Matchup report",
+                  label: t.opponents.matchupReport,
                   icon: IconName.Description,
                   onClick: () => router.push(`/teams/${activeTeamId}/matchups/${opponent.id}`),
                 },
@@ -526,7 +525,7 @@ export function OpponentsSection({
         variantToggle={options.variantToggle}
         isVariant={options.isVariant}
         copiedFromLabel={
-          copiedFromId ? (labelById.get(copiedFromId) ?? "the main team") : undefined
+          copiedFromId ? (labelById.get(copiedFromId) ?? t.opponents.theMainTeam) : undefined
         }
         onUpdateTags={(tags) => setOpponentTags(opponent.id, tags)}
         knownTags={knownTags}
@@ -537,7 +536,7 @@ export function OpponentsSection({
         }}
         isMatch={
           isSearching
-            ? (mon) => searchTerms.some((term) => pokemonMatchesQuery(mon, term))
+            ? (mon) => searchTerms.some((term) => pokemonMatchesQuery(mon, term, pokemonText))
             : undefined
         }
         isTagMatch={
@@ -569,12 +568,12 @@ export function OpponentsSection({
         <select
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
-          aria-label="Regulation"
+          aria-label={t.common.regulation}
           className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
-              {regulation.label}
+              {t.common.regulationLabel(regulation.label)}
             </option>
           ))}
         </select>
@@ -586,7 +585,7 @@ export function OpponentsSection({
       </div>
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
-        {REGULATIONS[0]?.label}
+        {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
       </span>
     );
 
@@ -599,9 +598,9 @@ export function OpponentsSection({
     <button
       type="button"
       onClick={toggleSearch}
-      aria-label="Search opponents"
+      aria-label={t.opponents.search}
       aria-expanded={isSearchOpen}
-      title="Search by Pokémon, item, or tag"
+      title={t.opponents.searchHint}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
     >
       <Icon name={IconName.Search} size={18} />
@@ -613,8 +612,8 @@ export function OpponentsSection({
       type="button"
       onClick={toggleReversed}
       aria-pressed={isReversed}
-      aria-label="Reverse order"
-      title={isReversed ? "Showing reversed — click for original order" : "Reverse order"}
+      aria-label={t.opponents.reverse}
+      title={isReversed ? t.opponents.reversed : t.opponents.reverse}
       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
         isReversed
           ? "bg-zinc-200 text-zinc-900"
@@ -633,7 +632,7 @@ export function OpponentsSection({
       <div className="flex flex-col gap-3 md:hidden">
         <div className="flex items-center justify-between gap-3">
           <h2 className="whitespace-nowrap text-xl font-semibold text-zinc-900">
-            Opposing Teams
+            {t.opponents.title}
           </h2>
           {regulationControl}
         </div>
@@ -643,8 +642,8 @@ export function OpponentsSection({
             <SearchField
               query={searchQuery}
               onQueryChange={setSearchQuery}
-              placeholder='Search by Pokémon, item, or tag… (e.g. "rain scarf")'
-              ariaLabel="Search opponents by Pokémon, item, or tag"
+              placeholder={t.opponents.searchPlaceholder}
+              ariaLabel={t.opponents.searchLabel}
               onClose={toggleSearch}
               autoFocus
               className="min-w-0 flex-1"
@@ -656,8 +655,8 @@ export function OpponentsSection({
               <button
                 type="button"
                 onClick={startAdding}
-                aria-label="Add opponent"
-                title="Add opponent"
+                aria-label={t.opponents.add}
+                title={t.opponents.add}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-600 dark:bg-zinc-400 text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
               >
                 <Icon name={IconName.Add} size={20} />
@@ -680,7 +679,7 @@ export function OpponentsSection({
       <div className="hidden items-center justify-between md:flex">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-zinc-900">
-            Opposing Teams
+            {t.opponents.title}
           </h2>
           {regulationControl}
         </div>
@@ -692,7 +691,7 @@ export function OpponentsSection({
               onClick={startAdding}
               className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
-              Add opponent
+              {t.opponents.add}
             </button>
             <OpponentsMoreMenu
               isLoading={isLoading}
@@ -714,8 +713,8 @@ export function OpponentsSection({
         <SearchField
           query={searchQuery}
           onQueryChange={setSearchQuery}
-          placeholder='Search by Pokémon, item, or tag… (e.g. "rain scarf")'
-          ariaLabel="Search opponents by Pokémon, item, or tag"
+          placeholder={t.opponents.searchPlaceholder}
+          ariaLabel={t.opponents.searchLabel}
           className="hidden md:block"
         />
       )}
@@ -726,7 +725,7 @@ export function OpponentsSection({
             id="add-opponent-title"
             className="mb-4 text-lg font-semibold text-zinc-900"
           >
-            Add opponent
+            {t.opponents.add}
           </h2>
           <OpponentForm
             bordered={false}
@@ -744,14 +743,14 @@ export function OpponentsSection({
             id="edit-opponent-title"
             className="mb-4 text-lg font-semibold text-zinc-900"
           >
-            Edit opponent
+            {t.opponents.edit}
           </h2>
           <OpponentForm
             bordered={false}
             initialLabel={editingOpponent.label}
             initialPokepasteUrl={editingOpponent.pokepasteUrl ?? ""}
             initialRawPaste={editingOpponent.team.rawPaste}
-            submitLabel="Save changes"
+            submitLabel={t.opponents.saveChanges}
             onSubmit={(label, rawPaste, pokepasteUrl) => {
               const result = editOpponentTeam(
                 editingOpponent.id,
@@ -784,7 +783,7 @@ export function OpponentsSection({
           <button
             type="button"
             onClick={() => setImportNotice(null)}
-            aria-label="Dismiss"
+            aria-label={t.opponents.dismiss}
             className="shrink-0 text-zinc-500 hover:text-zinc-700"
           >
             ×
@@ -801,14 +800,14 @@ export function OpponentsSection({
             id="confirm-clear-opponents-title"
             className="mb-2 text-lg font-semibold text-zinc-900"
           >
-            Clear all {REGULATIONS.find((r) => r.id === selectedRegulationId)?.label} opponent
-            teams?
+            {t.opponents.clearTitle(
+              t.common.regulationLabel(
+                REGULATIONS.find((r) => r.id === selectedRegulationId)?.label ?? "",
+              ),
+            )}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">
-            This removes all {regulationOpponents.length} opponent
-            {regulationOpponents.length === 1 ? "" : "s"} under this regulation and can&apos;t be
-            undone — you&apos;ll need to re-add or re-import them. Opponents under other
-            regulations aren&apos;t affected.
+            {t.opponents.clearBody(regulationOpponents.length)}
           </p>
           <div className="flex gap-2">
             <button
@@ -816,14 +815,14 @@ export function OpponentsSection({
               onClick={confirmClearAll}
               className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
-              Clear all data
+              {t.opponents.clearAll}
             </button>
             <button
               type="button"
               onClick={() => setIsConfirmingClear(false)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>
@@ -859,18 +858,12 @@ export function OpponentsSection({
             id="confirm-remove-opponent-title"
             className="mb-2 text-lg font-semibold text-zinc-900"
           >
-            Remove {confirmRemoveOpponent.label}?
+            {t.opponents.removeTitle(confirmRemoveOpponent.label)}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">
-            This can&apos;t be undone — you&apos;ll need to re-add or re-import
-            this team.
-            {confirmRemoveSuccessor && (
-              <>
-                {" "}
-                Its variant &ldquo;{confirmRemoveSuccessor.label}&rdquo; becomes the
-                group&apos;s main team.
-              </>
-            )}
+            {t.opponents.removeBody}
+            {confirmRemoveSuccessor &&
+              ` ${t.opponents.removeSuccessor(confirmRemoveSuccessor.label)}`}
           </p>
           <div className="flex gap-2">
             <button
@@ -878,21 +871,21 @@ export function OpponentsSection({
               onClick={confirmRemove}
               className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
-              Remove opponent
+              {t.opponents.remove}
             </button>
             <button
               type="button"
               onClick={() => setConfirmRemoveId(null)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <p className="text-sm text-zinc-500">{t.common.loading}</p>
       ) : regulationOpponents.length === 0 && !isAdding && !isBulkImporting ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center">
           <Image
@@ -905,12 +898,10 @@ export function OpponentsSection({
           />
           <div className="flex flex-col gap-1">
             <h3 className="text-lg font-semibold text-zinc-900">
-              Prepare against your rivals
+              {t.opponents.emptyTitle}
             </h3>
             <p className="max-w-md text-sm text-zinc-600">
-              Paste a Pokémon Showdown export for a team you want to prep
-              against, we&apos;ll pull in the roster, held items, and movesets
-              automatically so you can plan your leads and backs.
+              {t.opponents.emptyBody}
             </p>
           </div>
           <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
@@ -919,7 +910,7 @@ export function OpponentsSection({
               onClick={startAdding}
               className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
-              Add opponent
+              {t.opponents.add}
             </button>
             {regulationSeasons.map((season) => (
               <button
@@ -928,8 +919,7 @@ export function OpponentsSection({
                 onClick={() => loadPreset(season.rawPaste, season.regulationId)}
                 className="rounded-full border border-zinc-300 bg-zinc-50 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Use default set: {season.label}
-                {season.id === currentSeasonId ? " (current)" : ""}
+                {t.opponents.useDefaultSet(season.label, season.id === currentSeasonId)}
               </button>
             ))}
           </div>
@@ -938,14 +928,12 @@ export function OpponentsSection({
             onClick={startBulkImporting}
             className="text-sm font-medium text-zinc-600 hover:underline"
           >
-            Prepping for a big tournament? Import a whole folder of teams at
-            once →
+            {t.opponents.bulkImportPrompt}
           </button>
         </div>
       ) : isSearching && displayedGroups.length === 0 ? (
         <p className="py-12 text-center text-sm text-zinc-500">
-          No opponents have a Pokémon, item, or tag matching &ldquo;
-          {searchQuery.trim()}&rdquo;.
+          {t.opponents.noMatches(searchQuery.trim())}
         </p>
       ) : (
         <ul className="flex flex-col">
@@ -1007,7 +995,7 @@ export function OpponentsSection({
                     ...(groups.length > 1
                       ? [
                           {
-                            label: "Make variant of…",
+                            label: t.opponents.makeVariantOf,
                             icon: IconName.Merge,
                             onClick: () => setVariantPickerId(main.id),
                           },
@@ -1064,7 +1052,7 @@ export function OpponentsSection({
                               )
                             : []),
                           {
-                            label: "Set as main",
+                            label: t.opponents.setAsMain,
                             icon: IconName.Star,
                             onClick: () => {
                               setGroupMain(main.id, variant.id);
@@ -1074,7 +1062,7 @@ export function OpponentsSection({
                             },
                           },
                           {
-                            label: "Remove from group",
+                            label: t.opponents.removeFromGroup,
                             icon: IconName.CallSplit,
                             onClick: () => detachVariant(variant.id),
                           },

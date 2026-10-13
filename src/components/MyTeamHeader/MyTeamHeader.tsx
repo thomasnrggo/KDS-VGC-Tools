@@ -12,8 +12,10 @@ import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
 import { AuthMenu } from "../AuthMenu";
 import { ThemeToggle } from "../ThemeToggle";
+import { LanguageMenu } from "../LanguageMenu";
 import { IconName } from "@/enums";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useMessages } from "@/hooks/useLanguage";
 import { isAdminUid } from "@/lib/admin";
 import {
   Drawer,
@@ -57,10 +59,10 @@ interface MyTeamHeaderProps {
 }
 
 const NAV_LINKS = [
-  { page: "matchup-planner", href: "/matchup-planner", label: "Matchup Planner", flagKey: "matchupPlanner" },
-  { page: "teams", href: "/teams", label: "My Teams", flagKey: "teams" },
-  { page: "tournaments", href: "/tournaments", label: "Tournaments", flagKey: "tournaments" },
-  { page: "speed-tiers", href: "/speed-tiers", label: "Speed Tiers", flagKey: "speedTiers" },
+  { page: "matchup-planner", href: "/matchup-planner", labelKey: "matchupPlanner", flagKey: "matchupPlanner" },
+  { page: "teams", href: "/teams", labelKey: "myTeams", flagKey: "teams" },
+  { page: "tournaments", href: "/tournaments", labelKey: "tournaments", flagKey: "tournaments" },
+  { page: "speed-tiers", href: "/speed-tiers", labelKey: "speedTiers", flagKey: "speedTiers" },
   // Damage Calculator nav link hidden — feature has known bugs, not ready to
   // publish yet. Re-add here once it's stable (see PLANNING.md).
 ] as const;
@@ -78,6 +80,7 @@ function TeamSwitcherRow({
   onEdit: () => void;
   onRemove: () => void;
 }) {
+  const t = useMessages();
   return (
     <div
       role="option"
@@ -110,8 +113,8 @@ function TeamSwitcherRow({
       <button
         type="button"
         onClick={onEdit}
-        aria-label={`Edit ${team.name}`}
-        title={`Edit ${team.name}`}
+        aria-label={t.header.editNamed(team.name)}
+        title={t.header.editNamed(team.name)}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700"
       >
         <Icon name={IconName.Edit} size={18} />
@@ -119,8 +122,8 @@ function TeamSwitcherRow({
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove ${team.name}`}
-        title={`Remove ${team.name}`}
+        aria-label={t.header.removeNamed(team.name)}
+        title={t.header.removeNamed(team.name)}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600"
       >
         <Icon name={IconName.Delete} size={18} />
@@ -144,6 +147,7 @@ export function MyTeamHeader({
   onSignIn,
   onSignOut,
 }: MyTeamHeaderProps) {
+  const t = useMessages();
   const [modalMode, setModalMode] = useState<"add" | "edit" | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isTeamMenuOpen, setIsTeamMenuOpen] = useState(false);
@@ -360,7 +364,7 @@ export function MyTeamHeader({
             const isActive = link.page === currentPage;
             return isActive ? (
               <span key={link.page} aria-current="page" className="text-sm font-bold text-white">
-                {link.label}
+                {t.nav[link.labelKey]}
               </span>
             ) : (
               <Link
@@ -368,7 +372,7 @@ export function MyTeamHeader({
                 href={link.href}
                 className="text-sm font-medium text-zinc-200 dark:text-zinc-800 transition-colors hover:text-white"
               >
-                {link.label}
+                {t.nav[link.labelKey]}
               </Link>
             );
           })}
@@ -382,7 +386,7 @@ export function MyTeamHeader({
             onClick={openAddModal}
             className="rounded-full bg-zinc-900 dark:bg-zinc-100 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-950 dark:hover:bg-zinc-50"
           >
-            Add your team
+            {t.header.addYourTeam}
           </button>
         ) : (
           <>
@@ -402,7 +406,7 @@ export function MyTeamHeader({
                     <span className="flex items-end gap-1">
                       {activeTeamMismatched && (
                         <span
-                          title={`${activeTeam.name} isn't tagged for the currently selected regulation — pick a different team, or add this one to it, to plan leads/backs`}
+                          title={t.header.regulationMismatch(activeTeam.name)}
                           className="flex h-5 w-5 shrink-0 items-center justify-center self-center rounded-full bg-amber-500 text-white"
                         >
                           <Icon name={IconName.Warning} size={13} />
@@ -438,12 +442,12 @@ export function MyTeamHeader({
                   <div
                     ref={dropdownRef}
                     role="listbox"
-                    aria-label="Select team"
+                    aria-label={t.header.selectTeam}
                     className="absolute right-6 top-full z-20 mt-2 hidden w-96 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg lg:block"
                   >
                     {regulationTeams.length === 0 ? (
                       <p className="px-3 py-2 text-sm text-zinc-500">
-                        No teams for this regulation yet.
+                        {t.header.noTeamsForRegulation}
                       </p>
                     ) : (
                       regulationTeams.map((team) => (
@@ -463,7 +467,7 @@ export function MyTeamHeader({
                       className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
                     >
                       <Icon name={IconName.Add} size={16} />
-                      Add a team
+                      {t.header.addTeam}
                     </button>
                   </div>
                 )}
@@ -477,12 +481,13 @@ export function MyTeamHeader({
             a plain nav menu better; the team switcher below still uses a
             Drawer, which earns its modality (see PLANNING.md). */}
         <CollapsibleTrigger
-          aria-label={isMobileNavOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={isMobileNavOpen ? t.nav.closeMenu : t.nav.openMenu}
           aria-haspopup="menu"
           className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-100 dark:text-zinc-900 hover:bg-zinc-500 lg:hidden"
         >
           <Icon name={isMobileNavOpen ? IconName.Close : IconName.Menu} size={22} />
         </CollapsibleTrigger>
+        <LanguageMenu />
         <ThemeToggle />
         <AuthMenu
           user={authUser}
@@ -503,7 +508,7 @@ export function MyTeamHeader({
               aria-current="page"
               className="rounded-lg bg-zinc-500 px-3 py-2.5 text-sm font-bold text-white"
             >
-              {link.label}
+              {t.nav[link.labelKey]}
             </span>
           ) : (
             <Link
@@ -512,7 +517,7 @@ export function MyTeamHeader({
               onClick={() => setIsMobileNavOpen(false)}
               className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-200 dark:text-zinc-800 hover:bg-zinc-500 hover:text-white"
             >
-              {link.label}
+              {t.nav[link.labelKey]}
             </Link>
           );
         })}
@@ -526,7 +531,7 @@ export function MyTeamHeader({
             id="my-team-modal-title"
             className="mb-4 text-lg font-semibold text-zinc-900"
           >
-            {modalMode === "edit" ? "Edit team" : "Add a team"}
+            {modalMode === "edit" ? t.header.editTeam : t.header.addTeam}
           </h2>
           <TeamPasteForm
             initialName={editingTeam?.name}
@@ -546,11 +551,10 @@ export function MyTeamHeader({
             id="confirm-remove-team-title"
             className="mb-2 text-lg font-semibold text-zinc-900"
           >
-            Remove {confirmDeleteTeam.name}?
+            {t.header.confirmRemoveTitle(confirmDeleteTeam.name)}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">
-            This can&apos;t be undone — you&apos;ll need to paste the team again
-            to add it back.
+            {t.header.confirmRemoveBody}
           </p>
           <div className="flex gap-2">
             <button
@@ -558,14 +562,14 @@ export function MyTeamHeader({
               onClick={confirmRemove}
               className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
-              Remove team
+              {t.header.removeTeam}
             </button>
             <button
               type="button"
               onClick={() => setConfirmDeleteId(null)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>
@@ -583,7 +587,7 @@ export function MyTeamHeader({
     {currentPage === "matchup-planner" && activeTeam && (
       <nav
         ref={mobileTeamNavRef}
-        aria-label="Mobile team switcher"
+        aria-label={t.header.mobileTeamSwitcher}
         className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-100 bg-zinc-800 dark:bg-zinc-200 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <Drawer
@@ -595,7 +599,7 @@ export function MyTeamHeader({
             render={
               <button
                 type="button"
-                aria-label={`Switch team (currently ${activeTeam.name})`}
+                aria-label={t.header.switchTeamCurrent(activeTeam.name)}
                 aria-haspopup="listbox"
                 className="flex w-full items-center gap-2 px-3 py-3"
               />
@@ -603,7 +607,7 @@ export function MyTeamHeader({
           >
             {activeTeamMismatched && (
               <span
-                title={`${activeTeam.name} isn't tagged for the currently selected regulation — pick a different team, or add this one to it, to plan leads/backs`}
+                title={t.header.regulationMismatch(activeTeam.name)}
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white"
               >
                 <Icon name={IconName.Warning} size={15} />
@@ -634,16 +638,16 @@ export function MyTeamHeader({
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Switch team</DrawerTitle>
+              <DrawerTitle>{t.header.switchTeam}</DrawerTitle>
             </DrawerHeader>
             <div
               role="listbox"
-              aria-label="Select team"
+              aria-label={t.header.selectTeam}
               className="flex flex-col gap-1 overflow-y-auto p-4 pt-2"
             >
               {regulationTeams.length === 0 ? (
                 <p className="px-3 py-2 text-sm text-zinc-500">
-                  No teams for this regulation yet.
+                  {t.header.noTeamsForRegulation}
                 </p>
               ) : (
                 regulationTeams.map((team) => (
@@ -663,7 +667,7 @@ export function MyTeamHeader({
                 className="mt-1 flex items-center gap-2 border-t border-zinc-200 px-3 py-3 text-left text-sm text-zinc-700 hover:bg-zinc-100"
               >
                 <Icon name={IconName.Add} size={16} />
-                Add a team
+                {t.header.addTeam}
               </button>
             </div>
           </DrawerContent>

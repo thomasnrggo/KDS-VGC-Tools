@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
+import { useMessages } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamPost } from "@/components/TeamPost";
@@ -22,6 +23,7 @@ interface SharedTeamPageProps {
  * Points or nature, and so no stats.
  */
 export default function SharedTeamPage({ params }: SharedTeamPageProps) {
+  const t = useMessages();
   const { teamId } = use(params);
   const {
     activeTeams,
@@ -71,19 +73,17 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
       />
 
       {state.kind === "loading" ? (
-        <p className="p-6 text-sm text-zinc-500">Loading…</p>
+        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
       ) : state.kind !== "ready" ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
           <p className="text-lg font-semibold text-zinc-900">
-            {state.kind === "missing" ? "This team isn't shared" : "Couldn't load this team"}
+            {state.kind === "missing" ? t.sharedPage.notShared : t.sharedPage.loadFailed}
           </p>
           <p className="text-sm text-zinc-600">
-            {state.kind === "missing"
-              ? "The link may be wrong, or its owner made the report private."
-              : "Check your connection and try again."}
+            {state.kind === "missing" ? t.sharedPage.notSharedBody : t.sharedPage.loadFailedBody}
           </p>
           <Link href="/" className="text-sm font-medium text-zinc-600 hover:underline">
-            Go to VGC Box
+            {t.sharedPage.goHome}
           </Link>
         </div>
       ) : (
@@ -96,7 +96,7 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
             pokepasteUrl={state.team.pokepasteUrl}
             replicaCode={state.team.replicaCode}
             overview={state.team.overview}
-            status={state.team.sheet === "open" ? "Open team sheet" : "Closed team sheet"}
+            status={state.team.sheet === "open" ? t.share.openSheet : t.share.closedSheet}
           />
 
           <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "@/hooks/useTheme";
+import { useMessages } from "@/hooks/useLanguage";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 
@@ -14,6 +15,7 @@ import { IconName } from "@/enums";
  * rather than a status indicator.
  */
 export function ThemeToggle() {
+  const t = useMessages();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
 
@@ -21,8 +23,8 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      aria-label={isDark ? t.theme.toLight : t.theme.toDark}
+      title={isDark ? t.theme.toLight : t.theme.toDark}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-100 hover:bg-zinc-500 dark:text-zinc-900"
     >
       <Icon name={isDark ? IconName.LightMode : IconName.DarkMode} size={20} />

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { usePokemonText } from "@/hooks/useLanguage";
 
 interface TypeIconProps {
   type: string;
@@ -18,13 +19,14 @@ interface TypeIconProps {
  */
 export function TypeIcon({ type, size = 16 }: TypeIconProps) {
   const [failed, setFailed] = useState(false);
+  const label = usePokemonText().type(type);
 
   if (failed) {
     return (
       <span
         role="img"
-        aria-label={type}
-        title={type}
+        aria-label={label}
+        title={label}
         className="flex shrink-0 items-center justify-center rounded bg-zinc-200 text-[8px] font-bold text-zinc-500"
         style={{ width: size, height: size }}
       >
@@ -36,8 +38,8 @@ export function TypeIcon({ type, size = 16 }: TypeIconProps) {
   return (
     <Image
       src={`/resources/types-icons/${type.toLowerCase()}.png`}
-      alt={type}
-      title={type}
+      alt={label}
+      title={label}
       width={size}
       height={size}
       unoptimized

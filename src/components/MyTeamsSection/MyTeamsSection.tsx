@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Team } from "@/types";
 import { REGULATIONS } from "@/data/regulations";
 import { isTeamArchived, addRegulationTag, removeRegulationTag } from "@/lib/team";
-import { parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
+import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { TeamRoster } from "../TeamRoster";
 import { Modal } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
@@ -14,6 +14,7 @@ import { RowActionsMenu } from "../RowActionsMenu";
 import { TeamRegulationTags } from "../TeamRegulationTags";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface MyTeamsSectionProps {
   teams: Team[];
@@ -44,6 +45,8 @@ export function MyTeamsSection({
   selectedRegulationId,
   setSelectedRegulationId,
 }: MyTeamsSectionProps) {
+  const t = useMessages();
+  const pokemonText = usePokemonText();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("active");
   const [isAdding, setIsAdding] = useState(false);
@@ -70,8 +73,10 @@ export function MyTeamsSection({
   const visibleTeams = isSearching
     ? tabTeams.filter(
         (team) =>
-          team.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
-          searchTerms.every((term) => team.pokemon.some((mon) => pokemonMatchesQuery(mon, term))),
+          foldForSearch(team.name).includes(foldForSearch(searchQuery.trim())) ||
+          searchTerms.every((term) =>
+            team.pokemon.some((mon) => pokemonMatchesQuery(mon, term, pokemonText)),
+          ),
       )
     : tabTeams;
 
@@ -138,12 +143,12 @@ export function MyTeamsSection({
         <select
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
-          aria-label="Regulation"
+          aria-label={t.common.regulation}
           className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
-              {regulation.label}
+              {t.common.regulationLabel(regulation.label)}
             </option>
           ))}
         </select>
@@ -155,7 +160,7 @@ export function MyTeamsSection({
       </div>
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
-        {REGULATIONS[0]?.label}
+        {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
       </span>
     );
 
@@ -165,9 +170,9 @@ export function MyTeamsSection({
     <button
       type="button"
       onClick={toggleSearch}
-      aria-label="Search teams"
+      aria-label={t.myTeams.searchTeams}
       aria-expanded={isSearchOpen}
-      title="Search by team name, Pokémon, or item"
+      title={t.myTeams.searchHint}
       className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
     >
       <Icon name={IconName.Search} size={18} />
@@ -175,7 +180,7 @@ export function MyTeamsSection({
   );
 
   const tabsControl = (
-    <div role="tablist" aria-label="Team status" className="flex gap-1.5">
+    <div role="tablist" aria-label={t.myTeams.teamStatus} className="flex gap-1.5">
       <button
         type="button"
         role="tab"
@@ -187,7 +192,7 @@ export function MyTeamsSection({
             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
         }`}
       >
-        Active{activeRegulationTeams.length > 0 ? ` (${activeRegulationTeams.length})` : ""}
+        {t.myTeams.active(activeRegulationTeams.length)}
       </button>
       <button
         type="button"
@@ -200,7 +205,7 @@ export function MyTeamsSection({
             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
         }`}
       >
-        Archived{archivedRegulationTeams.length > 0 ? ` (${archivedRegulationTeams.length})` : ""}
+        {t.myTeams.archived(archivedRegulationTeams.length)}
       </button>
     </div>
   );
@@ -212,7 +217,7 @@ export function MyTeamsSection({
       <div className="flex flex-col gap-3 md:hidden">
         <div className="flex items-center justify-between gap-3">
           <h2 className="whitespace-nowrap text-xl font-semibold text-zinc-900">
-            My Teams
+            {t.myTeams.title}
           </h2>
           {regulationControl}
         </div>
@@ -222,8 +227,8 @@ export function MyTeamsSection({
             <SearchField
               query={searchQuery}
               onQueryChange={setSearchQuery}
-              placeholder='Search by team name, Pokémon, or item… (e.g. "charizard scarf")'
-              ariaLabel="Search my teams"
+              placeholder={t.myTeams.searchPlaceholder}
+              ariaLabel={t.myTeams.searchLabel}
               onClose={toggleSearch}
               autoFocus
               className="min-w-0 flex-1"
@@ -232,8 +237,8 @@ export function MyTeamsSection({
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            aria-label="Add team"
-            title="Add team"
+            aria-label={t.myTeams.addTeam}
+            title={t.myTeams.addTeam}
             className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-zinc-600 dark:bg-zinc-400 text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
           >
             <Icon name={IconName.Add} size={20} />
@@ -244,7 +249,7 @@ export function MyTeamsSection({
       {/* Desktop: unchanged single-row layout. */}
       <div className="hidden items-center justify-between md:flex">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-zinc-900">My Teams</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">{t.myTeams.title}</h2>
           {regulationControl}
         </div>
         <button
@@ -252,7 +257,7 @@ export function MyTeamsSection({
           onClick={() => setIsAdding(true)}
           className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
         >
-          Add team
+          {t.myTeams.addTeam}
         </button>
       </div>
 
@@ -263,8 +268,8 @@ export function MyTeamsSection({
         <SearchField
           query={searchQuery}
           onQueryChange={setSearchQuery}
-          placeholder='Search by team name, Pokémon, or item… (e.g. "charizard scarf")'
-          ariaLabel="Search my teams"
+          placeholder={t.myTeams.searchPlaceholder}
+          ariaLabel={t.myTeams.searchLabel}
           className="hidden md:block"
         />
       )}
@@ -272,7 +277,7 @@ export function MyTeamsSection({
       {isAdding && (
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-team-modal-title">
           <h2 id="add-team-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
-            Add a team
+            {t.myTeams.addTeamTitle}
           </h2>
           <TeamPasteForm onSubmit={handleAddSubmit} onCancel={() => setIsAdding(false)} />
         </Modal>
@@ -282,11 +287,10 @@ export function MyTeamsSection({
       {confirmRemoveTeam && (
         <Modal onClose={() => setConfirmRemoveId(null)} labelledBy="confirm-remove-team-title">
           <h2 id="confirm-remove-team-title" className="mb-2 text-lg font-semibold text-zinc-900">
-            Remove {confirmRemoveTeam.name}?
+            {t.myTeams.confirmRemoveTitle(confirmRemoveTeam.name)}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">
-            This can&apos;t be undone — you&apos;ll need to paste the team again, and any notes or
-            combinations on its Team Report page will be lost.
+            {t.myTeams.confirmRemoveBody}
           </p>
           <div className="flex gap-2">
             <button
@@ -294,49 +298,46 @@ export function MyTeamsSection({
               onClick={confirmRemove}
               className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
-              Remove team
+              {t.myTeams.removeTeam}
             </button>
             <button
               type="button"
               onClick={() => setConfirmRemoveId(null)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <p className="text-sm text-zinc-500">{t.common.loading}</p>
       ) : tabTeams.length === 0 ? (
         tab === "active" ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center">
             <h3 className="text-lg font-semibold text-zinc-900">
-              {regulationTeams.length === 0 ? "No teams yet" : "No active teams"}
+              {regulationTeams.length === 0 ? t.myTeams.noTeams : t.myTeams.noActiveTeams}
             </h3>
             <p className="max-w-md text-sm text-zinc-600">
-              {regulationTeams.length === 0
-                ? "Paste a Pokémon Showdown export to add a team here — you'll get a Team Report page for it with per-Pokémon notes and any lead/back combinations you want to save."
-                : "Every team under this regulation is archived — check the Archived tab, or add a new one."}
+              {regulationTeams.length === 0 ? t.myTeams.noTeamsBody : t.myTeams.allArchivedBody}
             </p>
             <button
               type="button"
               onClick={() => setIsAdding(true)}
               className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
-              Add team
+              {t.myTeams.addTeam}
             </button>
           </div>
         ) : (
           <p className="py-12 text-center text-sm text-zinc-500">
-            No archived teams under this regulation — archiving a team (from its &ldquo;⋯&rdquo; menu on
-            the Active tab) moves it here instead of deleting it.
+            {t.myTeams.noArchived}
           </p>
         )
       ) : isSearching && visibleTeams.length === 0 ? (
         <p className="py-12 text-center text-sm text-zinc-500">
-          No {tab} teams match &ldquo;{searchQuery.trim()}&rdquo;.
+          {t.myTeams.noMatches(tab, searchQuery.trim())}
         </p>
       ) : (
         <ul className="flex flex-col">
@@ -416,19 +417,19 @@ export function MyTeamsSection({
                   />
                 </div>
                 <RowActionsMenu
-                  label={`${team.name} options`}
+                  label={t.myTeams.teamOptions(team.name)}
                   // No Edit here — name, paste and details are edited on
                   // the team's own page (the row opens it).
                   onRemove={() => setConfirmRemoveId(team.id)}
                   middleAction={
                     tab === "active"
                       ? {
-                          label: "Archive",
+                          label: t.myTeams.archive,
                           icon: IconName.Archive,
                           onClick: () => archiveTeam(team.id),
                         }
                       : {
-                          label: "Unarchive",
+                          label: t.myTeams.unarchive,
                           icon: IconName.Unarchive,
                           onClick: () => unarchiveTeam(team.id),
                         }
@@ -451,7 +452,7 @@ export function MyTeamsSection({
                     pokemon={team.pokemon}
                     isMatch={
                       isSearching
-                        ? (mon) => searchTerms.some((term) => pokemonMatchesQuery(mon, term))
+                        ? (mon) => searchTerms.some((term) => pokemonMatchesQuery(mon, term, pokemonText))
                         : undefined
                     }
                   />

@@ -21,17 +21,12 @@ import {
 } from "@/lib/tournament";
 import { REGULATIONS } from "@/data/regulations";
 import type { Tournament } from "@/types";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface TournamentPageProps {
   params: Promise<{ tournamentId: string }>;
 }
 
-const RESULT_LABEL: Record<ReturnType<typeof getRoundResult>, string> = {
-  win: "Won",
-  loss: "Lost",
-  tie: "Tied",
-  "in-progress": "In progress",
-};
 const RESULT_CLASSES: Record<ReturnType<typeof getRoundResult>, string> = {
   win: "text-green-700",
   loss: "text-red-600",
@@ -39,14 +34,9 @@ const RESULT_CLASSES: Record<ReturnType<typeof getRoundResult>, string> = {
   "in-progress": "text-zinc-500",
 };
 
-/** Shown as the tooltip behind a round's "*" marker (see the rounds list below) — which flavor of "won without playing" this particular round was. */
-const ROUND_OUTCOME_HINT: Record<"walkover" | "bye", string> = {
-  walkover: "Won by walkover — the opponent didn't show up.",
-  bye: "Won by bye — no opponent this round.",
-};
-
 export default function TournamentPage({ params }: TournamentPageProps) {
   const { tournamentId } = use(params);
+  const t = useMessages();
   const router = useRouter();
   const {
     teams,
@@ -80,7 +70,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
 
   function addRound() {
     if (!tournament || isTournamentCompleted(tournament)) return;
-    const round = createRound(`Round ${tournament.rounds.length + 1}`);
+    const round = createRound(t.tournament.defaultRoundLabel(tournament.rounds.length + 1));
     updateTournament(tournamentId, (t) => ({ ...t, rounds: [...t.rounds, round] }));
     router.push(`/tournaments/${tournamentId}/rounds/${round.id}`);
   }
@@ -127,8 +117,10 @@ export default function TournamentPage({ params }: TournamentPageProps) {
   }
 
   const detailParts: string[] = [];
-  if (tournament?.participantCount) detailParts.push(`${tournament.participantCount} entrants`);
-  if (tournament?.placement) detailParts.push(`Placed #${tournament.placement}`);
+  if (tournament?.participantCount) {
+    detailParts.push(t.tournaments.entrants(tournament.participantCount));
+  }
+  if (tournament?.placement) detailParts.push(t.tournaments.placed(tournament.placement));
 
   return (
     <div className="flex flex-1 flex-col">
@@ -149,13 +141,13 @@ export default function TournamentPage({ params }: TournamentPageProps) {
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-zinc-500">Loading…</p>
+        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
       ) : !tournament ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
-          <p className="text-lg font-semibold text-zinc-900">Tournament not found</p>
-          <p className="text-sm text-zinc-600">It may have been removed on another device.</p>
+          <p className="text-lg font-semibold text-zinc-900">{t.tournament.notFound}</p>
+          <p className="text-sm text-zinc-600">{t.tournament.notFoundBody}</p>
           <Link href="/tournaments" className="text-sm font-medium text-zinc-600 hover:underline">
-            ← Back to Tournaments
+            {t.tournament.backLink}
           </Link>
         </div>
       ) : (
@@ -164,8 +156,8 @@ export default function TournamentPage({ params }: TournamentPageProps) {
             <div className="flex items-center gap-2">
               <Link
                 href="/tournaments"
-                aria-label="Back to Tournaments"
-                title="Back to Tournaments"
+                aria-label={t.tournament.back}
+                title={t.tournament.back}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
               >
                 <Icon name={IconName.ExpandMore} size={20} className="rotate-90" />
@@ -173,12 +165,12 @@ export default function TournamentPage({ params }: TournamentPageProps) {
               <div className="flex flex-col">
                 <h1 className="text-xl font-semibold text-zinc-900">{tournament.name}</h1>
                 <span className="text-xs text-zinc-500">
-                  {team?.name ?? "Unknown team"}
+                  {team?.name ?? t.tournaments.unknownTeam}
                   {team && (
                     <>
                       {" · "}
                       <Link href={`/teams/${team.id}`} className="hover:underline">
-                        Team Report
+                        {t.tournament.teamReport}
                       </Link>
                     </>
                   )}
@@ -192,14 +184,14 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                         rel="noopener noreferrer"
                         className="hover:underline"
                       >
-                        Event link
+                        {t.tournament.eventLink}
                       </a>
                     </>
                   )}
                   {completed && (
                     <>
                       {" · "}
-                      <span className="font-medium text-zinc-700">Completed</span>
+                      <span className="font-medium text-zinc-700">{t.tournament.completed}</span>
                     </>
                   )}
                 </span>
@@ -211,7 +203,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                 onClick={openDetailsEditor}
                 className="rounded-full border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Edit details
+                {t.tournament.editDetails}
               </button>
               <button
                 type="button"
@@ -222,27 +214,27 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                     : "border-green-600 bg-green-600 text-white hover:bg-green-700"
                 }`}
               >
-                {completed ? "Reopen" : "Mark completed"}
+                {completed ? t.tournament.reopen : t.tournament.markCompleted}
               </button>
             </div>
           </div>
 
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-zinc-900">Rounds</h2>
+            <h2 className="text-sm font-semibold text-zinc-900">{t.tournament.rounds}</h2>
             <button
               type="button"
               onClick={addRound}
               disabled={completed}
-              title={completed ? "Reopen the tournament to add more rounds" : undefined}
+              title={completed ? t.tournament.reopenToAdd : undefined}
               className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Add round
+              {t.tournament.addRound}
             </button>
           </div>
 
           {tournament.rounds.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-10 text-center text-sm text-zinc-600">
-              No rounds logged yet — add one when your first match starts.
+              {t.tournament.noRounds}
             </p>
           ) : (
             <ul className="flex flex-col">
@@ -272,7 +264,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                       <span
                         className={`flex items-center text-xs font-semibold ${RESULT_CLASSES[result]}`}
                       >
-                        {RESULT_LABEL[result]}
+                        {t.tournament.result[result]}
                         {round.roundOutcome && (
                           <Tooltip>
                             <TooltipTrigger
@@ -280,7 +272,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                             >
                               *
                             </TooltipTrigger>
-                            <TooltipContent>{ROUND_OUTCOME_HINT[round.roundOutcome]}</TooltipContent>
+                            <TooltipContent>{t.tournament.outcomeHint[round.roundOutcome]}</TooltipContent>
                           </Tooltip>
                         )}
                       </span>
@@ -304,41 +296,41 @@ export default function TournamentPage({ params }: TournamentPageProps) {
             id="edit-tournament-details-title"
             className="mb-4 text-lg font-semibold text-zinc-900"
           >
-            Tournament details
+            {t.tournament.details}
           </h2>
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-              Participants
+              {t.tournament.participants}
               <input
                 type="number"
                 min={0}
                 value={participantsDraft}
                 onChange={(event) => setParticipantsDraft(event.target.value)}
-                placeholder="e.g. 64"
-                aria-label="Number of participants"
+                placeholder={t.tournament.participantsPlaceholder}
+                aria-label={t.tournament.participantsLabel}
                 className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-              My placement
+              {t.tournament.placement}
               <input
                 type="number"
                 min={1}
                 value={placementDraft}
                 onChange={(event) => setPlacementDraft(event.target.value)}
-                placeholder="e.g. 5"
-                aria-label="My placement"
+                placeholder={t.tournament.placementPlaceholder}
+                aria-label={t.tournament.placement}
                 className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-              Tournament link
+              {t.tournament.link}
               <input
                 type="url"
                 value={urlDraft}
                 onChange={(event) => setUrlDraft(event.target.value)}
                 placeholder="https://…"
-                aria-label="Tournament link"
+                aria-label={t.tournament.link}
                 className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
               />
             </label>
@@ -348,14 +340,14 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                 onClick={saveDetails}
                 className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
               >
-                Save
+                {t.common.save}
               </button>
               <button
                 type="button"
                 onClick={() => setIsEditingDetails(false)}
                 className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Cancel
+                {t.common.cancel}
               </button>
             </div>
           </div>

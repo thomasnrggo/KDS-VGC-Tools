@@ -15,6 +15,7 @@ import { GroupModeToggle } from "../GroupModeToggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface SpeedTiersListProps {
   /** src/data/species.json keys legal under the selected regulation. */
@@ -49,6 +50,7 @@ interface SpeedGroup {
   records: SpeedRecord[];
 }
 
+// `label` is a stable sort tiebreaker; what's shown comes from the dictionary (speedTable.columns).
 const METRICS: { key: MetricKey; label: string; defaultActive: boolean }[] = [
   { key: "maxScarf", label: "Max Scarf", defaultActive: true },
   { key: "maxSpeed", label: "Max Speed", defaultActive: true },
@@ -192,6 +194,9 @@ function MetricFilterChip({
  * spreadsheet equivalent.
  */
 export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedTiersListProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const displayName = (row: SpeedTierRow) => text.speciesForm(row.speciesName, row.item, row.name);
   const [query, setQuery] = useState("");
   const [activeMetrics, setActiveMetrics] = useState<Set<MetricKey>>(
     () => new Set(METRICS.filter((metric) => metric.defaultActive).map((metric) => metric.key)),
@@ -217,7 +222,16 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
       // Pokémon's name contains ANY of the space-separated terms (e.g.
       // "charizard garchomp" returns rows for either one).
       if (numericQuery !== null) return matchesSpeedQuery(record.value, numericQuery);
-      if (searchTerms.length && !matchesAnySearchTerm(record.row.name, searchTerms)) return false;
+      if (
+        searchTerms.length &&
+        !matchesAnySearchTerm(
+          record.row.name,
+          searchTerms,
+          text.speciesForm(record.row.speciesName, record.row.item, record.row.name),
+        )
+      ) {
+        return false;
+      }
       return true;
     });
 
@@ -230,7 +244,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
         a.records[0].row.name.localeCompare(b.records[0].row.name);
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [allRecords, activeMetrics, searchTerms, numericQuery, sortDirection, groupMode]);
+  }, [allRecords, activeMetrics, searchTerms, numericQuery, sortDirection, groupMode, text]);
 
   function toggleMetric(key: MetricKey) {
     setActiveMetrics((current) => {
@@ -250,15 +264,15 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
         <SearchField
           query={query}
           onQueryChange={setQuery}
-          placeholder='Search Pokémon or Speed… (e.g. "charizard garchomp")'
-          ariaLabel="Search Pokémon or Speed"
+          placeholder={t.speedTable.searchPlaceholder}
+          ariaLabel={t.speedTable.searchLabel}
           className="max-w-xs"
         />
-        <div role="group" aria-label="Filter metrics" className="flex flex-wrap gap-1.5">
+        <div role="group" aria-label={t.speedList.filterMetrics} className="flex flex-wrap gap-1.5">
           {METRICS.map((metric) => (
             <MetricFilterChip
               key={metric.key}
-              label={metric.label}
+              label={t.speedTable.columns[metric.key]}
               active={activeMetrics.has(metric.key)}
               onClick={() => toggleMetric(metric.key)}
             />
@@ -279,7 +293,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                 </th>
                 <th className="p-0 font-normal">
                   <span className="flex w-full items-center px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Pokémon
+                    {t.speedTable.pokemon}
                   </span>
                 </th>
                 <th className="p-0 font-normal">
@@ -292,12 +306,12 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                       name={sortDirection === "asc" ? IconName.ExpandLess : IconName.ExpandMore}
                       size={16}
                     />
-                    Speed
+                    {t.speedList.speed}
                   </button>
                 </th>
                 <th className="p-0 font-normal">
                   <span className="flex w-full items-center px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Config
+                    {t.speedList.config}
                   </span>
                 </th>
               </tr>
@@ -324,7 +338,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                                   fill
                                 />
                               </TooltipTrigger>
-                              <TooltipContent>{record.row.name}</TooltipContent>
+                              <TooltipContent>{displayName(record.row)}</TooltipContent>
                             </Tooltip>
                           ))}
                         </div>
@@ -338,7 +352,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                             />
                           </span>
                           <span className="truncate font-medium text-zinc-900">
-                            {group.records[0].row.name}
+                            {displayName(group.records[0].row)}
                           </span>
                         </div>
                       )}
@@ -346,14 +360,16 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                     <td className={`px-3 py-1.5 text-right font-semibold ${tierTextClass(tier)}`}>
                       {group.value}
                     </td>
-                    <td className="px-3 py-1.5 whitespace-nowrap text-zinc-600">{group.metricLabel}</td>
+                    <td className="px-3 py-1.5 whitespace-nowrap text-zinc-600">
+                      {t.speedTable.columns[group.metricKey]}
+                    </td>
                   </tr>
                 );
               })}
               {visibleGroups.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-3 py-6 text-center text-zinc-400">
-                    No records match the current search/filters.
+                    {t.speedList.noMatches}
                   </td>
                 </tr>
               )}

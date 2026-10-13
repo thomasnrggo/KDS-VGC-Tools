@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface RowActionsMenuProps {
   /** Omit to leave out the Edit item — e.g. My Teams rows, edited on the team's own page. */
@@ -34,11 +35,12 @@ export function RowActionsMenu({
   onEdit,
   onRemove,
   label,
-  editLabel = "Edit",
-  removeLabel = "Remove",
+  editLabel,
+  removeLabel,
   middleAction,
   extraActions = [],
 }: RowActionsMenuProps) {
+  const t = useMessages();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function RowActionsMenu({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={label}
-        title="More options"
+        title={t.rowActions.moreOptions}
         className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-400 text-zinc-400 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-500"
       >
         <Icon name={IconName.MoreVert} size={16} />
@@ -101,7 +103,7 @@ export function RowActionsMenu({
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
             >
               <Icon name={IconName.Edit} size={16} />
-              {editLabel}
+              {editLabel ?? t.common.edit}
             </button>
           )}
           {middleAction && (
@@ -144,7 +146,7 @@ export function RowActionsMenu({
             className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
           >
             <Icon name={IconName.Delete} size={16} />
-            {removeLabel}
+            {removeLabel ?? t.common.remove}
           </button>
         </div>
       )}

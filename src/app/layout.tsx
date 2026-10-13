@@ -14,7 +14,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
  * before first paint. Mirrors useTheme's own storage key/fallback exactly
  * (localStorage "theme" if the user's picked one before, else the OS-level
  * prefers-color-scheme) so the class this sets is never immediately
- * contradicted once useTheme's effect runs on mount.
+ * contradicted once useTheme's effect runs on mount. Also sets <html lang>
+ * from the app language (see useLanguage), for screen readers and spelling.
  */
 const THEME_INIT_SCRIPT = `
   (function () {
@@ -22,6 +23,8 @@ const THEME_INIT_SCRIPT = `
       var stored = localStorage.getItem("theme");
       var isDark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
       if (isDark) document.documentElement.classList.add("dark");
+      var language = localStorage.getItem("appLanguage");
+      if (language === "es") document.documentElement.lang = language;
     } catch (e) {}
   })();
 `;

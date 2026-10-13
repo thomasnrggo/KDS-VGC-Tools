@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { User } from "firebase/auth";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface AuthMenuProps {
   user: User | null;
@@ -38,6 +39,7 @@ function GoogleLogo() {
 }
 
 export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps) {
+  const t = useMessages();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -77,7 +79,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
         className="flex h-8 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900 md:h-9"
       >
         <GoogleLogo />
-        <span className="hidden sm:inline">Sign in</span>
+        <span className="hidden sm:inline">{t.auth.signIn}</span>
       </button>
     );
   }
@@ -91,7 +93,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
         onClick={() => setIsMenuOpen((open) => !open)}
         aria-haspopup="menu"
         aria-expanded={isMenuOpen}
-        aria-label="Account menu"
+        aria-label={t.auth.accountMenu}
         className="relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-100 text-sm font-semibold text-zinc-700 md:h-9 md:w-9"
       >
         {user.photoURL ? (
@@ -113,11 +115,11 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
         <div
           ref={dropdownRef}
           role="menu"
-          aria-label="Account menu"
+          aria-label={t.auth.accountMenu}
           className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           <div className="truncate px-3 py-2 text-sm font-medium text-zinc-900">
-            {user.displayName ?? "Signed in"}
+            {user.displayName ?? t.auth.signedIn}
           </div>
           {user.email && (
             <div className="truncate px-3 pb-2 text-xs text-zinc-500">{user.email}</div>
@@ -130,7 +132,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
             }}
             className="block w-full border-t border-zinc-200 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
           >
-            Sign out
+            {t.auth.signOut}
           </button>
         </div>
       )}

@@ -4,6 +4,7 @@ import {
   parseSearchTerms,
   pokemonMatchesQuery,
 } from "./pokemonMatchesQuery";
+import { createPokemonText } from "./i18n/pokemonNames";
 
 describe("parseSearchTerms", () => {
   it("splits on whitespace, lowercases, and drops empty tokens", () => {
@@ -39,5 +40,29 @@ describe("matchesAnySearchTerm", () => {
 
   it("returns false for an empty terms list", () => {
     expect(matchesAnySearchTerm("Charizard", [])).toBe(false);
+  });
+});
+
+describe("translated names", () => {
+  const text = createPokemonText("es", {
+    species: { garchomp: "Garchomp", "raichu-alola": "Raichu (Forma de Alola)" },
+    moves: {},
+    items: { "choice-scarf": "Pañuelo Elección" },
+    abilities: {},
+    types: {},
+    natures: {},
+  });
+
+  it("matches the Pokémon-language name too, ignoring accents", () => {
+    const mon = { species: "Garchomp", item: "Choice Scarf" };
+    expect(pokemonMatchesQuery(mon, "panuelo", text)).toBe(true);
+    expect(pokemonMatchesQuery(mon, "scarf", text)).toBe(true);
+    expect(pokemonMatchesQuery(mon, "panuelo")).toBe(false);
+  });
+
+  it("matches a speed-tier row by its translated name", () => {
+    expect(matchesAnySearchTerm("Raichu-Alola", parseSearchTerms("forma"), text.species("Raichu-Alola"))).toBe(
+      true,
+    );
   });
 });

@@ -2629,6 +2629,14 @@ leads/backs) is complete and working end to end.
       via TipTap read-only, never raw HTML, since another user wrote it), then `PokemonReportCard`s — with `sheet="open"` the cards leave out nature and
       stats. A Poképaste link only renders if it's an http(s) URL, since on this page it's text someone
       else typed.
+- [x] **Localization, phase 1** (2026-10-13): English (default) and Spanish. Two independent
+      settings in the header's language menu: the **app language** (the app's own text, typed
+      dictionaries in `src/lib/i18n/messages/`) and the **Pokémon names** language (official game
+      terms from PokeAPI: English, Spain Spanish or Latin-American Spanish, generated into
+      `src/data/names/` by `npm run generate:names`). Storage, pastes and exports stay English; only
+      display is translated, and search matches both languages, ignoring accents. Unreleased/admin
+      screens (Team Builder, Damage Calculator, SpeedLine, /admin) are left in English for now. Full
+      design in [docs/localization.md](./docs/localization.md).
 - [ ] **Team Report: calcs + matchups — on hold.** Benchmark calcs per Pokémon (pasted Showdown-calc
       lines), a Matchups tab, and a prep page per opponent, linked from the Matchup Planner. Built
       2026-10-12, then hidden behind `TEAM_REPORT_PREP_ENABLED = false` while the opponent-info vs

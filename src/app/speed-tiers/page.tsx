@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useMessages } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { SpeedTiersTable } from "@/components/SpeedTiersTable";
 import { SpeedTiersList } from "@/components/SpeedTiersList";
@@ -15,6 +16,7 @@ import { IconName } from "@/enums";
 type View = "table" | "list" | "speedline";
 
 export default function SpeedTiersPage() {
+  const t = useMessages();
   const {
     activeTeams,
     activeTeamId,
@@ -62,18 +64,18 @@ export default function SpeedTiersPage() {
       />
       <div className="flex w-full flex-col gap-4 p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-zinc-900">Speed Tiers</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">{t.speedTiers.title}</h2>
           {REGULATIONS.length > 1 ? (
             <div className="relative shrink-0">
               <select
                 value={selectedRegulationId}
                 onChange={(event) => setSelectedRegulationId(event.target.value)}
-                aria-label="Regulation"
+                aria-label={t.common.regulation}
                 className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
               >
                 {REGULATIONS.map((regulation) => (
                   <option key={regulation.id} value={regulation.id}>
-                    {regulation.label}
+                    {t.common.regulationLabel(regulation.label)}
                   </option>
                 ))}
               </select>
@@ -85,7 +87,7 @@ export default function SpeedTiersPage() {
             </div>
           ) : (
             <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
-              {REGULATIONS[0]?.label}
+              {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
             </span>
           )}
         </div>
@@ -98,7 +100,7 @@ export default function SpeedTiersPage() {
             reference data the other two views show — your active team's
             actual Speed (real pasted item/nature/Stat Points) against one
             saved opponent's, on a shared horizontal line. */}
-        <div role="tablist" aria-label="Speed Tiers view" className="flex gap-1.5">
+        <div role="tablist" aria-label={t.speedTiers.viewLabel} className="flex gap-1.5">
           <button
             type="button"
             role="tab"
@@ -110,7 +112,7 @@ export default function SpeedTiersPage() {
                 : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
             }`}
           >
-            Table
+            {t.speedTiers.table}
           </button>
           <button
             type="button"
@@ -123,7 +125,7 @@ export default function SpeedTiersPage() {
                 : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
             }`}
           >
-            Tiers
+            {t.speedTiers.tiers}
           </button>
           {isAdmin && (
             <button
@@ -137,7 +139,7 @@ export default function SpeedTiersPage() {
                   : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
               }`}
             >
-              SpeedLine
+              {t.speedTiers.speedLine}
             </button>
           )}
         </div>

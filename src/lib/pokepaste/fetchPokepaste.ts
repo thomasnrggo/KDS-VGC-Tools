@@ -1,3 +1,5 @@
+import { getMessages } from "@/lib/i18n/settings";
+
 const POKEPASTE_URL_PATTERN = /^https?:\/\/(?:www\.)?pokepast\.es\/([a-zA-Z0-9]+)\/?$/;
 
 /**
@@ -26,7 +28,7 @@ export interface PokepasteData {
 export async function fetchPokepaste(url: string): Promise<PokepasteData> {
   const match = url.trim().match(POKEPASTE_URL_PATTERN);
   if (!match) {
-    throw new Error("That doesn't look like a Poképaste link.");
+    throw new Error(getMessages().errors.notPokepasteLink);
   }
   const id = match[1];
 
@@ -34,19 +36,19 @@ export async function fetchPokepaste(url: string): Promise<PokepasteData> {
   try {
     response = await fetch(`https://pokepast.es/${id}/json`);
   } catch {
-    throw new Error("Couldn't reach Poképaste — check your connection and try again.");
+    throw new Error(getMessages().errors.pokepasteUnreachable);
   }
   if (!response.ok) {
     throw new Error(
       response.status === 404
-        ? "That Poképaste link doesn't exist — it may have been deleted."
-        : "Couldn't load that Poképaste — try again.",
+        ? getMessages().errors.pokepasteNotFound
+        : getMessages().errors.pokepasteFailed,
     );
   }
 
   const data = (await response.json()) as { paste?: unknown; title?: unknown };
   if (typeof data.paste !== "string" || !data.paste.trim()) {
-    throw new Error("That Poképaste doesn't contain a team export.");
+    throw new Error(getMessages().errors.pokepasteEmpty);
   }
   return {
     paste: data.paste,

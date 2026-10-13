@@ -7,7 +7,8 @@ import { useOpponents } from "@/hooks/useOpponents";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { OpponentPokemonCard } from "@/components/OpponentPokemonCard";
-import { PokemonSlotPicker } from "@/components/PokemonSlotPicker";
+import { leadBackSlotProps, PokemonSlotPicker } from "@/components/PokemonSlotPicker";
+import { useMessages } from "@/hooks/useLanguage";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { TeamCalcsList } from "@/components/TeamCalcs";
 import { Icon } from "@/components/Icon";
@@ -15,7 +16,7 @@ import { IconName } from "@/enums";
 import { getPlanForTeam } from "@/lib/opponent";
 import { calcsAgainst } from "@/lib/teamCalcs";
 import { REGULATIONS } from "@/data/regulations";
-import type { MatchupPlan, PokemonSlot } from "@/types";
+import type { MatchupPlan } from "@/types";
 
 interface MatchupPageProps {
   params: Promise<{ teamId: string; opponentId: string }>;
@@ -24,8 +25,6 @@ interface MatchupPageProps {
 const SECTION_TITLE_CLASSES = "text-xs font-semibold uppercase tracking-wide text-zinc-500";
 const CARD_CLASSES = "flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4";
 
-type PairKey = "leadPair" | "backPair";
-const MEGA_KEY = { leadPair: "leadMega", backPair: "backMega" } as const;
 
 /**
  * One opponent's prep page for one of your teams (see docs/team-report.md):
@@ -35,6 +34,7 @@ const MEGA_KEY = { leadPair: "leadMega", backPair: "backMega" } as const;
  */
 export default function MatchupPage({ params }: MatchupPageProps) {
   const { teamId, opponentId } = use(params);
+  const t = useMessages();
   const {
     teams,
     activeTeams,
@@ -76,24 +76,9 @@ export default function MatchupPage({ params }: MatchupPageProps) {
     updateOpponentPlan(opponentId, teamId, updater);
   }
 
-  function setSlot(key: PairKey, slot: 0 | 1, index: PokemonSlot) {
-    updatePlan((p) => {
-      const next: [PokemonSlot, PokemonSlot] = [...p[key]];
-      next[slot] = index;
-      return { ...p, [key]: next };
-    });
-  }
-
-  function toggleMega(key: PairKey, slot: 0 | 1) {
-    const megaKey = MEGA_KEY[key];
-    updatePlan((p) => {
-      const next: [boolean, boolean] = [...p[megaKey]];
-      next[slot] = !next[slot];
-      return { ...p, [megaKey]: next };
-    });
-  }
 
   const isLoading = isTeamsLoading || isOpponentsLoading;
+  const slotProps = plan && team ? leadBackSlotProps(plan, team.pokemon, updatePlan, t) : null;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -187,23 +172,15 @@ export default function MatchupPage({ params }: MatchupPageProps) {
               <div className="flex flex-wrap gap-6">
                 {(
                   [
-                    ["leadPair", "Lead"],
-                    ["backPair", "Back"],
+                    ["Lead", [0, 1]],
+                    ["Back", [2, 3]],
                   ] as const
-                ).map(([key, label]) => (
-                  <div key={key} className="flex flex-col gap-1">
+                ).map(([label, slots]) => (
+                  <div key={label} className="flex flex-col gap-1">
                     <h3 className={SECTION_TITLE_CLASSES}>{label}</h3>
                     <div className="flex gap-2">
-                      {([0, 1] as const).map((slot) => (
-                        <PokemonSlotPicker
-                          key={slot}
-                          label={`${label} ${slot + 1}`}
-                          myTeamPokemon={team.pokemon}
-                          value={plan[key][slot]}
-                          onChange={(index) => setSlot(key, slot, index)}
-                          megaEnabled={plan[MEGA_KEY[key]][slot]}
-                          onMegaToggle={() => toggleMega(key, slot)}
-                        />
+                      {slots.map((slot) => (
+                        slotProps && <PokemonSlotPicker key={slot} {...slotProps(slot)} />
                       ))}
                     </div>
                   </div>

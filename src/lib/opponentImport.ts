@@ -10,6 +10,7 @@ import {
   type TeamComparison,
 } from "./opponentVariants";
 import type { BulkImportResult, Opponent, ParsedPokemon } from "@/types";
+import { getMessages } from "./i18n/settings";
 
 export interface ImportEntry {
   label: string;
@@ -68,7 +69,7 @@ export function analyzeImport(entries: ImportEntry[], existing: Opponent[]): Imp
   const rows: ImportRow[] = [];
 
   entries.forEach((entry, index) => {
-    const label = entry.label.trim() || "Unnamed team";
+    const label = entry.label.trim() || getMessages().errors.unnamedTeam;
     const rawPaste = entry.rawPaste.trim();
     const pokemon = parseTeam(rawPaste);
     const row: ImportRow = {
@@ -148,12 +149,12 @@ export function buildImport(
       return;
     }
     if (row.duplicateOf !== undefined) {
-      skipped.push(`${row.label}: same team as "${row.duplicateOf}"`);
+      skipped.push(`${row.label}: ${getMessages().errors.sameTeamAs(row.duplicateOf)}`);
       return;
     }
     const decision = decisions[index] ?? defaultDecision(row);
     if (decision.action === "skip") {
-      skipped.push(`${row.label}: skipped`);
+      skipped.push(`${row.label}: ${getMessages().errors.skippedByChoice}`);
       return;
     }
 

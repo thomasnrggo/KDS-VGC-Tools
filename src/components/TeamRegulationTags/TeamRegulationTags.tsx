@@ -7,6 +7,7 @@ import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import type { Team } from "@/types";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface TeamRegulationTagsProps {
   team: Team;
@@ -30,6 +31,8 @@ function shortLabel(label: string): string {
  * as well as add them.
  */
 export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsProps) {
+  const t = useMessages();
+  const pokemonText = usePokemonText();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const untaggedRegulations = REGULATIONS.filter(
     (regulation) => !team.regulationIds.includes(regulation.id),
@@ -54,8 +57,8 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
                   event.stopPropagation();
                   onUntag(regulationId);
                 }}
-                aria-label={`Untag ${regulation.label}`}
-                title={`Untag ${regulation.label}`}
+                aria-label={t.regulationTags.untag(t.common.regulationLabel(regulation.label))}
+                title={t.regulationTags.untag(t.common.regulationLabel(regulation.label))}
                 className="flex h-3.5 w-3.5 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-300 hover:text-zinc-800"
               >
                 <Icon name={IconName.Close} size={10} />
@@ -71,8 +74,8 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
             event.stopPropagation();
             setIsPickerOpen(true);
           }}
-          aria-label={`Tag ${team.name} with another regulation`}
-          title="Tag with another regulation"
+          aria-label={t.regulationTags.tagTeam(team.name)}
+          title={t.regulationTags.tagHint}
           className="flex h-4 w-4 items-center justify-center rounded-full border border-zinc-300 bg-zinc-50 text-zinc-600 hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
         >
           <Icon name={IconName.Add} size={11} />
@@ -85,11 +88,10 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
             id="tag-regulation-modal-title"
             className="mb-1 text-lg font-semibold text-zinc-900"
           >
-            Tag {team.name} with a regulation
+            {t.regulationTags.pickerTitle(team.name)}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">
-            Tagging a regulation makes this team selectable there too — e.g. Tournaments and Speed
-            Tiers Timeline. Only regulations this roster is actually legal under are offered.
+            {t.regulationTags.pickerBody}
           </p>
           <ul className="flex flex-col gap-2">
             {untaggedRegulations.map((regulation) => {
@@ -112,11 +114,24 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
                         size={16}
                         className={isLegal ? "text-emerald-600" : "text-zinc-400"}
                       />
-                      {regulation.label}
+                      {t.common.regulationLabel(regulation.label)}
                     </span>
                     {!isLegal && (
                       <span className="pl-6 text-xs text-zinc-500">
-                        Not legal here: {issues.map((issue) => issue.reason).join(" ")}
+                        {t.regulationTags.notLegalHere}{" "}
+                        {issues
+                          .map((issue) => {
+                            const label = t.common.regulationLabel(regulation.label);
+                            const species = pokemonText.species(issue.species);
+                            const item = pokemonText.item(issue.item ?? "");
+                            if (issue.kind === "species") {
+                              return t.regulationTags.illegalSpecies(species, label);
+                            }
+                            return issue.kind === "megaStone"
+                              ? t.regulationTags.illegalMegaStone(item, species, label)
+                              : t.regulationTags.illegalItem(item, label);
+                          })
+                          .join(" ")}
                       </span>
                     )}
                   </button>
@@ -130,7 +145,7 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
               onClick={() => setIsPickerOpen(false)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>

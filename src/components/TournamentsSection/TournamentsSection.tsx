@@ -9,6 +9,7 @@ import { isTeamArchived } from "@/lib/team";
 import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages } from "@/hooks/useLanguage";
 
 interface TournamentsSectionProps {
   tournaments: Tournament[];
@@ -32,6 +33,7 @@ export function TournamentsSection({
   selectedRegulationId,
   setSelectedRegulationId,
 }: TournamentsSectionProps) {
+  const t = useMessages();
   const router = useRouter();
   // Only active teams are offered when starting a new tournament — same
   // reasoning as the team switcher (see PLANNING.md) — further scoped to
@@ -76,12 +78,12 @@ export function TournamentsSection({
         <select
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
-          aria-label="Regulation"
+          aria-label={t.common.regulation}
           className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
-              {regulation.label}
+              {t.common.regulationLabel(regulation.label)}
             </option>
           ))}
         </select>
@@ -93,7 +95,7 @@ export function TournamentsSection({
       </div>
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
-        {REGULATIONS[0]?.label}
+        {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
       </span>
     );
 
@@ -101,7 +103,7 @@ export function TournamentsSection({
     <section className="flex w-full max-w-3xl flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-zinc-900">Tournaments</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">{t.tournaments.title}</h2>
           {regulationControl}
         </div>
         <button
@@ -110,26 +112,26 @@ export function TournamentsSection({
           disabled={regulationActiveTeams.length === 0}
           className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Add tournament
+          {t.tournaments.add}
         </button>
       </div>
 
       {isAdding && (
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-tournament-modal-title">
           <h2 id="add-tournament-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
-            Add a tournament
+            {t.tournaments.addTitle}
           </h2>
           <div className="flex flex-col gap-3">
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Tournament name (e.g. Regionals 2026)"
-              aria-label="Tournament name"
+              placeholder={t.tournaments.namePlaceholder}
+              aria-label={t.tournaments.nameLabel}
               className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
-              Team
+              {t.tournaments.team}
               <select
                 value={teamId}
                 onChange={(event) => setTeamId(event.target.value)}
@@ -149,14 +151,14 @@ export function TournamentsSection({
                 disabled={!teamId}
                 className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                Create tournament
+                {t.tournaments.create}
               </button>
               <button
                 type="button"
                 onClick={() => setIsAdding(false)}
                 className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
               >
-                Cancel
+                {t.common.cancel}
               </button>
             </div>
           </div>
@@ -169,10 +171,10 @@ export function TournamentsSection({
             id="confirm-remove-tournament-title"
             className="mb-2 text-lg font-semibold text-zinc-900"
           >
-            Remove {confirmRemoveTournament.name}?
+            {t.tournaments.removeTitle(confirmRemoveTournament.name)}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">
-            This removes every round and game logged for this tournament — it can&apos;t be undone.
+            {t.tournaments.removeBody}
           </p>
           <div className="flex gap-2">
             <button
@@ -183,39 +185,39 @@ export function TournamentsSection({
               }}
               className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
-              Remove tournament
+              {t.tournaments.remove}
             </button>
             <button
               type="button"
               onClick={() => setConfirmRemoveId(null)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Cancel
+              {t.common.cancel}
             </button>
           </div>
         </Modal>
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">Loading…</p>
+        <p className="text-sm text-zinc-500">{t.common.loading}</p>
       ) : regulationActiveTeams.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center text-sm text-zinc-600">
           {activeTeams.length === 0
-            ? "Add a team on the My Teams page first — a tournament tracks your rounds with one of your saved teams."
-            : "No teams under this regulation — add one on the My Teams page first, or switch to a different regulation above."}
+            ? t.tournaments.needTeam
+            : t.tournaments.needRegulationTeam}
         </p>
       ) : regulationTournaments.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center">
-          <h3 className="text-lg font-semibold text-zinc-900">No tournaments yet</h3>
+          <h3 className="text-lg font-semibold text-zinc-900">{t.tournaments.empty}</h3>
           <p className="max-w-md text-sm text-zinc-600">
-            Track your rounds, opponent picks, and Pokémon usage/win-loss stats across a real event.
+            {t.tournaments.emptyBody}
           </p>
           <button
             type="button"
             onClick={openAdd}
             className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
           >
-            Add tournament
+            {t.tournaments.add}
           </button>
         </div>
       ) : (
@@ -244,8 +246,8 @@ export function TournamentsSection({
                     {tournament.name}
                   </span>
                   <span className="truncate text-xs text-zinc-500">
-                    {team?.name ?? "Unknown team"} · {tournament.rounds.length} round
-                    {tournament.rounds.length === 1 ? "" : "s"} · {record.wins}-{record.losses}-
+                    {team?.name ?? t.tournaments.unknownTeam} ·{" "}
+                    {t.tournaments.rounds(tournament.rounds.length)} · {record.wins}-{record.losses}-
                     {record.ties}
                   </span>
                   {/* Final standing details only mean anything once the event is over — an
@@ -254,9 +256,11 @@ export function TournamentsSection({
                   {isTournamentCompleted(tournament) &&
                     (tournament.participantCount || tournament.placement) && (
                       <span className="truncate text-xs text-zinc-500">
-                        {tournament.participantCount ? `${tournament.participantCount} entrants` : null}
+                        {tournament.participantCount
+                          ? t.tournaments.entrants(tournament.participantCount)
+                          : null}
                         {tournament.participantCount && tournament.placement ? " · " : null}
-                        {tournament.placement ? `Placed #${tournament.placement}` : null}
+                        {tournament.placement ? t.tournaments.placed(tournament.placement) : null}
                       </span>
                     )}
                 </div>
@@ -267,8 +271,8 @@ export function TournamentsSection({
                       event.stopPropagation();
                       setConfirmRemoveId(tournament.id);
                     }}
-                    aria-label={`Remove ${tournament.name}`}
-                    title="Remove tournament"
+                    aria-label={t.tournaments.removeNamed(tournament.name)}
+                    title={t.tournaments.remove}
                     className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600"
                   >
                     <Icon name={IconName.Delete} size={16} />

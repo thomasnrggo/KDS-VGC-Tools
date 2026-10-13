@@ -20,6 +20,7 @@ import {
 import { REGULATIONS } from "@/data/regulations";
 import { useAuth } from "./useAuth";
 import type { Team } from "@/types";
+import { getMessages } from "@/lib/i18n/settings";
 
 async function loadLocalOnly(): Promise<{ teams: Team[]; activeTeamId: string | null }> {
   const [teams, activeTeamId] = await Promise.all([getMyTeams(), getActiveTeamId()]);
@@ -87,10 +88,10 @@ export function useMyTeams() {
     (rawPaste: string, name: string, regulationId: string): string | null => {
       const trimmed = rawPaste.trim();
       if (!trimmed) {
-        return "Paste your team's Showdown export first.";
+        return getMessages().errors.pasteTeamFirst;
       }
 
-      const newTeam = createTeam(trimmed, name.trim() || `Team ${teams.length + 1}`, regulationId);
+      const newTeam = createTeam(trimmed, name.trim() || getMessages().errors.defaultTeamName(teams.length + 1), regulationId);
       const sizeError = validateTeamSize(newTeam.pokemon);
       if (sizeError) {
         return sizeError;
@@ -105,7 +106,7 @@ export function useMyTeams() {
         (team) => team.regulationIds.includes(regulationId) && team.rawPaste === newTeam.rawPaste,
       );
       if (duplicate) {
-        return `"${duplicate.name}" already has this exact roster under this regulation.`;
+        return getMessages().errors.duplicateTeam(duplicate.name);
       }
 
       setTeams((prev) => [...prev, newTeam]);
@@ -127,7 +128,7 @@ export function useMyTeams() {
    */
   const addBlankTeam = useCallback(
     (name: string, regulationId: string): Team => {
-      const newTeam = createTeam("", name.trim() || `Team ${teams.length + 1}`, regulationId);
+      const newTeam = createTeam("", name.trim() || getMessages().errors.defaultTeamName(teams.length + 1), regulationId);
       setTeams((prev) => [...prev, newTeam]);
       void saveMyTeam(newTeam);
       setActiveTeamId(newTeam.id);
@@ -141,7 +142,7 @@ export function useMyTeams() {
     (id: string, rawPaste: string, name: string): string | null => {
       const trimmed = rawPaste.trim();
       if (!trimmed) {
-        return "Paste your team's Showdown export first.";
+        return getMessages().errors.pasteTeamFirst;
       }
 
       const existing = teams.find((team) => team.id === id);

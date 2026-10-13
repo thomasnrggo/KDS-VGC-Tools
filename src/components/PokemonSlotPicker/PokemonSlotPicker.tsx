@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ParsedPokemon, PokemonSlot } from "@/types";
+import type { SlotTag } from "@/lib/slotPicks";
 import { PokemonSprite } from "../PokemonSprite";
 import { PokemonHoverCard } from "../PokemonHoverCard";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface PokemonSlotPickerProps {
   label: string;
@@ -16,6 +18,16 @@ interface PokemonSlotPickerProps {
   /** Whether the selected Pokémon's Mega form (if it has one) should render — persisted by the caller so it survives a reload instead of resetting to "on" every time. */
   megaEnabled: boolean;
   onMegaToggle: () => void;
+  /**
+   * Roster indexes already in one of the group's other slots, with that
+   * slot's label and a short tag ("L1") — shown dimmed and tagged. Picking one still works: the
+   * caller swaps the two slots (see pickIntoSlot in src/lib/slotPicks.ts).
+   */
+  usedIn?: Record<number, SlotTag>;
+  /** This slot repeats a Pokémon from another slot (older saved data) — gets a warning ring. */
+  isDuplicate?: boolean;
+  /** "range" when `myTeamPokemon` is an opponent's roster (a tournament game's opponent picks) — see PokemonHoverCard. */
+  speedMode?: "exact" | "range";
 }
 
 export function PokemonSlotPicker({
@@ -25,7 +37,12 @@ export function PokemonSlotPicker({
   onChange,
   megaEnabled,
   onMegaToggle,
+  usedIn = {},
+  isDuplicate = false,
+  speedMode,
 }: PokemonSlotPickerProps) {
+  const t = useMessages();
+  const pokemonText = usePokemonText();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -79,10 +96,13 @@ export function PokemonSlotPicker({
           aria-expanded={isOpen}
           aria-label={
             selected
-              ? `${label}: ${selected.species}. Click to change.`
-              : `${label}: none picked. Click to choose.`
+              ? t.slotPicker.picked(label, pokemonText.species(selected.species))
+              : t.slotPicker.empty(label)
           }
-          className="flex h-16 w-16 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-600"
+          title={isDuplicate ? t.slotPicker.duplicate : undefined}
+          className={`flex h-16 w-16 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-600 ${
+            isDuplicate ? "ring-2 ring-amber-500" : ""
+          }`}
         >
           {selected ? (
             <PokemonHoverCard
@@ -91,6 +111,7 @@ export function PokemonSlotPicker({
               disabled={isOpen}
               megaEnabled={megaEnabled}
               onMegaToggle={onMegaToggle}
+              speedMode={speedMode}
             >
               {(displayPokemon) => (
                 <div className="relative h-full w-full overflow-hidden rounded-lg bg-zinc-500/20">
@@ -112,8 +133,8 @@ export function PokemonSlotPicker({
           <button
             type="button"
             onClick={() => onChange(null)}
-            aria-label={`Clear ${label}`}
-            title={`Clear ${label}`}
+            aria-label={t.slotPicker.clear(label)}
+            title={t.slotPicker.clear(label)}
             className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-400 text-zinc-700 hover:bg-zinc-500 hover:text-zinc-200 cursor-pointer"
           >
             <Icon name={IconName.Close} size={12} />
@@ -131,24 +152,35 @@ export function PokemonSlotPicker({
         >
           {myTeamPokemon.length === 0 ? (
             <p className="col-span-3 max-w-40 p-1 text-xs text-zinc-500">
-              Add your own team first.
+              {t.slotPicker.addTeamFirst}
             </p>
           ) : (
-            myTeamPokemon.map((mon, index) => (
-              <button
-                key={index}
-                type="button"
-                role="option"
-                aria-selected={value === index}
-                onClick={() => pick(index)}
-                title={mon.species}
-                className={`flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
-                  value === index ? "bg-zinc-200" : ""
-                }`}
-              >
-                <PokemonSprite species={mon.species} size={48} />
-              </button>
-            ))
+            myTeamPokemon.map((mon, index) => {
+              const otherSlot = value === index ? undefined : usedIn[index];
+              const name = pokemonText.species(mon.species);
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  role="option"
+                  aria-selected={value === index}
+                  onClick={() => pick(index)}
+                  title={otherSlot ? t.slotPicker.usedIn(name, otherSlot.label) : name}
+                  className={`relative flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
+                    value === index ? "bg-zinc-200" : ""
+                  }`}
+                >
+                  <span className={otherSlot ? "opacity-40" : ""}>
+                    <PokemonSprite species={mon.species} size={48} />
+                  </span>
+                  {otherSlot && (
+                    <span className="absolute right-0.5 top-0.5 rounded-full bg-zinc-600 px-1.5 py-px text-[10px] font-semibold text-white dark:bg-zinc-400">
+                      {otherSlot.tag}
+                    </span>
+                  )}
+                </button>
+              );
+            })
           )}
         </div>
       )}

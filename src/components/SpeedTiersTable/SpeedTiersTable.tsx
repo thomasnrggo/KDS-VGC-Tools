@@ -15,6 +15,7 @@ import { GroupModeToggle } from "../GroupModeToggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface SpeedTiersTableProps {
   /** src/data/species.json keys legal under the selected regulation. */
@@ -34,17 +35,14 @@ type SortKey =
   | "neutral32Scarf";
 type SortDirection = "asc" | "desc";
 
-const SCARF_NOT_APPLICABLE_HINT =
-  "Doesn't apply to the Mega Pokémon in this row — a held Mega Stone and Choice Scarf can't occupy the same item slot.";
-
-const COLUMNS: { key: SortKey; label: string }[] = [
-  { key: "baseSpe", label: "Base" },
-  { key: "maxSpeed", label: "Max Speed" },
-  { key: "neutral32", label: "Neutral +32" },
-  { key: "neutral0", label: "Neutral 0" },
-  { key: "minSpeed", label: "Min Speed" },
-  { key: "maxScarf", label: "Max Scarf" },
-  { key: "neutral32Scarf", label: "Neutral +32 Scarf" },
+const COLUMNS: Exclude<SortKey, "name">[] = [
+  "baseSpe",
+  "maxSpeed",
+  "neutral32",
+  "neutral0",
+  "minSpeed",
+  "maxScarf",
+  "neutral32Scarf",
 ];
 
 /** Resolves a row's value for a given sort key. */
@@ -210,6 +208,9 @@ function SortableHeader({
  * when a viewer wants to see every entry individually.
  */
 export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: SpeedTiersTableProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const displayName = (row: SpeedTierRow) => text.speciesForm(row.speciesName, row.item, row.name);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("baseSpe");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -236,7 +237,13 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
             return typeof value === "number" && matchesSpeedQuery(value, numericQuery);
           })
         : searchTerms.length
-          ? rows.filter((row) => matchesAnySearchTerm(row.name, searchTerms))
+          ? rows.filter((row) =>
+              matchesAnySearchTerm(
+                row.name,
+                searchTerms,
+                text.speciesForm(row.speciesName, row.item, row.name),
+              ),
+            )
           : rows;
 
     const groups = groupMode ? groupRows(filtered) : filtered.map(toSingletonGroup);
@@ -260,7 +267,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
     });
 
     return sorted;
-  }, [rows, searchTerms, numericQuery, numericSortKey, sortKey, sortDirection, groupMode]);
+  }, [rows, searchTerms, numericQuery, numericSortKey, sortKey, sortDirection, groupMode, text]);
 
   function handleSort(key: SortKey) {
     if (key === sortKey) {
@@ -277,8 +284,8 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
         <SearchField
           query={query}
           onQueryChange={setQuery}
-          placeholder='Search Pokémon or Speed… (e.g. "charizard garchomp")'
-          ariaLabel="Search Pokémon or Speed"
+          placeholder={t.speedTable.searchPlaceholder}
+          ariaLabel={t.speedTable.searchLabel}
           className="max-w-xs"
         />
         <GroupModeToggle grouped={groupMode} onChange={setGroupMode} className="ml-auto" />
@@ -295,24 +302,24 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                   </span>
                 </th>
                 <SortableHeader
-                  label="Pokémon"
+                  label={t.speedTable.pokemon}
                   align="left"
                   active={sortKey === "name"}
                   direction={sortDirection}
                   onClick={() => handleSort("name")}
                 />
                 {COLUMNS.map((column) =>
-                  column.key === "baseSpe" ? (
+                  column === "baseSpe" ? (
                     <SortableHeader
-                      key={column.key}
-                      label={column.label}
+                      key={column}
+                      label={t.speedTable.columns[column]}
                       align="right"
-                      active={sortKey === column.key}
+                      active={sortKey === column}
                       direction={sortDirection}
-                      onClick={() => handleSort(column.key)}
+                      onClick={() => handleSort(column)}
                     />
                   ) : (
-                    <StaticHeader key={column.key} label={column.label} />
+                    <StaticHeader key={column} label={t.speedTable.columns[column]} />
                   ),
                 )}
               </tr>
@@ -340,7 +347,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                               <TooltipTrigger render={<span className="relative h-14 w-14 shrink-0" />}>
                                 <PokemonSprite species={row.speciesName} item={row.item} fill />
                               </TooltipTrigger>
-                              <TooltipContent>{row.name}</TooltipContent>
+                              <TooltipContent>{displayName(row)}</TooltipContent>
                             </Tooltip>
                           ))}
                         </div>
@@ -350,7 +357,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                             <PokemonSprite species={representative.speciesName} item={representative.item} fill />
                           </span>
                           <span className="truncate font-medium text-zinc-900">
-                            {representative.name}
+                            {displayName(representative)}
                           </span>
                         </div>
                       )}
@@ -373,7 +380,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                           >
                             *
                           </TooltipTrigger>
-                          <TooltipContent>{SCARF_NOT_APPLICABLE_HINT}</TooltipContent>
+                          <TooltipContent>{t.speedTable.scarfNotApplicable}</TooltipContent>
                         </Tooltip>
                       )}
                     </td>
@@ -388,7 +395,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                           >
                             *
                           </TooltipTrigger>
-                          <TooltipContent>{SCARF_NOT_APPLICABLE_HINT}</TooltipContent>
+                          <TooltipContent>{t.speedTable.scarfNotApplicable}</TooltipContent>
                         </Tooltip>
                       )}
                     </td>
@@ -398,7 +405,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
               {visibleGroups.length === 0 && (
                 <tr>
                   <td colSpan={COLUMNS.length + 2} className="px-3 py-6 text-center text-zinc-400">
-                    No Pokémon match &quot;{query}&quot;.
+                    {t.speedTable.noMatches(query)}
                   </td>
                 </tr>
               )}

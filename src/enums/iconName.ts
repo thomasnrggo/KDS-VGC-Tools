@@ -30,6 +30,7 @@ export enum IconName {
   Share = "share",
   Star = "star",
   SwapVert = "swap_vert",
+  Translate = "translate",
   Unarchive = "unarchive",
   VerticalAlignBottom = "vertical_align_bottom",
   VerticalAlignTop = "vertical_align_top",

@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js 16.2.12 / React 19.2.4 app for planning Pokémon VGC matchups. **[PLANNING.md](./PLANNING.md) is the source of truth** for what's being built — vision, locked-in architecture decisions, data model, the Showdown-paste parsing spec, species→sprite image resolution, UI structure, and the phased roadmap. Read it before making design decisions or assuming scope; update it when a decision changes. As of the last update, all 5 roadmap phases are complete — the core app (paste team → paste opponents → plan leads/backs) works end to end; see PLANNING.md §7 for what's deferred.
 
+**[CHANGELOG.md](./CHANGELOG.md)** records what shipped and when (newest first, grouped by date). Add an entry under "Unreleased" with each user-facing change; when it's committed to main, move it under that day's date.
+
 ## Commands
 
 - `npm run dev` — start the dev server (http://localhost:3000)
@@ -18,6 +20,7 @@ This is a Next.js 16.2.12 / React 19.2.4 app for planning Pokémon VGC matchups.
 - `npm run generate:species` — regenerate `src/data/species.json`/`baseStats.json`/`speciesTypes.json` from PokeAPI (one-off, not run per-request; see PLANNING.md §5)
 - `npm run generate:moves` — regenerate `src/data/moves.json` from PokeAPI (one-off; see PLANNING.md §7's Damage Calculator entry)
 - `npm run generate:type-chart` — regenerate `src/data/typeChart.json` from PokeAPI (one-off; static data, rarely needs re-running)
+- `npm run generate:names` — regenerate `src/data/names/<language>.json` (localized Pokémon/move/item/ability/type/nature names) from PokeAPI; re-run after the other generators (see docs/localization.md)
 
 ## Stack notes
 

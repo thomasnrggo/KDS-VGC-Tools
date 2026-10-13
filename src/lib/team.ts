@@ -2,6 +2,7 @@ import { parseTeam } from "./parseTeam";
 import { generateId } from "./id";
 import { REGULATIONS } from "@/data/regulations";
 import type { ParsedPokemon, Team } from "@/types";
+import { getMessages } from "./i18n/settings";
 
 export function createTeam(rawPaste: string, name: string, regulationId: string): Team {
   return {
@@ -107,10 +108,10 @@ export function reorderTeams(teams: Team[], orderedIds: string[]): Team[] {
 /** Returns an error message if the parsed roster isn't a valid VGC team, or null if it's fine. */
 export function validateTeamSize(pokemon: ParsedPokemon[]): string | null {
   if (pokemon.length === 0) {
-    return "Couldn't find any Pokémon in that paste.";
+    return getMessages().errors.emptyTeamPaste;
   }
   if (pokemon.length > 6) {
-    return `Found ${pokemon.length} Pokémon — a team can only have 6. Paste just one team.`;
+    return getMessages().errors.tooManyPokemon(pokemon.length);
   }
   return null;
 }

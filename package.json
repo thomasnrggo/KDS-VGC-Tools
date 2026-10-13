@@ -15,7 +15,8 @@
     "generate:species": "node scripts/generate-species-data.mjs",
     "generate:moves": "node scripts/generate-move-data.mjs",
     "generate:items": "node scripts/generate-item-data.mjs",
-    "generate:type-chart": "node scripts/generate-type-chart.mjs"
+    "generate:type-chart": "node scripts/generate-type-chart.mjs",
+    "generate:names": "node scripts/generate-name-data.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
