@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useOpponents } from "@/hooks/useOpponents";
+import type { useOpponents } from "@/hooks/useOpponents";
 import { useOpponentListReversed } from "@/hooks/useOpponentListReversed";
 import { useSeasons } from "@/hooks/useSeasons";
 import { parseTeamFolder } from "@/lib/teamFolder";
@@ -41,7 +41,29 @@ import { IconName } from "@/enums";
 import { TEAM_REPORT_PREP_ENABLED } from "@/constants";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
+/**
+ * The opponent list the section shows and edits — the personal one
+ * (useOpponents) or a prep group's (useGroupOpponents, which also says who
+ * may remove each opponent).
+ */
+export type OpponentListSource = Omit<ReturnType<typeof useOpponents>, "addOpponents"> & {
+  canRemove?: (opponent: Opponent) => boolean;
+};
+
 interface OpponentsSectionProps {
+  source: OpponentListSource;
+  /** Replaces the "Opposing Teams" heading — the planner puts its list switcher here. */
+  title?: ReactNode;
+  /** Shown under the header row — a prep group's bar. */
+  banner?: ReactNode;
+  /** A prep group belongs to one regulation: shown, not switchable. */
+  regulationLocked?: boolean;
+  /** False hides "Clear all data" (a prep group's members other than its owner). */
+  canClearAll?: boolean;
+  /** Extra ⋮ menu items for a card — e.g. copying it between the personal list and a group. */
+  cardActions?: (opponent: Opponent) => RowAction[];
+  /** "Added by …" after a card's name, in a prep group. */
+  addedByLabel?: (opponent: Opponent) => string | undefined;
   myTeamPokemon: ParsedPokemon[];
   activeTeamId: string | null;
   /** False when there's an active team but it isn't tagged for selectedRegulationId — passed through to OpponentCard so it blocks Lead/Back picking with an explanatory message instead of letting you plan with an off-regulation team. */
@@ -65,6 +87,7 @@ function OpponentsMoreMenu({
   regulationSeasons,
   currentSeasonId,
   clearDisabled,
+  canClearAll,
   onLoadPreset,
   onBulkImport,
   onClearAll,
@@ -73,6 +96,7 @@ function OpponentsMoreMenu({
   regulationSeasons: Season[];
   currentSeasonId: string | null;
   clearDisabled: boolean;
+  canClearAll: boolean;
   onLoadPreset: (rawPaste: string, regulationId: string) => void;
   onBulkImport: () => void;
   onClearAll: () => void;
@@ -151,18 +175,20 @@ function OpponentsMoreMenu({
           >
             {t.opponents.massImport}
           </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onClearAll();
-              setIsOpen(false);
-            }}
-            disabled={clearDisabled}
-            className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
-          >
-            {t.opponents.clearAll}
-          </button>
+          {canClearAll && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onClearAll();
+                setIsOpen(false);
+              }}
+              disabled={clearDisabled}
+              className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
+            >
+              {t.opponents.clearAll}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -171,6 +197,13 @@ function OpponentsMoreMenu({
 
 
 export function OpponentsSection({
+  source,
+  title,
+  banner,
+  regulationLocked = false,
+  canClearAll = true,
+  cardActions,
+  addedByLabel,
   myTeamPokemon,
   activeTeamId,
   activeTeamMatchesRegulation,
@@ -193,7 +226,8 @@ export function OpponentsSection({
     updateOpponentPlan,
     setOpponentTags,
     editOpponentTeam,
-  } = useOpponents();
+    canRemove,
+  } = source;
   const { seasons, currentSeasonId } = useSeasons();
   const router = useRouter();
   const { isReversed, toggleReversed } = useOpponentListReversed();
@@ -506,7 +540,10 @@ export function OpponentsSection({
         activeTeamId={activeTeamId}
         activeTeamMatchesRegulation={activeTeamMatchesRegulation}
         onEdit={() => startEditing(opponent.id)}
-        onRemove={() => setConfirmRemoveId(opponent.id)}
+        onRemove={
+          !canRemove || canRemove(opponent) ? () => setConfirmRemoveId(opponent.id) : undefined
+        }
+        addedByLabel={addedByLabel?.(opponent)}
         dragHandle={options.dragHandle}
         extraActions={[
           // The prep page for this opponent vs the selected team — see
@@ -521,6 +558,7 @@ export function OpponentsSection({
               ]
             : []),
           ...options.extraActions,
+          ...(cardActions?.(opponent) ?? []),
         ]}
         variantToggle={options.variantToggle}
         isVariant={options.isVariant}
@@ -563,7 +601,7 @@ export function OpponentsSection({
     : null;
 
   const regulationControl =
-    REGULATIONS.length > 1 ? (
+    REGULATIONS.length > 1 && !regulationLocked ? (
       <div className="relative shrink-0">
         <select
           value={selectedRegulationId}
@@ -585,7 +623,11 @@ export function OpponentsSection({
       </div>
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
-        {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
+        {t.common.regulationLabel(
+          REGULATIONS.find((regulation) => regulation.id === selectedRegulationId)?.label ??
+            REGULATIONS[0]?.label ??
+            "",
+        )}
       </span>
     );
 
@@ -632,7 +674,7 @@ export function OpponentsSection({
       <div className="flex flex-col gap-3 md:hidden">
         <div className="flex items-center justify-between gap-3">
           <h2 className="whitespace-nowrap text-xl font-semibold text-zinc-900">
-            {t.opponents.title}
+            {title ?? t.opponents.title}
           </h2>
           {regulationControl}
         </div>
@@ -666,6 +708,7 @@ export function OpponentsSection({
                 regulationSeasons={regulationSeasons}
                 currentSeasonId={currentSeasonId}
                 clearDisabled={regulationOpponents.length === 0}
+                canClearAll={canClearAll}
                 onLoadPreset={loadPreset}
                 onBulkImport={startBulkImporting}
                 onClearAll={requestClearAll}
@@ -679,7 +722,7 @@ export function OpponentsSection({
       <div className="hidden items-center justify-between md:flex">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-semibold text-zinc-900">
-            {t.opponents.title}
+            {title ?? t.opponents.title}
           </h2>
           {regulationControl}
         </div>
@@ -698,6 +741,7 @@ export function OpponentsSection({
               regulationSeasons={regulationSeasons}
               currentSeasonId={currentSeasonId}
               clearDisabled={regulationOpponents.length === 0}
+              canClearAll={canClearAll}
               onLoadPreset={loadPreset}
               onBulkImport={startBulkImporting}
               onClearAll={requestClearAll}
@@ -705,6 +749,8 @@ export function OpponentsSection({
           </div>
         )}
       </div>
+
+      {banner}
 
       {/* Desktop only — always visible rather than toggled, since there's
           room for it; mobile still shows a toggle-triggered version inline

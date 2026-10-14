@@ -8,7 +8,8 @@ import { useMessages } from "@/hooks/useLanguage";
 interface RowActionsMenuProps {
   /** Omit to leave out the Edit item — e.g. My Teams rows, edited on the team's own page. */
   onEdit?: () => void;
-  onRemove: () => void;
+  /** Omit to leave out the Remove item — e.g. a prep-group opponent someone else added. */
+  onRemove?: () => void;
   /** Used for the trigger's aria-label/title and the dropdown's aria-label — e.g. "Opponent options", "Team options". */
   label: string;
   editLabel?: string;
@@ -136,18 +137,20 @@ export function RowActionsMenu({
               {action.label}
             </button>
           ))}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              onRemove();
-              setIsOpen(false);
-            }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-          >
-            <Icon name={IconName.Delete} size={16} />
-            {removeLabel ?? t.common.remove}
-          </button>
+          {onRemove && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onRemove();
+                setIsOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <Icon name={IconName.Delete} size={16} />
+              {removeLabel ?? t.common.remove}
+            </button>
+          )}
         </div>
       )}
     </div>

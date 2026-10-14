@@ -2637,6 +2637,14 @@ leads/backs) is complete and working end to end.
       display is translated, and search matches both languages, ignoring accents. Unreleased/admin
       screens (Team Builder, Damage Calculator, SpeedLine, /admin) are left in English for now. Full
       design in [docs/localization.md](./docs/localization.md).
+- [x] **Prep groups** (shipped 2026-10-14): a collaborative Matchup
+      Planner. A group shares its opponent list (add, edit, tags, variants, order) among its
+      members; picks and notes stay private in each member's account. Firestore `groups/{id}`,
+      `groups/{id}/opponents`, `groupInvites/{code}`, `users/{uid}/groupPlans`. Owner or adder
+      removes an opponent; shared order; several groups, archivable. Needs the updated
+      `firestore.rules` deployed. Design in [docs/prep-groups.md](./docs/prep-groups.md).
+      **Future:** personal invites the invited player must accept, instead of anyone with the
+      link joining (see the doc's "Future" section).
 - [ ] **Team Report: calcs + matchups — on hold.** Benchmark calcs per Pokémon (pasted Showdown-calc
       lines), a Matchups tab, and a prep page per opponent, linked from the Matchup Planner. Built
       2026-10-12, then hidden behind `TEAM_REPORT_PREP_ENABLED = false` while the opponent-info vs

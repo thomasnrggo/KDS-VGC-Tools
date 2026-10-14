@@ -29,7 +29,10 @@ export interface OpponentCardProps {
   /** False when there's an active team but it isn't tagged for the page's currently selected regulation — blocks Lead/Back picking with an explanatory message instead of letting you plan with an off-regulation team (see MyTeamHeader's matching warning badge on the team switcher). */
   activeTeamMatchesRegulation: boolean;
   onEdit: () => void;
-  onRemove: () => void;
+  /** Omit to hide Remove — a prep-group opponent only its adder and the group owner may remove. */
+  onRemove?: () => void;
+  /** In a prep group: who added this opponent, shown after its name. */
+  addedByLabel?: string;
   /** Extra ⋮ menu items — Move up/down, Make variant of…, Set as main, etc. */
   extraActions?: RowAction[];
   /** On a main with variants: the show/hide toggle, shown where desktop's ⋮ menu would otherwise sit. */
@@ -137,6 +140,7 @@ export function OpponentCard({
   activeTeamMatchesRegulation,
   onEdit,
   onRemove,
+  addedByLabel,
   extraActions,
   variantToggle,
   isVariant,
@@ -272,6 +276,9 @@ export function OpponentCard({
                     {t.opponentCard.variant}
                   </span>
                 )}
+                {addedByLabel && (
+                  <span className="shrink-0 truncate text-[11px] text-zinc-500">{addedByLabel}</span>
+                )}
                 {opponent.pokepasteUrl && (
                   <a
                     href={opponent.pokepasteUrl}
@@ -336,6 +343,9 @@ export function OpponentCard({
                   <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
                     {t.opponentCard.variant}
                   </span>
+                )}
+                {addedByLabel && (
+                  <span className="shrink-0 truncate text-[11px] text-zinc-500">{addedByLabel}</span>
                 )}
                 {opponent.pokepasteUrl && (
                   <a

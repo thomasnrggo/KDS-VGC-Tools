@@ -38,6 +38,80 @@ service cloud.firestore {
         && (resource == null || resource.data.ownerUid == request.auth.uid);
     }
 
+    // Prep groups (docs/prep-groups.md, src/lib/firebase/groups.ts): a shared
+    // opponent list for an event. Members read and edit it; each member's
+    // picks and notes live in their own users/{uid}/groupPlans, not here.
+    function signedIn() {
+      return request.auth != null;
+    }
+    function groupData(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId)).data;
+    }
+    function isGroupMember(groupId) {
+      return signedIn() && request.auth.uid in groupData(groupId).memberUids;
+    }
+
+    match /groups/{groupId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberUids;
+      allow create: if signedIn()
+        && request.resource.data.id == groupId
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid];
+      allow update: if signedIn()
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && (
+          // The owner edits anything but ownership.
+          resource.data.ownerUid == request.auth.uid
+          // A member leaves: only their own membership goes.
+          || (request.auth.uid in resource.data.memberUids
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['memberUids', 'members', 'updatedAt'])
+            && request.resource.data.memberUids.toSet()
+              == resource.data.memberUids.toSet().difference([request.auth.uid].toSet())
+            && request.resource.data.members.diff(resource.data.members).affectedKeys()
+              .hasOnly([request.auth.uid]))
+          // Someone with the invite link joins: only their own membership is
+          // added, and the code they send must be an invite for this group.
+          || (!(request.auth.uid in resource.data.memberUids)
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['memberUids', 'members', 'updatedAt', 'joinCode'])
+            && request.resource.data.memberUids.toSet()
+              == resource.data.memberUids.toSet().union([request.auth.uid].toSet())
+            && request.resource.data.members.diff(resource.data.members).affectedKeys()
+              .hasOnly([request.auth.uid])
+            && get(/databases/$(database)/documents/groupInvites/$(request.resource.data.joinCode))
+              .data.groupId == groupId)
+        );
+
+      // Shared opponents: any member adds (as themselves) and edits them;
+      // only whoever added one, or the group's owner, removes it.
+      match /opponents/{opponentId} {
+        allow read: if isGroupMember(groupId);
+        allow create: if isGroupMember(groupId)
+          && request.resource.data.id == opponentId
+          && request.resource.data.addedBy == request.auth.uid;
+        allow update: if isGroupMember(groupId)
+          && request.resource.data.id == opponentId
+          && request.resource.data.addedBy == resource.data.addedBy;
+        allow delete: if isGroupMember(groupId)
+          && (resource.data.addedBy == request.auth.uid
+            || groupData(groupId).ownerUid == request.auth.uid);
+      }
+    }
+
+    // Invite links: knowing the code is the access, so a signed-in user can
+    // get one by its code but nobody can list them. Only the group's owner
+    // creates or removes them.
+    match /groupInvites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if signedIn()
+        && groupData(request.resource.data.groupId).ownerUid == request.auth.uid;
+      allow delete: if signedIn()
+        && groupData(resource.data.groupId).ownerUid == request.auth.uid;
+    }
+
     // Admin-controlled per-section on/off switches (see src/types/featureFlags.ts,
     // src/lib/firebase/featureFlags.ts, and /admin/features) — same
     // everyone-reads/admin-writes shape as seasons above. Keep this uid in

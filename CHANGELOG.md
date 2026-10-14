@@ -9,6 +9,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 
 ## Unreleased
 
+## 2026-10-14
+
+### Added
+- **Prep groups (collaborative Matchup Planner):** a shared opponent list for an event. Members add,
+  edit, tag, group and order opponents together, live; each player's picks and notes stay private.
+  Invite by link, several groups (one per event), archive, leave, owner removes members. Only the
+  group's owner or whoever added an opponent can remove it. Copy opponents between your list and a
+  group. See [docs/prep-groups.md](./docs/prep-groups.md).
+
 ## 2026-10-13
 
 ### Added

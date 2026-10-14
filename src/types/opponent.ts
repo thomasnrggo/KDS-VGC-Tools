@@ -33,6 +33,9 @@ export interface Opponent {
   variantOf?: string;
   /** Your team id → the opponent id a plan was copied from when this became a variant. Drives the "Copied from …" badge; an entry is dropped once that plan is edited. */
   copiedPlanFrom?: Record<string, string>;
+  /** In a prep group: who added it (uid and display name) — they and the group's owner can remove it. Absent on personal opponents. See docs/prep-groups.md. */
+  addedBy?: string;
+  addedByName?: string;
   createdAt: string;
   updatedAt: string;
 }

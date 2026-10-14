@@ -1,5 +1,6 @@
 export * from "./team";
 export * from "./opponent";
+export * from "./group";
 export * from "./teamFolder";
 export * from "./species";
 export * from "./items";
