@@ -133,6 +133,13 @@ export function SearchableSelect({
             setQuery(event.target.value);
             setIsOpen(true);
           }}
+          onKeyDown={(event) => {
+            // Enter picks the top result, so typing then Enter works.
+            if (event.key === "Enter" && isOpen && filtered[0]) {
+              event.preventDefault();
+              pick(filtered[0]);
+            }
+          }}
           onFocus={(event) => {
             setIsOpen(true);
             // Selects the existing text (if any) so it opens ready to
@@ -145,7 +152,7 @@ export function SearchableSelect({
           autoFocus={autoFocus}
           className={
             compact
-              ? `w-full rounded border border-zinc-300 bg-zinc-50 py-0.5 pl-1 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-5" : "pr-1"}`
+              ? `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1 pl-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-6" : "pr-2"}`
               : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-8" : "pr-2"}`
           }
         />

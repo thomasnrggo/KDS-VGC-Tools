@@ -4,7 +4,15 @@ import { useState } from "react";
 import type { StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { parseTeam } from "@/lib/parseTeam";
 import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
-import { WEATHER_SPEED_DOUBLING_ABILITIES } from "@/constants";
+import movesData from "@/data/moves.json";
+import { normalizeSpeciesKey } from "@/lib/species/normalize";
+import { moveHitRange } from "@/lib/damage/calculateDamage";
+import { MAX_TOTAL_STAT_POINTS } from "@/lib/stats/calculateFinalStats";
+import {
+  computeBattleStat,
+  type BattleStatContext,
+  type BattleStatSource,
+} from "@/lib/stats/battleStats";
 import { REGULATIONS } from "@/data/regulations";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
@@ -13,8 +21,11 @@ import { Modal } from "../Modal";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
 import { PokemonEditor, computePokemonBuild } from "../PokemonEditor";
-import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/types";
+import { PokemonSetPicker } from "./PokemonSetPicker";
+import type { DamageCalcOptions, MoveData, Opponent, ParsedPokemon, StatKey } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+
+const MOVES = movesData as unknown as Record<string, MoveData>;
 
 /** One entry in a side's sidebar — the working roster for that side, up to MAX_SIDEBAR_POKEMON. `isCustom` tracks whether this entry came from the species search (freely editable ability/item/moves) or was loaded from a real pasted team (read-only identity). */
 export interface SidebarEntry {
@@ -54,8 +65,10 @@ export interface PokemonBattleState {
   spaStage: number;
   spdStage: number;
   speStage: number;
-  /** Allies already fainted this battle — Last Respects gains 50 power per ally. */
-  faintedAllies: number;
+  /** Moves toggled to land as critical hits (each move's Crit button). */
+  critMoves: string[];
+  /** Per move: its Effect count (EFFECT_MOVES) or, for a multi-hit move, how many hits land. */
+  moveCounts: Record<string, number>;
 }
 
 export const DEFAULT_BATTLE_STATE: PokemonBattleState = {
@@ -66,23 +79,40 @@ export const DEFAULT_BATTLE_STATE: PokemonBattleState = {
   spaStage: 0,
   spdStage: 0,
   speStage: 0,
-  faintedAllies: 0,
+  critMoves: [],
+  moveCounts: {},
 };
+
+/**
+ * Moves whose power depends on something the calc can't see — set per move
+ * with an "Effect" count: the option it feeds and its highest value.
+ */
+export const EFFECT_MOVES: Record<
+  string,
+  { option: "attackerFaintedAllies" | "attackerTimesHit"; max: number }
+> = {
+  "Last Respects": { option: "attackerFaintedAllies", max: 5 },
+  "Rage Fist": { option: "attackerTimesHit", max: 6 },
+};
+
+const moveCountSelectClassName =
+  "min-w-0 flex-1 rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
+
+function countRange(min: number, max: number): number[] {
+  return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+}
 
 const STAGE_OPTIONS = [6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6];
 
-const STAGE_KEY_BY_STAT: Partial<Record<StatKey, keyof PokemonBattleState>> = {
+const STAGE_KEY_BY_STAT: Partial<
+  Record<StatKey, "atkStage" | "defStage" | "spaStage" | "spdStage" | "speStage">
+> = {
   atk: "atkStage",
   def: "defStage",
   spa: "spaStage",
   spd: "spdStage",
   spe: "speStage",
 };
-
-/** Same -6..+6 stage formula the engine uses (calculateDamage.ts's STAT_STAGE_MULTIPLIERS) — duplicated here only for display purposes (the Speed badge), not fed back into the damage formula itself. */
-function statStageMultiplier(stage: number): number {
-  return stage >= 0 ? (2 + stage) / 2 : 2 / (2 - stage);
-}
 
 interface RosterPokemonPickerProps {
   title: string;
@@ -102,6 +132,7 @@ interface RosterPokemonPickerProps {
   mega: boolean;
   onMegaChange: (mega: boolean) => void;
   weather?: DamageCalcOptions["weather"];
+  terrain?: DamageCalcOptions["terrain"];
   tailwind?: boolean;
   battleState: PokemonBattleState;
   onBattleStateChange: (state: PokemonBattleState) => void;
@@ -127,6 +158,7 @@ export function RosterPokemonPicker({
   mega,
   onMegaChange,
   weather,
+  terrain,
   tailwind,
   battleState,
   onBattleStateChange,
@@ -219,32 +251,70 @@ export function RosterPokemonPicker({
   // needs the breakdown/effectiveAbility for battle-state-dependent values
   // (the Speed multiplier row, the HP bar) that the editor itself has no
   // concept of.
-  const { breakdown, effectiveAbility } = computePokemonBuild(pokemon, mega, statOverrides);
+  const { breakdown, effectiveAbility, effectivePokemon, hasMegaForm, types } = computePokemonBuild(
+    pokemon,
+    mega,
+    statOverrides,
+  );
 
-  const speedDoublingAbility = weather ? WEATHER_SPEED_DOUBLING_ABILITIES[weather] : undefined;
-  const abilityDoublesSpeed = !!effectiveAbility && effectiveAbility === speedDoublingAbility;
-  const speStageMultiplier = statStageMultiplier(battleState.speStage);
-  const paralysisMultiplier = battleState.status === "Paralyzed" ? 0.5 : 1;
-  // Swift Swim/Chlorophyll/etc., Tailwind, the Speed stat stage, and
-  // Paralysis all stack multiplicatively — not modeling other Speed-changers
-  // (Quick Feet, Unburden; Choice Scarf is already handled by
-  // calculateFinalStats) beyond what's already covered elsewhere.
-  const abilityTailwindMultiplier = (abilityDoublesSpeed ? 2 : 1) * (tailwind ? 2 : 1);
-  const totalSpeedMultiplier = abilityTailwindMultiplier * speStageMultiplier * paralysisMultiplier;
-  const speedLabelParts = [
-    abilityDoublesSpeed && effectiveAbility ? text.ability(effectiveAbility) : null,
-    tailwind ? text.move("Tailwind") : null,
-    battleState.speStage !== 0
-      ? t.calcPanel.stage(`${battleState.speStage > 0 ? "+" : ""}${battleState.speStage}`)
-      : null,
-    battleState.status === "Paralyzed" ? t.calcPanel.statuses.Paralyzed : null,
-  ].filter((source): source is string => !!source);
   const finalStats = breakdown?.final ?? null;
-  const effectiveSpe = finalStats ? Math.floor(finalStats.spe * totalSpeedMultiplier) : 0;
-  // Display-only rounding — a -4 stage's exact multiplier is a repeating
-  // decimal (1/3 = 0.3333...), which reads as noise in the UI; the actual
-  // Speed math above still uses the full-precision totalSpeedMultiplier.
-  const roundedSpeedMultiplier = Math.round(totalSpeedMultiplier * 100) / 100;
+  const battleStatContext: BattleStatContext | null = finalStats && {
+    stats: finalStats,
+    stages: {
+      atk: battleState.atkStage,
+      def: battleState.defStage,
+      spa: battleState.spaStage,
+      spd: battleState.spdStage,
+      spe: battleState.speStage,
+    },
+    item: effectivePokemon?.item,
+    ability: effectiveAbility,
+    types,
+    statused: battleState.status !== "Healthy",
+    paralyzed: battleState.status === "Paralyzed",
+    weather,
+    terrain,
+    tailwind,
+  };
+
+  function describeSource(source: BattleStatSource): string {
+    switch (source.kind) {
+      case "stage":
+        return t.calcPanel.stage(`${source.stage > 0 ? "+" : ""}${source.stage}`);
+      case "item":
+        return text.item(source.name);
+      case "ability":
+        return text.ability(source.name);
+      case "weather":
+        return t.calc.weathers[source.weather];
+      case "tailwind":
+        return text.move("Tailwind");
+      case "paralysis":
+        return t.calcPanel.statuses.Paralyzed;
+    }
+  }
+
+  function renderBattleStat(stat: StatKey) {
+    if (stat === "hp" || !battleStatContext || !finalStats) return null;
+    const { value, sources } = computeBattleStat(stat, battleStatContext);
+    // Compared with the stat-screen value (Speed before its item).
+    const screenValue =
+      stat === "spe" ? (finalStats.speedBeforeItem ?? finalStats.spe) : finalStats[stat];
+    // Fixed width either way, so a value appearing doesn't shift the row.
+    if (value === screenValue) return <span className="w-7" />;
+    return (
+      <span
+        className={`w-7 text-right font-medium tabular-nums ${value > screenValue ? "text-red-600" : "text-blue-600"}`}
+        title={
+          sources.length > 0
+            ? t.calcPanel.battleStatHint(sources.map(describeSource).join(", "))
+            : undefined
+        }
+      >
+        {value}
+      </span>
+    );
+  }
 
   const maxHp = finalStats?.hp ?? 0;
   const currentHp = Math.max(1, Math.round((battleState.currentHpPercent / 100) * maxHp));
@@ -434,8 +504,33 @@ export function RosterPokemonPicker({
 
       <div className="flex gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          {pokemon && sidebar.length < MAX_SIDEBAR_POKEMON && (
-            <div className="flex items-center justify-end">
+          <div className="flex items-center gap-2">
+            <PokemonSetPicker
+              title={title}
+              pokemon={pokemon}
+              onSelect={(newPokemon) => {
+                if (selectedIndex !== null) {
+                  onReplacePokemon(newPokemon);
+                } else {
+                  onAddPokemon(newPokemon);
+                }
+              }}
+            />
+            {hasMegaForm && (
+              <button
+                type="button"
+                onClick={() => onMegaChange(!mega)}
+                aria-pressed={mega}
+                className={`shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors ${
+                  mega
+                    ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
+                    : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
+                }`}
+              >
+                {t.editor.mega}
+              </button>
+            )}
+            {pokemon && sidebar.length < MAX_SIDEBAR_POKEMON && (
               <button
                 type="button"
                 onClick={() => {
@@ -448,104 +543,121 @@ export function RosterPokemonPicker({
               >
                 <Icon name={IconName.Add} size={14} />
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           <PokemonEditor
             title={title}
             pokemon={pokemon}
-            onSpeciesChange={(newPokemon) => {
-              if (selectedIndex !== null) {
-                onReplacePokemon(newPokemon);
-              } else {
-                onAddPokemon(newPokemon);
-              }
-            }}
             mega={mega}
-            onMegaChange={onMegaChange}
             statOverrides={statOverrides}
             onStatOverridesChange={onStatOverridesChange}
             onAbilityChange={onAbilityChange}
             onItemChange={onItemChange}
             onMovesChange={onMovesChange}
-            renderStatRowExtra={(stat) => {
-              const stageKey = STAGE_KEY_BY_STAT[stat];
-              if (!stageKey) return null;
+            simpleFields
+            renderMoveExtra={(move) => {
+              const isCrit = battleState.critMoves.includes(move);
+              const isStatusMove = MOVES[normalizeSpeciesKey(move)]?.category === "Status";
+              const effect = EFFECT_MOVES[move];
+              const hitRange = moveHitRange(move, effectiveAbility);
+              const setCount = (count: number) =>
+                updateBattleState({ moveCounts: { ...battleState.moveCounts, [move]: count } });
               return (
-                <select
-                  value={battleState[stageKey]}
-                  onChange={(event) =>
-                    updateBattleState({ [stageKey]: Number(event.target.value) })
-                  }
-                  aria-label={t.calcPanel.stageLabel(title, t.stats.short[stat])}
-                  className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
-                >
-                  {STAGE_OPTIONS.map((stage) => (
-                    <option key={stage} value={stage}>
-                      {stage > 0 ? `+${stage}` : stage === 0 ? "--" : stage}
-                    </option>
-                  ))}
-                </select>
-              );
-            }}
-            renderFinalCell={(stat, value) => {
-              if (stat !== "spe" || totalSpeedMultiplier === 1) return value;
-              return (
-                <span
-                  title={t.calcPanel.speedHint(speedLabelParts.join(", "), roundedSpeedMultiplier)}
-                >
-                  {effectiveSpe}{" "}
-                  <span className="text-zinc-500">
-                    (×{roundedSpeedMultiplier} {speedLabelParts.join(", ")})
-                  </span>
-                </span>
-              );
-            }}
-          >
-            {breakdown && (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600">
-                    {t.calcPanel.status}
-                    <select
-                      value={battleState.status}
-                      onChange={(event) =>
-                        updateBattleState({ status: event.target.value as PokemonStatus })
+                <>
+                  {!isStatusMove && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateBattleState({
+                          critMoves: isCrit
+                            ? battleState.critMoves.filter((m) => m !== move)
+                            : [...battleState.critMoves, move],
+                        })
                       }
-                      className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
+                      aria-pressed={isCrit}
+                      aria-label={t.calcPanel.critLabel(text.move(move))}
+                      className={`shrink-0 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        isCrit
+                          ? "border-zinc-600 bg-zinc-600 text-white dark:bg-zinc-400"
+                          : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
+                      }`}
                     >
-                      {STATUS_OPTIONS.map((status) => (
-                        <option key={status} value={status}>
-                          {t.calcPanel.statuses[status]}
+                      {t.calcPanel.crit}
+                    </button>
+                  )}
+                  {effect && (
+                    <select
+                      value={battleState.moveCounts[move] ?? 0}
+                      onChange={(event) => setCount(Number(event.target.value))}
+                      aria-label={t.calcPanel.effectLabel(text.move(move))}
+                      title={t.calcPanel.effectHints[effect.option](text.move(move))}
+                      className={moveCountSelectClassName}
+                    >
+                      {countRange(0, effect.max).map((count) => (
+                        <option key={count} value={count}>
+                          {t.calcPanel.effectCount(count)}
                         </option>
                       ))}
                     </select>
-                  </label>
-                  {pokemon?.moves?.some((move) => move === "Last Respects") && (
-                    <label
-                      title={t.calcPanel.faintedAlliesHint(text.move("Last Respects"))}
-                      className="flex items-center gap-1.5 text-xs font-medium text-zinc-600"
-                    >
-                      {t.calcPanel.faintedAllies}
-                      <select
-                        value={battleState.faintedAllies ?? 0}
-                        onChange={(event) =>
-                          updateBattleState({ faintedAllies: Number(event.target.value) })
-                        }
-                        className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
-                      >
-                        {[0, 1, 2, 3, 4, 5].map((count) => (
-                          <option key={count} value={count}>
-                            {count}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
                   )}
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-zinc-600">
+                  {hitRange && (
+                    <select
+                      value={battleState.moveCounts[move] ?? hitRange.default}
+                      onChange={(event) => setCount(Number(event.target.value))}
+                      aria-label={t.calcPanel.hitsLabel(text.move(move))}
+                      className={moveCountSelectClassName}
+                    >
+                      {countRange(hitRange.min, hitRange.max).map((count) => (
+                        <option key={count} value={count}>
+                          {t.calcPanel.hitsCount(count)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </>
+              );
+            }}
+            maxTotalStatPoints={MAX_TOTAL_STAT_POINTS}
+            extraStatColumns={[
+              {
+                id: "stage",
+                header: t.editor.stage,
+                render: (stat) => {
+                  const stageKey = STAGE_KEY_BY_STAT[stat];
+                  if (!stageKey) return null;
+                  return (
+                    <select
+                      value={battleState[stageKey]}
+                      onChange={(event) =>
+                        updateBattleState({
+                          [stageKey]: Number(event.target.value),
+                        })
+                      }
+                      aria-label={t.calcPanel.stageLabel(title, t.stats.short[stat])}
+                      className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
+                    >
+                      {STAGE_OPTIONS.map((stage) => (
+                        <option key={stage} value={stage}>
+                          {stage > 0 ? `+${stage}` : stage === 0 ? "--" : stage}
+                        </option>
+                      ))}
+                    </select>
+                  );
+                },
+              },
+              { id: "battle", render: renderBattleStat },
+            ]}
+            // The stat screen's Speed, without its item — the Battle column
+            // adds Choice Scarf/Iron Ball with everything else.
+            renderFinalCell={(stat, value) =>
+              stat === "spe" ? (finalStats?.speedBeforeItem ?? value) : value
+            }
+          >
+            {breakdown && (
+              <div className="flex items-center gap-3">
+                <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-medium text-zinc-600">
+                  <span className="tabular-nums">
                     {t.calcPanel.currentHp(currentHp, maxHp, battleState.currentHpPercent)}
                   </span>
                   <input
@@ -554,12 +666,32 @@ export function RosterPokemonPicker({
                     max={100}
                     value={battleState.currentHpPercent}
                     onChange={(event) =>
-                      updateBattleState({ currentHpPercent: Number(event.target.value) })
+                      updateBattleState({
+                        currentHpPercent: Number(event.target.value),
+                      })
                     }
                     aria-label={t.calcPanel.currentHpLabel(title)}
                     className="w-full accent-zinc-600"
                   />
-                </div>
+                </label>
+                <label className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-zinc-600">
+                  {t.calcPanel.status}
+                  <select
+                    value={battleState.status}
+                    onChange={(event) =>
+                      updateBattleState({
+                        status: event.target.value as PokemonStatus,
+                      })
+                    }
+                    className="rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                  >
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {t.calcPanel.statuses[status]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             )}
           </PokemonEditor>

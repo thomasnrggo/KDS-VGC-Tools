@@ -20,10 +20,8 @@ const ZERO_SP: BaseStats = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
 /**
  * Applies user-edited Stat Points/nature on top of a Pokémon's pasted build,
  * for damage-calc theorycrafting — never mutates the saved team. Each stat's
- * SP is independently clamped to 0-32 by the UI before it ever reaches here,
- * but the total across all six is deliberately NOT capped at 66 — exploring
- * a build beyond what a legal team could have is exactly the point of an
- * editable calculator, so this only re-serializes whatever the caller passes.
+ * SP is clamped to 0-32 (and the total to 66) by the editor before it ever
+ * reaches here; this only re-serializes whatever the caller passes.
  */
 export function applyStatOverrides(
   pokemon: ParsedPokemon,

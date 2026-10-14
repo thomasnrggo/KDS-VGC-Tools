@@ -46,7 +46,8 @@ export function formatPokemonPaste(pokemon: ParsedPokemon): string {
   lines.push(`${pokemon.nature ?? "Hardy"} Nature`);
 
   for (const move of pokemon.moves ?? []) {
-    lines.push(`- ${move}`);
+    // The calc keeps an emptied move slot as "" so the others stay in place.
+    if (move) lines.push(`- ${move}`);
   }
 
   return lines.join("\n");

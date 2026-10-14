@@ -652,7 +652,6 @@ export const en = {
     none: "None",
     weathers: { Sun: "Sun", Rain: "Rain", Sand: "Sand", Snow: "Snow" },
     terrains: { Electric: "Electric", Grassy: "Grassy", Psychic: "Psychic", Misty: "Misty" },
-    criticalHit: "Critical Hit",
   },
   calcPanel: {
     regulation: (label: string) => `Regulation: ${label}`,
@@ -691,8 +690,6 @@ export const en = {
     saveHint: "Save as a new roster entry",
     stageLabel: (side: string, stat: string) => `${side} ${stat} stage`,
     stage: (value: string) => `${value} stage`,
-    speedHint: (sources: string, multiplier: number) =>
-      `${sources} multiplies Speed by ×${multiplier}`,
     status: "Status",
     statuses: {
       Healthy: "Healthy",
@@ -703,15 +700,29 @@ export const en = {
       Asleep: "Asleep",
       Frozen: "Frozen",
     },
-    faintedAllies: "Fainted allies",
-    faintedAlliesHint: (move: string) => `${move} gains 50 power for each ally that has fainted`,
+    effectCount: (count: number) => `Effect ${count}`,
+    effectLabel: (move: string) => `${move} effect`,
+    effectHints: {
+      attackerFaintedAllies: (move: string) => `${move} gains 50 power for each ally that has fainted`,
+      attackerTimesHit: (move: string) =>
+        `${move} gains 50 power for each time the user has been hit (up to 6)`,
+    },
+    hitsCount: (count: number) => (count === 1 ? "1 hit" : `${count} hits`),
+    hitsLabel: (move: string) => `${move} hits`,
+    crit: "Crit",
+    critLabel: (move: string) => `${move} as a critical hit`,
     currentHp: (current: number, max: number, percent: number) =>
-      `Current HP: ${current}/${max} (${percent}%)`,
+      `HP ${current}/${max} (${percent}%)`,
     currentHpLabel: (side: string) => `${side} current HP percent`,
     sidebar: (side: string) => `${side} sidebar`,
     copyAsExport: (name: string) => `Copy ${name} as Showdown export text`,
     copyAsExportHint: "Copy as Showdown export text",
     remove: (name: string) => `Remove ${name}`,
+    choosePokemon: "Choose a Pokémon",
+    battleStatHint: (sources: string) => `In battle, with ${sources}`,
+    blankSet: "Blank Set",
+    setPickerLabel: (side: string) => `${side} Pokémon and set`,
+    keepTyping: (shown: number) => `Showing the first ${shown} — type to narrow down.`,
   },
   editor: {
     pokemon: "Pokémon",
@@ -750,6 +761,8 @@ export const en = {
     accuracy: "Acc",
     pp: "PP",
     bst: "BST",
+    remaining: "Remaining",
+    remainingLabel: (remaining: number, max: number) => `${remaining} of ${max} Stat Points remaining`,
     categories: { Physical: "Physical", Special: "Special", Status: "Status" },
   },
 };

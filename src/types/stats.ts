@@ -23,4 +23,6 @@ export interface FinalStats extends BaseStats {
   speedBoostedByChoiceScarf?: boolean;
   /** True when `spe` already has the held Iron Ball's ×0.5 folded in — for display (e.g. flagging why it's unusually low). */
   speedHalvedByIronBall?: boolean;
+  /** Speed before the held item's multiplier — the stat-screen value; equals `spe` without a Choice Scarf/Iron Ball. */
+  speedBeforeItem?: number;
 }

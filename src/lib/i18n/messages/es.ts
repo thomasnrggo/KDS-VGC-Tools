@@ -654,7 +654,6 @@ export const es: Messages = {
     none: "Ninguno",
     weathers: { Sun: "Sol", Rain: "Lluvia", Sand: "Arena", Snow: "Nieve" },
     terrains: { Electric: "Eléctrico", Grassy: "Hierba", Psychic: "Psíquico", Misty: "Niebla" },
-    criticalHit: "Golpe crítico",
   },
   calcPanel: {
     regulation: (label) => `Regulación: ${label.replace(/^Regulation /, "")}`,
@@ -694,8 +693,6 @@ export const es: Messages = {
     saveHint: "Guardar como una entrada nueva",
     stageLabel: (side, stat) => `Cambio de ${stat} de ${side}`,
     stage: (value) => `${value} nivel${value === "+1" || value === "-1" ? "" : "es"}`,
-    speedHint: (sources, multiplier) =>
-      `${sources} multiplica la Velocidad por ×${String(multiplier).replace(".", ",")}`,
     status: "Estado",
     statuses: {
       Healthy: "Sin estado",
@@ -706,14 +703,28 @@ export const es: Messages = {
       Asleep: "Dormido",
       Frozen: "Congelado",
     },
-    faintedAllies: "Aliados debilitados",
-    faintedAlliesHint: (move) => `${move} gana 50 de potencia por cada aliado debilitado`,
-    currentHp: (current, max, percent) => `PS actuales: ${current}/${max} (${percent}%)`,
+    effectCount: (count) => `Efecto ${count}`,
+    effectLabel: (move) => `Efecto de ${move}`,
+    effectHints: {
+      attackerFaintedAllies: (move) => `${move} gana 50 de potencia por cada aliado debilitado`,
+      attackerTimesHit: (move) =>
+        `${move} gana 50 de potencia por cada vez que el usuario ha recibido un golpe (hasta 6)`,
+    },
+    hitsCount: (count) => (count === 1 ? "1 golpe" : `${count} golpes`),
+    hitsLabel: (move) => `Golpes de ${move}`,
+    crit: "Crít.",
+    critLabel: (move) => `${move} como golpe crítico`,
+    currentHp: (current, max, percent) => `PS ${current}/${max} (${percent}%)`,
     currentHpLabel: (side) => `Porcentaje de PS actuales de ${side}`,
     sidebar: (side) => `Pokémon de ${side}`,
     copyAsExport: (name) => `Copiar ${name} como texto de Showdown`,
     copyAsExportHint: "Copiar como texto de Showdown",
     remove: (name) => `Quitar ${name}`,
+    choosePokemon: "Elige un Pokémon",
+    battleStatHint: (sources) => `En combate, con ${sources}`,
+    blankSet: "Set en blanco",
+    setPickerLabel: (side) => `Pokémon y set de ${side}`,
+    keepTyping: (shown) => `Se muestran los primeros ${shown}; escribe para filtrar.`,
   },
   editor: {
     pokemon: "Pokémon",
@@ -754,6 +765,8 @@ export const es: Messages = {
     accuracy: "Prec.",
     pp: "PP",
     bst: "Total",
+    remaining: "Restantes",
+    remainingLabel: (remaining, max) => `Quedan ${remaining} de ${max} puntos de estadística`,
     categories: { Physical: "Físico", Special: "Especial", Status: "Estado" },
   },
 };

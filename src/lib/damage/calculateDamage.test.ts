@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DamageCalcOptions, ParsedPokemon } from "@/types";
-import { calculateDamage } from "./calculateDamage";
+import { calculateDamage, moveHitRange } from "./calculateDamage";
 
 describe("calculateDamage", () => {
   it("computes a guaranteed-OHKO roll list for Jolly Garchomp Earthquake vs. a neutral 0 SP Ditto", () => {
@@ -990,5 +990,52 @@ describe("Last Respects", () => {
     const ratio = two!.rolls[15] / none!.rolls[15];
     expect(ratio).toBeGreaterThan(2.8);
     expect(ratio).toBeLessThan(3.1);
+  });
+});
+
+describe("Rage Fist", () => {
+  it("gains 50 power per time the user was hit, up to 6", () => {
+    const attacker = { species: "Annihilape", nature: "Adamant", evs: "32 Atk" };
+    const defender = { species: "Incineroar" };
+    const none = calculateDamage(attacker, defender, "Rage Fist", {});
+    const two = calculateDamage(attacker, defender, "Rage Fist", { attackerTimesHit: 2 });
+    const capped = calculateDamage(attacker, defender, "Rage Fist", { attackerTimesHit: 9 });
+    const six = calculateDamage(attacker, defender, "Rage Fist", { attackerTimesHit: 6 });
+    // 50 → 150 power: three times the damage, give or take rounding.
+    const ratio = two!.rolls[15] / none!.rolls[15];
+    expect(ratio).toBeGreaterThan(2.8);
+    expect(ratio).toBeLessThan(3.1);
+    expect(capped!.rolls).toEqual(six!.rolls);
+  });
+});
+
+describe("multi-hit moves", () => {
+  // Totals checked against Showdown's damage calc (Gen 9, level 50, 248 Atk EVs = 31 SP).
+  const technician = (species: string) => ({
+    species,
+    ability: "Technician",
+    nature: "Jolly",
+    evs: "31 Atk",
+  });
+  const defender = { species: "Incineroar" };
+
+  it.each([
+    ["Population Bomb", "Maushold", undefined, 10, 210, 250],
+    ["Population Bomb", "Maushold", 4, 4, 84, 100],
+    ["Bullet Seed", "Cinccino", undefined, 3, 27, 33],
+    ["Bullet Seed", "Cinccino", 5, 5, 45, 55],
+  ] as const)("%s from %s, %s hits requested", (move, species, hits, hitCount, min, max) => {
+    const result = calculateDamage(technician(species), defender, move, { hits, isDoublesFormat: true });
+    expect(result?.hitCount).toBe(hitCount);
+    expect([result?.rolls[0], result?.rolls[15]]).toEqual([min, max]);
+  });
+
+  it("offers a hits choice only for moves whose hit count varies", () => {
+    expect(moveHitRange("Population Bomb")).toEqual({ min: 1, max: 10, default: 10 });
+    expect(moveHitRange("Bullet Seed")).toEqual({ min: 2, max: 5, default: 3 });
+    expect(moveHitRange("Bullet Seed", "Skill Link")).toEqual({ min: 2, max: 5, default: 5 });
+    expect(moveHitRange("Triple Axel")).toEqual({ min: 1, max: 3, default: 3 });
+    expect(moveHitRange("Dual Wingbeat")).toBeNull();
+    expect(moveHitRange("Flamethrower")).toBeNull();
   });
 });

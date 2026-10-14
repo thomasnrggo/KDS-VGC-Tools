@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
 import { NATURE_MODIFIERS } from "@/constants";
 import { REGULATIONS } from "@/data/regulations";
@@ -9,15 +9,27 @@ import movesData from "@/data/moves.json";
 import speciesTypesData from "@/data/speciesTypes.json";
 import baseStatsData from "@/data/baseStats.json";
 import type { StatOverrides } from "@/lib/stats/applyStatOverrides";
-import type { BaseStats, MoveData, ParsedPokemon, SpeciesAbility, StatKey } from "@/types";
-import { SearchableSelect, type SearchableSelectOption } from "../SearchableSelect";
+import type {
+  BaseStats,
+  MoveData,
+  ParsedPokemon,
+  SpeciesAbility,
+  StatKey,
+} from "@/types";
+import {
+  SearchableSelect,
+  type SearchableSelectOption,
+} from "../SearchableSelect";
 import { PokemonSprite } from "../PokemonSprite";
 import { TypeIcon } from "../TypeIcon";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { computePokemonBuild } from "./computePokemonBuild";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
-import { ENGLISH_POKEMON_TEXT, type PokemonText } from "@/lib/i18n/pokemonNames";
+import {
+  ENGLISH_POKEMON_TEXT,
+  type PokemonText,
+} from "@/lib/i18n/pokemonNames";
 import { MESSAGES, type Messages } from "@/lib/i18n/messages";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 
@@ -33,7 +45,10 @@ interface OptionLabels {
   t: Messages;
 }
 
-const ENGLISH_OPTION_LABELS: OptionLabels = { text: ENGLISH_POKEMON_TEXT, t: MESSAGES.en };
+const ENGLISH_OPTION_LABELS: OptionLabels = {
+  text: ENGLISH_POKEMON_TEXT,
+  t: MESSAGES.en,
+};
 
 /** A Showdown-style sprite/name/types row on top, abilities/stat-line below — the species search's shared-panel row (see moveOptionContent for the move-picker equivalent). */
 function speciesOptionContent(
@@ -45,7 +60,9 @@ function speciesOptionContent(
   const types = SPECIES_TYPES[key] ?? [];
   const abilities = ABILITIES[key] ?? [];
   const stats = BASE_STATS[key];
-  const bst = stats ? stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe : undefined;
+  const bst = stats
+    ? stats.hp + stats.atk + stats.def + stats.spa + stats.spd + stats.spe
+    : undefined;
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded bg-zinc-100">
@@ -61,13 +78,17 @@ function speciesOptionContent(
         <div className="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
           <span className="truncate">
             {abilities
-              .map((a) => (a.isHidden ? `${text.ability(a.name)} (${t.editor.hiddenShort})` : text.ability(a.name)))
+              .map((a) =>
+                a.isHidden
+                  ? `${text.ability(a.name)} (${t.editor.hiddenShort})`
+                  : text.ability(a.name),
+              )
               .join(" / ")}
           </span>
           {stats && (
             <span className="shrink-0">
-              {stats.hp}/{stats.atk}/{stats.def}/{stats.spa}/{stats.spd}/{stats.spe} {t.editor.bst}{" "}
-              {bst}
+              {stats.hp}/{stats.atk}/{stats.def}/{stats.spa}/{stats.spd}/
+              {stats.spe} {t.editor.bst} {bst}
             </span>
           )}
         </div>
@@ -77,10 +98,16 @@ function speciesOptionContent(
 }
 
 /** Every legal Regulation M-B species — only one regulation exists today, see src/data/regulations/index.ts. This is the *only* way to pick a Pokémon's identity (team/opponent selection is a separate, caller-provided affordance — see RosterPokemonPicker's "Load Team"). */
-export const SPECIES_OPTIONS: SearchableSelectOption[] = REGULATIONS[0].speciesKeys.map((key) => {
-  const label = formatSpeciesDisplayName(key);
-  return { id: key, label, sprite: label, content: speciesOptionContent(key, label) };
-});
+export const SPECIES_OPTIONS: SearchableSelectOption[] =
+  REGULATIONS[0].speciesKeys.map((key) => {
+    const label = formatSpeciesDisplayName(key);
+    return {
+      id: key,
+      label,
+      sprite: label,
+      content: speciesOptionContent(key, label),
+    };
+  });
 
 /** A Showdown-style Name/Type/Category/Pow/Acc/PP row with the effect text underneath — the move search's shared-panel row. */
 function moveOptionContent(
@@ -98,21 +125,28 @@ function moveOptionContent(
           {t.editor.categories[move.category]}
         </span>
         <span className="ml-auto shrink-0 whitespace-nowrap text-[10px] text-zinc-500">
-          {move.power ?? "—"} {t.editor.power} · {move.accuracy ? `${move.accuracy}%` : "—"}{" "}
-          {t.editor.accuracy} · {move.pp ?? "—"} {t.editor.pp}
+          {move.power ?? "—"} {t.editor.power} ·{" "}
+          {move.accuracy ? `${move.accuracy}%` : "—"} {t.editor.accuracy} ·{" "}
+          {move.pp ?? "—"} {t.editor.pp}
         </span>
       </div>
-      {move.shortDesc && <span className="truncate text-[11px] text-zinc-500">{move.shortDesc}</span>}
+      {move.shortDesc && (
+        <span className="truncate text-[11px] text-zinc-500">
+          {move.shortDesc}
+        </span>
+      )}
     </div>
   );
 }
 
 /** Every move in the data set, for the move-search combobox — moves aren't Regulation-gated (this app doesn't enforce per-species learnsets, see PLANNING.md). */
-export const MOVE_OPTIONS: SearchableSelectOption[] = Object.entries(MOVES).map(([key, move]) => ({
-  id: key,
-  label: move.name ?? key,
-  content: moveOptionContent(move, key),
-}));
+export const MOVE_OPTIONS: SearchableSelectOption[] = Object.entries(MOVES).map(
+  ([key, move]) => ({
+    id: key,
+    label: move.name ?? key,
+    content: moveOptionContent(move, key),
+  }),
+);
 
 /** Builds a fresh from-scratch Pokémon for a given species.json key — defaults to its first (non-hidden) ability, no item, Hardy nature, no moves. */
 export function buildCustomPokemon(speciesKey: string): ParsedPokemon {
@@ -154,7 +188,11 @@ export function natureLabel(
  */
 const localizedOptionsCache = new Map<
   string,
-  { species: SearchableSelectOption[]; moves: SearchableSelectOption[]; natures: SearchableSelectOption[] }
+  {
+    species: SearchableSelectOption[];
+    moves: SearchableSelectOption[];
+    natures: SearchableSelectOption[];
+  }
 >();
 
 function localizedOptions(labels: OptionLabels) {
@@ -204,7 +242,23 @@ type ActiveField =
 
 const MAX_VISIBLE_RESULTS = 40;
 
-function filterOptions(options: SearchableSelectOption[], query: string): SearchableSelectOption[] {
+/**
+ * Puts a move in a given slot (an empty name clears it) without shifting the
+ * others: empty slots in between are kept as "" placeholders, trailing ones
+ * dropped. Callers that read moves skip the empty ones.
+ */
+function setMoveSlot(moves: string[], slot: number, move: string): string[] {
+  const next = [...moves];
+  while (next.length < slot) next.push("");
+  next[slot] = move;
+  while (next.length > 0 && !next[next.length - 1]) next.pop();
+  return next;
+}
+
+function filterOptions(
+  options: SearchableSelectOption[],
+  query: string,
+): SearchableSelectOption[] {
   const trimmed = foldForSearch(query.trim());
   return (
     trimmed
@@ -217,11 +271,30 @@ function filterOptions(options: SearchableSelectOption[], query: string): Search
   ).slice(0, MAX_VISIBLE_RESULTS);
 }
 
+/** A nature-raised stat in red, a lowered one in blue — the same colors as the Pokémon card. */
+function natureColor(isIncreased: boolean, isDecreased: boolean): string {
+  return isIncreased
+    ? "font-semibold text-red-600"
+    : isDecreased
+      ? "font-semibold text-blue-600"
+      : "";
+}
+
 const fieldInputClassName =
   "w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1.5 pl-2 pr-7 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
 
 function FieldLabel({ children }: { children: ReactNode }) {
-  return <span className="text-[11px] font-medium text-zinc-500">{children}</span>;
+  return (
+    <span className="text-[11px] font-medium text-zinc-500">{children}</span>
+  );
+}
+
+/** A caller-provided column of the stat table: its header and one cell per stat. */
+export interface StatColumn {
+  id: string;
+  /** Omit for a column without a title. */
+  header?: string;
+  render: (stat: StatKey) => ReactNode;
 }
 
 export interface PokemonEditorProps {
@@ -240,10 +313,10 @@ export interface PokemonEditorProps {
   onAbilityChange?: (ability: string) => void;
   onItemChange?: (item: string | undefined) => void;
   onMovesChange?: (moves: string[]) => void;
-  /** Caps the combined Stat Points across all six stats — a real team (Pokémon Champions' 66-point budget) should set this to 66; omit it to allow exploring past what a legal team could have (the Damage Calculator's theorycrafting use, see applyStatOverrides.ts). Always enforced alongside the per-stat 0-32 range regardless of this prop. */
+  /** Caps the combined Stat Points across all six stats (MAX_TOTAL_STAT_POINTS, Pokémon Champions' 66) and shows what's remaining — omit it for no cap. Always enforced alongside the per-stat 0-32 range regardless of this prop. */
   maxTotalStatPoints?: number;
-  /** Extra header cell + per-row cell appended to the stat table (e.g. RosterPokemonPicker's battle Stat Stage dropdown) — omit for a plain Base/SP/Final table. */
-  renderStatRowExtra?: (stat: StatKey) => ReactNode;
+  /** Extra columns appended to the stat table after Final (e.g. the calc's Stage select and Battle value) — omit for a plain Base/SP/Final table. */
+  extraStatColumns?: StatColumn[];
   /** Overrides how a stat's Final-column value is displayed (e.g. RosterPokemonPicker's Speed row, which layers a weather/Tailwind/status multiplier on top) — defaults to just the plain number. */
   renderFinalCell?: (stat: StatKey, value: number) => ReactNode;
   /** Rendered directly below the stat table, above Moves (e.g. RosterPokemonPicker's Status/current-HP controls) — a battle-state concern this editor itself knows nothing about. */
@@ -258,6 +331,14 @@ export interface PokemonEditorProps {
    * narrow per-side columns.
    */
   layout?: "stacked" | "columns";
+  /**
+   * Plain pickers for item and ability — name-only searchable dropdowns —
+   * instead of the shared results panel's detailed rows (descriptions),
+   * which suit building a team more than a quick calc.
+   */
+  simpleFields?: boolean;
+  /** With `simpleFields`: extra controls after a picked move (the calc's Crit toggle, Last Respects' fainted allies). */
+  renderMoveExtra?: (move: string) => ReactNode;
 }
 
 /**
@@ -288,10 +369,12 @@ export function PokemonEditor({
   onItemChange,
   onMovesChange,
   maxTotalStatPoints,
-  renderStatRowExtra,
+  extraStatColumns = [],
   renderFinalCell,
   children,
   layout = "stacked",
+  simpleFields = false,
+  renderMoveExtra,
 }: PokemonEditorProps) {
   const t = useMessages();
   const text = usePokemonText();
@@ -323,7 +406,10 @@ export function PokemonEditor({
     if (!activeField) return;
 
     function handlePointerDown(event: PointerEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setActiveField(null);
       }
     }
@@ -339,7 +425,10 @@ export function PokemonEditor({
     };
   }, [activeField]);
 
-  function activateField(field: NonNullable<ActiveField>, currentValue: string) {
+  function activateField(
+    field: NonNullable<ActiveField>,
+    currentValue: string,
+  ) {
     setActiveField(field);
     setQuery(currentValue);
   }
@@ -356,7 +445,8 @@ export function PokemonEditor({
       const moves = pokemon?.moves ?? [];
       const next = [...moves];
       // Saved by its English name — the label may be translated.
-      const moveName = MOVES[option.id]?.name ?? option.searchText ?? option.label;
+      const moveName =
+        MOVES[option.id]?.name ?? option.searchText ?? option.label;
       if (activeField.slot < moves.length) {
         next[activeField.slot] = moveName;
       } else {
@@ -378,7 +468,9 @@ export function PokemonEditor({
       );
       maxAllowed = Math.max(0, Math.min(32, maxTotalStatPoints - otherTotal));
     }
-    const clamped = Number.isNaN(rawValue) ? 0 : Math.max(0, Math.min(maxAllowed, Math.round(rawValue)));
+    const clamped = Number.isNaN(rawValue)
+      ? 0
+      : Math.max(0, Math.min(maxAllowed, Math.round(rawValue)));
     onStatOverridesChange({
       ...statOverrides,
       sp: { ...statOverrides.sp, [stat]: clamped },
@@ -390,7 +482,9 @@ export function PokemonEditor({
   }
   const finalCellRenderer = renderFinalCell ?? defaultRenderFinalCell;
 
-  const totalSp = breakdown ? STAT_ORDER.reduce((sum, stat) => sum + breakdown.statPoints[stat], 0) : 0;
+  const totalSp = breakdown
+    ? STAT_ORDER.reduce((sum, stat) => sum + breakdown.statPoints[stat], 0)
+    : 0;
 
   let activeOptions: SearchableSelectOption[] = [];
   let activeAriaLabel = "";
@@ -414,7 +508,9 @@ export function PokemonEditor({
     );
     activeAriaLabel = t.editor.moveSlot(title, activeField.slot + 1);
   }
-  const filteredOptions = activeField ? filterOptions(activeOptions, query) : [];
+  const filteredOptions = activeField
+    ? filterOptions(activeOptions, query)
+    : [];
 
   const speciesField = onSpeciesChange && (
     <div className="flex flex-col gap-0.5">
@@ -460,7 +556,52 @@ export function PokemonEditor({
     </div>
   );
 
-  const itemField = onItemChange ? (
+  const simpleItemField = onItemChange ? (
+    <div className="flex flex-col gap-0.5">
+      <FieldLabel>{t.editor.item}</FieldLabel>
+      <SearchableSelect
+        options={itemOptions.map((option) => ({
+          ...option,
+          content: undefined,
+        }))}
+        value={itemDisplay}
+        onSelect={(option) => onItemChange(option.id)}
+        onClear={() => onItemChange(undefined)}
+        placeholder={t.editor.addItem}
+        ariaLabel={t.editor.fieldLabel(title, t.editor.item)}
+      />
+    </div>
+  ) : null;
+
+  // A Mega form has only its own ability; a pasted ability off the list is
+  // kept as an option so the select still shows it.
+  const simpleAbilityOptions =
+    effectiveAbility &&
+    !abilitySelectOptions.some((option) => option.id === effectiveAbility)
+      ? [
+          { id: effectiveAbility, label: abilityDisplay },
+          ...abilitySelectOptions,
+        ]
+      : abilitySelectOptions;
+  const simpleAbilityField = onAbilityChange && (
+    <div className="flex flex-col gap-0.5">
+      <FieldLabel>{t.editor.ability}</FieldLabel>
+      <SearchableSelect
+        options={simpleAbilityOptions.map((option) => ({
+          ...option,
+          content: undefined,
+        }))}
+        value={abilityDisplay}
+        onSelect={(option) => onAbilityChange(option.id)}
+        placeholder={t.editor.selectAbility}
+        ariaLabel={t.editor.fieldLabel(title, t.editor.ability)}
+      />
+    </div>
+  );
+
+  const itemField = simpleFields ? (
+    simpleItemField
+  ) : onItemChange ? (
     <div className="flex flex-col gap-0.5">
       <FieldLabel>{t.editor.item}</FieldLabel>
       <div className="relative">
@@ -483,7 +624,9 @@ export function PokemonEditor({
               onItemChange(undefined);
               setActiveField(null);
             }}
-            aria-label={t.editor.clear(t.editor.fieldLabel(title, t.editor.item))}
+            aria-label={t.editor.clear(
+              t.editor.fieldLabel(title, t.editor.item),
+            )}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
           >
             <Icon name={IconName.Close} size={12} />
@@ -493,107 +636,164 @@ export function PokemonEditor({
     </div>
   ) : null;
 
-  const abilityField = onAbilityChange ? (
-    <div className="flex flex-col gap-0.5">
-      <FieldLabel>{t.editor.ability}</FieldLabel>
-      <input
-        type="text"
-        // Shows the CURRENTLY ACTIVE ability (mega-aware — Mega Blastoise
-        // displays "Mega Launcher", not the pasted base form's "Torrent")
-        // even though picking a new option still writes to the base
-        // pokemon.ability field, same as before — a Mega form only ever
-        // has one ability anyway, so this only changes what's shown while
-        // mega is toggled on, not what gets saved.
-        value={activeField?.kind === "ability" ? query : abilityDisplay}
-        onFocus={(event) => {
-          activateField({ kind: "ability" }, abilityDisplay);
-          event.target.select();
-        }}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder={t.editor.selectAbility}
-        aria-label={t.editor.fieldLabel(title, t.editor.ability)}
-        className={fieldInputClassName}
-      />
-    </div>
-  ) : (
-    effectiveAbility && (
+  const abilityField =
+    simpleFields && onAbilityChange ? (
+      simpleAbilityField
+    ) : onAbilityChange ? (
       <div className="flex flex-col gap-0.5">
         <FieldLabel>{t.editor.ability}</FieldLabel>
-        <span className="truncate text-sm text-zinc-700">{abilityDisplay}</span>
+        <input
+          type="text"
+          // Shows the CURRENTLY ACTIVE ability (mega-aware — Mega Blastoise
+          // displays "Mega Launcher", not the pasted base form's "Torrent")
+          // even though picking a new option still writes to the base
+          // pokemon.ability field, same as before — a Mega form only ever
+          // has one ability anyway, so this only changes what's shown while
+          // mega is toggled on, not what gets saved.
+          value={activeField?.kind === "ability" ? query : abilityDisplay}
+          onFocus={(event) => {
+            activateField({ kind: "ability" }, abilityDisplay);
+            event.target.select();
+          }}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t.editor.selectAbility}
+          aria-label={t.editor.fieldLabel(title, t.editor.ability)}
+          className={fieldInputClassName}
+        />
       </div>
-    )
-  );
+    ) : (
+      effectiveAbility && (
+        <div className="flex flex-col gap-0.5">
+          <FieldLabel>{t.editor.ability}</FieldLabel>
+          <span className="truncate text-sm text-zinc-700">
+            {abilityDisplay}
+          </span>
+        </div>
+      )
+    );
 
+  // One line per stat: name, base, SP box, SP slider (takes the spare
+  // width), final value, then the caller's extra columns.
+  const statGridStyle = {
+    gridTemplateColumns: `2.75rem 1.75rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`,
+  };
+  const remainingSp =
+    maxTotalStatPoints !== undefined ? maxTotalStatPoints - totalSp : undefined;
+  // The stacked layout (the calc) puts the nature on the stats' footer line;
+  // the Team Builder's columns layout keeps it in its own column.
+  const natureInFooter = layout === "stacked";
+  const natureSelect = (
+    <SearchableSelect
+      options={options.natures}
+      placeholder={t.editor.selectNature}
+      ariaLabel={t.editor.fieldLabel(title, t.editor.nature)}
+      value={natureLabel(currentNature.toLowerCase(), { text, t })}
+      onSelect={(option) =>
+        onStatOverridesChange({ ...statOverrides, nature: option.id })
+      }
+      compact
+    />
+  );
+  const inlineNatureField = (
+    <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
+      <span className="shrink-0 text-zinc-500">{t.editor.nature}</span>
+      <div className="min-w-0 max-w-48 flex-1">{natureSelect}</div>
+    </div>
+  );
   const statSection = breakdown ? (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[220px] text-xs text-zinc-700">
-        <thead>
-          <tr className="text-zinc-500">
-            <th className="py-0.5 text-left font-normal">{t.editor.stat}</th>
-            <th className="text-right font-normal">{t.editor.base}</th>
-            <th className="text-right font-normal">{t.editor.sp}</th>
-            <th className="text-right font-normal">{t.editor.final}</th>
-            {renderStatRowExtra && <th className="pl-2 text-right font-normal">{t.editor.stage}</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {STAT_ORDER.map((stat) => {
-            const isIncreased = breakdown.final.increasedStat === stat;
-            const isDecreased = breakdown.final.decreasedStat === stat;
-            return (
-              <tr key={stat}>
-                <td className="py-1">
-                  {statLabels[stat]}
-                  {isIncreased && (
-                    <span className="text-emerald-600" title={t.editor.boosted}>
-                      {" "}
-                      ↑
-                    </span>
-                  )}
-                  {isDecreased && (
-                    <span className="text-red-500" title={t.editor.lowered}>
-                      {" "}
-                      ↓
-                    </span>
-                  )}
-                </td>
-                <td className="text-right">{breakdown.base[stat]}</td>
-                <td className="py-1">
-                  <div className="flex flex-col items-end gap-0.5">
-                    <input
-                      type="number"
-                      min={0}
-                      max={32}
-                      value={breakdown.statPoints[stat]}
-                      onChange={(event) => updateSp(stat, Number(event.target.value))}
-                      aria-label={t.editor.statPointsLabel(title, statLabels[stat])}
-                      className="w-12 rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-right text-xs text-zinc-900"
-                    />
-                    <input
-                      type="range"
-                      min={0}
-                      max={32}
-                      value={breakdown.statPoints[stat]}
-                      onChange={(event) => updateSp(stat, Number(event.target.value))}
-                      aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
-                      className="w-20 accent-zinc-600"
-                    />
-                  </div>
-                </td>
-                <td className="text-right font-medium">
-                  {finalCellRenderer(stat, breakdown.final[stat])}
-                </td>
-                {renderStatRowExtra && <td className="pl-2 text-right">{renderStatRowExtra(stat)}</td>}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      <p
-        className={`mt-1 text-xs ${totalSp > (maxTotalStatPoints ?? Infinity) ? "text-red-600" : "text-zinc-500"}`}
+    <div className="flex flex-col gap-1">
+      <div
+        className="grid items-center gap-x-2 gap-y-1 text-xs text-zinc-700"
+        style={statGridStyle}
       >
-        {t.editor.statPointsUsed(totalSp, maxTotalStatPoints)}
-      </p>
+        <span className="text-zinc-500">{t.editor.stat}</span>
+        <span className="text-right text-zinc-500">{t.editor.base}</span>
+        <span className="text-center text-zinc-500">{t.editor.sp}</span>
+        <span />
+        <span className="text-right text-zinc-500">{t.editor.final}</span>
+        {extraStatColumns.map((column) => (
+          <span key={column.id} className="text-right text-zinc-500">
+            {column.header}
+          </span>
+        ))}
+        {STAT_ORDER.map((stat) => {
+          const isIncreased = breakdown.final.increasedStat === stat;
+          const isDecreased = breakdown.final.decreasedStat === stat;
+          return (
+            <Fragment key={stat}>
+              {/* Nature-raised stat in red, lowered in blue, like the Pokémon card. */}
+              <span
+                className={`whitespace-nowrap ${natureColor(isIncreased, isDecreased)}`}
+                title={
+                  isIncreased
+                    ? t.editor.boosted
+                    : isDecreased
+                      ? t.editor.lowered
+                      : undefined
+                }
+              >
+                {statLabels[stat]}
+              </span>
+              <span className="text-right">{breakdown.base[stat]}</span>
+              <input
+                type="number"
+                min={0}
+                max={32}
+                value={breakdown.statPoints[stat]}
+                onChange={(event) => updateSp(stat, Number(event.target.value))}
+                aria-label={t.editor.statPointsLabel(title, statLabels[stat])}
+                className="w-full rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-right text-xs text-zinc-900"
+              />
+              <input
+                type="range"
+                min={0}
+                max={32}
+                value={breakdown.statPoints[stat]}
+                onChange={(event) => updateSp(stat, Number(event.target.value))}
+                aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
+                className="w-full min-w-0 accent-zinc-600"
+              />
+              <span className="text-right font-medium tabular-nums">
+                {finalCellRenderer(stat, breakdown.final[stat])}
+              </span>
+              {extraStatColumns.map((column) => (
+                <span key={column.id} className="flex justify-end">
+                  {column.render(stat)}
+                </span>
+              ))}
+            </Fragment>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-3 pt-1 text-xs">
+        {maxTotalStatPoints !== undefined ? (
+          <span
+            className="flex shrink-0 items-baseline gap-1.5"
+            aria-label={t.editor.remainingLabel(
+              remainingSp ?? 0,
+              maxTotalStatPoints,
+            )}
+          >
+            <span className="text-zinc-500">{t.editor.remaining}</span>
+            <span
+              className={`font-medium tabular-nums ${
+                (remainingSp ?? 0) < 0
+                  ? "text-red-600"
+                  : remainingSp === 0
+                    ? "text-orange-600"
+                    : "text-zinc-900"
+              }`}
+            >
+              {remainingSp} / {maxTotalStatPoints}
+            </span>
+          </span>
+        ) : (
+          <span className="text-zinc-500">
+            {t.editor.statPointsUsed(totalSp)}
+          </span>
+        )}
+        {natureInFooter && inlineNatureField}
+      </div>
     </div>
   ) : (
     <p className="text-xs text-amber-600">{t.editor.noBaseStats}</p>
@@ -628,11 +828,12 @@ export function PokemonEditor({
         const isDecreased = breakdown.final.decreasedStat === stat;
         const sp = breakdown.statPoints[stat];
         return (
-          <div key={stat} className="flex items-center justify-between text-xs text-zinc-700">
-            <span>
+          <div
+            key={stat}
+            className="flex items-center justify-between text-xs text-zinc-700"
+          >
+            <span className={natureColor(isIncreased, isDecreased)}>
               {statLabels[stat]}
-              {isIncreased && <span className="text-emerald-600"> ↑</span>}
-              {isDecreased && <span className="text-red-500"> ↓</span>}
             </span>
             <span className="font-medium">{sp > 0 ? sp : "–"}</span>
           </div>
@@ -644,30 +845,66 @@ export function PokemonEditor({
   const natureField = (
     <div className="max-w-[200px]">
       <FieldLabel>{t.editor.nature}</FieldLabel>
-      <SearchableSelect
-        options={options.natures}
-        placeholder={t.editor.selectNature}
-        ariaLabel={t.editor.fieldLabel(title, t.editor.nature)}
-        value={natureLabel(currentNature.toLowerCase(), { text, t })}
-        onSelect={(option) => onStatOverridesChange({ ...statOverrides, nature: option.id })}
-        compact
-      />
+      {natureSelect}
     </div>
   );
+
+  // One row per move — a name-only searchable dropdown plus the caller's
+  // extra controls — instead of the shared results panel's detailed rows.
+  const simpleMoveFields =
+    onMovesChange &&
+    [0, 1, 2, 3].map((slot) => {
+      const moves = pokemon?.moves ?? [];
+      const move = moves[slot];
+      const usedElsewhere = moves.filter((_, i) => i !== slot);
+      return (
+        <div key={slot} className="flex items-center gap-1.5">
+          {/* Same width on every row, whatever controls follow it. */}
+          <div className="w-3/5 shrink-0">
+            <SearchableSelect
+              options={options.moves
+                .filter(
+                  (option) =>
+                    !usedElsewhere.includes(
+                      MOVES[option.id]?.name ?? option.id,
+                    ),
+                )
+                .map((option) => ({ ...option, content: undefined }))}
+              value={move ? text.move(move) : ""}
+              onSelect={(option) => {
+                // Saved by its English name — the label may be translated.
+                const moveName =
+                  MOVES[option.id]?.name ?? option.searchText ?? option.label;
+                onMovesChange(setMoveSlot(moves, slot, moveName));
+              }}
+              // Clearing keeps the other moves in their slots.
+              onClear={() => onMovesChange(setMoveSlot(moves, slot, ""))}
+              placeholder={t.editor.addMove}
+              ariaLabel={t.editor.moveSlot(title, slot + 1)}
+            />
+          </div>
+          {move && renderMoveExtra?.(move)}
+        </div>
+      );
+    });
 
   const moveFields =
     onMovesChange &&
     [0, 1, 2, 3].map((slot) => {
       const moves = pokemon?.moves ?? [];
       const move = moves[slot];
-      const isActive = activeField?.kind === "move" && activeField.slot === slot;
+      const isActive =
+        activeField?.kind === "move" && activeField.slot === slot;
       return (
         <div key={slot} className="relative">
           <input
             type="text"
             value={isActive ? query : move ? text.move(move) : ""}
             onFocus={(event) => {
-              activateField({ kind: "move", slot }, move ? text.move(move) : "");
+              activateField(
+                { kind: "move", slot },
+                move ? text.move(move) : "",
+              );
               event.target.select();
             }}
             onChange={(event) => setQuery(event.target.value)}
@@ -779,16 +1016,21 @@ export function PokemonEditor({
             {abilityField}
           </div>
 
-          {statSection}
-
-          {natureField}
+          <div className="py-4 border-t border-b border-zinc-200">
+            {statSection}
+            {!breakdown && natureField}
+          </div>
 
           {children}
 
           {onMovesChange && (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 py-2 border-t border-zinc-200">
               <FieldLabel>{t.editor.moves}</FieldLabel>
-              <div className="grid grid-cols-2 gap-1.5">{moveFields}</div>
+              {simpleFields ? (
+                <div className="flex flex-col gap-1.5">{simpleMoveFields}</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5">{moveFields}</div>
+              )}
             </div>
           )}
         </>

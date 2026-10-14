@@ -11,6 +11,7 @@ import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import { WEATHER_SETTING_ABILITIES } from "@/constants";
 import {
   DEFAULT_BATTLE_STATE,
+  EFFECT_MOVES,
   MAX_SIDEBAR_POKEMON,
   RosterPokemonPicker,
   type PokemonBattleState,
@@ -283,7 +284,6 @@ export function DamageCalculator() {
   const [battleFormat, setBattleFormat] = useState<"Singles" | "Doubles">("Doubles");
   const [weather, setWeather] = useState<DamageCalcOptions["weather"]>(undefined);
   const [terrain, setTerrain] = useState<DamageCalcOptions["terrain"]>(undefined);
-  const [isCritical, setIsCritical] = useState(false);
   const [fairyAura, setFairyAura] = useState(false);
   const [gravity, setGravity] = useState(false);
 
@@ -367,7 +367,6 @@ export function DamageCalculator() {
     defendingBattleState: PokemonBattleState,
   ): DamageCalcOptions {
     return {
-      isCritical,
       weather,
       terrain,
       fairyAura,
@@ -375,7 +374,6 @@ export function DamageCalculator() {
       attackerBurned: attackingBattleState.status === "Burned",
       attackerStatused: attackingBattleState.status !== "Healthy",
       defenderStatused: defendingBattleState.status !== "Healthy",
-      attackerFaintedAllies: attackingBattleState.faintedAllies ?? 0,
       attackerHelpingHand: attackingSide.helpingHand,
       attackerHitsMultipleTargets: battleFormat === "Doubles",
       isDoublesFormat: battleFormat === "Doubles",
@@ -405,6 +403,22 @@ export function DamageCalculator() {
     };
   }
 
+  // What's set on the move's own row: Crit, its Effect count (Last Respects,
+  // Rage Fist) or how many hits land.
+  function forMove(
+    options: DamageCalcOptions,
+    battleState: PokemonBattleState,
+    move: string,
+  ): DamageCalcOptions {
+    const count = battleState.moveCounts[move];
+    const effect = EFFECT_MOVES[move];
+    return {
+      ...options,
+      ...(battleState.critMoves.includes(move) && { isCritical: true }),
+      ...(count !== undefined && (effect ? { [effect.option]: count } : { hits: count })),
+    };
+  }
+
   // Both sides' movesets are computed simultaneously (attacker's moves vs.
   // defender, and defender's moves vs. attacker) so each row can show its own
   // damage range up front, rather than requiring a move to be selected first.
@@ -423,16 +437,32 @@ export function DamageCalculator() {
 
   const attackerMoveResults =
     effectiveAttacker && effectiveDefender
-      ? (attackerPokemon?.moves ?? []).map((move) => ({
+      ? (attackerPokemon?.moves ?? [])
+          // Empty slots stay so moves keep their place (PokemonEditor's setMoveSlot).
+          .filter((move) => move)
+          .map((move) => ({
           move,
-          result: calculateDamage(effectiveAttacker, effectiveDefender, move, attackerMoveOptions),
+          result: calculateDamage(
+            effectiveAttacker,
+            effectiveDefender,
+            move,
+            forMove(attackerMoveOptions, attackerBattleState, move),
+          ),
         }))
       : [];
   const defenderMoveResults =
     effectiveAttacker && effectiveDefender
-      ? (defenderPokemon?.moves ?? []).map((move) => ({
+      ? (defenderPokemon?.moves ?? [])
+          // Empty slots stay so moves keep their place (PokemonEditor's setMoveSlot).
+          .filter((move) => move)
+          .map((move) => ({
           move,
-          result: calculateDamage(effectiveDefender, effectiveAttacker, move, defenderMoveOptions),
+          result: calculateDamage(
+            effectiveDefender,
+            effectiveAttacker,
+            move,
+            forMove(defenderMoveOptions, defenderBattleState, move),
+          ),
         }))
       : [];
 
@@ -448,7 +478,13 @@ export function DamageCalculator() {
     selectedMove?.side === "attacker" ? attackerBattleState : defenderBattleState;
   const selectedDefendingBattleState =
     selectedMove?.side === "attacker" ? defenderBattleState : attackerBattleState;
-  const selectedOptions = selectedMove?.side === "attacker" ? attackerMoveOptions : defenderMoveOptions;
+  const selectedOptions = selectedMove
+    ? forMove(
+        selectedMove.side === "attacker" ? attackerMoveOptions : defenderMoveOptions,
+        selectedAttackingBattleState,
+        selectedMove.move,
+      )
+    : undefined;
 
   // Selecting an existing sidebar tile just switches which entry is shown —
   // battle state/stat overrides reset the same way switching Pokémon always
@@ -746,6 +782,7 @@ export function DamageCalculator() {
             if (autoWeather) setWeather(autoWeather);
           }}
           weather={weather}
+          terrain={terrain}
           tailwind={attackerSide.tailwind}
           battleState={attackerBattleState}
           onBattleStateChange={setAttackerBattleState}
@@ -799,7 +836,6 @@ export function DamageCalculator() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
-            <ToggleButton label={t.calc.criticalHit} active={isCritical} onClick={() => setIsCritical((v) => !v)} />
             <ToggleButton
               label={text.ability("Fairy Aura")}
               active={fairyAura}
@@ -840,6 +876,7 @@ export function DamageCalculator() {
             if (autoWeather) setWeather(autoWeather);
           }}
           weather={weather}
+          terrain={terrain}
           tailwind={defenderSide.tailwind}
           battleState={defenderBattleState}
           onBattleStateChange={setDefenderBattleState}

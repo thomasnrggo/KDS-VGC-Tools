@@ -54,7 +54,7 @@ const LEVEL_TERM = Math.floor((2 * LEVEL) / 5 + 2);
 /** Showdown-calc convention: 16 rolls spanning 85%-100% damage in 1% steps. */
 const DAMAGE_ROLL_PERCENTS = Array.from({ length: 16 }, (_, i) => 85 + i);
 /** Pokémon's own fixed-point unit for chained damage modifiers — see pokeRound/chainMods. */
-const FIXED_POINT = 0x1000;
+export const FIXED_POINT = 0x1000;
 
 /**
  * Game Freak's own rounding rule for a chained fixed-point modifier: exactly
@@ -66,7 +66,7 @@ const FIXED_POINT = 0x1000;
  * inside chainMods below uses standard rounding instead, matching the
  * reference's own two-different-rounding-functions split exactly.
  */
-function pokeRound(num: number): number {
+export function pokeRound(num: number): number {
   return num % 1 > 0.5 ? Math.ceil(num) : Math.floor(num);
 }
 
@@ -79,7 +79,7 @@ function pokeRound(num: number): number {
  * `pokeRound`). A modifier exactly equal to `FIXED_POINT` (i.e. ×1, no
  * effect) is skipped, matching the reference skipping neutral entries.
  */
-function chainMods(mods: number[]): number {
+export function chainMods(mods: number[]): number {
   let combined = FIXED_POINT;
   for (const mod of mods) {
     if (mod !== FIXED_POINT) {
@@ -213,7 +213,7 @@ const STAT_STAGE_MULTIPLIERS: Record<number, [number, number]> = {
   [-6]: [2, 8],
 };
 
-function applyStatStage(stat: number, stage: number | undefined): number {
+export function applyStatStage(stat: number, stage: number | undefined): number {
   const clamped = Math.max(-6, Math.min(6, Math.round(stage ?? 0)));
   const [numerator, denominator] = STAT_STAGE_MULTIPLIERS[clamped];
   return Math.floor((stat * numerator) / denominator);
@@ -259,6 +259,7 @@ const VARIABLE_POWER_MOVES = new Set([
   "stored-power",
   "power-trip",
   "last-respects",
+  "rage-fist",
 ]);
 
 /** What variable move power depends on (see resolveMovePower). */
@@ -272,6 +273,7 @@ interface PowerContext {
   defenderSpeed: number;
   attackerStages: DamageCalcOptions["attackerStages"];
   attackerFaintedAllies: number;
+  attackerTimesHit: number;
   attackerStatused: boolean;
   attackerHasItem: boolean;
   defenderStatused: boolean;
@@ -286,6 +288,7 @@ interface PowerContext {
  * - Gyro Ball: faster targets take more; Electro Ball: the speed ratio.
  * - Stored Power/Power Trip: +20 per positive stat stage.
  * - Last Respects: +50 per fainted ally.
+ * - Rage Fist: +50 per time the user has been hit, up to 6 (350).
  * - Facade (statused attacker), Acrobatics (no held item), Hex (statused target): ×2.
  */
 function resolveMovePower(moveKey: string, basePower: number, ctx: PowerContext): number {
@@ -324,6 +327,8 @@ function resolveMovePower(moveKey: string, basePower: number, ctx: PowerContext)
     }
     case "last-respects":
       return 50 + 50 * Math.min(100, Math.max(0, ctx.attackerFaintedAllies));
+    case "rage-fist":
+      return 50 + 50 * Math.min(6, Math.max(0, ctx.attackerTimesHit));
     case "facade":
       return ctx.attackerStatused ? basePower * 2 : basePower;
     case "acrobatics":
@@ -375,10 +380,55 @@ function fieldMoveType(
  * pick — unless the attacker has Skill Link, which guarantees the max.
  * Single-hit moves (no minHits/maxHits in the data) always return 1.
  */
-function resolveHitCount(move: MoveData, hasSkillLink: boolean): number {
-  if (move.minHits === undefined || move.maxHits === undefined) return 1;
-  if (move.minHits === move.maxHits) return move.minHits;
-  return hasSkillLink ? move.maxHits : 3;
+/**
+ * Multi-hit moves the data doesn't give a hit range for, or whose hits each
+ * check accuracy so fewer can land: Population Bomb (up to 10), Triple
+ * Axel/Kick (up to 3). They default to every hit landing, like Showdown's calc.
+ */
+const HIT_RANGE_OVERRIDES: Record<string, { min: number; max: number }> = {
+  "population-bomb": { min: 1, max: 10 },
+  "triple-axel": { min: 1, max: 3 },
+  "triple-kick": { min: 1, max: 3 },
+};
+
+/**
+ * The hits a move can land when that varies (Bullet Seed 2-5, Population
+ * Bomb 1-10, …), and how many the calc assumes when none is chosen — what the
+ * calc's Hits select offers. Null for a fixed hit count.
+ */
+export function moveHitRange(
+  moveName: string,
+  ability?: string,
+): { min: number; max: number; default: number } | null {
+  const moveKey = normalizeSpeciesKey(moveName);
+  const move = MOVES[moveKey];
+  const range =
+    HIT_RANGE_OVERRIDES[moveKey] ??
+    (move?.minHits !== undefined && move.maxHits !== undefined && move.minHits !== move.maxHits
+      ? { min: move.minHits, max: move.maxHits }
+      : undefined);
+  if (!range || !move) return null;
+  return { ...range, default: resolveHitCount(move, moveKey, ability === "Skill Link", undefined) };
+}
+
+function resolveHitCount(
+  move: MoveData,
+  moveKey: string,
+  hasSkillLink: boolean,
+  requestedHits: number | undefined,
+): number {
+  const dataRange =
+    move.minHits !== undefined && move.maxHits !== undefined
+      ? { min: move.minHits, max: move.maxHits }
+      : undefined;
+  const range = HIT_RANGE_OVERRIDES[moveKey] ?? dataRange;
+  if (!range) return 1;
+  if (range.min === range.max) return range.min;
+  if (requestedHits !== undefined) {
+    return Math.max(range.min, Math.min(range.max, Math.round(requestedHits)));
+  }
+  if (HIT_RANGE_OVERRIDES[moveKey] || hasSkillLink) return range.max;
+  return 3;
 }
 
 /** What a modifier's conditions are checked against for one hit (see sideMod4096). */
@@ -614,6 +664,7 @@ export function calculateDamage(
     defenderSpeed: applyStatStage(defenderStats.spe, options.defenderStages?.spe),
     attackerStages: options.attackerStages,
     attackerFaintedAllies: options.attackerFaintedAllies ?? 0,
+    attackerTimesHit: options.attackerTimesHit ?? 0,
     attackerStatused,
     attackerHasItem: !!attacker.item,
     defenderStatused: !!options.defenderStatused,
@@ -624,8 +675,14 @@ export function calculateDamage(
   const hasParentalBond =
     attackerAbility === "Parental Bond" &&
     move.minHits === undefined &&
+    !HIT_RANGE_OVERRIDES[moveKey] &&
     !(move.isSpread && options.attackerHitsMultipleTargets);
-  const hitCount = hasParentalBond ? 2 : resolveHitCount(move, attackerAbility === "Skill Link");
+  const hitCount = hasParentalBond ? 2 : resolveHitCount(
+        move,
+        moveKey,
+        attackerAbility === "Skill Link",
+        options.hits,
+      );
 
   // A defender that used Protect blocks the hit entirely, regardless of type
   // — checked before type effectiveness since it isn't a type interaction.
@@ -950,7 +1007,8 @@ export function calculateDamage(
     let totalDealt = 0;
     let totalMoveRecoil = 0;
     for (let hit = 0; hit < hitCount; hit++) {
-      if (hp <= 0) break; // already fainted from an earlier hit this sequence — no further hits land
+      // Every hit counts toward the total even past a KO, like Showdown's
+      // calc — stopping at the KO made a low roll's total exceed a high one's.
       const baseDamage =
         hasParentalBond && hit === 1
           ? baseDamageForHit(rawMovePower, true)

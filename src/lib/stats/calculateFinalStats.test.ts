@@ -22,6 +22,7 @@ describe("calculateFinalStats", () => {
       decreasedStat: "spa",
       speedBoostedByChoiceScarf: false,
       speedHalvedByIronBall: false,
+      speedBeforeItem: 169,
     });
   });
 
@@ -39,6 +40,7 @@ describe("calculateFinalStats", () => {
       decreasedStat: undefined,
       speedBoostedByChoiceScarf: false,
       speedHalvedByIronBall: false,
+      speedBeforeItem: 122,
     });
   });
 

@@ -2652,8 +2652,15 @@ leads/backs) is complete and working end to end.
       bad weather); stat overrides (Body Press, Psyshock/Psystrike). Fixed: Assault Vest applied to
       Psyshock. Translated (English/Spanish). Behind a new `damageCalc` feature flag (off by default;
       the admin always sees it) with its nav link and the opponent menu's "Open in Damage Calculator"
-      back. Still not modeled: Supreme Overlord, Analytic/Stakeout, Rage Fist, Gyro/Electro Ball with
+      back. Still not modeled: Supreme Overlord, Analytic/Stakeout, Gyro/Electro Ball with
       Tailwind/paralysis, Eviolite.
+- [ ] **Damage Calculator: sets**. The calc's species picker is its own component
+      (`PokemonSetPicker`), separate from the Team Builder's search: a Showdown-style dropdown with
+      each species and its sets underneath, since in the calc you're picking a build, not browsing
+      Pokémon. A set is species, item, ability, nature, Stat Points and moves (level 50); HP,
+      status, stages and field stay per calc. Steps: (1) the picker with "Blank Set" only — done
+      2026-10-14; (2) sets from your teams and Matchup Planner opponents; (3) saved sets per user
+      (`users/{uid}/calcSets`), save/rename/delete; (4) recommended sets, design later.
 - [x] **Prep groups** (shipped 2026-10-14): a collaborative Matchup
       Planner. A group shares its opponent list (add, edit, tags, variants, order) among its
       members; picks and notes stay private in each member's account. Firestore `groups/{id}`,

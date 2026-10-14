@@ -19,8 +19,29 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   everyone until turned on in /admin/features; the admin always sees it, with its nav link and
   "Open in Damage Calculator" in an opponent's menu.
 
+### Changed
+- Damage Calculator: the Pokémon search is now a compact dropdown listing each species with its sets
+  underneath (Showdown-style), instead of the Team Builder's search with abilities and base stats.
+  Only "Blank Set" for now; sets from your teams, opponents and saved sets come next.
+- Damage Calculator: the stats are one compact line each (stat, base, SP, slider, final, stage),
+  plus the stat's in-battle value next to the stage, shown only when something changes it: stage,
+  item (Choice Scarf/Band/Specs, Assault Vest, Iron Ball), ability (Huge Power, Guts, Swift Swim,
+  …), weather, Tailwind, paralysis. Hover it for what's changing it. Final now shows Speed without
+  the Choice Scarf.
+- Damage Calculator: item and ability are plain name-only searchable lists, instead of the Team
+  Builder's detailed rows with descriptions. Moves too, one per row, each with its own **Crit**
+  toggle (replacing the field's single "Critical Hit") and, where it applies, an **Effect** count
+  (Last Respects' fainted allies, Rage Fist's times hit) or a **Hits** count (Bullet Seed 2-5,
+  Population Bomb 1-10, Triple Axel 1-3). Enter picks the top result in these searches. Clearing
+  a move leaves its slot empty instead of moving the others up.
+- Damage Calculator: one line under the stats with the Stat Points remaining (x / 66) and the
+  nature. Stat Points are now capped at 66 in total, as in the game.
+
 ### Fixed
 - Damage Calculator: Assault Vest no longer reduces Psyshock (it hits Defense).
+- Damage Calculator: Rage Fist's power now grows with the times the user was hit; Population Bomb
+  is calculated as up to 10 hits (it was a single hit); a multi-hit move's total counts every hit,
+  even past a KO, like Showdown's calc (stopping at the KO could show a range like 189-175).
 
 ## 2026-10-14
 

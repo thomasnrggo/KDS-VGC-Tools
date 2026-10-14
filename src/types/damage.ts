@@ -75,6 +75,10 @@ export interface DamageCalcOptions {
   defenderStatused?: boolean;
   /** How many of the attacker's allies have fainted this battle — Last Respects gains 50 power per ally (max 100 + 50×… up to 300 in practice). */
   attackerFaintedAllies?: number;
+  /** How many times the attacker has been hit this battle — Rage Fist gains 50 power per hit, up to 6. */
+  attackerTimesHit?: number;
+  /** How many hits a multi-hit move lands (Bullet Seed 2-5, Population Bomb 1-10, …); clamped to the move's range. Omitted: 3 for 2-5 moves (5 with Skill Link), every hit otherwise. */
+  hits?: number;
   weather?: "Sun" | "Rain" | "Sand" | "Snow";
   terrain?: "Electric" | "Grassy" | "Psychic" | "Misty";
   defenderScreens?: {
