@@ -361,9 +361,6 @@ export function OpponentCard({
                 )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                {/* "Open in Damage Calculator" link hidden — feature has known
-                    bugs, not ready to publish yet. Re-add once stable (see
-                    PLANNING.md). */}
                 {/* Desktop's ⋮ menu lives on the Game plan title row, next to
                     the tags; this spot holds the variants toggle instead. */}
                 {variantToggleButton}

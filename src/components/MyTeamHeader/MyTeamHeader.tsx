@@ -63,8 +63,8 @@ const NAV_LINKS = [
   { page: "teams", href: "/teams", labelKey: "myTeams", flagKey: "teams" },
   { page: "tournaments", href: "/tournaments", labelKey: "tournaments", flagKey: "tournaments" },
   { page: "speed-tiers", href: "/speed-tiers", labelKey: "speedTiers", flagKey: "speedTiers" },
-  // Damage Calculator nav link hidden — feature has known bugs, not ready to
-  // publish yet. Re-add here once it's stable (see PLANNING.md).
+  // Behind its own flag (off by default) — the admin always sees it.
+  { page: "damage-calc", href: "/damage-calc", labelKey: "damageCalc", flagKey: "damageCalc" },
 ] as const;
 
 function TeamSwitcherRow({

@@ -12,6 +12,7 @@ import speciesTypesData from "@/data/speciesTypes.json";
 import type { AbilityData, ItemData, ParsedPokemon, SpeciesAbility } from "@/types";
 import { ItemIcon } from "../ItemIcon";
 import type { SearchableSelectOption } from "../SearchableSelect";
+import { ENGLISH_POKEMON_TEXT, type PokemonText } from "@/lib/i18n/pokemonNames";
 
 const ABILITIES = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
 const ABILITY_DESCRIPTIONS = abilityDescriptionsData as unknown as Record<string, AbilityData>;
@@ -50,22 +51,38 @@ function nameAndDescriptionContent(icon: ReactNode, name: string, shortDesc: str
   );
 }
 
-function abilityOptionContent(name: string, isHidden: boolean) {
+function abilityOptionContent(name: string, label: string) {
   const description = ABILITY_DESCRIPTIONS[normalizeSpeciesKey(name)]?.shortDesc;
-  const label = isHidden ? `${name} (Hidden Ability)` : name;
   return nameAndDescriptionContent(null, label, description);
 }
 
-function itemOptionContent(name: string) {
+function itemOptionContent(name: string, label: string) {
   const description = ITEMS[normalizeSpeciesKey(name)]?.shortDesc;
   return nameAndDescriptionContent(
     <span className="shrink-0">
       <ItemIcon item={name} size={20} />
     </span>,
-    name,
+    label,
     description,
   );
 }
+
+/**
+ * How option labels are shown — translated names (the Pokémon language) and
+ * the "(Hidden Ability)"/"(Mega Stone)" notes (the app language). Option ids
+ * stay the English names that get saved.
+ */
+export interface BuildLabels {
+  text: PokemonText;
+  hiddenAbility: string;
+  megaStone: string;
+}
+
+const ENGLISH_LABELS: BuildLabels = {
+  text: ENGLISH_POKEMON_TEXT,
+  hiddenAbility: "Hidden Ability",
+  megaStone: "Mega Stone",
+};
 
 /**
  * Derives everything PokemonEditor needs to render and calculate from a
@@ -80,7 +97,9 @@ export function computePokemonBuild(
   pokemon: ParsedPokemon | null,
   mega: boolean,
   statOverrides: StatOverrides,
+  labels: BuildLabels = ENGLISH_LABELS,
 ): PokemonBuild {
+  const { text } = labels;
   const hasMegaForm = pokemon
     ? candidateFormKeys(pokemon.species, pokemon.item).length > 1
     : false;
@@ -106,11 +125,17 @@ export function computePokemonBuild(
     : undefined;
   const abilityOptions = abilityFormKey ? (ABILITIES[abilityFormKey] ?? []) : [];
   const types = abilityFormKey ? (SPECIES_TYPES[abilityFormKey] ?? []) : [];
-  const abilitySelectOptions: SearchableSelectOption[] = abilityOptions.map((ability) => ({
-    id: ability.name,
-    label: ability.isHidden ? `${ability.name} (Hidden Ability)` : ability.name,
-    content: abilityOptionContent(ability.name, ability.isHidden),
-  }));
+  const abilitySelectOptions: SearchableSelectOption[] = abilityOptions.map((ability) => {
+    const label = ability.isHidden
+      ? `${text.ability(ability.name)} (${labels.hiddenAbility})`
+      : text.ability(ability.name);
+    return {
+      id: ability.name,
+      label,
+      searchText: ability.name,
+      content: abilityOptionContent(ability.name, label),
+    };
+  });
 
   // REGULATIONS[0]'s own function, not the bare `megaStoneItemsForSpecies`
   // re-export (that's specifically Regulation M-B's list — seven other
@@ -129,17 +154,24 @@ export function computePokemonBuild(
         ...(pokemon.item &&
         !megaStoneOptions.includes(pokemon.item) &&
         !REGULATIONS[0].items.includes(pokemon.item)
-          ? [{ id: pokemon.item, label: pokemon.item, content: itemOptionContent(pokemon.item) }]
+          ? [
+              {
+                id: pokemon.item,
+                label: text.item(pokemon.item),
+                searchText: pokemon.item,
+                content: itemOptionContent(pokemon.item, text.item(pokemon.item)),
+              },
+            ]
           : []),
-        ...megaStoneOptions.map((item) => ({
-          id: item,
-          label: `${item} (Mega Stone)`,
-          content: itemOptionContent(item),
-        })),
+        ...megaStoneOptions.map((item) => {
+          const label = `${text.item(item)} (${labels.megaStone})`;
+          return { id: item, label, searchText: item, content: itemOptionContent(item, label) };
+        }),
         ...REGULATIONS[0].items.map((item) => ({
           id: item,
-          label: item,
-          content: itemOptionContent(item),
+          label: text.item(item),
+          searchText: item,
+          content: itemOptionContent(item, text.item(item)),
         })),
       ]
     : [];

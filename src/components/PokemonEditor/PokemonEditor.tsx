@@ -16,6 +16,10 @@ import { TypeIcon } from "../TypeIcon";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { computePokemonBuild } from "./computePokemonBuild";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { ENGLISH_POKEMON_TEXT, type PokemonText } from "@/lib/i18n/pokemonNames";
+import { MESSAGES, type Messages } from "@/lib/i18n/messages";
+import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 
 const ABILITIES = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
 const MOVES = movesData as unknown as Record<string, MoveData>;
@@ -23,8 +27,21 @@ const SPECIES_TYPES = speciesTypesData as unknown as Record<string, string[]>;
 const BASE_STATS = baseStatsData as unknown as Record<string, BaseStats>;
 const NATURE_NAMES = Object.keys(NATURE_MODIFIERS);
 
+/** How option rows are worded: translated game terms plus the app-language labels (Pow/Acc/BST, …). */
+interface OptionLabels {
+  text: PokemonText;
+  t: Messages;
+}
+
+const ENGLISH_OPTION_LABELS: OptionLabels = { text: ENGLISH_POKEMON_TEXT, t: MESSAGES.en };
+
 /** A Showdown-style sprite/name/types row on top, abilities/stat-line below — the species search's shared-panel row (see moveOptionContent for the move-picker equivalent). */
-function speciesOptionContent(key: string, label: string): ReactNode {
+function speciesOptionContent(
+  key: string,
+  englishName: string,
+  { text, t }: OptionLabels = ENGLISH_OPTION_LABELS,
+): ReactNode {
+  const label = text.species(englishName);
   const types = SPECIES_TYPES[key] ?? [];
   const abilities = ABILITIES[key] ?? [];
   const stats = BASE_STATS[key];
@@ -32,7 +49,7 @@ function speciesOptionContent(key: string, label: string): ReactNode {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded bg-zinc-100">
-        <PokemonSprite species={label} fill />
+        <PokemonSprite species={englishName} fill />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex items-center gap-1.5">
@@ -43,11 +60,14 @@ function speciesOptionContent(key: string, label: string): ReactNode {
         </div>
         <div className="flex items-center justify-between gap-2 text-[10px] text-zinc-500">
           <span className="truncate">
-            {abilities.map((a) => (a.isHidden ? `${a.name} (H)` : a.name)).join(" / ")}
+            {abilities
+              .map((a) => (a.isHidden ? `${text.ability(a.name)} (${t.editor.hiddenShort})` : text.ability(a.name)))
+              .join(" / ")}
           </span>
           {stats && (
             <span className="shrink-0">
-              {stats.hp}/{stats.atk}/{stats.def}/{stats.spa}/{stats.spd}/{stats.spe} BST {bst}
+              {stats.hp}/{stats.atk}/{stats.def}/{stats.spa}/{stats.spd}/{stats.spe} {t.editor.bst}{" "}
+              {bst}
             </span>
           )}
         </div>
@@ -63,17 +83,23 @@ export const SPECIES_OPTIONS: SearchableSelectOption[] = REGULATIONS[0].speciesK
 });
 
 /** A Showdown-style Name/Type/Category/Pow/Acc/PP row with the effect text underneath — the move search's shared-panel row. */
-function moveOptionContent(move: MoveData, fallbackName: string): ReactNode {
-  const name = move.name ?? fallbackName;
+function moveOptionContent(
+  move: MoveData,
+  fallbackName: string,
+  { text, t }: OptionLabels = ENGLISH_OPTION_LABELS,
+): ReactNode {
+  const name = text.move(move.name ?? fallbackName);
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
       <div className="flex items-center gap-1.5">
         <span className="truncate font-medium">{name}</span>
         <TypeIcon type={move.type} size={14} />
-        <span className="shrink-0 text-[10px] uppercase text-zinc-500">{move.category}</span>
+        <span className="shrink-0 text-[10px] uppercase text-zinc-500">
+          {t.editor.categories[move.category]}
+        </span>
         <span className="ml-auto shrink-0 whitespace-nowrap text-[10px] text-zinc-500">
-          {move.power ? `${move.power} Pow` : "— Pow"} · {move.accuracy ? `${move.accuracy}% Acc` : "— Acc"} ·{" "}
-          {move.pp ?? "—"} PP
+          {move.power ?? "—"} {t.editor.power} · {move.accuracy ? `${move.accuracy}%` : "—"}{" "}
+          {t.editor.accuracy} · {move.pp ?? "—"} {t.editor.pp}
         </span>
       </div>
       {move.shortDesc && <span className="truncate text-[11px] text-zinc-500">{move.shortDesc}</span>}
@@ -111,18 +137,54 @@ export const STAT_LABELS: Record<StatKey, string> = {
 };
 export const STAT_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
 
-export function natureLabel(name: string): string {
+export function natureLabel(
+  name: string,
+  { text, t }: OptionLabels = ENGLISH_OPTION_LABELS,
+): string {
   const modifier = NATURE_MODIFIERS[name];
-  const capitalized = name.charAt(0).toUpperCase() + name.slice(1);
+  const capitalized = text.nature(name.charAt(0).toUpperCase() + name.slice(1));
   if (!modifier?.increased || !modifier.decreased) return capitalized;
-  return `${capitalized} (+${STAT_LABELS[modifier.increased]}, -${STAT_LABELS[modifier.decreased]})`;
+  return `${capitalized} (+${t.stats.short[modifier.increased]}, -${t.stats.short[modifier.decreased]})`;
 }
 
-/** All 25 natures, for the nature dropdown — id is the lowercase key `applyStatOverrides` expects, label is the human-readable "+/-" form `natureLabel` already produces. */
-const NATURE_OPTIONS: SearchableSelectOption[] = NATURE_NAMES.map((name) => ({
-  id: name,
-  label: natureLabel(name),
-}));
+/**
+ * The species, move and nature lists in a given language — ids stay the
+ * English names that get saved; the English name is also searchable, so
+ * "Swords Dance" still finds "Danza Espada". Built once per language pair.
+ */
+const localizedOptionsCache = new Map<
+  string,
+  { species: SearchableSelectOption[]; moves: SearchableSelectOption[]; natures: SearchableSelectOption[] }
+>();
+
+function localizedOptions(labels: OptionLabels) {
+  const key = `${labels.text.language}|${labels.t === MESSAGES.en ? "en" : "es"}`;
+  // While a language's names are still loading, `text` is the English one —
+  // its language is "en", so it's cached under the English key, not this one.
+  const cachedOptions = localizedOptionsCache.get(key);
+  if (cachedOptions) return cachedOptions;
+  const built = {
+    species: SPECIES_OPTIONS.map((option) => ({
+      ...option,
+      label: labels.text.species(option.label),
+      searchText: option.label,
+      content: speciesOptionContent(option.id, option.label, labels),
+    })),
+    moves: Object.entries(MOVES).map(([moveKey, move]) => ({
+      id: moveKey,
+      label: labels.text.move(move.name ?? moveKey),
+      searchText: move.name ?? moveKey,
+      content: moveOptionContent(move, moveKey, labels),
+    })),
+    natures: NATURE_NAMES.map((name) => ({
+      id: name,
+      label: natureLabel(name, labels),
+      searchText: name,
+    })),
+  };
+  localizedOptionsCache.set(key, built);
+  return built;
+}
 
 /**
  * Which field the shared results panel below is currently sourced from — at
@@ -143,11 +205,16 @@ type ActiveField =
 const MAX_VISIBLE_RESULTS = 40;
 
 function filterOptions(options: SearchableSelectOption[], query: string): SearchableSelectOption[] {
-  const trimmed = query.trim().toLowerCase();
-  return (trimmed ? options.filter((o) => o.label.toLowerCase().includes(trimmed)) : options).slice(
-    0,
-    MAX_VISIBLE_RESULTS,
-  );
+  const trimmed = foldForSearch(query.trim());
+  return (
+    trimmed
+      ? options.filter(
+          (o) =>
+            foldForSearch(o.label).includes(trimmed) ||
+            (!!o.searchText && foldForSearch(o.searchText).includes(trimmed)),
+        )
+      : options
+  ).slice(0, MAX_VISIBLE_RESULTS);
 }
 
 const fieldInputClassName =
@@ -226,6 +293,9 @@ export function PokemonEditor({
   children,
   layout = "stacked",
 }: PokemonEditorProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const options = localizedOptions({ text, t });
   const {
     hasMegaForm,
     types,
@@ -234,11 +304,20 @@ export function PokemonEditor({
     effectiveAbility,
     abilitySelectOptions,
     itemOptions,
-  } = computePokemonBuild(pokemon, mega, statOverrides);
+  } = computePokemonBuild(pokemon, mega, statOverrides, {
+    text,
+    hiddenAbility: t.editor.hiddenAbility,
+    megaStone: t.editor.megaStone,
+  });
 
   const [activeField, setActiveField] = useState<ActiveField>(null);
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  // What the fields show — translated; what they save stays English.
+  const speciesDisplay = pokemon ? text.species(pokemon.species) : "";
+  const itemDisplay = pokemon?.item ? text.item(pokemon.item) : "";
+  const abilityDisplay = effectiveAbility ? text.ability(effectiveAbility) : "";
+  const statLabels = t.stats.short;
 
   useEffect(() => {
     if (!activeField) return;
@@ -276,10 +355,12 @@ export function PokemonEditor({
     } else if (activeField.kind === "move") {
       const moves = pokemon?.moves ?? [];
       const next = [...moves];
+      // Saved by its English name — the label may be translated.
+      const moveName = MOVES[option.id]?.name ?? option.searchText ?? option.label;
       if (activeField.slot < moves.length) {
-        next[activeField.slot] = option.label;
+        next[activeField.slot] = moveName;
       } else {
-        next.push(option.label);
+        next.push(moveName);
       }
       onMovesChange?.(next);
     }
@@ -314,40 +395,42 @@ export function PokemonEditor({
   let activeOptions: SearchableSelectOption[] = [];
   let activeAriaLabel = "";
   if (activeField?.kind === "species") {
-    activeOptions = SPECIES_OPTIONS;
-    activeAriaLabel = `${title} Pokémon`;
+    activeOptions = options.species;
+    activeAriaLabel = t.editor.fieldLabel(title, t.editor.pokemon);
   } else if (activeField?.kind === "ability") {
     activeOptions = abilitySelectOptions;
-    activeAriaLabel = `${title} ability`;
+    activeAriaLabel = t.editor.fieldLabel(title, t.editor.ability);
   } else if (activeField?.kind === "item") {
     activeOptions = itemOptions;
-    activeAriaLabel = `${title} held item`;
+    activeAriaLabel = t.editor.fieldLabel(title, t.editor.item);
   } else if (activeField?.kind === "move") {
     const moves = pokemon?.moves ?? [];
     // A Pokémon can't know the same move twice — excluding whatever's
     // already picked in the OTHER slots (not this one, so re-opening a slot
     // still shows its own current move as a valid option).
     const usedElsewhere = moves.filter((_, i) => i !== activeField.slot);
-    activeOptions = MOVE_OPTIONS.filter((option) => !usedElsewhere.includes(option.label));
-    activeAriaLabel = `${title} move ${activeField.slot + 1}`;
+    activeOptions = options.moves.filter(
+      (option) => !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id),
+    );
+    activeAriaLabel = t.editor.moveSlot(title, activeField.slot + 1);
   }
   const filteredOptions = activeField ? filterOptions(activeOptions, query) : [];
 
   const speciesField = onSpeciesChange && (
     <div className="flex flex-col gap-0.5">
-      <FieldLabel>Pokémon</FieldLabel>
+      <FieldLabel>{t.editor.pokemon}</FieldLabel>
       <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
           <input
             type="text"
-            value={activeField?.kind === "species" ? query : (pokemon?.species ?? "")}
+            value={activeField?.kind === "species" ? query : speciesDisplay}
             onFocus={(event) => {
-              activateField({ kind: "species" }, pokemon?.species ?? "");
+              activateField({ kind: "species" }, speciesDisplay);
               event.target.select();
             }}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search for a Pokémon…"
-            aria-label={`${title} Pokémon`}
+            placeholder={t.editor.searchPokemon}
+            aria-label={t.editor.fieldLabel(title, t.editor.pokemon)}
             className={fieldInputClassName}
           />
         </div>
@@ -362,7 +445,7 @@ export function PokemonEditor({
                 : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
             }`}
           >
-            Mega
+            {t.editor.mega}
           </button>
         )}
       </div>
@@ -379,18 +462,18 @@ export function PokemonEditor({
 
   const itemField = onItemChange ? (
     <div className="flex flex-col gap-0.5">
-      <FieldLabel>Item</FieldLabel>
+      <FieldLabel>{t.editor.item}</FieldLabel>
       <div className="relative">
         <input
           type="text"
-          value={activeField?.kind === "item" ? query : (pokemon?.item ?? "")}
+          value={activeField?.kind === "item" ? query : itemDisplay}
           onFocus={(event) => {
-            activateField({ kind: "item" }, pokemon?.item ?? "");
+            activateField({ kind: "item" }, itemDisplay);
             event.target.select();
           }}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Add a held item…"
-          aria-label={`${title} held item`}
+          placeholder={t.editor.addItem}
+          aria-label={t.editor.fieldLabel(title, t.editor.item)}
           className={fieldInputClassName}
         />
         {pokemon?.item && (
@@ -400,7 +483,7 @@ export function PokemonEditor({
               onItemChange(undefined);
               setActiveField(null);
             }}
-            aria-label={`Clear ${title} held item`}
+            aria-label={t.editor.clear(t.editor.fieldLabel(title, t.editor.item))}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
           >
             <Icon name={IconName.Close} size={12} />
@@ -412,7 +495,7 @@ export function PokemonEditor({
 
   const abilityField = onAbilityChange ? (
     <div className="flex flex-col gap-0.5">
-      <FieldLabel>Ability</FieldLabel>
+      <FieldLabel>{t.editor.ability}</FieldLabel>
       <input
         type="text"
         // Shows the CURRENTLY ACTIVE ability (mega-aware — Mega Blastoise
@@ -421,22 +504,22 @@ export function PokemonEditor({
         // pokemon.ability field, same as before — a Mega form only ever
         // has one ability anyway, so this only changes what's shown while
         // mega is toggled on, not what gets saved.
-        value={activeField?.kind === "ability" ? query : (effectiveAbility ?? "")}
+        value={activeField?.kind === "ability" ? query : abilityDisplay}
         onFocus={(event) => {
-          activateField({ kind: "ability" }, effectiveAbility ?? "");
+          activateField({ kind: "ability" }, abilityDisplay);
           event.target.select();
         }}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Select ability…"
-        aria-label={`${title} ability`}
+        placeholder={t.editor.selectAbility}
+        aria-label={t.editor.fieldLabel(title, t.editor.ability)}
         className={fieldInputClassName}
       />
     </div>
   ) : (
     effectiveAbility && (
       <div className="flex flex-col gap-0.5">
-        <FieldLabel>Ability</FieldLabel>
-        <span className="truncate text-sm text-zinc-700">{effectiveAbility}</span>
+        <FieldLabel>{t.editor.ability}</FieldLabel>
+        <span className="truncate text-sm text-zinc-700">{abilityDisplay}</span>
       </div>
     )
   );
@@ -446,11 +529,11 @@ export function PokemonEditor({
       <table className="w-full min-w-[220px] text-xs text-zinc-700">
         <thead>
           <tr className="text-zinc-500">
-            <th className="py-0.5 text-left font-normal">Stat</th>
-            <th className="text-right font-normal">Base</th>
-            <th className="text-right font-normal">SP</th>
-            <th className="text-right font-normal">Final</th>
-            {renderStatRowExtra && <th className="pl-2 text-right font-normal">Stage</th>}
+            <th className="py-0.5 text-left font-normal">{t.editor.stat}</th>
+            <th className="text-right font-normal">{t.editor.base}</th>
+            <th className="text-right font-normal">{t.editor.sp}</th>
+            <th className="text-right font-normal">{t.editor.final}</th>
+            {renderStatRowExtra && <th className="pl-2 text-right font-normal">{t.editor.stage}</th>}
           </tr>
         </thead>
         <tbody>
@@ -460,15 +543,15 @@ export function PokemonEditor({
             return (
               <tr key={stat}>
                 <td className="py-1">
-                  {STAT_LABELS[stat]}
+                  {statLabels[stat]}
                   {isIncreased && (
-                    <span className="text-emerald-600" title="Boosted by nature">
+                    <span className="text-emerald-600" title={t.editor.boosted}>
                       {" "}
                       ↑
                     </span>
                   )}
                   {isDecreased && (
-                    <span className="text-red-500" title="Lowered by nature">
+                    <span className="text-red-500" title={t.editor.lowered}>
                       {" "}
                       ↓
                     </span>
@@ -483,7 +566,7 @@ export function PokemonEditor({
                       max={32}
                       value={breakdown.statPoints[stat]}
                       onChange={(event) => updateSp(stat, Number(event.target.value))}
-                      aria-label={`${title} ${STAT_LABELS[stat]} Stat Points`}
+                      aria-label={t.editor.statPointsLabel(title, statLabels[stat])}
                       className="w-12 rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-right text-xs text-zinc-900"
                     />
                     <input
@@ -492,7 +575,7 @@ export function PokemonEditor({
                       max={32}
                       value={breakdown.statPoints[stat]}
                       onChange={(event) => updateSp(stat, Number(event.target.value))}
-                      aria-label={`${title} ${STAT_LABELS[stat]} Stat Points slider`}
+                      aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
                       className="w-20 accent-zinc-600"
                     />
                   </div>
@@ -509,13 +592,11 @@ export function PokemonEditor({
       <p
         className={`mt-1 text-xs ${totalSp > (maxTotalStatPoints ?? Infinity) ? "text-red-600" : "text-zinc-500"}`}
       >
-        {maxTotalStatPoints !== undefined
-          ? `${totalSp}/${maxTotalStatPoints} Stat Points used`
-          : `${totalSp} Stat Points used`}
+        {t.editor.statPointsUsed(totalSp, maxTotalStatPoints)}
       </p>
     </div>
   ) : (
-    <p className="text-xs text-amber-600">No base stats found for this species/form.</p>
+    <p className="text-xs text-amber-600">{t.editor.noBaseStats}</p>
   );
 
   // The "columns" layout's compact stand-in for statSection — just label +
@@ -536,10 +617,10 @@ export function PokemonEditor({
       }`}
     >
       <div className="flex items-center justify-between">
-        <FieldLabel>Stats</FieldLabel>
+        <FieldLabel>{t.editor.stats}</FieldLabel>
         <span className="flex items-center gap-0.5 text-[10px] text-zinc-400">
           <Icon name={IconName.Edit} size={11} />
-          Edit
+          {t.editor.edit}
         </span>
       </div>
       {STAT_ORDER.map((stat) => {
@@ -549,7 +630,7 @@ export function PokemonEditor({
         return (
           <div key={stat} className="flex items-center justify-between text-xs text-zinc-700">
             <span>
-              {STAT_LABELS[stat]}
+              {statLabels[stat]}
               {isIncreased && <span className="text-emerald-600"> ↑</span>}
               {isDecreased && <span className="text-red-500"> ↓</span>}
             </span>
@@ -562,12 +643,12 @@ export function PokemonEditor({
 
   const natureField = (
     <div className="max-w-[200px]">
-      <FieldLabel>Nature</FieldLabel>
+      <FieldLabel>{t.editor.nature}</FieldLabel>
       <SearchableSelect
-        options={NATURE_OPTIONS}
-        placeholder="Select nature…"
-        ariaLabel={`${title} nature`}
-        value={natureLabel(currentNature.toLowerCase())}
+        options={options.natures}
+        placeholder={t.editor.selectNature}
+        ariaLabel={t.editor.fieldLabel(title, t.editor.nature)}
+        value={natureLabel(currentNature.toLowerCase(), { text, t })}
         onSelect={(option) => onStatOverridesChange({ ...statOverrides, nature: option.id })}
         compact
       />
@@ -584,14 +665,14 @@ export function PokemonEditor({
         <div key={slot} className="relative">
           <input
             type="text"
-            value={isActive ? query : (move ?? "")}
+            value={isActive ? query : move ? text.move(move) : ""}
             onFocus={(event) => {
-              activateField({ kind: "move", slot }, move ?? "");
+              activateField({ kind: "move", slot }, move ? text.move(move) : "");
               event.target.select();
             }}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Add a move…"
-            aria-label={`${title} move ${slot + 1}`}
+            placeholder={t.editor.addMove}
+            aria-label={t.editor.moveSlot(title, slot + 1)}
             className={fieldInputClassName}
           />
           {move && (
@@ -603,7 +684,7 @@ export function PokemonEditor({
                 onMovesChange(next);
                 setActiveField(null);
               }}
-              aria-label={`Clear ${title} move ${slot + 1}`}
+              aria-label={t.editor.clear(t.editor.moveSlot(title, slot + 1))}
               className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
             >
               <Icon name={IconName.Close} size={12} />
@@ -629,7 +710,7 @@ export function PokemonEditor({
       {activeField.kind === "stats" ? (
         <div className="p-2">{statSection}</div>
       ) : filteredOptions.length === 0 ? (
-        <p className="p-2 text-xs text-zinc-500">No matches.</p>
+        <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
       ) : (
         filteredOptions.map((option) => (
           <button
@@ -670,7 +751,7 @@ export function PokemonEditor({
               </div>
               {onMovesChange && (
                 <div className="flex flex-col gap-1.5">
-                  <FieldLabel>Moves</FieldLabel>
+                  <FieldLabel>{t.editor.moves}</FieldLabel>
                   {moveFields}
                 </div>
               )}
@@ -706,7 +787,7 @@ export function PokemonEditor({
 
           {onMovesChange && (
             <div className="flex flex-col gap-1.5">
-              <FieldLabel>Moves</FieldLabel>
+              <FieldLabel>{t.editor.moves}</FieldLabel>
               <div className="grid grid-cols-2 gap-1.5">{moveFields}</div>
             </div>
           )}

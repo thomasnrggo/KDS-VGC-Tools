@@ -43,13 +43,15 @@
  *   whichever side (attacker or defender) the ability sits on, applied at
  *   the `stage` above.
  *
- * Deliberately deferred (not yet knowable from this app's data model):
- * - Contact-dependent abilities (Fluffy, Punk Rock's sound-move half) —
- *   moves.json doesn't carry per-move flags like `makesContact` yet.
+ * Move-flag abilities (Tough Claws, Iron Fist, Strong Jaw, Mega Launcher,
+ * Sharpness, Sheer Force, Reckless, Punk Rock, Fluffy) read
+ * src/data/moveFlags.json (`npm run generate:calc-data`, from Showdown's data).
+ *
+ * Deliberately deferred:
  * - Evolution-stage-dependent items (Eviolite) — species.json doesn't
  *   track evolution stage.
- * - Pulse/bite/sound-move-scoped abilities (Mega Launcher, Strong Jaw, Punk
- *   Rock) — same missing per-move-flag gap as above.
+ * - Abilities that depend on battle history (Analytic, Supreme Overlord's
+ *   fainted allies, Stakeout).
  */
 
 export interface AbilityDamageModifierSide {
@@ -65,14 +67,48 @@ export interface AbilityDamageModifierSide {
   onlySuperEffective?: boolean;
   /** Attacker-side only: applies only when the move's listed base power is at or under this (e.g. Technician). */
   maxBasePower?: number;
+  /** Applies only to moves with this flag (src/data/moveFlags.json, from Showdown's data): contact (Tough Claws, Fluffy), punch (Iron Fist), bite (Strong Jaw), pulse (Mega Launcher), slicing (Sharpness), sound (Punk Rock), secondary effects (Sheer Force), recoil (Reckless). */
+  flag?: MoveFlag;
+  /** Applies only in these weathers (Sand Force, Solar Power). */
+  weathers?: Array<"Sun" | "Rain" | "Sand" | "Snow">;
+  /** Applies only in this terrain (Grass Pelt). */
+  terrain?: "Electric" | "Grassy" | "Psychic" | "Misty";
+  /** Applies only to a critical hit (Sniper). */
+  onlyCritical?: boolean;
+  /** Defender-side: applies only while the defender is at full HP (Multiscale, Shadow Shield). */
+  defenderAtFullHp?: boolean;
 }
 
+export type MoveFlag =
+  | "contact"
+  | "punch"
+  | "bite"
+  | "pulse"
+  | "slicing"
+  | "sound"
+  | "secondary"
+  | "recoil";
+
 export interface AbilityDamageModifier {
-  /** Applied when the ATTACKER has this ability. */
-  attacker?: AbilityDamageModifierSide;
-  /** Applied when the DEFENDER has this ability. */
-  defender?: AbilityDamageModifierSide;
+  /** Applied when the ATTACKER has this ability — a list when it has several separate effects. */
+  attacker?: AbilityDamageModifierSide | AbilityDamageModifierSide[];
+  /** Applied when the DEFENDER has this ability (Fluffy: half from contact, double from Fire). */
+  defender?: AbilityDamageModifierSide | AbilityDamageModifierSide[];
 }
+
+/**
+ * Abilities that turn Normal-type moves into another type and boost them
+ * ×1.2 (0x1333) — handled in the engine before type effectiveness and STAB,
+ * since the type change affects both. Liquid Voice turns sound moves into
+ * Water without a boost (see the engine).
+ */
+export const TYPE_CHANGING_ABILITIES: Record<string, string> = {
+  Pixilate: "Fairy",
+  Aerilate: "Flying",
+  Refrigerate: "Ice",
+  Galvanize: "Electric",
+  Dragonize: "Dragon",
+};
 
 /** Ability name -> the single type it grants full immunity to (as the defender). */
 export const TYPE_IMMUNITY_ABILITIES: Record<string, string> = {
@@ -86,6 +122,8 @@ export const TYPE_IMMUNITY_ABILITIES: Record<string, string> = {
   "Motor Drive": "Electric",
   "Well-Baked Body": "Fire",
   "Earth Eater": "Ground",
+  // Pokémon Champions (Mega Eelektross) — Ground immunity, per Showdown's data.
+  Eelevate: "Ground",
 };
 
 export const ABILITY_DAMAGE_MODIFIERS: Record<string, AbilityDamageModifier> = {
@@ -107,4 +145,66 @@ export const ABILITY_DAMAGE_MODIFIERS: Record<string, AbilityDamageModifier> = {
   "Fur Coat": { defender: { multiplier4096: 0x2000, stage: "df", categories: ["Physical"] } },
   // ×1.25, base-power stage, Fire-type moves only.
   "Dry Skin": { defender: { multiplier4096: 0x1400, stage: "bp", types: ["Fire"] } },
+
+  // Move-flag boosts, base-power stage (values from the same reference).
+  "Tough Claws": { attacker: { multiplier4096: 0x14cd, stage: "bp", flag: "contact" } },
+  "Iron Fist": { attacker: { multiplier4096: 0x1333, stage: "bp", flag: "punch" } },
+  "Strong Jaw": { attacker: { multiplier4096: 0x1800, stage: "bp", flag: "bite" } },
+  "Mega Launcher": { attacker: { multiplier4096: 0x1800, stage: "bp", flag: "pulse" } },
+  Sharpness: { attacker: { multiplier4096: 0x1800, stage: "bp", flag: "slicing" } },
+  "Sheer Force": { attacker: { multiplier4096: 0x14cd, stage: "bp", flag: "secondary" } },
+  Reckless: { attacker: { multiplier4096: 0x1333, stage: "bp", flag: "recoil" } },
+  // Punk Rock: its own sound moves ×1.3; sound moves against it halved.
+  "Punk Rock": {
+    attacker: { multiplier4096: 0x14cd, stage: "bp", flag: "sound" },
+    defender: { multiplier4096: 0x800, stage: "final", flag: "sound" },
+  },
+  "Sand Force": {
+    attacker: {
+      multiplier4096: 0x14cd,
+      stage: "bp",
+      types: ["Rock", "Ground", "Steel"],
+      weathers: ["Sand"],
+    },
+  },
+  "Steely Spirit": { attacker: { multiplier4096: 0x1800, stage: "bp", types: ["Steel"] } },
+
+  // Attack-stat boosts.
+  Hustle: { attacker: { multiplier4096: 0x1800, stage: "at", categories: ["Physical"] } },
+  "Gorilla Tactics": { attacker: { multiplier4096: 0x1800, stage: "at", categories: ["Physical"] } },
+  "Solar Power": {
+    attacker: { multiplier4096: 0x1800, stage: "at", categories: ["Special"], weathers: ["Sun"] },
+  },
+  Steelworker: { attacker: { multiplier4096: 0x1800, stage: "at", types: ["Steel"] } },
+  "Dragon's Maw": { attacker: { multiplier4096: 0x1800, stage: "at", types: ["Dragon"] } },
+  Transistor: { attacker: { multiplier4096: 0x14cd, stage: "at", types: ["Electric"] } },
+  "Rocky Payload": { attacker: { multiplier4096: 0x1800, stage: "at", types: ["Rock"] } },
+  // Pokémon Champions: "offensive stat ×1.5 while using a Fire-type attack" (Showdown's data).
+  "Fire Mane": { attacker: { multiplier4096: 0x1800, stage: "at", types: ["Fire"] } },
+  // Water Bubble: its own Water moves ×2; Fire moves against it halved.
+  "Water Bubble": {
+    attacker: { multiplier4096: 0x2000, stage: "at", types: ["Water"] },
+    defender: { multiplier4096: 0x800, stage: "at", types: ["Fire"] },
+  },
+  "Purifying Salt": { defender: { multiplier4096: 0x800, stage: "at", types: ["Ghost"] } },
+
+  // Defense-stat boosts.
+  "Grass Pelt": {
+    defender: { multiplier4096: 0x1800, stage: "df", categories: ["Physical"], terrain: "Grassy" },
+  },
+
+  // Final-damage modifiers.
+  Sniper: { attacker: { multiplier4096: 0x1800, stage: "final", onlyCritical: true } },
+  Multiscale: { defender: { multiplier4096: 0x800, stage: "final", defenderAtFullHp: true } },
+  "Shadow Shield": { defender: { multiplier4096: 0x800, stage: "final", defenderAtFullHp: true } },
+  "Prism Armor": { defender: { multiplier4096: 0xc00, stage: "final", onlySuperEffective: true } },
+  // Pokémon Champions (Mega Lucario Z): halves contact-move damage, like
+  // Fluffy's contact half (per Showdown's Champions damage calc).
+  "Aura Guard": { defender: { multiplier4096: 0x800, stage: "final", flag: "contact" } },
+  Fluffy: {
+    defender: [
+      { multiplier4096: 0x800, stage: "final", flag: "contact" },
+      { multiplier4096: 0x2000, stage: "final", types: ["Fire"] },
+    ],
+  },
 };

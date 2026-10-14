@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { DamageCalcOptions, ParsedPokemon } from "@/types";
 import { calculateDamage } from "./calculateDamage";
 
 describe("calculateDamage", () => {
@@ -908,5 +909,86 @@ describe("calculateDamage ability/item stage bucketing (bp/at/df/final)", () => 
     const noTerrainGrass = calculateDamage(garchomp, ditto, "Giga Drain");
     const grassyTerrainGrass = calculateDamage(garchomp, ditto, "Giga Drain", { terrain: "Grassy" });
     expect(grassyTerrainGrass!.rolls[0]).toBeGreaterThan(noTerrainGrass!.rolls[0]);
+  });
+});
+
+/**
+ * Golden values from Showdown's own damage calculator (@smogon/calc 0.12,
+ * Gen 9 mechanics at level 50, Stat Points as EVs ×8 — Champions' stat
+ * formula gives the same stats), checked roll for roll on 2026-10-14. Each
+ * covers a rule added in that pass: move-flag abilities, -ate abilities,
+ * weight/speed/HP-based power, stat overrides, Parental Bond, Aura Guard, Mega Sol.
+ */
+describe("matches Showdown's damage calc", () => {
+  const cases: Array<[string, ParsedPokemon, ParsedPokemon, string, DamageCalcOptions, number, number]> = [
+    ["Pixilate Hyper Voice (spread)", {species: "Sylveon",  ability: "Pixilate",  nature: "Modest",  evs: "31 SpA"}, {species: "Incineroar",  ability: "Intimidate",  evs: "31 HP"}, "Hyper Voice", {isDoublesFormat: true,  attackerHitsMultipleTargets: true}, 73, 87],
+    ["Tough Claws Meteor Mash", {species: "Metagross",  ability: "Tough Claws",  nature: "Adamant",  evs: "31 Atk"}, {species: "Garchomp",  ability: "Rough Skin",  evs: "20 HP"}, "Meteor Mash", {isDoublesFormat: true}, 118, 139],
+    ["Iron Fist Drain Punch", {species: "Conkeldurr",  ability: "Iron Fist",  nature: "Adamant",  evs: "31 Atk"}, {species: "Kingambit",  ability: "Defiant"}, "Drain Punch", {isDoublesFormat: true}, 304, 364],
+    ["Strong Jaw Psychic Fangs", {species: "Tyrantrum",  ability: "Strong Jaw",  nature: "Jolly",  evs: "31 Atk"}, {species: "Amoonguss"}, "Psychic Fangs", {isDoublesFormat: true}, 182, 216],
+    ["Sharpness Sacred Sword", {species: "Gallade",  ability: "Sharpness",  nature: "Adamant",  evs: "31 Atk"}, {species: "Kingambit",  ability: "Defiant"}, "Sacred Sword", {isDoublesFormat: true}, 420, 496],
+    ["Mega Launcher Dark Pulse", {species: "Clawitzer",  ability: "Mega Launcher",  nature: "Modest",  evs: "31 SpA"}, {species: "Gholdengo",  ability: "Good as Gold"}, "Dark Pulse", {isDoublesFormat: true}, 154, 182],
+    ["Sheer Force Life Orb Flamethrower", {species: "Nidoking",  item: "Life Orb",  ability: "Sheer Force",  nature: "Modest",  evs: "31 SpA"}, {species: "Rillaboom",  ability: "Grassy Surge"}, "Flamethrower", {isDoublesFormat: true}, 190, 226],
+    ["Reckless Flare Blitz", {species: "Emboar",  ability: "Reckless",  nature: "Adamant",  evs: "31 Atk"}, {species: "Rillaboom",  ability: "Grassy Surge"}, "Flare Blitz", {isDoublesFormat: true}, 284, 336],
+    ["Sand Force Earthquake in sand", {species: "Excadrill",  ability: "Sand Force",  nature: "Adamant",  evs: "31 Atk"}, {species: "Incineroar",  ability: "Intimidate"}, "Earthquake", {isDoublesFormat: true,  attackerHitsMultipleTargets: true,  weather: "Sand"}, 204, 242],
+    ["Multiscale full HP", {species: "Glaceon",  nature: "Modest",  evs: "31 SpA"}, {species: "Dragonite",  ability: "Multiscale"}, "Ice Beam", {isDoublesFormat: true}, 168, 200],
+    ["Multiscale at 90%", {species: "Glaceon",  nature: "Modest",  evs: "31 SpA"}, {species: "Dragonite",  ability: "Multiscale"}, "Ice Beam", {isDoublesFormat: true,  defenderCurrentHpPercent: 90}, 336, 400],
+    ["Fluffy vs contact", {species: "Urshifu",  ability: "Unseen Fist",  nature: "Adamant",  evs: "31 Atk"}, {species: "Bewear",  ability: "Fluffy"}, "Close Combat", {isDoublesFormat: true}, 135, 160],
+    ["Fluffy vs Fire", {species: "Charizard",  nature: "Modest",  evs: "31 SpA"}, {species: "Bewear",  ability: "Fluffy"}, "Flamethrower", {isDoublesFormat: true}, 224, 266],
+    ["Punk Rock attacker", {species: "Toxtricity",  ability: "Punk Rock",  nature: "Modest",  evs: "31 SpA"}, {species: "Gholdengo"}, "Overdrive", {isDoublesFormat: true,  attackerHitsMultipleTargets: true}, 72, 85],
+    ["Punk Rock defender", {species: "Sylveon",  ability: "Pixilate",  nature: "Modest",  evs: "31 SpA"}, {species: "Toxtricity",  ability: "Punk Rock"}, "Hyper Voice", {isDoublesFormat: true,  attackerHitsMultipleTargets: true}, 22, 26],
+    ["Low Kick vs Snorlax", {species: "Rillaboom",  nature: "Adamant",  evs: "31 Atk"}, {species: "Snorlax",  ability: "Thick Fat"}, "Low Kick", {isDoublesFormat: true}, 204, 242],
+    ["Grass Knot vs Gholdengo", {species: "Rillaboom",  nature: "Modest",  evs: "31 SpA"}, {species: "Gholdengo"}, "Grass Knot", {isDoublesFormat: true}, 19, 23],
+    ["Heavy Slam", {species: "Copperajah",  ability: "Sheer Force",  nature: "Adamant",  evs: "31 Atk"}, {species: "Sylveon"}, "Heavy Slam", {isDoublesFormat: true}, 318, 374],
+    ["Heavy Slam w/ Heavy Metal", {species: "Copperajah",  ability: "Heavy Metal",  nature: "Adamant",  evs: "31 Atk"}, {species: "Sylveon"}, "Heavy Slam", {isDoublesFormat: true}, 318, 374],
+    ["Gyro Ball vs fast target", {species: "Ferrothorn",  nature: "Brave",  evs: "31 Atk"}, {species: "Dragapult",  nature: "Jolly",  evs: "31 Spe"}, "Gyro Ball", {isDoublesFormat: true}, 139, 165],
+    ["Electro Ball", {species: "Regieleki",  ability: "Transistor",  nature: "Timid",  evs: "31 SpA / 31 Spe"}, {species: "Gyarados"}, "Electro Ball", {isDoublesFormat: true}, 300, 352],
+    ["Flail at 10%", {species: "Dewgong",  nature: "Adamant",  evs: "31 Atk"}, {species: "Incineroar"}, "Flail", {isDoublesFormat: true,  attackerCurrentHpPercent: 10}, 68, 81],
+    ["Body Press", {species: "Corviknight",  nature: "Impish",  evs: "31 Def"}, {species: "Kingambit"}, "Body Press", {isDoublesFormat: true}, 148, 176],
+    ["Psyshock vs Assault Vest", {species: "Hatterene",  nature: "Modest",  evs: "31 SpA"}, {species: "Amoonguss",  item: "Assault Vest",  evs: "31 HP"}, "Psyshock", {isDoublesFormat: true}, 206, 246],
+    ["Facade while burned", {species: "Ursaluna",  ability: "Bulletproof",  nature: "Adamant",  evs: "31 Atk"}, {species: "Incineroar"}, "Facade", {isDoublesFormat: true,  attackerBurned: true,  attackerStatused: true}, 151, 178],
+    ["Knock Off vs item", {species: "Incineroar",  nature: "Adamant",  evs: "31 Atk"}, {species: "Amoonguss",  item: "Sitrus Berry"}, "Knock Off", {isDoublesFormat: true}, 111, 132],
+    ["Knock Off vs no item", {species: "Incineroar",  nature: "Adamant",  evs: "31 Atk"}, {species: "Amoonguss"}, "Knock Off", {isDoublesFormat: true}, 75, 88],
+    ["Acrobatics no item", {species: "Hawlucha",  nature: "Jolly",  evs: "31 Atk"}, {species: "Rillaboom"}, "Acrobatics", {isDoublesFormat: true}, 162, 192],
+    ["Weather Ball in rain", {species: "Pelipper",  nature: "Modest",  evs: "31 SpA"}, {species: "Incineroar"}, "Weather Ball", {isDoublesFormat: true,  weather: "Rain"}, 252, 296],
+    ["Terrain Pulse Electric", {species: "Raichu",  nature: "Timid",  evs: "31 SpA"}, {species: "Pelipper"}, "Terrain Pulse", {isDoublesFormat: true,  terrain: "Electric"}, 460, 544],
+    ["Expanding Force Psychic Terrain", {species: "Indeedee-F",  nature: "Modest",  evs: "31 SpA"}, {species: "Amoonguss"}, "Expanding Force", {isDoublesFormat: true,  attackerHitsMultipleTargets: true,  terrain: "Psychic"}, 210, 248],
+    ["Hex vs statused", {species: "Gengar",  nature: "Timid",  evs: "31 SpA"}, {species: "Incineroar"}, "Hex", {isDoublesFormat: true,  defenderStatused: true}, 60, 72],
+    ["Stored Power +2/+2", {species: "Espathra",  nature: "Modest",  evs: "31 SpA"}, {species: "Amoonguss"}, "Stored Power", {isDoublesFormat: true,  attackerStages: {spa: 2,  spd: 2}}, 374, 444],
+    ["Sniper crit", {species: "Kingdra",  ability: "Sniper",  nature: "Modest",  evs: "31 SpA"}, {species: "Incineroar"}, "Hydro Pump", {isDoublesFormat: true,  isCritical: true}, 408, 486],
+    ["Solar Power in sun", {species: "Charizard",  ability: "Solar Power",  nature: "Modest",  evs: "31 SpA"}, {species: "Rillaboom"}, "Flamethrower", {isDoublesFormat: true,  weather: "Sun"}, 450, 530],
+    ["Parental Bond", {species: "Kangaskhan-Mega",  ability: "Parental Bond",  nature: "Adamant",  evs: "31 Atk"}, {species: "Incineroar"}, "Double-Edge", {isDoublesFormat: true}, 146, 175],
+    ["Hustle", {species: "Durant",  ability: "Hustle",  nature: "Jolly",  evs: "31 Atk"}, {species: "Sylveon"}, "Iron Head", {isDoublesFormat: true}, 254, 302],
+    ["Water Bubble defender vs Fire", {species: "Charizard",  nature: "Modest",  evs: "31 SpA"}, {species: "Araquanid",  ability: "Water Bubble"}, "Flamethrower", {isDoublesFormat: true}, 30, 36],
+    ["Water Bubble attacker", {species: "Araquanid",  ability: "Water Bubble",  nature: "Adamant",  evs: "31 Atk"}, {species: "Incineroar"}, "Liquidation", {isDoublesFormat: true}, 234, 276],
+    ["Liquid Voice Hyper Voice", {species: "Primarina",  ability: "Liquid Voice",  nature: "Modest",  evs: "31 SpA"}, {species: "Incineroar"}, "Hyper Voice", {isDoublesFormat: true,  attackerHitsMultipleTargets: true}, 134, 158],
+    ["Purifying Salt vs Ghost", {species: "Gengar",  nature: "Timid",  evs: "31 SpA"}, {species: "Garganacl",  ability: "Purifying Salt"}, "Shadow Ball", {isDoublesFormat: true}, 37, 45],
+    ["Grass Pelt Grassy Terrain", {species: "Kingambit",  nature: "Adamant",  evs: "31 Atk"}, {species: "Gogoat",  ability: "Grass Pelt"}, "Iron Head", {isDoublesFormat: true,  terrain: "Grassy"}, 76, 90],
+    ["Solar Beam in rain", {species: "Venusaur",  nature: "Modest",  evs: "31 SpA"}, {species: "Pelipper"}, "Solar Beam", {isDoublesFormat: true,  weather: "Rain"}, 63, 75],
+    ["Punching Glove", {species: "Hitmonchan",  item: "Punching Glove",  nature: "Adamant",  evs: "31 Atk"}, {species: "Kingambit"}, "Drain Punch", {isDoublesFormat: true}, 232, 276],
+    ["Aerilate Mega Salamence Double-Edge", {species: "Salamence",  item: "Salamencite",  ability: "Aerilate",  nature: "Adamant",  evs: "31 Atk"}, {species: "Rillaboom"}, "Double-Edge", {isDoublesFormat: true}, 318, 374],
+    ["Water Spout at 50%", {species: "Kyogre",  nature: "Modest",  evs: "31 SpA"}, {species: "Incineroar"}, "Water Spout", {isDoublesFormat: true,  attackerHitsMultipleTargets: true,  attackerCurrentHpPercent: 50}, 128, 152],
+    ["Foul Play", {species: "Grimmsnarl",  nature: "Careful"}, {species: "Kingambit",  nature: "Adamant",  evs: "31 Atk"}, "Foul Play", {isDoublesFormat: true}, 39, 46],
+    ["Aura Guard vs contact", {species: "Garchomp",  nature: "Jolly",  evs: "32 Atk"}, {species: "Lucario",  item: "Lucarionite Z",  ability: "Inner Focus"}, "Dragon Claw", {isDoublesFormat: true}, 23, 27],
+    ["Mega Sol Weather Ball (no weather)", {species: "Meganium",  item: "Meganiumite",  nature: "Modest",  evs: "32 SpA"}, {species: "Rillaboom"}, "Weather Ball", {isDoublesFormat: true}, 270, 318],
+    ["Dragonize Mega Feraligatr Double-Edge", {species: "Feraligatr",  item: "Feraligite",  nature: "Adamant",  evs: "32 Atk"}, {species: "Garchomp"}, "Double-Edge", {isDoublesFormat: true}, 330, 390],
+    ["Max SP 32 Close Combat", {species: "Lucario",  nature: "Adamant",  evs: "32 Atk"}, {species: "Kingambit",  evs: "32 HP / 32 Def"}, "Close Combat", {isDoublesFormat: true}, 280, 336],
+  ];
+
+  it.each(cases)("%s", (_name, attacker, defender, move, options, min, max) => {
+    const result = calculateDamage(attacker, defender, move, options);
+    expect([result?.rolls[0], result?.rolls[15]]).toEqual([min, max]);
+  });
+});
+
+describe("Last Respects", () => {
+  it("gains 50 power per fainted ally", () => {
+    const attacker = { species: "Basculegion", ability: "Adaptability", nature: "Adamant", evs: "31 Atk" };
+    const defender = { species: "Incineroar" };
+    const none = calculateDamage(attacker, defender, "Last Respects", {});
+    const two = calculateDamage(attacker, defender, "Last Respects", { attackerFaintedAllies: 2 });
+    // 50 → 150 power: three times the damage, give or take rounding.
+    const ratio = two!.rolls[15] / none!.rolls[15];
+    expect(ratio).toBeGreaterThan(2.8);
+    expect(ratio).toBeLessThan(3.1);
   });
 });

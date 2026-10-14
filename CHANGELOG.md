@@ -9,6 +9,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 
 ## Unreleased
 
+### Added
+- **Damage Calculator accuracy pass**, checked roll for roll against Showdown's own damage calculator
+  (including its Pokémon Champions mode): ~25 more abilities (Pixilate, Tough Claws, Sheer Force,
+  Multiscale, Fluffy, Sharpness, Mega Sol, Aura Guard, …), variable-power moves (Low Kick, Grass
+  Knot, Heavy Slam, Gyro Ball, Last Respects, Knock Off, Weather Ball, …), Body Press and Psyshock's
+  stat swaps, Parental Bond. A "Fainted allies" input for Last Respects.
+- The Damage Calculator is translated (English/Spanish) and behind its own feature flag: off for
+  everyone until turned on in /admin/features; the admin always sees it, with its nav link and
+  "Open in Damage Calculator" in an opponent's menu.
+
+### Fixed
+- Damage Calculator: Assault Vest no longer reduces Psyshock (it hits Defense).
+
 ## 2026-10-14
 
 ### Added

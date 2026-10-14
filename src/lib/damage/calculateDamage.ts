@@ -1,4 +1,6 @@
 import movesData from "@/data/moves.json";
+import moveFlagsData from "@/data/moveFlags.json";
+import speciesWeightsData from "@/data/speciesWeights.json";
 import typeChartData from "@/data/typeChart.json";
 import speciesTypesData from "@/data/speciesTypes.json";
 import { calculateFinalStats } from "@/lib/stats/calculateFinalStats";
@@ -11,7 +13,11 @@ import {
   TYPE_IMMUNITY_ABILITIES,
   ITEM_DAMAGE_MODIFIERS,
 } from "@/constants";
-import type { AbilityDamageModifierSide } from "@/constants/abilityDamageModifiers";
+import {
+  TYPE_CHANGING_ABILITIES,
+  type AbilityDamageModifierSide,
+  type MoveFlag,
+} from "@/constants/abilityDamageModifiers";
 import type {
   DamageCalcOptions,
   DamageResult,
@@ -21,6 +27,23 @@ import type {
 } from "@/types";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
+
+/** Per-move flags and stat overrides from Showdown's data — see scripts/generate-calc-data.mjs. */
+interface MoveFlags {
+  contact?: boolean;
+  punch?: boolean;
+  bite?: boolean;
+  pulse?: boolean;
+  slicing?: boolean;
+  sound?: boolean;
+  secondary?: boolean;
+  recoil?: boolean;
+  defensiveStat?: "def" | "spd";
+  offensiveStat?: "def";
+  offensivePokemon?: "target";
+}
+const MOVE_FLAGS = moveFlagsData as unknown as Record<string, MoveFlags>;
+const SPECIES_WEIGHTS = speciesWeightsData as unknown as Record<string, number>;
 const TYPE_CHART = typeChartData as unknown as Record<string, Record<string, number>>;
 const SPECIES_TYPES = speciesTypesData as unknown as Record<string, string[]>;
 
@@ -218,22 +241,129 @@ const INCREASING_POWER_MULTI_HIT_MOVES = new Set(["triple-kick", "triple-axel"])
 const TARGET_ATTACK_STAT_MOVES = new Set(["foul-play"]);
 
 /**
- * Water Spout and Eruption's power scales with the ATTACKER's own current
- * HP: `floor(150 * currentHP / maxHP)`, minimum 1. moves.json stores 150 for
- * both (PokeAPI's full-HP value) since it has no notion of this scaling, so
- * without this the engine would always compute as if the attacker were at
- * full HP regardless of the Current HP slider. Other HP/weight/speed-scaled
- * moves (Flail, Reversal, Grass Knot, Gyro Ball, ...) are still deliberately
- * out of scope — PokeAPI reports `power: null` for those (a different kind
- * of gap, already handled by the early `!move.power` return below), whereas
- * these two are the only ones PokeAPI mislabels as a fixed value.
+ * Moves whose power depends on the battle rather than a fixed number —
+ * PokeAPI lists most with `power: null`, so they're allowed past the
+ * "no power" early return and resolved by resolveMovePower.
  */
-const HP_SCALED_POWER_MOVES = new Set(["water-spout", "eruption"]);
+const VARIABLE_POWER_MOVES = new Set([
+  "water-spout",
+  "eruption",
+  "low-kick",
+  "grass-knot",
+  "heavy-slam",
+  "heat-crash",
+  "gyro-ball",
+  "electro-ball",
+  "flail",
+  "reversal",
+  "stored-power",
+  "power-trip",
+  "last-respects",
+]);
 
-function resolveMovePower(moveKey: string, basePower: number, attackerCurrentHpPercent: number | undefined): number {
-  if (!HP_SCALED_POWER_MOVES.has(moveKey)) return basePower;
-  const percent = attackerCurrentHpPercent ?? 100;
-  return Math.max(1, Math.floor((basePower * percent) / 100));
+/** What variable move power depends on (see resolveMovePower). */
+interface PowerContext {
+  /** Current and max HP, in whole points like the game. */
+  attackerHp: number;
+  attackerMaxHp: number;
+  attackerWeightKg: number;
+  defenderWeightKg: number;
+  attackerSpeed: number;
+  defenderSpeed: number;
+  attackerStages: DamageCalcOptions["attackerStages"];
+  attackerFaintedAllies: number;
+  attackerStatused: boolean;
+  attackerHasItem: boolean;
+  defenderStatused: boolean;
+}
+
+/**
+ * The move's power for this hit, before any modifier chain — the reference's
+ * `basePowerFunc` step. Covers:
+ * - Water Spout/Eruption: `floor(150 × HP%)`, min 1 (moves.json stores the full-HP 150).
+ * - Flail/Reversal: higher the lower the attacker's HP.
+ * - Low Kick/Grass Knot: the target's weight; Heavy Slam/Heat Crash: the weight ratio.
+ * - Gyro Ball: faster targets take more; Electro Ball: the speed ratio.
+ * - Stored Power/Power Trip: +20 per positive stat stage.
+ * - Last Respects: +50 per fainted ally.
+ * - Facade (statused attacker), Acrobatics (no held item), Hex (statused target): ×2.
+ */
+function resolveMovePower(moveKey: string, basePower: number, ctx: PowerContext): number {
+  switch (moveKey) {
+    case "water-spout":
+    case "eruption":
+      return Math.max(1, Math.floor((basePower * ctx.attackerHp) / ctx.attackerMaxHp));
+    case "flail":
+    case "reversal": {
+      const p = Math.floor((48 * ctx.attackerHp) / ctx.attackerMaxHp);
+      return p <= 1 ? 200 : p <= 4 ? 150 : p <= 9 ? 100 : p <= 16 ? 80 : p <= 32 ? 40 : 20;
+    }
+    case "low-kick":
+    case "grass-knot": {
+      const w = ctx.defenderWeightKg;
+      return w < 10 ? 20 : w < 25 ? 40 : w < 50 ? 60 : w < 100 ? 80 : w < 200 ? 100 : 120;
+    }
+    case "heavy-slam":
+    case "heat-crash": {
+      const ratio = ctx.attackerWeightKg / Math.max(0.1, ctx.defenderWeightKg);
+      return ratio >= 5 ? 120 : ratio >= 4 ? 100 : ratio >= 3 ? 80 : ratio >= 2 ? 60 : 40;
+    }
+    case "gyro-ball":
+      return Math.min(150, Math.floor((25 * ctx.defenderSpeed) / Math.max(1, ctx.attackerSpeed)) + 1);
+    case "electro-ball": {
+      const ratio = ctx.attackerSpeed / Math.max(1, ctx.defenderSpeed);
+      return ratio >= 4 ? 150 : ratio >= 3 ? 120 : ratio >= 2 ? 80 : ratio >= 1 ? 60 : 40;
+    }
+    case "stored-power":
+    case "power-trip": {
+      const boosts = Object.values(ctx.attackerStages ?? {}).reduce(
+        (sum: number, stage) => sum + Math.max(0, stage ?? 0),
+        0,
+      );
+      return 20 + 20 * boosts;
+    }
+    case "last-respects":
+      return 50 + 50 * Math.min(100, Math.max(0, ctx.attackerFaintedAllies));
+    case "facade":
+      return ctx.attackerStatused ? basePower * 2 : basePower;
+    case "acrobatics":
+      return ctx.attackerHasItem ? basePower : basePower * 2;
+    case "hex":
+      return ctx.defenderStatused ? basePower * 2 : basePower;
+    default:
+      return basePower;
+  }
+}
+
+/** A Pokémon's weight in kg (its Mega form's when holding the stone), with Heavy Metal/Light Metal. */
+function resolveWeightKg(pokemon: ParsedPokemon, ability: string | undefined): number {
+  let weight = 0;
+  for (const key of candidateFormKeys(pokemon.species, pokemon.item)) {
+    const found = SPECIES_WEIGHTS[key] ?? SPECIES_WEIGHTS[SPECIES_ALIASES[key]];
+    if (found) {
+      weight = found;
+      break;
+    }
+  }
+  if (ability === "Heavy Metal") weight *= 2;
+  if (ability === "Light Metal") weight = Math.floor(weight * 5) / 10;
+  return weight;
+}
+
+/** Weather Ball and Terrain Pulse change type with the field. */
+function fieldMoveType(
+  moveKey: string,
+  weather: DamageCalcOptions["weather"],
+  terrain: DamageCalcOptions["terrain"],
+  attackerGrounded: boolean,
+): string | undefined {
+  if (moveKey === "weather-ball" && weather) {
+    return { Sun: "Fire", Rain: "Water", Sand: "Rock", Snow: "Ice" }[weather];
+  }
+  if (moveKey === "terrain-pulse" && terrain && attackerGrounded) {
+    return { Electric: "Electric", Grassy: "Grass", Psychic: "Psychic", Misty: "Fairy" }[terrain];
+  }
+  return undefined;
 }
 
 /**
@@ -251,24 +381,55 @@ function resolveHitCount(move: MoveData, hasSkillLink: boolean): number {
   return hasSkillLink ? move.maxHits : 3;
 }
 
-/** Looks up one ability/item modifier "side" (see abilityDamageModifiers.ts) if its conditions match this move/matchup AND it belongs to the requested `stage` — returns the neutral `FIXED_POINT` (×1, a chainMods no-op) otherwise. */
-function sideMod4096(
-  side: AbilityDamageModifierSide | undefined,
-  stage: AbilityDamageModifierSide["stage"],
-  move: MoveData,
-  typeMultiplier: number,
-): number {
-  if (!side || side.stage !== stage) return FIXED_POINT;
-  if (side.types && !side.types.includes(move.type)) return FIXED_POINT;
-  if (
-    side.categories &&
-    !side.categories.includes(move.category as Exclude<MoveCategory, "Status">)
-  ) {
-    return FIXED_POINT;
+/** What a modifier's conditions are checked against for one hit (see sideMod4096). */
+interface ModifierContext {
+  move: MoveData;
+  flags: MoveFlags;
+  typeMultiplier: number;
+  weather: DamageCalcOptions["weather"];
+  terrain: DamageCalcOptions["terrain"];
+  isCritical: boolean;
+  defenderAtFullHp: boolean;
+  /** The stat the hit lands on — Psyshock is Special but hits Defense. */
+  defenseStatKey: "def" | "spd";
+}
+
+function sideMatches(side: AbilityDamageModifierSide, ctx: ModifierContext): boolean {
+  const { move } = ctx;
+  if (side.types && !side.types.includes(move.type)) return false;
+  // A defense-stat modifier follows the stat actually hit, not the move's
+  // category: Assault Vest (Sp. Def) doesn't help against Psyshock, Fur Coat
+  // (Defense) does.
+  const category =
+    side.stage === "df" ? (ctx.defenseStatKey === "def" ? "Physical" : "Special") : move.category;
+  if (side.categories && !side.categories.includes(category as Exclude<MoveCategory, "Status">)) {
+    return false;
   }
-  if (side.onlySuperEffective && typeMultiplier <= 1) return FIXED_POINT;
-  if (side.maxBasePower !== undefined && (move.power ?? 0) > side.maxBasePower) return FIXED_POINT;
-  return side.multiplier4096;
+  if (side.onlySuperEffective && ctx.typeMultiplier <= 1) return false;
+  if (side.maxBasePower !== undefined && (move.power ?? 0) > side.maxBasePower) return false;
+  if (side.flag && !ctx.flags[side.flag as MoveFlag]) return false;
+  if (side.weathers && (!ctx.weather || !side.weathers.includes(ctx.weather))) return false;
+  if (side.terrain && ctx.terrain !== side.terrain) return false;
+  if (side.onlyCritical && !ctx.isCritical) return false;
+  if (side.defenderAtFullHp && !ctx.defenderAtFullHp) return false;
+  return true;
+}
+
+/**
+ * The combined multiplier of an ability/item modifier entry (see
+ * abilityDamageModifiers.ts) for the requested `stage` — every one of its
+ * effects whose conditions match this move/matchup, chained. Returns the
+ * neutral `FIXED_POINT` (×1, a chainMods no-op) when none do.
+ */
+function sideMod4096(
+  entry: AbilityDamageModifierSide | AbilityDamageModifierSide[] | undefined,
+  stage: AbilityDamageModifierSide["stage"],
+  ctx: ModifierContext,
+): number {
+  if (!entry) return FIXED_POINT;
+  const sides = Array.isArray(entry) ? entry : [entry];
+  const matching = sides.filter((side) => side.stage === stage && sideMatches(side, ctx));
+  return matching.length === 0 ? FIXED_POINT : chainMods(matching.map((side) => side.multiplier4096));
 }
 
 /**
@@ -372,25 +533,17 @@ export function calculateDamage(
   options: DamageCalcOptions = {},
 ): DamageResult | null {
   const resolvedMove = resolveMove(moveName);
-  if (!resolvedMove || resolvedMove.category === "Status" || !resolvedMove.power) return null;
-  // Re-bound to a non-optional local (power narrowed to `number`, not
-  // `number | null`) — TS's control-flow narrowing from the guard above
-  // doesn't carry into the nested closures below (baseDamageForHit, the
-  // rolls.map callback), so every `move.` reference from here on needs this
-  // narrowed binding, not the original `resolvedMove`.
-  const move = { ...resolvedMove, power: resolvedMove.power as number };
   const moveKey = normalizeSpeciesKey(moveName);
-  // Narrowed to a plain number so it stays typed correctly inside the
-  // rolls-computation closure below (TS can't carry the `!move.power` guard
-  // across a captured object property). Water Spout/Eruption get scaled down
-  // from moves.json's stored full-HP value here — see resolveMovePower. This
-  // is the "raw" power the bp-stage modifier chain (below) then multiplies
-  // further, mirroring the reference's own basePowerFunc -> calcBPMods split.
-  const rawMovePower: number = resolveMovePower(moveKey, move.power, options.attackerCurrentHpPercent);
+  if (!resolvedMove || resolvedMove.category === "Status") return null;
+  if (!resolvedMove.power && !VARIABLE_POWER_MOVES.has(moveKey)) return null;
+  const flags = MOVE_FLAGS[moveKey] ?? {};
 
-  const isPhysical = move.category === "Physical";
-  const attackStatKey: "atk" | "spa" = isPhysical ? "atk" : "spa";
-  const defenseStatKey: "def" | "spd" = isPhysical ? "def" : "spd";
+  const isPhysical = resolvedMove.category === "Physical";
+  // Body Press attacks with the user's Defense; Psyshock/Psystrike/Secret
+  // Sword hit the target's Defense though they're Special (Showdown's data).
+  const attackStatKey: "atk" | "spa" | "def" =
+    flags.offensiveStat === "def" ? "def" : isPhysical ? "atk" : "spa";
+  const defenseStatKey: "def" | "spd" = flags.defensiveStat ?? (isPhysical ? "def" : "spd");
 
   const attackerStats = calculateFinalStats(attacker);
   const defenderStats = calculateFinalStats(defender);
@@ -415,7 +568,64 @@ export function calculateDamage(
     defender.ability,
   );
 
-  const hitCount = resolveHitCount(move, attackerAbility === "Skill Link");
+  const attackerGrounded = isGrounded(attackerTypes, attackerAbility, attacker.item, options.gravity);
+  const defenderGrounded = isGrounded(defenderTypes, defenderAbility, defender.item, options.gravity);
+  // Mega Sol (Pokémon Champions): its user's moves act as if it were sunny.
+  const attackerWeather = attackerAbility === "Mega Sol" ? "Sun" : options.weather;
+
+  // The move's type can change before anything else looks at it: Weather
+  // Ball/Terrain Pulse follow the field (and double to 100 power), -ate
+  // abilities turn Normal moves into their type, Liquid Voice turns sound
+  // moves into Water.
+  const fieldType = fieldMoveType(moveKey, attackerWeather, options.terrain, attackerGrounded);
+  const ateType =
+    resolvedMove.type === "Normal" && attackerAbility ? TYPE_CHANGING_ABILITIES[attackerAbility] : undefined;
+  const moveType =
+    fieldType ??
+    ateType ??
+    (attackerAbility === "Liquid Voice" && flags.sound ? "Water" : resolvedMove.type);
+  const listedPower = fieldType ? 100 : (resolvedMove.power ?? 0);
+  // Expanding Force hits both foes in Psychic Terrain (if its user is grounded).
+  const expandingForceBoosted =
+    moveKey === "expanding-force" && options.terrain === "Psychic" && attackerGrounded;
+  // Re-bound to a non-optional local (power narrowed to `number`) — TS's
+  // control-flow narrowing doesn't carry into the nested closures below
+  // (baseDamageForHit, the rolls.map callback).
+  const move = {
+    ...resolvedMove,
+    type: moveType,
+    power: listedPower,
+    isSpread: resolvedMove.isSpread || expandingForceBoosted,
+  };
+
+  const attackerStatused = !!(options.attackerBurned || options.attackerStatused);
+  // The "raw" power the bp-stage modifier chain (below) then multiplies
+  // further, mirroring the reference's own basePowerFunc -> calcBPMods split.
+  const rawMovePower: number = resolveMovePower(moveKey, listedPower, {
+    // Whole HP points, like the game (the slider is a percent).
+    attackerHp: Math.max(
+      1,
+      Math.round(((options.attackerCurrentHpPercent ?? 100) / 100) * attackerStats.hp),
+    ),
+    attackerMaxHp: attackerStats.hp,
+    attackerWeightKg: resolveWeightKg(attacker, attackerAbility),
+    defenderWeightKg: resolveWeightKg(defender, defenderAbility),
+    attackerSpeed: applyStatStage(attackerStats.spe, options.attackerStages?.spe),
+    defenderSpeed: applyStatStage(defenderStats.spe, options.defenderStages?.spe),
+    attackerStages: options.attackerStages,
+    attackerFaintedAllies: options.attackerFaintedAllies ?? 0,
+    attackerStatused,
+    attackerHasItem: !!attacker.item,
+    defenderStatused: !!options.defenderStatused,
+  });
+
+  // Parental Bond (Mega Kangaskhan): a single-target, single-hit move hits a
+  // second time at a quarter of the damage.
+  const hasParentalBond =
+    attackerAbility === "Parental Bond" &&
+    move.minHits === undefined &&
+    !(move.isSpread && options.attackerHitsMultipleTargets);
+  const hitCount = hasParentalBond ? 2 : resolveHitCount(move, attackerAbility === "Skill Link");
 
   // A defender that used Protect blocks the hit entirely, regardless of type
   // — checked before type effectiveness since it isn't a type interaction.
@@ -433,6 +643,16 @@ export function calculateDamage(
   }
 
   const typeMultiplier = typeEffectiveness(move.type, defenderTypes, options.gravity);
+  const ctx: ModifierContext = {
+    move,
+    flags,
+    typeMultiplier,
+    weather: options.weather,
+    terrain: options.terrain,
+    isCritical: !!options.isCritical,
+    defenderAtFullHp: (options.defenderCurrentHpPercent ?? 100) >= 100,
+    defenseStatKey,
+  };
 
   // Levitate's Ground immunity is negated by Gravity (like the Flying-type
   // chart immunity handled inside typeEffectiveness above) — the other
@@ -465,9 +685,6 @@ export function calculateDamage(
     };
   }
 
-  const attackerGrounded = isGrounded(attackerTypes, attackerAbility, attacker.item, options.gravity);
-  const defenderGrounded = isGrounded(defenderTypes, defenderAbility, defender.item, options.gravity);
-
   // A critical hit ignores a NEGATIVE attacker stage and a POSITIVE defender
   // stage for the specific stat this move uses — the real Gen 6+ crit
   // mechanic — not all stat stages, just the offense/defense pair actually
@@ -476,7 +693,8 @@ export function calculateDamage(
   // TARGET_ATTACK_STAT_MOVES — so a crit still ignores whichever stage is
   // unfavorable to the hit's damage output, just sourced from the other
   // Pokémon.
-  const usesTargetAttackStat = TARGET_ATTACK_STAT_MOVES.has(moveKey);
+  const usesTargetAttackStat =
+    flags.offensivePokemon === "target" || TARGET_ATTACK_STAT_MOVES.has(moveKey);
   const rawAttackStat = usesTargetAttackStat ? defenderStats.atk : attackerStats[attackStatKey];
   const attackerStage = usesTargetAttackStat
     ? options.defenderStages?.atk
@@ -500,34 +718,50 @@ export function calculateDamage(
   // against the reference: Guts' ×1.5 lives in the SAME attack-stat-stage
   // bucket as Huge Power, chained together with it below.
   const hasGuts = attackerAbility === "Guts";
-  const isStatused = options.attackerBurned || options.attackerStatused;
-  const applyBurn = !!options.attackerBurned && isPhysical && !hasGuts;
+  const isStatused = attackerStatused;
+  // Facade ignores burn's halving (Gen 6+).
+  const applyBurn = !!options.attackerBurned && isPhysical && !hasGuts && moveKey !== "facade";
+
+  // Knock Off ×1.5 against a target holding an item it can lose — not a
+  // Mega Stone its species uses.
+  const defenderItemRemovable =
+    !!defender.item && candidateFormKeys(defender.species, defender.item).length === 1;
+  const moveSpecificBpMod = chainMods([
+    ateType ? 0x1333 : FIXED_POINT,
+    moveKey === "knock-off" && defenderItemRemovable ? 0x1800 : FIXED_POINT,
+    // Expanding Force ×1.5 in Psychic Terrain (if its user is grounded).
+    expandingForceBoosted ? 0x1800 : FIXED_POINT,
+    // Solar Beam/Blade are halved in any weather but sun.
+    (moveKey === "solar-beam" || moveKey === "solar-blade") &&
+    attackerWeather &&
+    attackerWeather !== "Sun"
+      ? 0x800
+      : FIXED_POINT,
+  ]);
 
   //////////////////////////////////////////////////////////////////////////
   // Stage 1: base power — bp-stage modifiers chained onto rawMovePower.
   //////////////////////////////////////////////////////////////////////////
   const bpModsBase: number[] = [
     options.attackerHelpingHand ? 0x1800 : FIXED_POINT,
+    moveSpecificBpMod,
     terrainAttackMod4096(options.terrain, move.type, attackerGrounded),
     terrainDefenseMod4096(options.terrain, move.type, moveKey, defenderGrounded),
     options.fairyAura && move.type === "Fairy" ? 0x1548 : FIXED_POINT,
     sideMod4096(
       attacker.item ? ITEM_DAMAGE_MODIFIERS[attacker.item]?.attacker : undefined,
       "bp",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       defender.item ? ITEM_DAMAGE_MODIFIERS[defender.item]?.defender : undefined,
       "bp",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
       "bp",
-      move,
-      typeMultiplier,
+      ctx,
     ),
   ];
   // Technician only applies if the power BEFORE it (but after every other bp
@@ -538,8 +772,7 @@ export function calculateDamage(
       ? ABILITY_DAMAGE_MODIFIERS[attackerAbility]?.attacker
       : undefined,
     "bp",
-    move,
-    typeMultiplier,
+    ctx,
   );
   const bpModsBeforeTechnician = [...bpModsBase, attackerAbilityBpModExceptTechnician];
   const tempBasePower = Math.max(1, pokeRound((rawMovePower * chainMods(bpModsBeforeTechnician)) / FIXED_POINT));
@@ -559,21 +792,18 @@ export function calculateDamage(
     sideMod4096(
       attacker.item ? ITEM_DAMAGE_MODIFIERS[attacker.item]?.attacker : undefined,
       "at",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     hasGuts && isStatused && isPhysical ? 0x1800 : FIXED_POINT,
     sideMod4096(
       attackerAbility ? ABILITY_DAMAGE_MODIFIERS[attackerAbility]?.attacker : undefined,
       "at",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
       "at",
-      move,
-      typeMultiplier,
+      ctx,
     ),
   ];
   const finalAttackStat = Math.max(1, pokeRound((stageAdjustedAttackStat * chainMods(atMods)) / FIXED_POINT));
@@ -594,14 +824,12 @@ export function calculateDamage(
     sideMod4096(
       defender.item ? ITEM_DAMAGE_MODIFIERS[defender.item]?.defender : undefined,
       "df",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
       "df",
-      move,
-      typeMultiplier,
+      ctx,
     ),
   ];
   const finalDefenseStat = Math.max(
@@ -627,26 +855,22 @@ export function calculateDamage(
     sideMod4096(
       attacker.item ? ITEM_DAMAGE_MODIFIERS[attacker.item]?.attacker : undefined,
       "final",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       defender.item ? ITEM_DAMAGE_MODIFIERS[defender.item]?.defender : undefined,
       "final",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       attackerAbility ? ABILITY_DAMAGE_MODIFIERS[attackerAbility]?.attacker : undefined,
       "final",
-      move,
-      typeMultiplier,
+      ctx,
     ),
     sideMod4096(
       defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
       "final",
-      move,
-      typeMultiplier,
+      ctx,
     ),
   ];
   const finalModsChain = chainMods(finalMods);
@@ -664,12 +888,17 @@ export function calculateDamage(
    * BEFORE the 85-100% roll — per the reference's exact order, not chained
    * together and not applied after the roll like every other modifier.
    */
-  function baseDamageForHit(power: number): number {
+  function baseDamageForHit(power: number, isParentalBondChild = false): number {
     let baseDamage = calcBaseDamage(power);
     if (move.isSpread && options.attackerHitsMultipleTargets) {
       baseDamage = pokeRound((baseDamage * 0xc00) / FIXED_POINT);
     }
-    const weatherMod = weatherBaseDamageMod4096(options.weather, move.type);
+    // Parental Bond's second hit deals a quarter — applied here, right after
+    // the spread step, like the reference.
+    if (isParentalBondChild) {
+      baseDamage = pokeRound((baseDamage * 0x400) / FIXED_POINT);
+    }
+    const weatherMod = weatherBaseDamageMod4096(attackerWeather, move.type);
     if (weatherMod !== FIXED_POINT) {
       baseDamage = pokeRound((baseDamage * weatherMod) / FIXED_POINT);
     }
@@ -723,7 +952,9 @@ export function calculateDamage(
     for (let hit = 0; hit < hitCount; hit++) {
       if (hp <= 0) break; // already fainted from an earlier hit this sequence — no further hits land
       const baseDamage =
-        flatBaseDamageForHit ?? baseDamageForHit(rawMovePower * (hit + 1));
+        hasParentalBond && hit === 1
+          ? baseDamageForHit(rawMovePower, true)
+          : (flatBaseDamageForHit ?? baseDamageForHit(rawMovePower * (hit + 1)));
 
       // The random 85-100% roll applies FIRST, right after baseDamage —
       // before STAB/type effectiveness/burn/finalMods — per the reference's

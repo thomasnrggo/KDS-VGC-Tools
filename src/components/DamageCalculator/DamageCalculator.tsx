@@ -18,11 +18,15 @@ import {
 } from "./RosterPokemonPicker";
 import { DEFAULT_SPECIES_KEY, STAT_LABELS, buildCustomPokemon } from "../PokemonEditor";
 import type { DamageCalcOptions, DamageResult, ParsedPokemon } from "@/types";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import type { Messages } from "@/lib/i18n/messages";
 
 type StageField = "atkStage" | "defStage" | "spaStage" | "spdStage";
 const STAGE_FIELD_BY_ATTACK_STAT: Record<DamageResult["attackStatKey"], StageField> = {
   atk: "atkStage",
   spa: "spaStage",
+  // Body Press attacks with Defense.
+  def: "defStage",
 };
 const STAGE_FIELD_BY_DEFENSE_STAT: Record<DamageResult["defenseStatKey"], StageField> = {
   def: "defStage",
@@ -104,7 +108,7 @@ function formatCalculationLabel(
   const defenseToken = formatStatToken(defenderDefSp, defenderStage, STAT_LABELS[result.defenseStatKey]);
 
   const helpingHandLabel = options?.attackerHelpingHand ? "Helping Hand " : "";
-  const category = result.attackStatKey === "atk" ? "Physical" : "Special";
+  const category = result.attackStatKey === "spa" ? "Special" : "Physical";
   const reducers = activeDamageReducers(options, category);
   const throughLabel = reducers.length > 0 ? ` through ${reducers.join(" and ")}` : "";
   const attackerItemLabel = attacker.item ? `${attacker.item} ` : "";
@@ -147,7 +151,12 @@ interface SegmentedToggleProps<T extends string> {
 }
 
 /** A single connected pill split into mutually-exclusive segments (only one can be active) — visually distinct from ToggleButton's separate-pill rows, matching the reference calculator's "Singles / Doubles" control. Used for the battle format toggle; a generic 2+ option component rather than hardcoding two buttons since the shared border between segments needs each button to know its position in the row. */
-function SegmentedToggle<T extends string>({ options, value, onChange }: SegmentedToggleProps<T>) {
+function SegmentedToggle<T extends string>({
+  options,
+  value,
+  onChange,
+  labelFor = (option) => option,
+}: SegmentedToggleProps<T> & { labelFor?: (option: T) => string }) {
   return (
     <div className="inline-flex overflow-hidden rounded-full border border-zinc-300">
       {options.map((option, index) => (
@@ -162,27 +171,20 @@ function SegmentedToggle<T extends string>({ options, value, onChange }: Segment
               : "text-zinc-700 hover:bg-zinc-100"
           } ${index > 0 ? "border-l border-zinc-300" : ""}`}
         >
-          {option}
+          {labelFor(option)}
         </button>
       ))}
     </div>
   );
 }
 
-const WEATHER_OPTIONS: Array<{ label: string; value: DamageCalcOptions["weather"] }> = [
-  { label: "None", value: undefined },
-  { label: "Sun", value: "Sun" },
-  { label: "Rain", value: "Rain" },
-  { label: "Sand", value: "Sand" },
-  { label: "Snow", value: "Snow" },
-];
-
-const TERRAIN_OPTIONS: Array<{ label: string; value: DamageCalcOptions["terrain"] }> = [
-  { label: "None", value: undefined },
-  { label: "Electric", value: "Electric" },
-  { label: "Grassy", value: "Grassy" },
-  { label: "Psychic", value: "Psychic" },
-  { label: "Misty", value: "Misty" },
+const WEATHER_OPTIONS: Array<DamageCalcOptions["weather"]> = [undefined, "Sun", "Rain", "Sand", "Snow"];
+const TERRAIN_OPTIONS: Array<DamageCalcOptions["terrain"]> = [
+  undefined,
+  "Electric",
+  "Grassy",
+  "Psychic",
+  "Misty",
 ];
 
 /**
@@ -234,6 +236,8 @@ function resolveAutoWeather(
 }
 
 export function DamageCalculator() {
+  const t = useMessages();
+  const text = usePokemonText();
   const { teams, activeTeamId, isLoading } = useMyTeams();
   // Team/opponent selection from a saved roster is otherwise omitted (see
   // PLANNING.md) — the header's active team seeds the Attacker's sidebar on
@@ -370,6 +374,8 @@ export function DamageCalculator() {
       gravity,
       attackerBurned: attackingBattleState.status === "Burned",
       attackerStatused: attackingBattleState.status !== "Healthy",
+      defenderStatused: defendingBattleState.status !== "Healthy",
+      attackerFaintedAllies: attackingBattleState.faintedAllies ?? 0,
       attackerHelpingHand: attackingSide.helpingHand,
       attackerHitsMultipleTargets: battleFormat === "Doubles",
       isDoublesFormat: battleFormat === "Doubles",
@@ -687,7 +693,7 @@ export function DamageCalculator() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-zinc-500">Loading…</p>;
+    return <p className="text-sm text-zinc-500">{t.common.loading}</p>;
   }
 
   return (
@@ -695,7 +701,7 @@ export function DamageCalculator() {
       {(attackerPokemon || defenderPokemon) && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <MoveList
-            title={`${attackerPokemon?.species ?? "Attacker"}'s moves`}
+            title={t.calc.movesOf(attackerPokemon ? text.species(attackerPokemon.species) : t.calc.attacker)}
             pokemon={attackerPokemon}
             results={attackerMoveResults}
             side="attacker"
@@ -712,7 +718,7 @@ export function DamageCalculator() {
             result={selectedResult}
           />
           <MoveList
-            title={`${defenderPokemon?.species ?? "Defender"}'s moves`}
+            title={t.calc.movesOf(defenderPokemon ? text.species(defenderPokemon.species) : t.calc.defender)}
             pokemon={defenderPokemon}
             results={defenderMoveResults}
             side="defender"
@@ -724,7 +730,7 @@ export function DamageCalculator() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <RosterPokemonPicker
-          title="Attacker"
+          title={t.calc.attacker}
           sidebar={attackerSidebar}
           selectedIndex={attackerSelectedIndex}
           onSelectIndex={attackerSelectIndex}
@@ -752,7 +758,7 @@ export function DamageCalculator() {
 
         <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Field
+            {t.calc.field}
           </h3>
 
           <div className="flex justify-center">
@@ -760,51 +766,56 @@ export function DamageCalculator() {
               options={["Singles", "Doubles"] as const}
               value={battleFormat}
               onChange={setBattleFormat}
+              labelFor={(option) => (option === "Singles" ? t.calc.singles : t.calc.doubles)}
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-zinc-600">Weather</span>
+            <span className="text-xs font-medium text-zinc-600">{t.calc.weather}</span>
             <div className="flex flex-wrap justify-center gap-2">
               {WEATHER_OPTIONS.map((option) => (
                 <ToggleButton
-                  key={option.label}
-                  label={option.label}
-                  active={weather === option.value}
-                  onClick={() => setWeather(option.value)}
+                  key={option ?? "none"}
+                  label={option ? t.calc.weathers[option] : t.calc.none}
+                  active={weather === option}
+                  onClick={() => setWeather(option)}
                 />
               ))}
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-zinc-600">Terrain</span>
+            <span className="text-xs font-medium text-zinc-600">{t.calc.terrain}</span>
             <div className="flex flex-wrap justify-center gap-2">
               {TERRAIN_OPTIONS.map((option) => (
                 <ToggleButton
-                  key={option.label}
-                  label={option.label}
-                  active={terrain === option.value}
-                  onClick={() => setTerrain(option.value)}
+                  key={option ?? "none"}
+                  label={option ? t.calc.terrains[option] : t.calc.none}
+                  active={terrain === option}
+                  onClick={() => setTerrain(option)}
                 />
               ))}
             </div>
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
-            <ToggleButton label="Critical Hit" active={isCritical} onClick={() => setIsCritical((v) => !v)} />
-            <ToggleButton label="Fairy Aura" active={fairyAura} onClick={() => setFairyAura((v) => !v)} />
-            <ToggleButton label="Gravity" active={gravity} onClick={() => setGravity((v) => !v)} />
+            <ToggleButton label={t.calc.criticalHit} active={isCritical} onClick={() => setIsCritical((v) => !v)} />
+            <ToggleButton
+              label={text.ability("Fairy Aura")}
+              active={fairyAura}
+              onClick={() => setFairyAura((v) => !v)}
+            />
+            <ToggleButton label={text.move("Gravity")} active={gravity} onClick={() => setGravity((v) => !v)} />
           </div>
 
           <div className="mt-2 grid grid-cols-2 gap-3 border-t border-zinc-200 pt-3">
             <SideConditionsPanel
-              title={`${attackerPokemon?.species ?? "Attacker"} side`}
+              title={t.calc.sideOf(attackerPokemon ? text.species(attackerPokemon.species) : t.calc.attacker)}
               conditions={attackerSide}
               onToggle={toggleAttackerSide}
             />
             <SideConditionsPanel
-              title={`${defenderPokemon?.species ?? "Defender"} side`}
+              title={t.calc.sideOf(defenderPokemon ? text.species(defenderPokemon.species) : t.calc.defender)}
               conditions={defenderSide}
               onToggle={toggleDefenderSide}
             />
@@ -812,7 +823,7 @@ export function DamageCalculator() {
         </div>
 
         <RosterPokemonPicker
-          title="Defender"
+          title={t.calc.defender}
           sidebar={defenderSidebar}
           selectedIndex={defenderSelectedIndex}
           onSelectIndex={defenderSelectIndex}
@@ -863,21 +874,21 @@ function ResultPanel({
   options,
   result,
 }: ResultPanelProps) {
+  const t = useMessages();
+  const text = usePokemonText();
   return (
     <div className="flex flex-col gap-1.5 self-start">
       {/* Invisible spacer matching MoveList's heading block exactly, so the visible card below starts level with the top move row instead of the "MOVES" heading above it. */}
       <div className="invisible" aria-hidden="true">
-        <h3 className="text-xs font-semibold uppercase tracking-wide">Result</h3>
-        <p className="text-[11px]">click a move to see details</p>
+        <h3 className="text-xs font-semibold uppercase tracking-wide">{t.calc.result}</h3>
+        <p className="text-[11px]">{t.calc.clickMove}</p>
       </div>
       <div className="flex flex-col justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
         {!selectedMove || !attacker || !defender ? (
-          <p className="text-sm text-zinc-500">
-            Click a move on either side to see the calculation.
-          </p>
+          <p className="text-sm text-zinc-500">{t.calc.pickMove}</p>
         ) : result ? (
           <>
-            <p className="text-sm text-zinc-900">
+            <p className="text-sm text-zinc-900" title={t.calc.resultLineHint}>
               {formatCalculationLabel(
                 attacker,
                 defender,
@@ -896,9 +907,9 @@ function ResultPanel({
             {result.recoilMinPercent !== undefined && (
               <p
                 className="text-xs text-zinc-500"
-                title="Self-damage the attacker takes from this move's own recoil and/or Life Orb, as a percent of the ATTACKER's own max HP — not the defender's."
+                title={t.calc.recoilHint}
               >
-                Recoil to {attacker?.species}:{" "}
+                {t.calc.recoilTo(text.species(attacker.species))}{" "}
                 {result.recoilMinPercent === result.recoilMaxPercent
                   ? `${result.recoilMinPercent}%`
                   : `${result.recoilMinPercent}% - ${result.recoilMaxPercent}%`}
@@ -906,16 +917,14 @@ function ResultPanel({
             )}
             <p
               className="text-xs text-zinc-500"
-              title="Every hit's damage varies by a random 85%-100% factor — these are the 16 possible exact damage values for this move right now, lowest to highest."
+              title={t.calc.rollsHint}
             >
-              Possible damage rolls: {result.rolls.join(", ")}
+              {t.calc.rolls} {result.rolls.join(", ")}
             </p>
           </>
         ) : (
           <p className="text-sm text-amber-600">
-            Can&apos;t calculate {selectedMove.move} yet — it&apos;s either a
-            Status move or one whose damage isn&apos;t based on the standard
-            power formula (e.g. Seismic Toss, Counter).
+            {t.calc.cantCalculate(text.move(selectedMove.move))}
           </p>
         )}
       </div>
@@ -930,50 +939,51 @@ interface SideConditionsPanelProps {
 }
 
 function SideConditionsPanel({ title, conditions, onToggle }: SideConditionsPanelProps) {
+  const text = usePokemonText();
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs font-medium text-zinc-600">{title}</span>
       <div className="flex flex-col gap-1.5">
         <ToggleButton
-          label="Protect"
+          label={text.move("Protect")}
           active={conditions.protect}
           onClick={() => onToggle("protect")}
           className="w-full"
         />
         <ToggleButton
-          label="Helping Hand"
+          label={text.move("Helping Hand")}
           active={conditions.helpingHand}
           onClick={() => onToggle("helpingHand")}
           className="w-full"
         />
         <ToggleButton
-          label="Aurora Veil"
+          label={text.move("Aurora Veil")}
           active={conditions.auroraVeil}
           onClick={() => onToggle("auroraVeil")}
           className="w-full"
         />
         <div className="flex gap-1.5">
           <ToggleButton
-            label="Reflect"
+            label={text.move("Reflect")}
             active={conditions.reflect}
             onClick={() => onToggle("reflect")}
             className="flex-1"
           />
           <ToggleButton
-            label="Light Screen"
+            label={text.move("Light Screen")}
             active={conditions.lightScreen}
             onClick={() => onToggle("lightScreen")}
             className="flex-1"
           />
         </div>
         <ToggleButton
-          label="Tailwind"
+          label={text.move("Tailwind")}
           active={conditions.tailwind}
           onClick={() => onToggle("tailwind")}
           className="w-full"
         />
         <ToggleButton
-          label="Friend Guard"
+          label={text.ability("Friend Guard")}
           active={conditions.friendGuard}
           onClick={() => onToggle("friendGuard")}
           className="w-full"
@@ -984,18 +994,20 @@ function SideConditionsPanel({ title, conditions, onToggle }: SideConditionsPane
 }
 
 /** e.g. "(15.8 - 18.6% recoil)" for a real recoil move (min/max vary with the roll, same "N - M" spacing as the reference calculator), or "(9.6% recoil)" for Life Orb alone (a flat cost — min and max come out equal, so just the one number). Empty string when the move has neither. */
-function formatRecoilNote(result: ReturnType<typeof calculateDamage>): string {
+function formatRecoilNote(result: ReturnType<typeof calculateDamage>, t: Messages): string {
   if (!result || result.recoilMinPercent === undefined) return "";
-  return result.recoilMinPercent === result.recoilMaxPercent
-    ? ` (${result.recoilMinPercent}% recoil)`
-    : ` (${result.recoilMinPercent} - ${result.recoilMaxPercent}% recoil)`;
+  return ` ${t.calc.recoil(
+    result.recoilMinPercent === result.recoilMaxPercent
+      ? `${result.recoilMinPercent}`
+      : `${result.recoilMinPercent} - ${result.recoilMaxPercent}`,
+  )}`;
 }
 
-function formatMoveResultLabel(result: ReturnType<typeof calculateDamage>): string {
+function formatMoveResultLabel(result: ReturnType<typeof calculateDamage>, t: Messages): string {
   if (!result) return "—";
-  if (result.koChanceText === "immune") return "immune";
-  if (result.koChanceText === "blocked by Protect") return "protected";
-  return `${result.minPercent}-${result.maxPercent}%${formatRecoilNote(result)}`;
+  if (result.koChanceText === "immune") return t.calc.immune;
+  if (result.koChanceText === "blocked by Protect") return t.calc.protected;
+  return `${result.minPercent}-${result.maxPercent}%${formatRecoilNote(result, t)}`;
 }
 
 interface MoveListProps {
@@ -1008,6 +1020,8 @@ interface MoveListProps {
 }
 
 function MoveList({ title, pokemon, results, side, selectedMove, onSelect }: MoveListProps) {
+  const t = useMessages();
+  const text = usePokemonText();
   if (!pokemon) return null;
 
   return (
@@ -1016,13 +1030,10 @@ function MoveList({ title, pokemon, results, side, selectedMove, onSelect }: Mov
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
           {title}
         </h3>
-        <p className="text-[11px] text-zinc-400">click a move to see details</p>
+        <p className="text-[11px] text-zinc-400">{t.calc.clickMove}</p>
       </div>
       {results.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          No moves were parsed for this Pokémon — the pasted export may not
-          have listed any.
-        </p>
+        <p className="text-sm text-zinc-500">{t.calc.noMoves}</p>
       ) : (
         <div className="flex flex-col divide-y divide-zinc-100 overflow-hidden rounded-lg border border-zinc-200">
           {results.map(({ move, result }, index) => {
@@ -1039,8 +1050,8 @@ function MoveList({ title, pokemon, results, side, selectedMove, onSelect }: Mov
                     : "text-zinc-700 hover:bg-zinc-50"
                 }`}
               >
-                <span>{move}</span>
-                <span className="text-zinc-500">{formatMoveResultLabel(result)}</span>
+                <span>{text.move(move)}</span>
+                <span className="text-zinc-500">{formatMoveResultLabel(result, t)}</span>
               </button>
             );
           })}

@@ -1,0 +1,1496 @@
+{
+  "accelerock": {
+    "contact": true
+  },
+  "acid": {
+    "secondary": true
+  },
+  "acid-spray": {
+    "secondary": true
+  },
+  "acrobatics": {
+    "contact": true
+  },
+  "aerial-ace": {
+    "contact": true,
+    "slicing": true
+  },
+  "air-cutter": {
+    "slicing": true
+  },
+  "air-slash": {
+    "slicing": true,
+    "secondary": true
+  },
+  "alluring-voice": {
+    "sound": true,
+    "secondary": true
+  },
+  "anchor-shot": {
+    "contact": true,
+    "secondary": true
+  },
+  "ancient-power": {
+    "secondary": true
+  },
+  "apple-acid": {
+    "secondary": true
+  },
+  "aqua-cutter": {
+    "slicing": true
+  },
+  "aqua-jet": {
+    "contact": true
+  },
+  "aqua-step": {
+    "contact": true,
+    "secondary": true
+  },
+  "aqua-tail": {
+    "contact": true
+  },
+  "arm-thrust": {
+    "contact": true
+  },
+  "assurance": {
+    "contact": true
+  },
+  "astonish": {
+    "contact": true,
+    "secondary": true
+  },
+  "aura-sphere": {
+    "pulse": true
+  },
+  "aura-wheel": {
+    "secondary": true
+  },
+  "aurora-beam": {
+    "secondary": true
+  },
+  "avalanche": {
+    "contact": true
+  },
+  "axe-kick": {
+    "contact": true,
+    "secondary": true,
+    "recoil": true
+  },
+  "barb-barrage": {
+    "secondary": true
+  },
+  "behemoth-bash": {
+    "contact": true
+  },
+  "behemoth-blade": {
+    "contact": true,
+    "slicing": true
+  },
+  "bide": {
+    "contact": true
+  },
+  "bind": {
+    "contact": true
+  },
+  "bite": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "bitter-blade": {
+    "contact": true,
+    "slicing": true
+  },
+  "bitter-malice": {
+    "secondary": true
+  },
+  "blaze-kick": {
+    "contact": true,
+    "secondary": true
+  },
+  "blazing-torque": {
+    "secondary": true
+  },
+  "bleakwind-storm": {
+    "secondary": true
+  },
+  "blizzard": {
+    "secondary": true
+  },
+  "blue-flare": {
+    "secondary": true
+  },
+  "body-press": {
+    "contact": true,
+    "offensiveStat": "def"
+  },
+  "body-slam": {
+    "contact": true,
+    "secondary": true
+  },
+  "bolt-beak": {
+    "contact": true
+  },
+  "bolt-strike": {
+    "contact": true,
+    "secondary": true
+  },
+  "bone-club": {
+    "secondary": true
+  },
+  "boomburst": {
+    "sound": true
+  },
+  "bounce": {
+    "contact": true,
+    "secondary": true
+  },
+  "branch-poke": {
+    "contact": true
+  },
+  "brave-bird": {
+    "contact": true,
+    "recoil": true
+  },
+  "breaking-swipe": {
+    "contact": true,
+    "secondary": true
+  },
+  "brick-break": {
+    "contact": true
+  },
+  "brutal-swing": {
+    "contact": true
+  },
+  "bubble": {
+    "secondary": true
+  },
+  "bubble-beam": {
+    "secondary": true
+  },
+  "bug-bite": {
+    "contact": true
+  },
+  "bug-buzz": {
+    "sound": true,
+    "secondary": true
+  },
+  "bulldoze": {
+    "secondary": true
+  },
+  "bullet-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "burning-jealousy": {
+    "secondary": true
+  },
+  "buzzy-buzz": {
+    "secondary": true
+  },
+  "catastropika": {
+    "contact": true
+  },
+  "ceaseless-edge": {
+    "contact": true,
+    "slicing": true,
+    "secondary": true
+  },
+  "charge-beam": {
+    "secondary": true
+  },
+  "chatter": {
+    "sound": true,
+    "secondary": true
+  },
+  "chilling-water": {
+    "secondary": true
+  },
+  "chip-away": {
+    "contact": true
+  },
+  "circle-throw": {
+    "contact": true
+  },
+  "clamp": {
+    "contact": true
+  },
+  "clanging-scales": {
+    "sound": true
+  },
+  "clangorous-soul": {
+    "sound": true
+  },
+  "clangorous-soulblaze": {
+    "sound": true,
+    "secondary": true
+  },
+  "close-combat": {
+    "contact": true
+  },
+  "collision-course": {
+    "contact": true
+  },
+  "combat-torque": {
+    "secondary": true
+  },
+  "comet-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "comeuppance": {
+    "contact": true
+  },
+  "confide": {
+    "sound": true
+  },
+  "confusion": {
+    "secondary": true
+  },
+  "constrict": {
+    "contact": true,
+    "secondary": true
+  },
+  "counter": {
+    "contact": true
+  },
+  "covet": {
+    "contact": true
+  },
+  "crabhammer": {
+    "contact": true
+  },
+  "cross-chop": {
+    "contact": true
+  },
+  "cross-poison": {
+    "contact": true,
+    "slicing": true,
+    "secondary": true
+  },
+  "crunch": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "crush-claw": {
+    "contact": true,
+    "secondary": true
+  },
+  "crush-grip": {
+    "contact": true
+  },
+  "cut": {
+    "contact": true,
+    "slicing": true
+  },
+  "dark-pulse": {
+    "pulse": true,
+    "secondary": true
+  },
+  "darkest-lariat": {
+    "contact": true
+  },
+  "diamond-storm": {
+    "secondary": true
+  },
+  "dig": {
+    "contact": true
+  },
+  "dire-claw": {
+    "contact": true,
+    "secondary": true
+  },
+  "disarming-voice": {
+    "sound": true
+  },
+  "discharge": {
+    "secondary": true
+  },
+  "dive": {
+    "contact": true
+  },
+  "dizzy-punch": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "double-edge": {
+    "contact": true,
+    "recoil": true
+  },
+  "double-hit": {
+    "contact": true
+  },
+  "double-iron-bash": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "double-kick": {
+    "contact": true
+  },
+  "double-shock": {
+    "contact": true
+  },
+  "double-slap": {
+    "contact": true
+  },
+  "dragon-ascent": {
+    "contact": true
+  },
+  "dragon-breath": {
+    "secondary": true
+  },
+  "dragon-claw": {
+    "contact": true
+  },
+  "dragon-hammer": {
+    "contact": true
+  },
+  "dragon-pulse": {
+    "pulse": true
+  },
+  "dragon-rush": {
+    "contact": true,
+    "secondary": true
+  },
+  "dragon-tail": {
+    "contact": true
+  },
+  "drain-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "draining-kiss": {
+    "contact": true
+  },
+  "drill-peck": {
+    "contact": true
+  },
+  "drill-run": {
+    "contact": true
+  },
+  "drum-beating": {
+    "secondary": true
+  },
+  "dual-chop": {
+    "contact": true
+  },
+  "dual-wingbeat": {
+    "contact": true
+  },
+  "dynamic-punch": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "earth-power": {
+    "secondary": true
+  },
+  "echoed-voice": {
+    "sound": true
+  },
+  "eerie-spell": {
+    "sound": true,
+    "secondary": true
+  },
+  "electro-drift": {
+    "contact": true
+  },
+  "electroweb": {
+    "secondary": true
+  },
+  "ember": {
+    "secondary": true
+  },
+  "endeavor": {
+    "contact": true
+  },
+  "energy-ball": {
+    "secondary": true
+  },
+  "esper-wing": {
+    "secondary": true
+  },
+  "extrasensory": {
+    "secondary": true
+  },
+  "extreme-speed": {
+    "contact": true
+  },
+  "facade": {
+    "contact": true
+  },
+  "fake-out": {
+    "contact": true,
+    "secondary": true
+  },
+  "false-surrender": {
+    "contact": true
+  },
+  "false-swipe": {
+    "contact": true
+  },
+  "feint-attack": {
+    "contact": true
+  },
+  "fell-stinger": {
+    "contact": true
+  },
+  "fiery-dance": {
+    "secondary": true
+  },
+  "fiery-wrath": {
+    "secondary": true
+  },
+  "fire-blast": {
+    "secondary": true
+  },
+  "fire-fang": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "fire-lash": {
+    "contact": true,
+    "secondary": true
+  },
+  "fire-punch": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "first-impression": {
+    "contact": true
+  },
+  "fishious-rend": {
+    "contact": true,
+    "bite": true
+  },
+  "flail": {
+    "contact": true
+  },
+  "flame-charge": {
+    "contact": true,
+    "secondary": true
+  },
+  "flame-wheel": {
+    "contact": true,
+    "secondary": true
+  },
+  "flamethrower": {
+    "secondary": true
+  },
+  "flare-blitz": {
+    "contact": true,
+    "secondary": true,
+    "recoil": true
+  },
+  "flash-cannon": {
+    "secondary": true
+  },
+  "flip-turn": {
+    "contact": true
+  },
+  "floaty-fall": {
+    "contact": true,
+    "secondary": true
+  },
+  "fly": {
+    "contact": true
+  },
+  "flying-press": {
+    "contact": true
+  },
+  "focus-blast": {
+    "secondary": true
+  },
+  "focus-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "force-palm": {
+    "contact": true,
+    "secondary": true
+  },
+  "foul-play": {
+    "contact": true,
+    "offensivePokemon": "target"
+  },
+  "freeze-dry": {
+    "secondary": true
+  },
+  "freeze-shock": {
+    "secondary": true
+  },
+  "freezing-glare": {
+    "secondary": true
+  },
+  "frustration": {
+    "contact": true
+  },
+  "fury-attack": {
+    "contact": true
+  },
+  "fury-cutter": {
+    "contact": true,
+    "slicing": true
+  },
+  "fury-swipes": {
+    "contact": true
+  },
+  "gear-grind": {
+    "contact": true
+  },
+  "genesis-supernova": {
+    "secondary": true
+  },
+  "giga-impact": {
+    "contact": true
+  },
+  "glaciate": {
+    "secondary": true
+  },
+  "glaive-rush": {
+    "contact": true
+  },
+  "grass-knot": {
+    "contact": true
+  },
+  "grass-whistle": {
+    "sound": true
+  },
+  "grassy-glide": {
+    "contact": true
+  },
+  "grav-apple": {
+    "secondary": true
+  },
+  "growl": {
+    "sound": true
+  },
+  "guillotine": {
+    "contact": true
+  },
+  "gunk-shot": {
+    "secondary": true
+  },
+  "gyro-ball": {
+    "contact": true
+  },
+  "hammer-arm": {
+    "contact": true,
+    "punch": true
+  },
+  "hard-press": {
+    "contact": true
+  },
+  "head-charge": {
+    "contact": true,
+    "recoil": true
+  },
+  "head-smash": {
+    "contact": true,
+    "recoil": true
+  },
+  "headbutt": {
+    "contact": true,
+    "secondary": true
+  },
+  "headlong-rush": {
+    "contact": true,
+    "punch": true
+  },
+  "heal-bell": {
+    "sound": true
+  },
+  "heal-pulse": {
+    "pulse": true
+  },
+  "heart-stamp": {
+    "contact": true,
+    "secondary": true
+  },
+  "heat-crash": {
+    "contact": true
+  },
+  "heat-wave": {
+    "secondary": true
+  },
+  "heavy-slam": {
+    "contact": true
+  },
+  "high-horsepower": {
+    "contact": true
+  },
+  "high-jump-kick": {
+    "contact": true,
+    "recoil": true
+  },
+  "hold-back": {
+    "contact": true
+  },
+  "horn-attack": {
+    "contact": true
+  },
+  "horn-drill": {
+    "contact": true
+  },
+  "horn-leech": {
+    "contact": true
+  },
+  "howl": {
+    "sound": true
+  },
+  "hurricane": {
+    "secondary": true
+  },
+  "hyper-drill": {
+    "contact": true
+  },
+  "hyper-fang": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "hyper-voice": {
+    "sound": true
+  },
+  "ice-ball": {
+    "contact": true
+  },
+  "ice-beam": {
+    "secondary": true
+  },
+  "ice-burn": {
+    "secondary": true
+  },
+  "ice-fang": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "ice-hammer": {
+    "contact": true,
+    "punch": true
+  },
+  "ice-punch": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "ice-spinner": {
+    "contact": true
+  },
+  "icicle-crash": {
+    "secondary": true
+  },
+  "icy-wind": {
+    "secondary": true
+  },
+  "infernal-parade": {
+    "secondary": true
+  },
+  "inferno": {
+    "secondary": true
+  },
+  "infestation": {
+    "contact": true
+  },
+  "iron-head": {
+    "contact": true,
+    "secondary": true
+  },
+  "iron-tail": {
+    "contact": true,
+    "secondary": true
+  },
+  "jaw-lock": {
+    "contact": true,
+    "bite": true
+  },
+  "jet-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "jump-kick": {
+    "contact": true,
+    "recoil": true
+  },
+  "karate-chop": {
+    "contact": true
+  },
+  "knock-off": {
+    "contact": true
+  },
+  "kowtow-cleave": {
+    "contact": true,
+    "slicing": true
+  },
+  "lash-out": {
+    "contact": true
+  },
+  "last-resort": {
+    "contact": true
+  },
+  "lava-plume": {
+    "secondary": true
+  },
+  "leaf-blade": {
+    "contact": true,
+    "slicing": true
+  },
+  "leaf-tornado": {
+    "secondary": true
+  },
+  "leech-life": {
+    "contact": true
+  },
+  "lets-snuggle-forever": {
+    "contact": true
+  },
+  "lick": {
+    "contact": true,
+    "secondary": true
+  },
+  "light-of-ruin": {
+    "recoil": true
+  },
+  "liquidation": {
+    "contact": true,
+    "secondary": true
+  },
+  "low-kick": {
+    "contact": true
+  },
+  "low-sweep": {
+    "contact": true,
+    "secondary": true
+  },
+  "lumina-crash": {
+    "secondary": true
+  },
+  "lunge": {
+    "contact": true,
+    "secondary": true
+  },
+  "luster-purge": {
+    "secondary": true
+  },
+  "mach-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "magical-torque": {
+    "secondary": true
+  },
+  "malicious-moonsault": {
+    "contact": true
+  },
+  "malignant-chain": {
+    "secondary": true
+  },
+  "matcha-gotcha": {
+    "secondary": true
+  },
+  "mega-kick": {
+    "contact": true
+  },
+  "mega-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "megahorn": {
+    "contact": true
+  },
+  "metal-claw": {
+    "contact": true,
+    "secondary": true
+  },
+  "metal-sound": {
+    "sound": true
+  },
+  "meteor-mash": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "mighty-cleave": {
+    "contact": true,
+    "slicing": true
+  },
+  "mirror-shot": {
+    "secondary": true
+  },
+  "mist-ball": {
+    "secondary": true
+  },
+  "moonblast": {
+    "secondary": true
+  },
+  "mortal-spin": {
+    "contact": true,
+    "secondary": true
+  },
+  "mountain-gale": {
+    "secondary": true
+  },
+  "mud-bomb": {
+    "secondary": true
+  },
+  "mud-shot": {
+    "secondary": true
+  },
+  "mud-slap": {
+    "secondary": true
+  },
+  "muddy-water": {
+    "secondary": true
+  },
+  "multi-attack": {
+    "contact": true
+  },
+  "mystical-fire": {
+    "secondary": true
+  },
+  "mystical-power": {
+    "secondary": true
+  },
+  "needle-arm": {
+    "contact": true,
+    "secondary": true
+  },
+  "night-daze": {
+    "secondary": true
+  },
+  "night-slash": {
+    "contact": true,
+    "slicing": true
+  },
+  "noble-roar": {
+    "sound": true
+  },
+  "noxious-torque": {
+    "secondary": true
+  },
+  "nuzzle": {
+    "contact": true,
+    "secondary": true
+  },
+  "octazooka": {
+    "secondary": true
+  },
+  "ominous-wind": {
+    "secondary": true
+  },
+  "origin-pulse": {
+    "pulse": true
+  },
+  "outrage": {
+    "contact": true
+  },
+  "overdrive": {
+    "sound": true
+  },
+  "parting-shot": {
+    "sound": true
+  },
+  "payback": {
+    "contact": true
+  },
+  "peck": {
+    "contact": true
+  },
+  "perish-song": {
+    "sound": true
+  },
+  "petal-dance": {
+    "contact": true
+  },
+  "phantom-force": {
+    "contact": true
+  },
+  "plasma-fists": {
+    "contact": true,
+    "punch": true
+  },
+  "play-rough": {
+    "contact": true,
+    "secondary": true
+  },
+  "pluck": {
+    "contact": true
+  },
+  "poison-fang": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "poison-jab": {
+    "contact": true,
+    "secondary": true
+  },
+  "poison-sting": {
+    "secondary": true
+  },
+  "poison-tail": {
+    "contact": true,
+    "secondary": true
+  },
+  "population-bomb": {
+    "contact": true,
+    "slicing": true
+  },
+  "pounce": {
+    "contact": true,
+    "secondary": true
+  },
+  "pound": {
+    "contact": true
+  },
+  "powder-snow": {
+    "secondary": true
+  },
+  "power-trip": {
+    "contact": true
+  },
+  "power-up-punch": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "power-whip": {
+    "contact": true
+  },
+  "psybeam": {
+    "secondary": true
+  },
+  "psyblade": {
+    "contact": true,
+    "slicing": true
+  },
+  "psychic": {
+    "secondary": true
+  },
+  "psychic-fangs": {
+    "contact": true,
+    "bite": true
+  },
+  "psychic-noise": {
+    "sound": true,
+    "secondary": true
+  },
+  "psycho-cut": {
+    "slicing": true
+  },
+  "psyshield-bash": {
+    "contact": true,
+    "secondary": true
+  },
+  "psyshock": {
+    "defensiveStat": "def"
+  },
+  "psystrike": {
+    "defensiveStat": "def"
+  },
+  "pulverizing-pancake": {
+    "contact": true
+  },
+  "punishment": {
+    "contact": true
+  },
+  "pursuit": {
+    "contact": true
+  },
+  "pyro-ball": {
+    "secondary": true
+  },
+  "quick-attack": {
+    "contact": true
+  },
+  "rage": {
+    "contact": true
+  },
+  "rage-fist": {
+    "contact": true,
+    "punch": true
+  },
+  "raging-bull": {
+    "contact": true
+  },
+  "rapid-spin": {
+    "contact": true,
+    "secondary": true
+  },
+  "razor-leaf": {
+    "slicing": true
+  },
+  "razor-shell": {
+    "contact": true,
+    "slicing": true,
+    "secondary": true
+  },
+  "relic-song": {
+    "sound": true,
+    "secondary": true
+  },
+  "retaliate": {
+    "contact": true
+  },
+  "return": {
+    "contact": true
+  },
+  "revenge": {
+    "contact": true
+  },
+  "reversal": {
+    "contact": true
+  },
+  "roar": {
+    "sound": true
+  },
+  "rock-climb": {
+    "contact": true,
+    "secondary": true
+  },
+  "rock-slide": {
+    "secondary": true
+  },
+  "rock-smash": {
+    "contact": true,
+    "secondary": true
+  },
+  "rock-tomb": {
+    "secondary": true
+  },
+  "rolling-kick": {
+    "contact": true,
+    "secondary": true
+  },
+  "rollout": {
+    "contact": true
+  },
+  "round": {
+    "sound": true
+  },
+  "sacred-fire": {
+    "secondary": true
+  },
+  "sacred-sword": {
+    "contact": true,
+    "slicing": true
+  },
+  "salt-cure": {
+    "secondary": true
+  },
+  "sandsear-storm": {
+    "secondary": true
+  },
+  "scald": {
+    "secondary": true
+  },
+  "scorching-sands": {
+    "secondary": true
+  },
+  "scratch": {
+    "contact": true
+  },
+  "screech": {
+    "sound": true
+  },
+  "searing-shot": {
+    "secondary": true
+  },
+  "searing-sunraze-smash": {
+    "contact": true
+  },
+  "secret-power": {
+    "secondary": true
+  },
+  "secret-sword": {
+    "slicing": true,
+    "defensiveStat": "def"
+  },
+  "seed-flare": {
+    "secondary": true
+  },
+  "seismic-toss": {
+    "contact": true
+  },
+  "shadow-ball": {
+    "secondary": true
+  },
+  "shadow-bone": {
+    "secondary": true
+  },
+  "shadow-claw": {
+    "contact": true
+  },
+  "shadow-force": {
+    "contact": true
+  },
+  "shadow-punch": {
+    "contact": true,
+    "punch": true
+  },
+  "shadow-sneak": {
+    "contact": true
+  },
+  "shell-side-arm": {
+    "secondary": true
+  },
+  "signal-beam": {
+    "secondary": true
+  },
+  "silver-wind": {
+    "secondary": true
+  },
+  "sing": {
+    "sound": true
+  },
+  "sizzly-slide": {
+    "contact": true,
+    "secondary": true
+  },
+  "skitter-smack": {
+    "contact": true,
+    "secondary": true
+  },
+  "skull-bash": {
+    "contact": true
+  },
+  "sky-attack": {
+    "secondary": true
+  },
+  "sky-drop": {
+    "contact": true
+  },
+  "sky-uppercut": {
+    "contact": true,
+    "punch": true
+  },
+  "slam": {
+    "contact": true
+  },
+  "slash": {
+    "contact": true,
+    "slicing": true
+  },
+  "sludge": {
+    "secondary": true
+  },
+  "sludge-bomb": {
+    "secondary": true
+  },
+  "sludge-wave": {
+    "secondary": true
+  },
+  "smart-strike": {
+    "contact": true
+  },
+  "smelling-salts": {
+    "contact": true
+  },
+  "smog": {
+    "secondary": true
+  },
+  "snap-trap": {
+    "contact": true
+  },
+  "snarl": {
+    "sound": true,
+    "secondary": true
+  },
+  "snore": {
+    "sound": true,
+    "secondary": true
+  },
+  "solar-blade": {
+    "contact": true,
+    "slicing": true
+  },
+  "soul-stealing-7-star-strike": {
+    "contact": true
+  },
+  "spark": {
+    "contact": true,
+    "secondary": true
+  },
+  "sparkling-aria": {
+    "sound": true,
+    "secondary": true
+  },
+  "spectral-thief": {
+    "contact": true
+  },
+  "spin-out": {
+    "contact": true
+  },
+  "spirit-break": {
+    "contact": true,
+    "secondary": true
+  },
+  "spirit-shackle": {
+    "secondary": true
+  },
+  "splishy-splash": {
+    "secondary": true
+  },
+  "springtide-storm": {
+    "secondary": true
+  },
+  "steam-eruption": {
+    "secondary": true
+  },
+  "steamroller": {
+    "contact": true,
+    "secondary": true
+  },
+  "steel-roller": {
+    "contact": true
+  },
+  "steel-wing": {
+    "contact": true,
+    "secondary": true
+  },
+  "stoked-sparksurfer": {
+    "secondary": true
+  },
+  "stomp": {
+    "contact": true,
+    "secondary": true
+  },
+  "stomping-tantrum": {
+    "contact": true
+  },
+  "stone-axe": {
+    "contact": true,
+    "slicing": true,
+    "secondary": true
+  },
+  "storm-throw": {
+    "contact": true
+  },
+  "strange-steam": {
+    "secondary": true
+  },
+  "strength": {
+    "contact": true
+  },
+  "struggle": {
+    "contact": true
+  },
+  "struggle-bug": {
+    "secondary": true
+  },
+  "submission": {
+    "contact": true,
+    "recoil": true
+  },
+  "sucker-punch": {
+    "contact": true
+  },
+  "sunsteel-strike": {
+    "contact": true
+  },
+  "super-fang": {
+    "contact": true
+  },
+  "supercell-slam": {
+    "contact": true,
+    "recoil": true
+  },
+  "superpower": {
+    "contact": true
+  },
+  "supersonic": {
+    "sound": true
+  },
+  "surging-strikes": {
+    "contact": true,
+    "punch": true
+  },
+  "syrup-bomb": {
+    "secondary": true
+  },
+  "tachyon-cutter": {
+    "slicing": true
+  },
+  "tackle": {
+    "contact": true
+  },
+  "tail-slap": {
+    "contact": true
+  },
+  "take-down": {
+    "contact": true,
+    "recoil": true
+  },
+  "temper-flare": {
+    "contact": true
+  },
+  "terrain-pulse": {
+    "pulse": true
+  },
+  "thief": {
+    "contact": true
+  },
+  "thrash": {
+    "contact": true
+  },
+  "throat-chop": {
+    "contact": true,
+    "secondary": true
+  },
+  "thunder": {
+    "secondary": true
+  },
+  "thunder-fang": {
+    "contact": true,
+    "bite": true,
+    "secondary": true
+  },
+  "thunder-punch": {
+    "contact": true,
+    "punch": true,
+    "secondary": true
+  },
+  "thunder-shock": {
+    "secondary": true
+  },
+  "thunderbolt": {
+    "secondary": true
+  },
+  "thunderous-kick": {
+    "contact": true,
+    "secondary": true
+  },
+  "torch-song": {
+    "sound": true,
+    "secondary": true
+  },
+  "trailblaze": {
+    "contact": true,
+    "secondary": true
+  },
+  "tri-attack": {
+    "secondary": true
+  },
+  "triple-arrows": {
+    "secondary": true
+  },
+  "triple-axel": {
+    "contact": true
+  },
+  "triple-dive": {
+    "contact": true
+  },
+  "triple-kick": {
+    "contact": true
+  },
+  "trop-kick": {
+    "contact": true,
+    "secondary": true
+  },
+  "trump-card": {
+    "contact": true
+  },
+  "twineedle": {
+    "secondary": true
+  },
+  "twister": {
+    "secondary": true
+  },
+  "u-turn": {
+    "contact": true
+  },
+  "upper-hand": {
+    "contact": true,
+    "secondary": true
+  },
+  "uproar": {
+    "sound": true
+  },
+  "v-create": {
+    "contact": true
+  },
+  "veevee-volley": {
+    "contact": true
+  },
+  "vice-grip": {
+    "contact": true
+  },
+  "vine-whip": {
+    "contact": true
+  },
+  "vital-throw": {
+    "contact": true
+  },
+  "volt-tackle": {
+    "contact": true,
+    "secondary": true,
+    "recoil": true
+  },
+  "wake-up-slap": {
+    "contact": true
+  },
+  "water-pulse": {
+    "pulse": true,
+    "secondary": true
+  },
+  "waterfall": {
+    "contact": true,
+    "secondary": true
+  },
+  "wave-crash": {
+    "contact": true,
+    "recoil": true
+  },
+  "wicked-blow": {
+    "contact": true,
+    "punch": true
+  },
+  "wicked-torque": {
+    "secondary": true
+  },
+  "wild-charge": {
+    "contact": true,
+    "recoil": true
+  },
+  "wildbolt-storm": {
+    "secondary": true
+  },
+  "wing-attack": {
+    "contact": true
+  },
+  "wood-hammer": {
+    "contact": true,
+    "recoil": true
+  },
+  "wrap": {
+    "contact": true
+  },
+  "wring-out": {
+    "contact": true
+  },
+  "x-scissor": {
+    "contact": true,
+    "slicing": true
+  },
+  "zap-cannon": {
+    "secondary": true
+  },
+  "zen-headbutt": {
+    "contact": true,
+    "secondary": true
+  },
+  "zing-zap": {
+    "contact": true,
+    "secondary": true
+  },
+  "zippy-zap": {
+    "contact": true,
+    "secondary": true
+  }
+}

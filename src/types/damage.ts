@@ -31,7 +31,7 @@ export interface DamageResult {
   /** How many times this move hit — 1 for ordinary moves, see calculateDamage.ts's resolveHitCount for multi-hit moves. */
   hitCount: number;
   /** Which stat this move's damage was actually computed from, for display (e.g. "32 Atk Garchomp ... vs. 4 HP / 0 Def Ditto"). */
-  attackStatKey: "atk" | "spa";
+  attackStatKey: "atk" | "spa" | "def";
   defenseStatKey: "def" | "spd";
   /** Whether this move's own data marks it as a spread move (Earthquake, Rock Slide, ...) — independent of whether `attackerHitsMultipleTargets` was actually set, so the UI can label "spread move, single target" differently from "spread move, 2 targets" (the ×0.75 case). */
   isSpreadMove: boolean;
@@ -71,6 +71,10 @@ export interface DamageCalcOptions {
   attackerBurned?: boolean;
   /** Attacker has ANY status condition (burn, poison, paralysis, sleep, freeze) — separate from attackerBurned since abilities like Guts trigger on any status, not just burn specifically. */
   attackerStatused?: boolean;
+  /** Defender has any status condition — doubles Hex's power. */
+  defenderStatused?: boolean;
+  /** How many of the attacker's allies have fainted this battle — Last Respects gains 50 power per ally (max 100 + 50×… up to 300 in practice). */
+  attackerFaintedAllies?: number;
   weather?: "Sun" | "Rain" | "Sand" | "Snow";
   terrain?: "Electric" | "Grassy" | "Psychic" | "Misty";
   defenderScreens?: {

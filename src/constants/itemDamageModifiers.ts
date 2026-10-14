@@ -93,6 +93,8 @@ export const ITEM_DAMAGE_MODIFIERS: Record<string, ItemDamageModifier> = {
   "Expert Belt": { attacker: { multiplier4096: 0x1333, stage: "final", onlySuperEffective: true } },
   // ×1.1 (0x1199), base-power stage.
   "Muscle Band": { attacker: { multiplier4096: 0x1199, stage: "bp", categories: ["Physical"] } },
+  // Punching moves ×1.1 (it also stops them making contact — not modeled).
+  "Punching Glove": { attacker: { multiplier4096: 0x119a, stage: "bp", flag: "punch" } },
   "Wise Glasses": { attacker: { multiplier4096: 0x1199, stage: "bp", categories: ["Special"] } },
   // ×1.5, defense-stat stage — boosts the holder's Sp. Def directly (not a
   // final-damage reducer, unlike this app's earlier "1/1.5 on the final

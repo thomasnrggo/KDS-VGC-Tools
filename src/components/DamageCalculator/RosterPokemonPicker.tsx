@@ -12,8 +12,9 @@ import { Icon } from "../Icon";
 import { Modal } from "../Modal";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
-import { PokemonEditor, STAT_LABELS, computePokemonBuild } from "../PokemonEditor";
+import { PokemonEditor, computePokemonBuild } from "../PokemonEditor";
 import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/types";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 /** One entry in a side's sidebar — the working roster for that side, up to MAX_SIDEBAR_POKEMON. `isCustom` tracks whether this entry came from the species search (freely editable ability/item/moves) or was loaded from a real pasted team (read-only identity). */
 export interface SidebarEntry {
@@ -53,6 +54,8 @@ export interface PokemonBattleState {
   spaStage: number;
   spdStage: number;
   speStage: number;
+  /** Allies already fainted this battle — Last Respects gains 50 power per ally. */
+  faintedAllies: number;
 }
 
 export const DEFAULT_BATTLE_STATE: PokemonBattleState = {
@@ -63,6 +66,7 @@ export const DEFAULT_BATTLE_STATE: PokemonBattleState = {
   spaStage: 0,
   spdStage: 0,
   speStage: 0,
+  faintedAllies: 0,
 };
 
 const STAGE_OPTIONS = [6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6];
@@ -133,6 +137,8 @@ export function RosterPokemonPicker({
   onMovesChange,
   loadableOpponents,
 }: RosterPokemonPickerProps) {
+  const t = useMessages();
+  const text = usePokemonText();
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
@@ -144,13 +150,13 @@ export function RosterPokemonPicker({
   function submitImport() {
     const trimmed = importText.trim();
     if (!trimmed) {
-      setImportError("Paste a Pokémon's (or a full team's) Showdown export text first.");
+      setImportError(t.calcPanel.importEmpty);
       return;
     }
     try {
       const parsed = parseTeam(trimmed);
       if (parsed.length === 0) {
-        setImportError("Couldn't read that as a Pokémon — check the format and try again.");
+        setImportError(t.calcPanel.importInvalid);
         return;
       }
       if (parsed.length === 1) {
@@ -166,7 +172,7 @@ export function RosterPokemonPicker({
       // block, already excluded by splitIntoBlocks — this catch is a
       // defensive fallback, not a real expected path, so the message stays
       // generic.
-      setImportError("Couldn't read that as a Pokémon — check the format and try again.");
+      setImportError(t.calcPanel.importInvalid);
     }
   }
 
@@ -176,33 +182,35 @@ export function RosterPokemonPicker({
     setImportError(null);
   }
 
-  const importModalTitleId = `${title.toLowerCase()}-import-modal-title`;
-  const loadOpponentModalTitleId = `${title.toLowerCase()}-load-opponent-modal-title`;
+  // `title` is translated, so ids come from a stable slug of it.
+  const idBase = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const importModalTitleId = `${idBase}-import-modal-title`;
+  const loadOpponentModalTitleId = `${idBase}-load-opponent-modal-title`;
 
   function loadOpponentTeam(opponent: Opponent) {
     onImportTeam(opponent.team.pokemon.slice(0, MAX_SIDEBAR_POKEMON));
     setIsLoadOpponentOpen(false);
-    toast.success(`Loaded ${opponent.label} onto ${title}`);
+    toast.success(t.calcPanel.loaded(opponent.label, title));
   }
 
   async function copyPokemonExportText(target: ParsedPokemon) {
     try {
       await navigator.clipboard.writeText(formatPokemonPaste(target));
-      toast.success(`Copied ${target.species} to clipboard`);
+      toast.success(t.calcPanel.copied(text.species(target.species)));
     } catch {
-      toast.error("Couldn't copy to clipboard.");
+      toast.error(t.calcPanel.copyFailed);
     }
   }
 
   const teamExportText = formatTeamPaste(sidebar.map((entry) => entry.pokemon));
-  const exportTeamModalTitleId = `${title.toLowerCase()}-export-team-modal-title`;
+  const exportTeamModalTitleId = `${idBase}-export-team-modal-title`;
 
   async function copyTeamExportText() {
     try {
       await navigator.clipboard.writeText(teamExportText);
-      toast.success(`Copied ${title} team (${sidebar.length} Pokémon) to clipboard`);
+      toast.success(t.calcPanel.copiedTeam(title, sidebar.length));
     } catch {
-      toast.error("Couldn't copy to clipboard.");
+      toast.error(t.calcPanel.copyFailed);
     }
   }
 
@@ -224,12 +232,12 @@ export function RosterPokemonPicker({
   const abilityTailwindMultiplier = (abilityDoublesSpeed ? 2 : 1) * (tailwind ? 2 : 1);
   const totalSpeedMultiplier = abilityTailwindMultiplier * speStageMultiplier * paralysisMultiplier;
   const speedLabelParts = [
-    abilityDoublesSpeed ? effectiveAbility : null,
-    tailwind ? "Tailwind" : null,
+    abilityDoublesSpeed && effectiveAbility ? text.ability(effectiveAbility) : null,
+    tailwind ? text.move("Tailwind") : null,
     battleState.speStage !== 0
-      ? `${battleState.speStage > 0 ? "+" : ""}${battleState.speStage} stage`
+      ? t.calcPanel.stage(`${battleState.speStage > 0 ? "+" : ""}${battleState.speStage}`)
       : null,
-    battleState.status === "Paralyzed" ? "Paralyzed" : null,
+    battleState.status === "Paralyzed" ? t.calcPanel.statuses.Paralyzed : null,
   ].filter((source): source is string => !!source);
   const finalStats = breakdown?.final ?? null;
   const effectiveSpe = finalStats ? Math.floor(finalStats.spe * totalSpeedMultiplier) : 0;
@@ -253,43 +261,43 @@ export function RosterPokemonPicker({
 
       <div className="flex items-center justify-between gap-2 border-b border-zinc-200 pb-3">
         <span className="text-xs font-medium text-zinc-500">
-          Regulation: {REGULATIONS[0].label}
+          {t.calcPanel.regulation(REGULATIONS[0].label)}
         </span>
         <div className="flex shrink-0 items-center gap-3">
           {loadableOpponents && (
             <button
               type="button"
               onClick={() => setIsLoadOpponentOpen(true)}
-              aria-label={`Load a saved opponent's team onto ${title}`}
-              title="Load a saved opponent's team"
+              aria-label={t.calcPanel.loadTeamLabel(title)}
+              title={t.calcPanel.loadTeamHint}
               className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
             >
               <Icon name={IconName.Download} size={14} />
-              Load Team
+              {t.calcPanel.loadTeam}
             </button>
           )}
           {sidebar.length > 0 && (
             <button
               type="button"
               onClick={() => setIsExportTeamOpen(true)}
-              aria-label={`Export the whole ${title} team as Showdown export text`}
-              title="Export team as Showdown export text"
+              aria-label={t.calcPanel.exportTeamLabel(title)}
+              title={t.calcPanel.exportTeamHint}
               className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
             >
               <Icon name={IconName.ContentCopy} size={14} />
-              Export Team
+              {t.calcPanel.exportTeam}
             </button>
           )}
           {pokemon && (
             <button
               type="button"
               onClick={() => copyPokemonExportText(pokemon)}
-              aria-label={`Export ${title} as Showdown export text`}
-              title="Export as Showdown export text"
+              aria-label={t.calcPanel.exportSetLabel(title)}
+              title={t.calcPanel.exportSetHint}
               className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
             >
               <Icon name={IconName.ContentCopy} size={14} />
-              Export Set
+              {t.calcPanel.exportSet}
             </button>
           )}
           <button
@@ -298,12 +306,12 @@ export function RosterPokemonPicker({
               setIsImportOpen(true);
               setImportError(null);
             }}
-            aria-label={`Import a ${title} Pokémon from Showdown export text`}
-            title="Import from Showdown export text"
+            aria-label={t.calcPanel.importLabel(title)}
+            title={t.calcPanel.importHint}
             className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
           >
             <Icon name={IconName.ContentPaste} size={14} />
-            Import
+            {t.calcPanel.import}
           </button>
         </div>
       </div>
@@ -311,12 +319,9 @@ export function RosterPokemonPicker({
       {isImportOpen && (
         <Modal onClose={closeImport} labelledBy={importModalTitleId}>
           <h2 id={importModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            Import {title}
+            {t.calcPanel.importTitle(title)}
           </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            Paste one Pokémon, or a full team (blank line between each) to replace this side&apos;s
-            whole roster.
-          </p>
+          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.importIntro}</p>
           <textarea
             value={importText}
             onChange={(event) => {
@@ -328,7 +333,7 @@ export function RosterPokemonPicker({
             }
             rows={12}
             autoFocus
-            aria-label={`${title} Showdown export text to import`}
+            aria-label={t.calcPanel.importTextLabel(title)}
             className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
           {importError && (
@@ -342,7 +347,7 @@ export function RosterPokemonPicker({
               onClick={submitImport}
               className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
-              Import
+              {t.calcPanel.import}
             </button>
             <button
               type="button"
@@ -358,14 +363,12 @@ export function RosterPokemonPicker({
       {isLoadOpponentOpen && loadableOpponents && (
         <Modal onClose={() => setIsLoadOpponentOpen(false)} labelledBy={loadOpponentModalTitleId}>
           <h2 id={loadOpponentModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            Load {title} Team
+            {t.calcPanel.loadTitle(title)}
           </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            Pick a saved opponent from the Matchup Planner to replace this side&apos;s whole roster.
-          </p>
+          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.loadIntro}</p>
           {loadableOpponents.length === 0 ? (
             <p className="text-sm text-zinc-600">
-              No opponents saved yet — add one in the Matchup Planner first.
+              {t.calcPanel.noOpponents}
             </p>
           ) : (
             <div className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
@@ -378,7 +381,7 @@ export function RosterPokemonPicker({
                 >
                   <span className="truncate text-sm font-medium text-zinc-900">{opponent.label}</span>
                   <span className="shrink-0 text-xs text-zinc-500">
-                    {opponent.team.pokemon.length} Pokémon
+                    {t.calcPanel.pokemonCount(opponent.team.pokemon.length)}
                   </span>
                 </button>
               ))}
@@ -399,17 +402,15 @@ export function RosterPokemonPicker({
       {isExportTeamOpen && (
         <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId}>
           <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            Export {title} Team
+            {t.calcPanel.exportTitle(title)}
           </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            The whole {title.toLowerCase()} roster ({sidebar.length} Pokémon) as Showdown export text.
-          </p>
+          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.exportIntro(sidebar.length)}</p>
           <textarea
             readOnly
             value={teamExportText}
             rows={12}
             onFocus={(event) => event.target.select()}
-            aria-label={`${title} team Showdown export text`}
+            aria-label={t.calcPanel.exportTextLabel(title)}
             className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
           <div className="mt-4 flex gap-2">
@@ -418,14 +419,14 @@ export function RosterPokemonPicker({
               onClick={copyTeamExportText}
               className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
             >
-              Copy to clipboard
+              {t.calcPanel.copyToClipboard}
             </button>
             <button
               type="button"
               onClick={() => setIsExportTeamOpen(false)}
               className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
             >
-              Close
+              {t.common.close}
             </button>
           </div>
         </Modal>
@@ -439,10 +440,10 @@ export function RosterPokemonPicker({
                 type="button"
                 onClick={() => {
                   onSaveToSidebar();
-                  toast.success(`Saved ${pokemon.species} to the ${title} roster`);
+                  toast.success(t.calcPanel.saved(text.species(pokemon.species), title));
                 }}
-                aria-label={`Save ${title} as a new roster entry`}
-                title="Save as a new roster entry"
+                aria-label={t.calcPanel.saveLabel(title)}
+                title={t.calcPanel.saveHint}
                 className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
               >
                 <Icon name={IconName.Add} size={14} />
@@ -476,7 +477,7 @@ export function RosterPokemonPicker({
                   onChange={(event) =>
                     updateBattleState({ [stageKey]: Number(event.target.value) })
                   }
-                  aria-label={`${title} ${STAT_LABELS[stat]} stage`}
+                  aria-label={t.calcPanel.stageLabel(title, t.stats.short[stat])}
                   className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
                 >
                   {STAGE_OPTIONS.map((stage) => (
@@ -491,7 +492,7 @@ export function RosterPokemonPicker({
               if (stat !== "spe" || totalSpeedMultiplier === 1) return value;
               return (
                 <span
-                  title={`${speedLabelParts.join(", ")} multiplies Speed by ×${roundedSpeedMultiplier}`}
+                  title={t.calcPanel.speedHint(speedLabelParts.join(", "), roundedSpeedMultiplier)}
                 >
                   {effectiveSpe}{" "}
                   <span className="text-zinc-500">
@@ -505,7 +506,7 @@ export function RosterPokemonPicker({
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-1.5 text-xs font-medium text-zinc-600">
-                    Status
+                    {t.calcPanel.status}
                     <select
                       value={battleState.status}
                       onChange={(event) =>
@@ -515,16 +516,37 @@ export function RosterPokemonPicker({
                     >
                       {STATUS_OPTIONS.map((status) => (
                         <option key={status} value={status}>
-                          {status}
+                          {t.calcPanel.statuses[status]}
                         </option>
                       ))}
                     </select>
                   </label>
+                  {pokemon?.moves?.some((move) => move === "Last Respects") && (
+                    <label
+                      title={t.calcPanel.faintedAlliesHint(text.move("Last Respects"))}
+                      className="flex items-center gap-1.5 text-xs font-medium text-zinc-600"
+                    >
+                      {t.calcPanel.faintedAllies}
+                      <select
+                        value={battleState.faintedAllies ?? 0}
+                        onChange={(event) =>
+                          updateBattleState({ faintedAllies: Number(event.target.value) })
+                        }
+                        className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
+                      >
+                        {[0, 1, 2, 3, 4, 5].map((count) => (
+                          <option key={count} value={count}>
+                            {count}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-medium text-zinc-600">
-                    Current HP: {currentHp}/{maxHp} ({battleState.currentHpPercent}%)
+                    {t.calcPanel.currentHp(currentHp, maxHp, battleState.currentHpPercent)}
                   </span>
                   <input
                     type="range"
@@ -534,7 +556,7 @@ export function RosterPokemonPicker({
                     onChange={(event) =>
                       updateBattleState({ currentHpPercent: Number(event.target.value) })
                     }
-                    aria-label={`${title} current HP percent`}
+                    aria-label={t.calcPanel.currentHpLabel(title)}
                     className="w-full accent-zinc-600"
                   />
                 </div>
@@ -546,7 +568,7 @@ export function RosterPokemonPicker({
         <div
           className="flex shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3"
           role="listbox"
-          aria-label={`${title} sidebar`}
+          aria-label={t.calcPanel.sidebar(title)}
         >
           {sidebar.map((entry, index) => {
             const isSelected = selectedIndex === index;
@@ -558,8 +580,8 @@ export function RosterPokemonPicker({
                   aria-selected={isSelected}
                   title={
                     entry.pokemon.item
-                      ? `${entry.pokemon.species} @ ${entry.pokemon.item}`
-                      : entry.pokemon.species
+                      ? `${text.species(entry.pokemon.species)} @ ${text.item(entry.pokemon.item)}`
+                      : text.species(entry.pokemon.species)
                   }
                   onClick={() => onSelectIndex(index)}
                   className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors ${
@@ -579,8 +601,8 @@ export function RosterPokemonPicker({
                   <button
                     type="button"
                     onClick={() => copyPokemonExportText(entry.pokemon)}
-                    aria-label={`Copy ${entry.pokemon.species} as Showdown export text`}
-                    title="Copy as Showdown export text"
+                    aria-label={t.calcPanel.copyAsExport(text.species(entry.pokemon.species))}
+                    title={t.calcPanel.copyAsExportHint}
                     className="flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
                   >
                     <Icon name={IconName.ContentCopy} size={11} />
@@ -588,8 +610,8 @@ export function RosterPokemonPicker({
                   <button
                     type="button"
                     onClick={() => onRemovePokemon(index)}
-                    aria-label={`Remove ${entry.pokemon.species}`}
-                    title={`Remove ${entry.pokemon.species}`}
+                    aria-label={t.calcPanel.remove(text.species(entry.pokemon.species))}
+                    title={t.calcPanel.remove(text.species(entry.pokemon.species))}
                     className="flex h-5 w-5 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-red-600"
                   >
                     <Icon name={IconName.Close} size={11} />

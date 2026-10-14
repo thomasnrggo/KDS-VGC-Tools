@@ -2637,6 +2637,23 @@ leads/backs) is complete and working end to end.
       display is translated, and search matches both languages, ignoring accents. Unreleased/admin
       screens (Team Builder, Damage Calculator, SpeedLine, /admin) are left in English for now. Full
       design in [docs/localization.md](./docs/localization.md).
+- [x] **Damage Calculator: accuracy pass** (2026-10-14). Checked roll-for-roll against Showdown's
+      own damage calculator (`@smogon/calc` 0.12, in both its Gen 9 and its Pokémon Champions mode —
+      level 50, Stat Points) on 54 scenarios; 51 are frozen as unit tests. Added: move flags and
+      species weights from Showdown's data (`npm run generate:calc-data` → `moveFlags.json`,
+      `speciesWeights.json`); move-flag abilities (Tough Claws, Iron Fist, Strong Jaw, Mega Launcher,
+      Sharpness, Sheer Force, Reckless, Punk Rock, Fluffy, Aura Guard), -ate abilities (Pixilate,
+      Aerilate, Refrigerate, Galvanize, Dragonize), Liquid Voice, Sand Force, Solar Power, Hustle,
+      Sniper, Multiscale/Shadow Shield, Water Bubble, Purifying Salt, Grass Pelt, Steelworker-type
+      boosts, Fire Mane, Mega Sol, Eelevate, Parental Bond, Heavy/Light Metal, Punching Glove;
+      variable power (Low Kick/Grass Knot, Heavy Slam/Heat Crash, Gyro/Electro Ball, Flail/Reversal,
+      Stored Power, Last Respects with a "fainted allies" input, Facade, Acrobatics, Hex, Knock Off,
+      Weather Ball, Terrain Pulse, Expanding Force incl. its spread in Psychic Terrain, Solar Beam in
+      bad weather); stat overrides (Body Press, Psyshock/Psystrike). Fixed: Assault Vest applied to
+      Psyshock. Translated (English/Spanish). Behind a new `damageCalc` feature flag (off by default;
+      the admin always sees it) with its nav link and the opponent menu's "Open in Damage Calculator"
+      back. Still not modeled: Supreme Overlord, Analytic/Stakeout, Rage Fist, Gyro/Electro Ball with
+      Tailwind/paralysis, Eviolite.
 - [x] **Prep groups** (shipped 2026-10-14): a collaborative Matchup
       Planner. A group shares its opponent list (add, edit, tags, variants, order) among its
       members; picks and notes stay private in each member's account. Firestore `groups/{id}`,
