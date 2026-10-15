@@ -109,3 +109,13 @@ describe("calcsAgainst", () => {
     ]);
   });
 });
+
+describe("parseCalcLine's % range", () => {
+  it("also reads a range with a % after both numbers", () => {
+    expect(
+      parseCalcLine(
+        "32 Atk Basculegion Wave Crash vs. 0 HP / 0 Def Sneasler: 204-240 (131.6% - 154.8%) -- guaranteed OHKO",
+      ).percent,
+    ).toBe("131.6 - 154.8%");
+  });
+});

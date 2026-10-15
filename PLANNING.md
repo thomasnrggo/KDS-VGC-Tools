@@ -2637,6 +2637,40 @@ leads/backs) is complete and working end to end.
       display is translated, and search matches both languages, ignoring accents. Unreleased/admin
       screens (Team Builder, Damage Calculator, SpeedLine, /admin) are left in English for now. Full
       design in [docs/localization.md](./docs/localization.md).
+- [x] **Damage Calculator: accuracy pass** (2026-10-14). Checked roll-for-roll against Showdown's
+      own damage calculator (`@smogon/calc` 0.12, in both its Gen 9 and its Pokémon Champions mode —
+      level 50, Stat Points) on 54 scenarios; 51 are frozen as unit tests. Added: move flags and
+      species weights from Showdown's data (`npm run generate:calc-data` → `moveFlags.json`,
+      `speciesWeights.json`); move-flag abilities (Tough Claws, Iron Fist, Strong Jaw, Mega Launcher,
+      Sharpness, Sheer Force, Reckless, Punk Rock, Fluffy, Aura Guard), -ate abilities (Pixilate,
+      Aerilate, Refrigerate, Galvanize, Dragonize), Liquid Voice, Sand Force, Solar Power, Hustle,
+      Sniper, Multiscale/Shadow Shield, Water Bubble, Purifying Salt, Grass Pelt, Steelworker-type
+      boosts, Fire Mane, Mega Sol, Eelevate, Parental Bond, Heavy/Light Metal, Punching Glove;
+      variable power (Low Kick/Grass Knot, Heavy Slam/Heat Crash, Gyro/Electro Ball, Flail/Reversal,
+      Stored Power, Last Respects with a "fainted allies" input, Facade, Acrobatics, Hex, Knock Off,
+      Weather Ball, Terrain Pulse, Expanding Force incl. its spread in Psychic Terrain, Solar Beam in
+      bad weather); stat overrides (Body Press, Psyshock/Psystrike). Fixed: Assault Vest applied to
+      Psyshock. Translated (English/Spanish). Behind a new `damageCalc` feature flag (off by default;
+      the admin always sees it) with its nav link and the opponent menu's "Open in Damage Calculator"
+      back. Still not modeled: Supreme Overlord, Analytic/Stakeout, Gyro/Electro Ball with
+      Tailwind/paralysis, Eviolite. **Launched 2026-10-15:** the `damageCalc` flag is removed and
+      the calculator is open to everyone (nav link and "Open in Damage Calculator" always shown). The
+      nav order is now My Teams, Matchup Planner, Damage Calculator, Speed Tiers, Tournaments.
+- [ ] **Damage Calculator: sets**. The calc's species picker is its own component
+      (`PokemonSetPicker`), separate from the Team Builder's search: a Showdown-style dropdown with
+      each species and its sets underneath, since in the calc you're picking a build, not browsing
+      Pokémon. A set is species, item, ability, nature, Stat Points and moves (level 50); HP,
+      status, stages and field stay per calc. Steps: (1) the picker with "Blank Set" only — done
+      2026-10-14; (2) sets from your teams and Matchup Planner opponents; (3) saved sets per user
+      — done 2026-10-15; (4) public sets — done 2026-10-15. **Saved sets** (`CalcSet`,
+      `useCalcSets`): a user's own sets are local-first (IndexedDB `calcSets`) and sync to
+      `users/{uid}/calcSets` when signed in, like teams. **Public sets** are the admin's, in
+      Firestore `publicSets/{id}` (everyone reads, admin UID writes — needs the updated
+      `firestore.rules` deployed). Neither is tied to a regulation. Saved from the Pokémon panel's
+      "Save set" button (the admin gets a "Public" checkbox); saving under a name that species
+      already has replaces that set, which is how a set is edited. Renamed and deleted in place in
+      the picker (own sets; public ones only by the admin). Picker order under a species: your
+      sets, public sets, Blank Set.
 - [x] **Prep groups** (shipped 2026-10-14): a collaborative Matchup
       Planner. A group shares its opponent list (add, edit, tags, variants, order) among its
       members; picks and notes stay private in each member's account. Firestore `groups/{id}`,
@@ -2645,6 +2679,17 @@ leads/backs) is complete and working end to end.
       `firestore.rules` deployed. Design in [docs/prep-groups.md](./docs/prep-groups.md).
       **Future:** personal invites the invited player must accept, instead of anyone with the
       link joining (see the doc's "Future" section).
+- [x] **Saved calcs on a team** (shipped 2026-10-15): the Damage Calculator's "Save calc to a team"
+      button files the Showdown-format line as a `TeamCalc` (`Team.calcs`, the same model the on-hold
+      Calcs tab below uses), one click, no dialog: always the active team (the left side is your
+      team), under the left Pokémon (matched on the team by species), offensive for its own move
+      and defensive for the right side's — read from the calculator, not the line's text, which
+      can't tell a mirror match apart. Disabled, with the reason as its tooltip, without an active
+      team or when the left Pokémon isn't on it. Shown on the team page's **Calcs tab** (now always visible; Matchups
+      stays on hold): each Pokémon's `PokemonReportCard` with `collapsible` (sprite header only
+      until clicked) and a `PokemonCalcsBox` under it (collapsible Offensive/Defensive lists), in
+      independent columns. The old paste-a-calc-document panel (`TeamCalcsPanel`) isn't shown;
+      never on a shared report.
 - [ ] **Team Report: calcs + matchups — on hold.** Benchmark calcs per Pokémon (pasted Showdown-calc
       lines), a Matchups tab, and a prep page per opponent, linked from the Matchup Planner. Built
       2026-10-12, then hidden behind `TEAM_REPORT_PREP_ENABLED = false` while the opponent-info vs

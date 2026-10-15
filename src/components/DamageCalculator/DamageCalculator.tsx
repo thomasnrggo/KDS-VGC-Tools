@@ -1,28 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { useMyTeams } from "@/hooks/useMyTeams";
+import type { useMyTeams } from "@/hooks/useMyTeams";
 import { useOpponents } from "@/hooks/useOpponents";
-import { calculateDamage } from "@/lib/damage/calculateDamage";
+import { useGroups } from "@/hooks/useGroups";
+import { useGroupOpponents } from "@/hooks/useGroupOpponents";
+import { useCalcSets, type SavedSetRef } from "@/hooks/useCalcSets";
+import { readDefenderDraft, writeDefenderDraft } from "./defenderDraftStore";
+import { MobileRosterBar } from "./MobileRosterBar";
+import { speciesIdentity } from "@/lib/teamIdentity";
+import { generateId } from "@/lib/id";
+import { ensureSidebarSelection, removeSidebarEntry } from "@/lib/calcSidebar";
+import { calculateDamage, moveHitRange } from "@/lib/damage/calculateDamage";
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { calculateStatBreakdown } from "@/lib/stats/calculateFinalStats";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
-import { WEATHER_SETTING_ABILITIES } from "@/constants";
+import { TYPE_COLORS, WEATHER_SETTING_ABILITIES } from "@/constants";
+import movesData from "@/data/moves.json";
+import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import {
   DEFAULT_BATTLE_STATE,
+  EFFECT_MOVES,
   MAX_SIDEBAR_POKEMON,
   RosterPokemonPicker,
   type PokemonBattleState,
   type SidebarEntry,
 } from "./RosterPokemonPicker";
 import { DEFAULT_SPECIES_KEY, STAT_LABELS, buildCustomPokemon } from "../PokemonEditor";
-import type { DamageCalcOptions, DamageResult, ParsedPokemon } from "@/types";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { Icon } from "../Icon";
+import { toast } from "../Toast";
+import { PokemonSprite } from "../PokemonSprite";
+import { TypeIcon } from "../TypeIcon";
+import { IconName } from "@/enums";
+import type { DamageCalcOptions, DamageResult, MoveData, ParsedPokemon, TeamCalcSide } from "@/types";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import type { Messages } from "@/lib/i18n/messages";
 
 type StageField = "atkStage" | "defStage" | "spaStage" | "spdStage";
 const STAGE_FIELD_BY_ATTACK_STAT: Record<DamageResult["attackStatKey"], StageField> = {
   atk: "atkStage",
   spa: "spaStage",
+  // Body Press attacks with Defense.
+  def: "defStage",
 };
 const STAGE_FIELD_BY_DEFENSE_STAT: Record<DamageResult["defenseStatKey"], StageField> = {
   def: "defStage",
@@ -104,8 +131,12 @@ function formatCalculationLabel(
   const defenseToken = formatStatToken(defenderDefSp, defenderStage, STAT_LABELS[result.defenseStatKey]);
 
   const helpingHandLabel = options?.attackerHelpingHand ? "Helping Hand " : "";
-  const category = result.attackStatKey === "atk" ? "Physical" : "Special";
+  const category = result.attackStatKey === "spa" ? "Special" : "Physical";
   const reducers = activeDamageReducers(options, category);
+  // A result under Protect that wasn't blocked went through it (Unseen Fist / Piercing Drill).
+  if (options?.defenderProtected && result.koChanceText !== "blocked by Protect") {
+    reducers.push("Protect");
+  }
   const throughLabel = reducers.length > 0 ? ` through ${reducers.join(" and ")}` : "";
   const attackerItemLabel = attacker.item ? `${attacker.item} ` : "";
   const defenderItemLabel = defender.item ? `${defender.item} ` : "";
@@ -114,6 +145,13 @@ function formatCalculationLabel(
 }
 
 const DEFAULT_STAT_OVERRIDES: StatOverrides = {};
+
+const subscribeNever = () => () => {};
+
+/** What a side falls back to so it's never empty: the regulation's first species, as a blank set. */
+function defaultSidebarEntry(): SidebarEntry {
+  return { pokemon: buildCustomPokemon(DEFAULT_SPECIES_KEY), isCustom: true };
+}
 
 interface ToggleButtonProps {
   label: string;
@@ -147,7 +185,12 @@ interface SegmentedToggleProps<T extends string> {
 }
 
 /** A single connected pill split into mutually-exclusive segments (only one can be active) — visually distinct from ToggleButton's separate-pill rows, matching the reference calculator's "Singles / Doubles" control. Used for the battle format toggle; a generic 2+ option component rather than hardcoding two buttons since the shared border between segments needs each button to know its position in the row. */
-function SegmentedToggle<T extends string>({ options, value, onChange }: SegmentedToggleProps<T>) {
+function SegmentedToggle<T extends string>({
+  options,
+  value,
+  onChange,
+  labelFor = (option) => option,
+}: SegmentedToggleProps<T> & { labelFor?: (option: T) => string }) {
   return (
     <div className="inline-flex overflow-hidden rounded-full border border-zinc-300">
       {options.map((option, index) => (
@@ -162,27 +205,20 @@ function SegmentedToggle<T extends string>({ options, value, onChange }: Segment
               : "text-zinc-700 hover:bg-zinc-100"
           } ${index > 0 ? "border-l border-zinc-300" : ""}`}
         >
-          {option}
+          {labelFor(option)}
         </button>
       ))}
     </div>
   );
 }
 
-const WEATHER_OPTIONS: Array<{ label: string; value: DamageCalcOptions["weather"] }> = [
-  { label: "None", value: undefined },
-  { label: "Sun", value: "Sun" },
-  { label: "Rain", value: "Rain" },
-  { label: "Sand", value: "Sand" },
-  { label: "Snow", value: "Snow" },
-];
-
-const TERRAIN_OPTIONS: Array<{ label: string; value: DamageCalcOptions["terrain"] }> = [
-  { label: "None", value: undefined },
-  { label: "Electric", value: "Electric" },
-  { label: "Grassy", value: "Grassy" },
-  { label: "Psychic", value: "Psychic" },
-  { label: "Misty", value: "Misty" },
+// No "None" option: clicking the active weather/terrain again clears it.
+const WEATHER_OPTIONS: Array<NonNullable<DamageCalcOptions["weather"]>> = ["Sun", "Rain", "Sand", "Snow"];
+const TERRAIN_OPTIONS: Array<NonNullable<DamageCalcOptions["terrain"]>> = [
+  "Electric",
+  "Grassy",
+  "Psychic",
+  "Misty",
 ];
 
 /**
@@ -233,8 +269,23 @@ function resolveAutoWeather(
   return ability ? WEATHER_SETTING_ABILITIES[ability] : undefined;
 }
 
-export function DamageCalculator() {
-  const { teams, activeTeamId, isLoading } = useMyTeams();
+/**
+ * The two Pokémon are the focus: the middle column (result, field) is
+ * narrower than the sides. Shared by both rows so their columns line up.
+ * Below `xl` the field moves into a drawer: the two Pokémon sit side by side
+ * on `lg` (the result spanning the row above them), stacked below that.
+ */
+const THREE_COLUMNS = "lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)]";
+
+interface DamageCalculatorProps {
+  /** The page's useMyTeams() — shared with its header (see the page). */
+  myTeams: ReturnType<typeof useMyTeams>;
+}
+
+export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const { teams, activeTeamId, isLoading, updateTeam } = myTeams;
   // Team/opponent selection from a saved roster is otherwise omitted (see
   // PLANNING.md) — the header's active team seeds the Attacker's sidebar on
   // first load, and a specific opponent seeds the Defender's when opened via
@@ -242,21 +293,33 @@ export function DamageCalculator() {
   // below) — both are one-time seeds, not an ongoing team-selection UI.
   const activeTeam = activeTeamId ? teams.find((t) => t.id === activeTeamId) : undefined;
   const { opponents } = useOpponents();
+  const calcSets = useCalcSets();
   const searchParams = useSearchParams();
   const opponentId = searchParams.get("opponentId");
-  const opponentFromUrl = opponentId ? opponents.find((o) => o.id === opponentId) : undefined;
+  // ?groupId= points at a prep group's shared list instead of your own.
+  const groupId = searchParams.get("groupId");
+  const { groups } = useGroups();
+  const urlGroup = groupId ? (groups.find((g) => g.id === groupId) ?? null) : null;
+  const { opponents: groupOpponents } = useGroupOpponents(urlGroup);
+  const opponentFromUrl = opponentId
+    ? (groupId ? groupOpponents : opponents).find((o) => o.id === opponentId)
+    : undefined;
 
   // Each side's working roster (sidebar) — up to MAX_SIDEBAR_POKEMON,
   // editable via the species search (adds a custom entry) or the sidebar's
   // own remove button. The Attacker seeds from the header's active team (see
   // the render-time default below); the Defender starts with a single
   // default species so there's always something to calculate with.
-  const [attackerSidebar, setAttackerSidebar] = useState<SidebarEntry[]>([]);
-  const [attackerSelectedIndex, setAttackerSelectedIndex] = useState<number | null>(null);
+  // Neither side is ever empty: both start on the default species. The
+  // Attacker's starting array is kept so the team seed below can tell it
+  // hasn't been touched yet (same array reference).
+  const [initialAttackerSidebar] = useState<SidebarEntry[]>(() => [defaultSidebarEntry()]);
+  const [attackerSidebar, setAttackerSidebar] = useState<SidebarEntry[]>(initialAttackerSidebar);
+  const [attackerSelectedIndex, setAttackerSelectedIndex] = useState<number | null>(0);
   const [attackerMega, setAttackerMega] = useState(true);
 
   const [defenderSidebar, setDefenderSidebar] = useState<SidebarEntry[]>(() => [
-    { pokemon: buildCustomPokemon(DEFAULT_SPECIES_KEY), isCustom: true },
+    defaultSidebarEntry(),
   ]);
   const [defenderSelectedIndex, setDefenderSelectedIndex] = useState<number | null>(0);
   const [defenderMega, setDefenderMega] = useState(true);
@@ -279,9 +342,11 @@ export function DamageCalculator() {
   const [battleFormat, setBattleFormat] = useState<"Singles" | "Doubles">("Doubles");
   const [weather, setWeather] = useState<DamageCalcOptions["weather"]>(undefined);
   const [terrain, setTerrain] = useState<DamageCalcOptions["terrain"]>(undefined);
-  const [isCritical, setIsCritical] = useState(false);
   const [fairyAura, setFairyAura] = useState(false);
   const [gravity, setGravity] = useState(false);
+  const [isFieldOpen, setIsFieldOpen] = useState(false);
+  // Below lg the two sides are tabs: only the open side's moves and panel show.
+  const [openSide, setOpenSide] = useState<"attacker" | "defender">("attacker");
 
   // Seeds the Attacker's sidebar with the header's active team, the first
   // time activeTeamId becomes available (it loads asynchronously from
@@ -289,14 +354,14 @@ export function DamageCalculator() {
   // pattern for "sync state once when a value changes" (see "Adjusting some
   // state when a prop changes" in the React docs), rather than an effect.
   // Guarded by attackerDefaultedFor so this never fires again once it has,
-  // meaning a later explicit change (or a manually-emptied sidebar) is never
-  // overridden by it. If there's no active team, the Attacker's sidebar just
-  // stays empty — unlike the Defender, it doesn't fall back to a default
-  // species (per explicit request: "keep empty" when there's no team to load).
+  // meaning a later explicit change is never overridden by it — it only
+  // replaces the untouched starting default. With no active team, the
+  // Attacker keeps that default species, like the Defender.
   const [attackerDefaultedFor, setAttackerDefaultedFor] = useState<string | null>(null);
   if (activeTeamId !== attackerDefaultedFor) {
     setAttackerDefaultedFor(activeTeamId);
-    if (attackerSidebar.length === 0 && activeTeam) {
+    const isUntouched = attackerSidebar === initialAttackerSidebar;
+    if (isUntouched && activeTeam && activeTeam.pokemon.length > 0) {
       const seeded = activeTeam.pokemon.map((pokemon) => ({ pokemon, isCustom: false }));
       setAttackerSidebar(seeded);
       setAttackerSelectedIndex(0);
@@ -319,9 +384,13 @@ export function DamageCalculator() {
   >(null);
   if (opponentId && opponentId !== defenderDefaultedForOpponentId && opponentFromUrl) {
     setDefenderDefaultedForOpponentId(opponentId);
-    const seeded = opponentFromUrl.team.pokemon.map((pokemon) => ({ pokemon, isCustom: false }));
-    setDefenderSidebar(seeded);
-    setDefenderSelectedIndex(0);
+    const seeded = ensureSidebarSelection(
+      opponentFromUrl.team.pokemon.map((pokemon): SidebarEntry => ({ pokemon, isCustom: false })),
+      0,
+      defaultSidebarEntry,
+    );
+    setDefenderSidebar(seeded.sidebar);
+    setDefenderSelectedIndex(seeded.selectedIndex);
   }
 
   const [attackerSide, setAttackerSide] = useState<SideConditions>(DEFAULT_SIDE_CONDITIONS);
@@ -348,6 +417,40 @@ export function DamageCalculator() {
   const [defenderStatOverrides, setDefenderStatOverrides] =
     useState<StatOverrides>(DEFAULT_STAT_OVERRIDES);
 
+  // Restores the Defender's saved work in progress (see defenderDraftStore)
+  // once, on the first client render — localStorage isn't readable on the
+  // server, so the server snapshot is `undefined` ("not known yet") and the
+  // restore waits for the client one. Skipped when ?opponentId= is set,
+  // since that link asks for a specific opponent instead.
+  const savedDefenderDraft = useSyncExternalStore(subscribeNever, readDefenderDraft, () => undefined);
+  const [isDefenderDraftChecked, setIsDefenderDraftChecked] = useState(false);
+  if (!isDefenderDraftChecked && savedDefenderDraft !== undefined) {
+    setIsDefenderDraftChecked(true);
+    if (savedDefenderDraft && !opponentId) {
+      const restored = ensureSidebarSelection(
+        savedDefenderDraft.sidebar,
+        savedDefenderDraft.selectedIndex,
+        defaultSidebarEntry,
+      );
+      setDefenderSidebar(restored.sidebar);
+      setDefenderSelectedIndex(restored.selectedIndex);
+      setDefenderMega(savedDefenderDraft.mega);
+      setDefenderStatOverrides(savedDefenderDraft.statOverrides);
+    }
+  }
+
+  // …and saves it on every change once that check has run (writing before it
+  // would overwrite the saved draft with the default one).
+  useEffect(() => {
+    if (!isDefenderDraftChecked) return;
+    writeDefenderDraft({
+      sidebar: defenderSidebar,
+      selectedIndex: defenderSelectedIndex,
+      mega: defenderMega,
+      statOverrides: defenderStatOverrides,
+    });
+  }, [isDefenderDraftChecked, defenderSidebar, defenderSelectedIndex, defenderMega, defenderStatOverrides]);
+
   const effectiveAttacker = toEffectivePokemon(attackerPokemon, attackerMega, attackerStatOverrides);
   const effectiveDefender = toEffectivePokemon(defenderPokemon, defenderMega, defenderStatOverrides);
 
@@ -363,13 +466,13 @@ export function DamageCalculator() {
     defendingBattleState: PokemonBattleState,
   ): DamageCalcOptions {
     return {
-      isCritical,
       weather,
       terrain,
       fairyAura,
       gravity,
       attackerBurned: attackingBattleState.status === "Burned",
       attackerStatused: attackingBattleState.status !== "Healthy",
+      defenderStatused: defendingBattleState.status !== "Healthy",
       attackerHelpingHand: attackingSide.helpingHand,
       attackerHitsMultipleTargets: battleFormat === "Doubles",
       isDoublesFormat: battleFormat === "Doubles",
@@ -399,6 +502,22 @@ export function DamageCalculator() {
     };
   }
 
+  // What's set on the move's own row: Crit, its Effect count (Last Respects,
+  // Rage Fist) or how many hits land.
+  function forMove(
+    options: DamageCalcOptions,
+    battleState: PokemonBattleState,
+    move: string,
+  ): DamageCalcOptions {
+    const count = battleState.moveCounts[move];
+    const effect = EFFECT_MOVES[move];
+    return {
+      ...options,
+      ...(battleState.critMoves.includes(move) && { isCritical: true }),
+      ...(count !== undefined && (effect ? { [effect.option]: count } : { hits: count })),
+    };
+  }
+
   // Both sides' movesets are computed simultaneously (attacker's moves vs.
   // defender, and defender's moves vs. attacker) so each row can show its own
   // damage range up front, rather than requiring a move to be selected first.
@@ -417,16 +536,32 @@ export function DamageCalculator() {
 
   const attackerMoveResults =
     effectiveAttacker && effectiveDefender
-      ? (attackerPokemon?.moves ?? []).map((move) => ({
+      ? (attackerPokemon?.moves ?? [])
+          // Empty slots stay so moves keep their place (PokemonEditor's setMoveSlot).
+          .filter((move) => move)
+          .map((move) => ({
           move,
-          result: calculateDamage(effectiveAttacker, effectiveDefender, move, attackerMoveOptions),
+          result: calculateDamage(
+            effectiveAttacker,
+            effectiveDefender,
+            move,
+            forMove(attackerMoveOptions, attackerBattleState, move),
+          ),
         }))
       : [];
   const defenderMoveResults =
     effectiveAttacker && effectiveDefender
-      ? (defenderPokemon?.moves ?? []).map((move) => ({
+      ? (defenderPokemon?.moves ?? [])
+          // Empty slots stay so moves keep their place (PokemonEditor's setMoveSlot).
+          .filter((move) => move)
+          .map((move) => ({
           move,
-          result: calculateDamage(effectiveDefender, effectiveAttacker, move, defenderMoveOptions),
+          result: calculateDamage(
+            effectiveDefender,
+            effectiveAttacker,
+            move,
+            forMove(defenderMoveOptions, defenderBattleState, move),
+          ),
         }))
       : [];
 
@@ -442,7 +577,13 @@ export function DamageCalculator() {
     selectedMove?.side === "attacker" ? attackerBattleState : defenderBattleState;
   const selectedDefendingBattleState =
     selectedMove?.side === "attacker" ? defenderBattleState : attackerBattleState;
-  const selectedOptions = selectedMove?.side === "attacker" ? attackerMoveOptions : defenderMoveOptions;
+  const selectedOptions = selectedMove
+    ? forMove(
+        selectedMove.side === "attacker" ? attackerMoveOptions : defenderMoveOptions,
+        selectedAttackingBattleState,
+        selectedMove.move,
+      )
+    : undefined;
 
   // Selecting an existing sidebar tile just switches which entry is shown —
   // battle state/stat overrides reset the same way switching Pokémon always
@@ -460,8 +601,8 @@ export function DamageCalculator() {
   // entry while under MAX_SIDEBAR_POKEMON, otherwise replaces whichever
   // entry is currently selected (or the first one, if none is) so the cap
   // is never exceeded.
-  function attackerAddPokemon(newPokemon: ParsedPokemon) {
-    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
+  function attackerAddPokemon(newPokemon: ParsedPokemon, fromSet?: SavedSetRef) {
+    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true, fromSet };
     const newIndex =
       attackerSidebar.length < MAX_SIDEBAR_POKEMON
         ? attackerSidebar.length
@@ -484,12 +625,12 @@ export function DamageCalculator() {
   // value, so picking a new one there reads as "change this Pokémon," not
   // "add another": swaps the species in place at the same sidebar index
   // rather than appending or touching any other slot.
-  function attackerReplacePokemon(newPokemon: ParsedPokemon) {
+  function attackerReplacePokemon(newPokemon: ParsedPokemon, fromSet?: SavedSetRef) {
     if (attackerSelectedIndex === null) {
-      attackerAddPokemon(newPokemon);
+      attackerAddPokemon(newPokemon, fromSet);
       return;
     }
-    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
+    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true, fromSet };
     setAttackerSidebar(
       attackerSidebar.map((entry, i) => (i === attackerSelectedIndex ? newEntry : entry)),
     );
@@ -524,9 +665,13 @@ export function DamageCalculator() {
   // is my team," not "add one more" — see RosterPokemonPicker's onImportTeam
   // doc comment.
   function attackerImportTeam(pokemonList: ParsedPokemon[]) {
-    const newSidebar: SidebarEntry[] = pokemonList.map((pokemon) => ({ pokemon, isCustom: true }));
+    const { sidebar: newSidebar, selectedIndex } = ensureSidebarSelection(
+      pokemonList.map((pokemon): SidebarEntry => ({ pokemon, isCustom: true })),
+      0,
+      defaultSidebarEntry,
+    );
     setAttackerSidebar(newSidebar);
-    setAttackerSelectedIndex(newSidebar.length > 0 ? 0 : null);
+    setAttackerSelectedIndex(selectedIndex);
     setSelectedMove(null);
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
@@ -535,12 +680,15 @@ export function DamageCalculator() {
   }
 
   function attackerRemovePokemon(index: number) {
-    setAttackerSidebar(attackerSidebar.filter((_, i) => i !== index));
-    if (attackerSelectedIndex === index) {
-      setAttackerSelectedIndex(null);
+    const next = removeSidebarEntry(attackerSidebar, attackerSelectedIndex, index, defaultSidebarEntry);
+    setAttackerSidebar(next.sidebar);
+    setAttackerSelectedIndex(next.selectedIndex);
+    if (next.selectionChanged) {
       setSelectedMove(null);
-    } else if (attackerSelectedIndex !== null && attackerSelectedIndex > index) {
-      setAttackerSelectedIndex(attackerSelectedIndex - 1);
+      setAttackerBattleState(DEFAULT_BATTLE_STATE);
+      setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
+      const autoWeather = resolveAutoWeather(next.sidebar[next.selectedIndex]?.pokemon, attackerMega);
+      if (autoWeather) setWeather(autoWeather);
     }
   }
 
@@ -585,8 +733,8 @@ export function DamageCalculator() {
     if (autoWeather) setWeather(autoWeather);
   }
 
-  function defenderAddPokemon(newPokemon: ParsedPokemon) {
-    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
+  function defenderAddPokemon(newPokemon: ParsedPokemon, fromSet?: SavedSetRef) {
+    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true, fromSet };
     const newIndex =
       defenderSidebar.length < MAX_SIDEBAR_POKEMON
         ? defenderSidebar.length
@@ -604,12 +752,12 @@ export function DamageCalculator() {
     if (autoWeather) setWeather(autoWeather);
   }
 
-  function defenderReplacePokemon(newPokemon: ParsedPokemon) {
+  function defenderReplacePokemon(newPokemon: ParsedPokemon, fromSet?: SavedSetRef) {
     if (defenderSelectedIndex === null) {
-      defenderAddPokemon(newPokemon);
+      defenderAddPokemon(newPokemon, fromSet);
       return;
     }
-    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true };
+    const newEntry: SidebarEntry = { pokemon: newPokemon, isCustom: true, fromSet };
     setDefenderSidebar(
       defenderSidebar.map((entry, i) => (i === defenderSelectedIndex ? newEntry : entry)),
     );
@@ -618,6 +766,17 @@ export function DamageCalculator() {
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
     const autoWeather = resolveAutoWeather(newPokemon, defenderMega);
     if (autoWeather) setWeather(autoWeather);
+  }
+
+  function linkSelectedEntry(
+    setSidebar: (update: (sidebar: SidebarEntry[]) => SidebarEntry[]) => void,
+    selectedIndex: number | null,
+    fromSet: SavedSetRef,
+  ) {
+    if (selectedIndex === null) return;
+    setSidebar((sidebar) =>
+      sidebar.map((entry, i) => (i === selectedIndex ? { ...entry, fromSet } : entry)),
+    );
   }
 
   function defenderSaveCurrentToSidebar() {
@@ -634,9 +793,13 @@ export function DamageCalculator() {
   }
 
   function defenderImportTeam(pokemonList: ParsedPokemon[]) {
-    const newSidebar: SidebarEntry[] = pokemonList.map((pokemon) => ({ pokemon, isCustom: true }));
+    const { sidebar: newSidebar, selectedIndex } = ensureSidebarSelection(
+      pokemonList.map((pokemon): SidebarEntry => ({ pokemon, isCustom: true })),
+      0,
+      defaultSidebarEntry,
+    );
     setDefenderSidebar(newSidebar);
-    setDefenderSelectedIndex(newSidebar.length > 0 ? 0 : null);
+    setDefenderSelectedIndex(selectedIndex);
     setSelectedMove(null);
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
@@ -645,12 +808,15 @@ export function DamageCalculator() {
   }
 
   function defenderRemovePokemon(index: number) {
-    setDefenderSidebar(defenderSidebar.filter((_, i) => i !== index));
-    if (defenderSelectedIndex === index) {
-      setDefenderSelectedIndex(null);
+    const next = removeSidebarEntry(defenderSidebar, defenderSelectedIndex, index, defaultSidebarEntry);
+    setDefenderSidebar(next.sidebar);
+    setDefenderSelectedIndex(next.selectedIndex);
+    if (next.selectionChanged) {
       setSelectedMove(null);
-    } else if (defenderSelectedIndex !== null && defenderSelectedIndex > index) {
-      setDefenderSelectedIndex(defenderSelectedIndex - 1);
+      setDefenderBattleState(DEFAULT_BATTLE_STATE);
+      setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
+      const autoWeather = resolveAutoWeather(next.sidebar[next.selectedIndex]?.pokemon, defenderMega);
+      if (autoWeather) setWeather(autoWeather);
     }
   }
 
@@ -687,49 +853,305 @@ export function DamageCalculator() {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-zinc-500">Loading…</p>;
+    return <p className="text-sm text-zinc-500">{t.common.loading}</p>;
   }
+
+  const fieldControls = (
+    <>
+      <div className="flex justify-center">
+        <SegmentedToggle
+          options={["Singles", "Doubles"] as const}
+          value={battleFormat}
+          onChange={setBattleFormat}
+          labelFor={(option) => (option === "Singles" ? t.calc.singles : t.calc.doubles)}
+        />
+      </div>
+
+      <div role="group" aria-label={t.calc.weather} className="flex flex-wrap justify-center gap-2">
+        {WEATHER_OPTIONS.map((option) => (
+          <ToggleButton
+            key={option}
+            label={t.calc.weathers[option]}
+            active={weather === option}
+            onClick={() => setWeather(weather === option ? undefined : option)}
+          />
+        ))}
+      </div>
+
+      <div role="group" aria-label={t.calc.terrain} className="flex flex-wrap justify-center gap-2">
+        {TERRAIN_OPTIONS.map((option) => (
+          <ToggleButton
+            key={option}
+            label={t.calc.terrains[option]}
+            active={terrain === option}
+            onClick={() => setTerrain(terrain === option ? undefined : option)}
+          />
+        ))}
+      </div>
+
+      <div className="flex flex-wrap justify-center gap-2">
+        <ToggleButton
+          label={text.ability("Fairy Aura")}
+          active={fairyAura}
+          onClick={() => setFairyAura((v) => !v)}
+        />
+        <ToggleButton label={text.move("Gravity")} active={gravity} onClick={() => setGravity((v) => !v)} />
+      </div>
+
+      <div className="mt-2 grid grid-cols-2 gap-3 border-t border-zinc-200 pt-3">
+        <SideConditionsPanel
+          title={t.calc.sideOf(attackerPokemon ? text.species(attackerPokemon.species) : t.calc.attacker)}
+          conditions={attackerSide}
+          onToggle={toggleAttackerSide}
+        />
+        <SideConditionsPanel
+          title={t.calc.sideOf(defenderPokemon ? text.species(defenderPokemon.species) : t.calc.defender)}
+          conditions={defenderSide}
+          onToggle={toggleDefenderSide}
+        />
+      </div>
+    </>
+  );
+
+  // What's set, for the narrow-screen Field setup button: each side's own
+  // conditions on its side (attacker left, defender right), what applies to
+  // both — weather, terrain, Gravity, Fairy Aura — in the middle.
+  function sideChips(side: SideConditions): string[] {
+    const labels: Array<[keyof SideConditions, string]> = [
+      ["protect", text.move("Protect")],
+      ["helpingHand", text.move("Helping Hand")],
+      ["auroraVeil", text.move("Aurora Veil")],
+      ["reflect", text.move("Reflect")],
+      ["lightScreen", text.move("Light Screen")],
+      ["tailwind", text.move("Tailwind")],
+      ["friendGuard", text.ability("Friend Guard")],
+    ];
+    return labels.filter(([key]) => side[key]).map(([, label]) => label);
+  }
+  const fieldColumns = [
+    { key: "attacker", align: "justify-start", chips: sideChips(attackerSide) },
+    {
+      key: "both",
+      align: "justify-center",
+      chips: [
+        weather && t.calc.weathers[weather],
+        // "Psychic Terrain" rather than "Psychic", which could read as the type.
+        terrain && text.move(`${terrain} Terrain`),
+        gravity && text.move("Gravity"),
+        fairyAura && text.ability("Fairy Aura"),
+      ].filter((chip): chip is string => !!chip),
+    },
+    { key: "defender", align: "justify-end", chips: sideChips(defenderSide) },
+  ];
+  const hasFieldChips = fieldColumns.some((column) => column.chips.length > 0);
+
+  // Saving a calc files it on the active team — the left side is your team.
+  // Your Pokémon is the left one (found on that team by species); clicking
+  // its move makes the calc offensive, clicking the right one's (hitting
+  // yours) makes it defensive. Nothing to guess from the line's text, which
+  // can't tell a mirror match (Garchomp vs. Garchomp) apart.
+  const ourIndex =
+    activeTeam && attackerPokemon
+      ? activeTeam.pokemon.findIndex(
+          (mon) => speciesIdentity(mon.species) === speciesIdentity(attackerPokemon.species),
+        )
+      : -1;
+  const saveCalcTarget: SaveCalcTarget =
+    !activeTeam
+      ? { disabledReason: t.calc.saveCalcNoTeam }
+      : ourIndex === -1 || !attackerPokemon
+        ? { disabledReason: t.calc.saveCalcNotOnTeam(activeTeam.name) }
+        : {
+            onSave: (calcText: string) => {
+              const side: TeamCalcSide = selectedMove?.side === "defender" ? "defensive" : "offensive";
+              const species = speciesIdentity(activeTeam.pokemon[ourIndex].species);
+              updateTeam(activeTeam.id, (team) => ({
+                ...team,
+                calcs: [...(team.calcs ?? []), { id: generateId(), text: calcText, species, side }],
+              }));
+              toast.success(
+                t.calc.calcSaved(
+                  side === "offensive" ? t.calc.offensive : t.calc.defensive,
+                  text.species(attackerPokemon.species),
+                  activeTeam.name,
+                ),
+              );
+            },
+          };
+
+  function sideClass(side: "attacker" | "defender"): string {
+    return side === openSide ? "" : "hidden lg:flex";
+  }
+
+  const sideTabs: Array<{
+    side: "attacker" | "defender";
+    label: string;
+    pokemon: ParsedPokemon | null;
+    mega: boolean;
+  }> = [
+    { side: "attacker", label: t.calc.attacker, pokemon: attackerPokemon, mega: attackerMega },
+    { side: "defender", label: t.calc.defender, pokemon: defenderPokemon, mega: defenderMega },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Below xl the field lives in a drawer, opened from a bar that sticks to
+          the top of the screen — styled like the Matchup Planner's team bar.
+          Below lg the bar also holds the Attacker/Defender tabs, above the
+          Field setup button, and the page title. Spans the page's full width
+          (-mx-6 undoes its padding). */}
+      <nav
+        aria-label={t.calc.field}
+        className="sticky top-[var(--site-header-height,0px)] z-30 -mx-6 -mt-6 border-b border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 xl:hidden"
+      >
+        {/* The page title, which the page itself hides below xl. -mt-6 joins the bar to the site header;
+            it pins just below that sticky header (--site-header-height, set by MyTeamHeader). */}
+        <h2 className="px-4 pt-2.5 text-center text-sm font-semibold text-zinc-100 dark:text-zinc-900">
+          {t.calc.title}
+        </h2>
+        {/* Phones and tablets: one side at a time, picked from these tabs. */}
+        <div role="tablist" aria-label={t.calc.sides} className="grid grid-cols-2 gap-2 px-3 pt-2 lg:hidden">
+          {sideTabs.map(({ side, label, pokemon, mega }) => {
+            const isOpen = side === openSide;
+            return (
+              <button
+                key={side}
+                type="button"
+                role="tab"
+                aria-selected={isOpen}
+                onClick={() => setOpenSide(side)}
+                className={`flex min-w-0 items-center justify-center rounded-lg border py-1 transition-colors ${
+                  isOpen
+                    ? "border-zinc-400 bg-zinc-100/15 dark:border-zinc-600 dark:bg-zinc-900/15"
+                    : "border-transparent opacity-60 hover:opacity-100"
+                }`}
+              >
+                {/* Sprite only — the label stays for screen readers. */}
+                {pokemon ? (
+                  <span className="relative h-16 w-16 shrink-0">
+                    {/* The item is what resolves the Mega sprite — dropped when that side's Mega toggle is off. */}
+                    <PokemonSprite species={pokemon.species} item={mega ? pokemon.item : undefined} fill />
+                  </span>
+                ) : (
+                  <span className="h-16 w-16" />
+                )}
+                <span className="sr-only">
+                  {label}: {pokemon ? text.species(pokemon.species) : "—"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <Drawer open={isFieldOpen} onOpenChange={setIsFieldOpen} showSwipeHandle>
+          <DrawerTrigger
+            render={
+              <button
+                type="button"
+                className="mx-3 my-3 flex w-[calc(100%-1.5rem)] flex-col gap-1.5 rounded-lg border border-zinc-500 bg-zinc-700 px-3 py-2 transition-colors hover:bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-300 dark:hover:bg-zinc-400"
+              />
+            }
+          >
+            <span className="flex items-center justify-center gap-1.5 text-sm font-semibold text-zinc-100 dark:text-zinc-900">
+              {t.calc.fieldSetup}
+              <span className="text-xs font-normal text-zinc-300 dark:text-zinc-700">
+                · {battleFormat === "Singles" ? t.calc.singles : t.calc.doubles}
+              </span>
+              <Icon name={IconName.ExpandLess} size={18} className="text-zinc-200 dark:text-zinc-800" />
+            </span>
+            {hasFieldChips ? (
+              <span className="grid w-full grid-cols-3 gap-2">
+                {fieldColumns.map((column) => (
+                  <span key={column.key} className={`flex min-w-0 flex-wrap content-start gap-1 ${column.align}`}>
+                    {column.chips.map((chip) => (
+                      <span
+                        key={chip}
+                        className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <span className="text-center text-xs text-zinc-400 dark:text-zinc-600">
+                {t.calc.nothingSet}
+              </span>
+            )}
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>{t.calc.field}</DrawerTitle>
+            </DrawerHeader>
+            <div className="mx-auto flex w-full max-w-xl flex-col gap-3 overflow-y-auto p-4 pt-2">
+              {fieldControls}
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </nav>
+
       {(attackerPokemon || defenderPokemon) && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className={`grid grid-cols-1 gap-4 ${THREE_COLUMNS}`}>
           <MoveList
-            title={`${attackerPokemon?.species ?? "Attacker"}'s moves`}
+            className={sideClass("attacker")}
+            title={t.calc.movesOf(attackerPokemon ? text.species(attackerPokemon.species) : t.calc.attacker)}
             pokemon={attackerPokemon}
             results={attackerMoveResults}
             side="attacker"
             selectedMove={selectedMove}
             onSelect={setSelectedMove}
+            battleState={attackerBattleState}
+            onBattleStateChange={setAttackerBattleState}
+            ability={
+              effectiveAttacker
+                ? resolveEffectiveAbility(effectiveAttacker.species, effectiveAttacker.item, effectiveAttacker.ability)
+                : undefined
+            }
           />
           <ResultPanel
+            className="order-first lg:col-span-2 xl:order-none xl:col-span-1"
             selectedMove={selectedMove}
             attacker={selectedAttackerMon}
             defender={selectedDefenderMon}
+            leftPokemon={effectiveAttacker}
+            rightPokemon={effectiveDefender}
             attackerBattleState={selectedAttackingBattleState}
             defenderBattleState={selectedDefendingBattleState}
             options={selectedOptions}
             result={selectedResult}
+            saveCalc={saveCalcTarget}
           />
           <MoveList
-            title={`${defenderPokemon?.species ?? "Defender"}'s moves`}
+            className={sideClass("defender")}
+            title={t.calc.movesOf(defenderPokemon ? text.species(defenderPokemon.species) : t.calc.defender)}
             pokemon={defenderPokemon}
             results={defenderMoveResults}
             side="defender"
             selectedMove={selectedMove}
             onSelect={setSelectedMove}
+            battleState={defenderBattleState}
+            onBattleStateChange={setDefenderBattleState}
+            ability={
+              effectiveDefender
+                ? resolveEffectiveAbility(effectiveDefender.species, effectiveDefender.item, effectiveDefender.ability)
+                : undefined
+            }
           />
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className={`grid grid-cols-1 gap-4 ${THREE_COLUMNS}`}>
         <RosterPokemonPicker
-          title="Attacker"
+          className={sideClass("attacker")}
+          title={t.calc.attacker}
           sidebar={attackerSidebar}
+          calcSets={calcSets}
           selectedIndex={attackerSelectedIndex}
           onSelectIndex={attackerSelectIndex}
           onAddPokemon={attackerAddPokemon}
           onReplacePokemon={attackerReplacePokemon}
+          onLinkSet={(fromSet) => linkSelectedEntry(setAttackerSidebar, attackerSelectedIndex, fromSet)}
           onSaveToSidebar={attackerSaveCurrentToSidebar}
           onImportTeam={attackerImportTeam}
           onRemovePokemon={attackerRemovePokemon}
@@ -740,6 +1162,7 @@ export function DamageCalculator() {
             if (autoWeather) setWeather(autoWeather);
           }}
           weather={weather}
+          terrain={terrain}
           tailwind={attackerSide.tailwind}
           battleState={attackerBattleState}
           onBattleStateChange={setAttackerBattleState}
@@ -750,74 +1173,25 @@ export function DamageCalculator() {
           onMovesChange={attackerMovesChange}
         />
 
-        <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
+        {/* Wide screens show the field between the two Pokémon; narrower
+            ones open it in a drawer (the Field button below). */}
+        <div className="hidden flex-col gap-3 rounded-lg border border-zinc-200 p-4 xl:flex">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-            Field
+            {t.calc.field}
           </h3>
-
-          <div className="flex justify-center">
-            <SegmentedToggle
-              options={["Singles", "Doubles"] as const}
-              value={battleFormat}
-              onChange={setBattleFormat}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-zinc-600">Weather</span>
-            <div className="flex flex-wrap justify-center gap-2">
-              {WEATHER_OPTIONS.map((option) => (
-                <ToggleButton
-                  key={option.label}
-                  label={option.label}
-                  active={weather === option.value}
-                  onClick={() => setWeather(option.value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-zinc-600">Terrain</span>
-            <div className="flex flex-wrap justify-center gap-2">
-              {TERRAIN_OPTIONS.map((option) => (
-                <ToggleButton
-                  key={option.label}
-                  label={option.label}
-                  active={terrain === option.value}
-                  onClick={() => setTerrain(option.value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-2">
-            <ToggleButton label="Critical Hit" active={isCritical} onClick={() => setIsCritical((v) => !v)} />
-            <ToggleButton label="Fairy Aura" active={fairyAura} onClick={() => setFairyAura((v) => !v)} />
-            <ToggleButton label="Gravity" active={gravity} onClick={() => setGravity((v) => !v)} />
-          </div>
-
-          <div className="mt-2 grid grid-cols-2 gap-3 border-t border-zinc-200 pt-3">
-            <SideConditionsPanel
-              title={`${attackerPokemon?.species ?? "Attacker"} side`}
-              conditions={attackerSide}
-              onToggle={toggleAttackerSide}
-            />
-            <SideConditionsPanel
-              title={`${defenderPokemon?.species ?? "Defender"} side`}
-              conditions={defenderSide}
-              onToggle={toggleDefenderSide}
-            />
-          </div>
+          {fieldControls}
         </div>
 
         <RosterPokemonPicker
-          title="Defender"
+          className={sideClass("defender")}
+          title={t.calc.defender}
           sidebar={defenderSidebar}
+          calcSets={calcSets}
           selectedIndex={defenderSelectedIndex}
           onSelectIndex={defenderSelectIndex}
           onAddPokemon={defenderAddPokemon}
           onReplacePokemon={defenderReplacePokemon}
+          onLinkSet={(fromSet) => linkSelectedEntry(setDefenderSidebar, defenderSelectedIndex, fromSet)}
           onSaveToSidebar={defenderSaveCurrentToSidebar}
           onImportTeam={defenderImportTeam}
           loadableOpponents={opponents}
@@ -829,6 +1203,7 @@ export function DamageCalculator() {
             if (autoWeather) setWeather(autoWeather);
           }}
           weather={weather}
+          terrain={terrain}
           tailwind={defenderSide.tailwind}
           battleState={defenderBattleState}
           onBattleStateChange={setDefenderBattleState}
@@ -839,84 +1214,165 @@ export function DamageCalculator() {
           onMovesChange={defenderMovesChange}
         />
       </div>
+
+      {/* One instance for both sides (not remounted on a tab switch, so its spacer keeps its height). */}
+      <MobileRosterBar
+        title={openSide === "attacker" ? t.calc.attacker : t.calc.defender}
+        sidebar={openSide === "attacker" ? attackerSidebar : defenderSidebar}
+        selectedIndex={openSide === "attacker" ? attackerSelectedIndex : defenderSelectedIndex}
+        mega={openSide === "attacker" ? attackerMega : defenderMega}
+        onSelectIndex={openSide === "attacker" ? attackerSelectIndex : defenderSelectIndex}
+        onRemovePokemon={openSide === "attacker" ? attackerRemovePokemon : defenderRemovePokemon}
+        onAddBlank={() =>
+          (openSide === "attacker" ? attackerAddPokemon : defenderAddPokemon)(
+            buildCustomPokemon(DEFAULT_SPECIES_KEY),
+          )
+        }
+      />
     </div>
   );
 }
 
 interface ResultPanelProps {
+  className?: string;
   selectedMove: { side: "attacker" | "defender"; move: string } | null;
   attacker: ParsedPokemon | undefined;
   defender: ParsedPokemon | undefined;
+  /** The left/right sides' Pokémon for the sprite header — fixed by side, unlike attacker/defender, which swap with whichever side's move is selected. */
+  leftPokemon: ParsedPokemon | undefined;
+  rightPokemon: ParsedPokemon | undefined;
   attackerBattleState: PokemonBattleState;
   defenderBattleState: PokemonBattleState;
   options: DamageCalcOptions | undefined;
   result: DamageResult | null | undefined;
+  /** Saving the calc onto the active team, or why it can't be. */
+  saveCalc: SaveCalcTarget;
 }
+
+type SaveCalcTarget = { onSave: (text: string) => void } | { disabledReason: string };
 
 /** The compact middle column between the two move lists — mirrors the reference calculator's layout of putting the result readout between both Pokémon's move lists instead of below them. */
 function ResultPanel({
+  className = "",
   selectedMove,
   attacker,
   defender,
+  leftPokemon,
+  rightPokemon,
   attackerBattleState,
   defenderBattleState,
   options,
   result,
+  saveCalc,
 }: ResultPanelProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const calcLabel =
+    selectedMove && attacker && defender && result
+      ? formatCalculationLabel(
+          attacker,
+          defender,
+          selectedMove.move,
+          result,
+          attackerBattleState,
+          defenderBattleState,
+          options,
+        )
+      : null;
+  /** The whole Showdown-format line, exactly as shown — what the copy button puts on the clipboard. */
+  const resultLine =
+    calcLabel && result
+      ? `${calcLabel}: ${result.rolls[0]}-${result.rolls[result.rolls.length - 1]} (${result.minPercent} - ${result.maxPercent}%) -- ${result.koChanceText}`
+      : null;
+
+  async function copyResultLine() {
+    if (!resultLine) return;
+    try {
+      await navigator.clipboard.writeText(resultLine);
+      toast.success(t.calc.calcCopied);
+    } catch {
+      toast.error(t.calcPanel.copyFailed);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-1.5 self-start">
-      {/* Invisible spacer matching MoveList's heading block exactly, so the visible card below starts level with the top move row instead of the "MOVES" heading above it. */}
-      <div className="invisible" aria-hidden="true">
-        <h3 className="text-xs font-semibold uppercase tracking-wide">Result</h3>
-        <p className="text-[11px]">click a move to see details</p>
+    <div className={`flex flex-col gap-1.5 self-start ${className}`}>
+      {/* Invisible spacer matching MoveList's heading block exactly, so the visible card below starts level with the top move row instead of the "MOVES" heading above it — only needed when they sit side by side. */}
+      <div className="invisible hidden xl:block" aria-hidden="true">
+        <h3 className="text-xs font-semibold uppercase tracking-wide">{t.calc.result}</h3>
+        <p className="text-[11px]">{t.calc.clickMove}</p>
       </div>
       <div className="flex flex-col justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        {/* Desktop only — on phones the side tabs above already show both Pokémon. */}
+        {leftPokemon && rightPokemon && (
+          <div className="hidden items-center justify-center gap-4 lg:flex">
+            <PokemonSprite species={leftPokemon.species} item={leftPokemon.item} size={80} />
+            <span className="text-sm font-semibold uppercase text-zinc-400">vs</span>
+            <PokemonSprite species={rightPokemon.species} item={rightPokemon.item} size={80} />
+          </div>
+        )}
         {!selectedMove || !attacker || !defender ? (
-          <p className="text-sm text-zinc-500">
-            Click a move on either side to see the calculation.
-          </p>
-        ) : result ? (
+          <p className="text-sm text-zinc-500">{t.calc.pickMove}</p>
+        ) : (
           <>
-            <p className="text-sm text-zinc-900">
-              {formatCalculationLabel(
-                attacker,
-                defender,
-                selectedMove.move,
-                result,
-                attackerBattleState,
-                defenderBattleState,
-                options,
-              )}
-              :{" "}
-              <span className="font-semibold">
-                {result.rolls[0]}-{result.rolls[result.rolls.length - 1]}
-              </span>{" "}
-              ({result.minPercent}% - {result.maxPercent}%) -- {result.koChanceText}
-            </p>
-            {result.recoilMinPercent !== undefined && (
-              <p
-                className="text-xs text-zinc-500"
-                title="Self-damage the attacker takes from this move's own recoil and/or Life Orb, as a percent of the ATTACKER's own max HP — not the defender's."
-              >
-                Recoil to {attacker?.species}:{" "}
-                {result.recoilMinPercent === result.recoilMaxPercent
-                  ? `${result.recoilMinPercent}%`
-                  : `${result.recoilMinPercent}% - ${result.recoilMaxPercent}%`}
+            {result ? (
+              <>
+                <div className="flex items-start gap-2">
+                  <p className="flex-1 text-sm text-zinc-900" title={t.calc.resultLineHint}>
+                    {calcLabel}:{" "}
+                    <span className="font-semibold">
+                      {result.rolls[0]}-{result.rolls[result.rolls.length - 1]}
+                    </span>{" "}
+                    ({result.minPercent} - {result.maxPercent}%) -- {result.koChanceText}
+                  </p>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={copyResultLine}
+                      aria-label={t.calc.copyCalc}
+                      title={t.calc.copyCalc}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:bg-zinc-100 dark:hover:bg-zinc-200"
+                    >
+                      <Icon name={IconName.ContentCopy} size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if ("onSave" in saveCalc && resultLine) saveCalc.onSave(resultLine);
+                      }}
+                      disabled={!("onSave" in saveCalc)}
+                      aria-label={t.calc.saveCalc}
+                      title={"onSave" in saveCalc ? t.calc.saveCalc : saveCalc.disabledReason}
+                      className="flex h-8 w-8 shrink-0 disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:bg-zinc-100 dark:hover:bg-zinc-200"
+                    >
+                      <Icon name={IconName.BookmarkAdd} size={16} />
+                    </button>
+                  </div>
+                </div>
+                {result.recoilMinPercent !== undefined && (
+                  <p
+                    className="text-xs text-zinc-500"
+                    title={t.calc.recoilHint}
+                  >
+                    {t.calc.recoilTo(text.species(attacker.species))}{" "}
+                    {result.recoilMinPercent === result.recoilMaxPercent
+                      ? `${result.recoilMinPercent}%`
+                      : `${result.recoilMinPercent}% - ${result.recoilMaxPercent}%`}
+                  </p>
+                )}
+                <p
+                  className="text-xs text-zinc-500"
+                  title={t.calc.rollsHint}
+                >
+                  {t.calc.rolls} {result.rolls.join(", ")}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-amber-600">
+                {t.calc.cantCalculate(text.move(selectedMove.move))}
               </p>
             )}
-            <p
-              className="text-xs text-zinc-500"
-              title="Every hit's damage varies by a random 85%-100% factor — these are the 16 possible exact damage values for this move right now, lowest to highest."
-            >
-              Possible damage rolls: {result.rolls.join(", ")}
-            </p>
           </>
-        ) : (
-          <p className="text-sm text-amber-600">
-            Can&apos;t calculate {selectedMove.move} yet — it&apos;s either a
-            Status move or one whose damage isn&apos;t based on the standard
-            power formula (e.g. Seismic Toss, Counter).
-          </p>
         )}
       </div>
     </div>
@@ -930,50 +1386,52 @@ interface SideConditionsPanelProps {
 }
 
 function SideConditionsPanel({ title, conditions, onToggle }: SideConditionsPanelProps) {
+  const text = usePokemonText();
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs font-medium text-zinc-600">{title}</span>
       <div className="flex flex-col gap-1.5">
         <ToggleButton
-          label="Protect"
+          label={text.move("Protect")}
           active={conditions.protect}
           onClick={() => onToggle("protect")}
           className="w-full"
         />
         <ToggleButton
-          label="Helping Hand"
+          label={text.move("Helping Hand")}
           active={conditions.helpingHand}
           onClick={() => onToggle("helpingHand")}
           className="w-full"
         />
         <ToggleButton
-          label="Aurora Veil"
+          label={text.move("Aurora Veil")}
           active={conditions.auroraVeil}
           onClick={() => onToggle("auroraVeil")}
           className="w-full"
         />
-        <div className="flex gap-1.5">
+        {/* Side by side when they fit, otherwise one per line — never squeezed onto two lines of text. */}
+        <div className="flex flex-wrap gap-1.5">
           <ToggleButton
-            label="Reflect"
+            label={text.move("Reflect")}
             active={conditions.reflect}
             onClick={() => onToggle("reflect")}
-            className="flex-1"
+            className="flex-1 whitespace-nowrap"
           />
           <ToggleButton
-            label="Light Screen"
+            label={text.move("Light Screen")}
             active={conditions.lightScreen}
             onClick={() => onToggle("lightScreen")}
-            className="flex-1"
+            className="flex-1 whitespace-nowrap"
           />
         </div>
         <ToggleButton
-          label="Tailwind"
+          label={text.move("Tailwind")}
           active={conditions.tailwind}
           onClick={() => onToggle("tailwind")}
           className="w-full"
         />
         <ToggleButton
-          label="Friend Guard"
+          label={text.ability("Friend Guard")}
           active={conditions.friendGuard}
           onClick={() => onToggle("friendGuard")}
           className="w-full"
@@ -984,19 +1442,23 @@ function SideConditionsPanel({ title, conditions, onToggle }: SideConditionsPane
 }
 
 /** e.g. "(15.8 - 18.6% recoil)" for a real recoil move (min/max vary with the roll, same "N - M" spacing as the reference calculator), or "(9.6% recoil)" for Life Orb alone (a flat cost — min and max come out equal, so just the one number). Empty string when the move has neither. */
-function formatRecoilNote(result: ReturnType<typeof calculateDamage>): string {
+function formatRecoilNote(result: ReturnType<typeof calculateDamage>, t: Messages): string {
   if (!result || result.recoilMinPercent === undefined) return "";
-  return result.recoilMinPercent === result.recoilMaxPercent
-    ? ` (${result.recoilMinPercent}% recoil)`
-    : ` (${result.recoilMinPercent} - ${result.recoilMaxPercent}% recoil)`;
+  return ` ${t.calc.recoil(
+    result.recoilMinPercent === result.recoilMaxPercent
+      ? `${result.recoilMinPercent}`
+      : `${result.recoilMinPercent} - ${result.recoilMaxPercent}`,
+  )}`;
 }
 
-function formatMoveResultLabel(result: ReturnType<typeof calculateDamage>): string {
+function formatMoveResultLabel(result: ReturnType<typeof calculateDamage>, t: Messages): string {
   if (!result) return "—";
-  if (result.koChanceText === "immune") return "immune";
-  if (result.koChanceText === "blocked by Protect") return "protected";
-  return `${result.minPercent}-${result.maxPercent}%${formatRecoilNote(result)}`;
+  if (result.koChanceText === "immune") return t.calc.immune;
+  if (result.koChanceText === "blocked by Protect") return t.calc.protected;
+  return `${result.minPercent}-${result.maxPercent}%${formatRecoilNote(result, t)}`;
 }
+
+const MOVES = movesData as unknown as Record<string, MoveData>;
 
 interface MoveListProps {
   title: string;
@@ -1005,43 +1467,159 @@ interface MoveListProps {
   side: "attacker" | "defender";
   selectedMove: { side: "attacker" | "defender"; move: string } | null;
   onSelect: (selection: { side: "attacker" | "defender"; move: string }) => void;
+  /** This side's battle state — each row's Crit toggle and Effect/hits count live in it. */
+  battleState: PokemonBattleState;
+  onBattleStateChange: (state: PokemonBattleState) => void;
+  /** The effective (Mega-aware) ability — Skill Link changes a multi-hit move's hit range. */
+  ability: string | undefined;
+  className?: string;
 }
 
-function MoveList({ title, pokemon, results, side, selectedMove, onSelect }: MoveListProps) {
+function countRange(min: number, max: number): number[] {
+  return Array.from({ length: max - min + 1 }, (_, i) => min + i);
+}
+
+function MoveList({
+  title,
+  pokemon,
+  results,
+  side,
+  selectedMove,
+  onSelect,
+  battleState,
+  onBattleStateChange,
+  ability,
+  className = "",
+}: MoveListProps) {
+  const t = useMessages();
+  const text = usePokemonText();
   if (!pokemon) return null;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={`flex flex-col gap-1.5 ${className}`}>
       <div>
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
           {title}
         </h3>
-        <p className="text-[11px] text-zinc-400">click a move to see details</p>
+        <p className="text-[11px] text-zinc-400">{t.calc.clickMove}</p>
       </div>
       {results.length === 0 ? (
-        <p className="text-sm text-zinc-500">
-          No moves were parsed for this Pokémon — the pasted export may not
-          have listed any.
-        </p>
+        <p className="text-sm text-zinc-500">{t.calc.noMoves}</p>
       ) : (
-        <div className="flex flex-col divide-y divide-zinc-100 overflow-hidden rounded-lg border border-zinc-200">
+        <div className="flex flex-col gap-1.5">
           {results.map(({ move, result }, index) => {
             const isSelected = selectedMove?.side === side && selectedMove.move === move;
+            const type = MOVES[normalizeSpeciesKey(move)]?.type;
+            const typeColor = type ? TYPE_COLORS[type] : undefined;
+            const isStatusMove = MOVES[normalizeSpeciesKey(move)]?.category === "Status";
+            const isCrit = battleState.critMoves.includes(move);
+            const effect = EFFECT_MOVES[move];
+            const hitRange = moveHitRange(move, ability);
+            const setCount = (count: number) =>
+              onBattleStateChange({
+                ...battleState,
+                moveCounts: { ...battleState.moveCounts, [move]: count },
+              });
+            // Controls sit on the row's own colors, so they flip with the selected (dark) row.
+            const controlClassName = isSelected
+              ? "border-white/40 text-white hover:bg-white/15"
+              : "border-zinc-300 text-zinc-600 hover:bg-zinc-100";
             return (
-              <button
+              <div
                 key={index}
-                type="button"
-                onClick={() => onSelect({ side, move })}
-                aria-pressed={isSelected}
-                className={`flex items-center justify-between px-3 py-2 text-sm transition-colors ${
+                className={`relative flex h-10 items-center overflow-hidden rounded-full border text-sm shadow-sm transition-colors ${
                   isSelected
-                    ? "bg-zinc-100 font-semibold text-zinc-900"
-                    : "text-zinc-700 hover:bg-zinc-50"
+                    ? "border-zinc-600 bg-zinc-600 font-semibold text-white dark:border-zinc-400 dark:bg-zinc-400"
+                    : "border-zinc-300 bg-white text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:bg-zinc-100 dark:hover:bg-zinc-200"
                 }`}
               >
-                <span>{move}</span>
-                <span className="text-zinc-500">{formatMoveResultLabel(result)}</span>
-              </button>
+                {/* The whole row selects the move: this button sits behind the content
+                    (which ignores clicks), and only the Crit/Effect controls sit above it. */}
+                <button
+                  type="button"
+                  onClick={() => onSelect({ side, move })}
+                  aria-pressed={isSelected}
+                  aria-label={`${text.move(move)}: ${formatMoveResultLabel(result, t)}`}
+                  className="absolute inset-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-400"
+                />
+                {/* Type-colored cap with a slanted right edge, the icon's own background blending into it. */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none relative flex h-full w-12 shrink-0 items-center justify-center pr-2"
+                  style={{
+                    backgroundColor: typeColor ?? "var(--color-zinc-300)",
+                    clipPath: "polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%)",
+                  }}
+                >
+                  {type && <TypeIcon type={type} size={26} />}
+                </span>
+                <span aria-hidden="true" className="pointer-events-none relative ml-3 min-w-0 truncate">
+                  {text.move(move)}
+                </span>
+                {(!isStatusMove || effect || hitRange) && (
+                  <div className="relative ml-2 flex shrink-0 items-center gap-1 font-normal">
+                    {!isStatusMove && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onBattleStateChange({
+                            ...battleState,
+                            critMoves: isCrit
+                              ? battleState.critMoves.filter((m) => m !== move)
+                              : [...battleState.critMoves, move],
+                          })
+                        }
+                        aria-pressed={isCrit}
+                        aria-label={t.calcPanel.critLabel(text.move(move))}
+                        className={`rounded-full border px-2 py-0.5 text-xs font-medium transition-colors ${
+                          isCrit
+                            ? isSelected
+                              ? "border-white bg-white text-zinc-900"
+                              : "border-zinc-600 bg-zinc-600 text-white dark:bg-zinc-400"
+                            : controlClassName
+                        }`}
+                      >
+                        {t.calcPanel.crit}
+                      </button>
+                    )}
+                    {effect && (
+                      <select
+                        value={battleState.moveCounts[move] ?? 0}
+                        onChange={(event) => setCount(Number(event.target.value))}
+                        aria-label={t.calcPanel.effectLabel(text.move(move))}
+                        title={t.calcPanel.effectHints[effect.option](text.move(move))}
+                        className={`rounded-full border bg-transparent px-1.5 py-0.5 text-xs ${controlClassName}`}
+                      >
+                        {countRange(0, effect.max).map((count) => (
+                          <option key={count} value={count}>
+                            {t.calcPanel.effectCount(count)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {hitRange && (
+                      <select
+                        value={battleState.moveCounts[move] ?? hitRange.default}
+                        onChange={(event) => setCount(Number(event.target.value))}
+                        aria-label={t.calcPanel.hitsLabel(text.move(move))}
+                        className={`rounded-full border bg-transparent px-1.5 py-0.5 text-xs ${controlClassName}`}
+                      >
+                        {countRange(hitRange.min, hitRange.max).map((count) => (
+                          <option key={count} value={count}>
+                            {t.calcPanel.hitsCount(count)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none relative ml-auto shrink-0 pl-3 pr-4 tabular-nums ${isSelected ? "text-zinc-200 dark:text-zinc-800" : "font-medium text-zinc-600"}`}
+                >
+                  {formatMoveResultLabel(result, t)}
+                </span>
+              </div>
             );
           })}
         </div>

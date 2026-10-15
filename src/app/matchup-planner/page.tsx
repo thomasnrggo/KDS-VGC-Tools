@@ -157,18 +157,26 @@ export default function MatchupPlanner() {
                       : undefined
               : undefined
           }
+          // The calculator finds a group's opponent through ?groupId=.
+          calcHref={(opponent) =>
+            group
+              ? `/damage-calc?groupId=${group.id}&opponentId=${opponent.id}`
+              : `/damage-calc?opponentId=${opponent.id}`
+          }
           cardActions={(opponent) =>
             group
               ? [{ label: t.groups.copyToMine, icon: IconName.ContentCopy, onClick: () => copyToMine(opponent) }]
-              : groupsApi.activeGroups.length > 0
-                ? [
-                    {
-                      label: t.groups.copyToGroup,
-                      icon: IconName.Group,
-                      onClick: () => setCopyingOpponent(opponent),
-                    },
-                  ]
-                : []
+              : [
+                  ...(groupsApi.activeGroups.length > 0
+                    ? [
+                        {
+                          label: t.groups.copyToGroup,
+                          icon: IconName.Group,
+                          onClick: () => setCopyingOpponent(opponent),
+                        },
+                      ]
+                    : []),
+                ]
           }
           myTeamPokemon={activeTeam?.pokemon ?? []}
           activeTeamId={activeTeamId}

@@ -12,7 +12,7 @@ import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { RichTextEditor } from "@/components/RichTextEditor";
-import { TeamCalcsPanel } from "@/components/TeamCalcs";
+import { PokemonCalcsBox } from "@/components/TeamCalcs";
 import { TeamMatchupsList } from "@/components/TeamMatchups";
 import { ShareDialog, TeamPost } from "@/components/TeamPost";
 import { Icon } from "@/components/Icon";
@@ -21,6 +21,7 @@ import { createEmptyCombination, TEAM_REPORT_PREP_ENABLED } from "@/constants";
 import { computeTeamUsageStats } from "@/lib/tournament";
 import { isTeamArchived } from "@/lib/team";
 import { parseTeam } from "@/lib/parseTeam";
+import { speciesIdentity } from "@/lib/teamIdentity";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 
@@ -33,10 +34,8 @@ interface TeamReportPageProps {
 type ReportTab = "report" | "strategy" | "calcs" | "matchups" | "stats";
 
 const ALL_TABS: ReportTab[] = ["report", "strategy", "calcs", "matchups", "stats"];
-// Calcs and Matchups are on hold — see TEAM_REPORT_PREP_ENABLED.
-const TABS = TEAM_REPORT_PREP_ENABLED
-  ? ALL_TABS
-  : ALL_TABS.filter((tab) => tab !== "calcs" && tab !== "matchups");
+// Matchups is on hold — see TEAM_REPORT_PREP_ENABLED.
+const TABS = TEAM_REPORT_PREP_ENABLED ? ALL_TABS : ALL_TABS.filter((tab) => tab !== "matchups");
 
 function isReportTab(value: string | undefined): value is ReportTab {
   return TABS.some((tab) => tab === value);
@@ -320,20 +319,28 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             </div>
           )}
 
+          {/* Each Pokémon's card (collapsed to its sprite header until clicked)
+              with its saved calcs underneath. Columns are independent, so
+              expanding one card or one list never stretches the others. */}
           {activeTab === "calcs" && (
-            <TeamCalcsPanel
-              calcs={team.calcs ?? []}
-              teamPokemon={team.pokemon}
-              onAdd={(added) =>
-                updateTeam(teamId, (t) => ({ ...t, calcs: [...(t.calcs ?? []), ...added] }))
-              }
-              onRemove={(id) =>
-                updateTeam(teamId, (t) => ({
-                  ...t,
-                  calcs: (t.calcs ?? []).filter((calc) => calc.id !== id),
-                }))
-              }
-            />
+            <div className="grid grid-cols-1 items-start gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+              {team.pokemon.map((mon, index) => (
+                <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">
+                  <PokemonReportCard pokemon={mon} collapsible />
+                  <PokemonCalcsBox
+                    calcs={(team.calcs ?? []).filter(
+                      (calc) => calc.species === speciesIdentity(mon.species),
+                    )}
+                    onRemoveCalc={(id) =>
+                      updateTeam(teamId, (t) => ({
+                        ...t,
+                        calcs: (t.calcs ?? []).filter((calc) => calc.id !== id),
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
           )}
 
           {activeTab === "matchups" && <TeamMatchupsList team={team} opponents={opponents} />}

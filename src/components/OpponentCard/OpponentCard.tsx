@@ -33,6 +33,8 @@ export interface OpponentCardProps {
   onRemove?: () => void;
   /** In a prep group: who added this opponent, shown after its name. */
   addedByLabel?: string;
+  /** Opens this opponent's team in the Damage Calculator (a new tab) — an icon next to the name. */
+  calcHref?: string;
   /** Extra ⋮ menu items — Move up/down, Make variant of…, Set as main, etc. */
   extraActions?: RowAction[];
   /** On a main with variants: the show/hide toggle, shown where desktop's ⋮ menu would otherwise sit. */
@@ -141,6 +143,7 @@ export function OpponentCard({
   onEdit,
   onRemove,
   addedByLabel,
+  calcHref,
   extraActions,
   variantToggle,
   isVariant,
@@ -291,6 +294,18 @@ export function OpponentCard({
                     <Icon name={IconName.OpenInNew} size={16} />
                   </a>
                 )}
+                {calcHref && (
+                  <a
+                    href={calcHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t.opponents.openInCalc}
+                    title={t.opponents.openInCalc}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                  >
+                    <Icon name={IconName.Calculate} size={16} />
+                  </a>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {variantToggleButton}
@@ -359,11 +374,20 @@ export function OpponentCard({
                     <Icon name={IconName.OpenInNew} size={16} />
                   </a>
                 )}
+                {calcHref && (
+                  <a
+                    href={calcHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t.opponents.openInCalc}
+                    title={t.opponents.openInCalc}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                  >
+                    <Icon name={IconName.Calculate} size={16} />
+                  </a>
+                )}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                {/* "Open in Damage Calculator" link hidden — feature has known
-                    bugs, not ready to publish yet. Re-add once stable (see
-                    PLANNING.md). */}
                 {/* Desktop's ⋮ menu lives on the Game plan title row, next to
                     the tags; this spot holds the variants toggle instead. */}
                 {variantToggleButton}

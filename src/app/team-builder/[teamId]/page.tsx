@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
+import { MAX_TOTAL_STAT_POINTS } from "@/lib/stats/calculateFinalStats";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonEditor } from "@/components/PokemonEditor";
 import { PokemonSprite } from "@/components/PokemonSprite";
@@ -189,7 +190,7 @@ export default function TeamBuilderDetailPage({ params }: TeamBuilderDetailPageP
               onAbilityChange={handleAbilityChange}
               onItemChange={handleItemChange}
               onMovesChange={handleMovesChange}
-              maxTotalStatPoints={66}
+              maxTotalStatPoints={MAX_TOTAL_STAT_POINTS}
               layout="columns"
             />
           </div>

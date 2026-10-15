@@ -5,12 +5,16 @@ import { PokemonSprite } from "../PokemonSprite";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
+import { useMessages } from "@/hooks/useLanguage";
+import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 
 export interface SearchableSelectOption {
   /** Stable key AND the value handed back to onSelect. */
   id: string;
   /** Displayed as the input's current text once picked, and what substring search filters against — always plain text, even when `content` renders something richer. */
   label: string;
+  /** Also matched by the search, besides `label` — the English name when the label is translated, so either finds it. */
+  searchText?: string;
   /** Species name to render a sprite next to the label (species search) — ignored when `content` is set. */
   sprite?: string;
   /** Custom rendering for this option's row in the dropdown (e.g. a Showdown-style move/species/item card with type/stats/description) — defaults to a plain `label` (with optional `sprite` thumbnail) when omitted. Built by the caller, since only it knows the shape of whatever data (MoveData, base stats, item/ability descriptions, ...) the row needs. */
@@ -56,6 +60,7 @@ export function SearchableSelect({
   compact,
   onClear,
 }: SearchableSelectProps) {
+  const t = useMessages();
   const [query, setQuery] = useState(value ?? "");
   const [syncedValue, setSyncedValue] = useState(value);
   if (value !== syncedValue) {
@@ -101,9 +106,15 @@ export function SearchableSelect({
   // opening a slot that already has a pick shows every option (browsable),
   // not a narrow self-match. Once they type, normal substring filtering
   // takes over.
-  const trimmed = query === value ? "" : query.trim().toLowerCase();
+  const trimmed = query === value ? "" : foldForSearch(query.trim());
   const filtered = (
-    trimmed ? options.filter((o) => o.label.toLowerCase().includes(trimmed)) : options
+    trimmed
+      ? options.filter(
+          (o) =>
+            foldForSearch(o.label).includes(trimmed) ||
+            (!!o.searchText && foldForSearch(o.searchText).includes(trimmed)),
+        )
+      : options
   ).slice(0, MAX_VISIBLE_RESULTS);
 
   function pick(option: SearchableSelectOption) {
@@ -122,6 +133,13 @@ export function SearchableSelect({
             setQuery(event.target.value);
             setIsOpen(true);
           }}
+          onKeyDown={(event) => {
+            // Enter picks the top result, so typing then Enter works.
+            if (event.key === "Enter" && isOpen && filtered[0]) {
+              event.preventDefault();
+              pick(filtered[0]);
+            }
+          }}
           onFocus={(event) => {
             setIsOpen(true);
             // Selects the existing text (if any) so it opens ready to
@@ -134,7 +152,7 @@ export function SearchableSelect({
           autoFocus={autoFocus}
           className={
             compact
-              ? `w-full rounded border border-zinc-300 bg-zinc-50 py-0.5 pl-1 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-5" : "pr-1"}`
+              ? `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1 pl-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-6" : "pr-2"}`
               : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-8" : "pr-2"}`
           }
         />
@@ -150,7 +168,7 @@ export function SearchableSelect({
               onClear();
               setIsOpen(false);
             }}
-            aria-label={`Clear ${ariaLabel}`}
+            aria-label={t.editor.clear(ariaLabel)}
             className={
               compact
                 ? "absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
@@ -171,7 +189,7 @@ export function SearchableSelect({
           className="z-20 max-h-96 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-lg"
         >
           {filtered.length === 0 ? (
-            <p className="p-2 text-xs text-zinc-500">No matches.</p>
+            <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
           ) : (
             filtered.map((option) => (
               <button

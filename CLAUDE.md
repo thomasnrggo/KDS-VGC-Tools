@@ -21,6 +21,7 @@ This is a Next.js 16.2.12 / React 19.2.4 app for planning Pokémon VGC matchups.
 - `npm run generate:moves` — regenerate `src/data/moves.json` from PokeAPI (one-off; see PLANNING.md §7's Damage Calculator entry)
 - `npm run generate:type-chart` — regenerate `src/data/typeChart.json` from PokeAPI (one-off; static data, rarely needs re-running)
 - `npm run generate:names` — regenerate `src/data/names/<language>.json` (localized Pokémon/move/item/ability/type/nature names) from PokeAPI; re-run after the other generators (see docs/localization.md)
+- `npm run generate:calc-data` — regenerate `src/data/moveFlags.json`/`speciesWeights.json` (move flags and species weights for the damage calculator) from Showdown's data (`@pkmn/dex`); re-run after adding moves or species
 
 ## Stack notes
 

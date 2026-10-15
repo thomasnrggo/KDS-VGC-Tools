@@ -16,7 +16,8 @@
     "generate:moves": "node scripts/generate-move-data.mjs",
     "generate:items": "node scripts/generate-item-data.mjs",
     "generate:type-chart": "node scripts/generate-type-chart.mjs",
-    "generate:names": "node scripts/generate-name-data.mjs"
+    "generate:names": "node scripts/generate-name-data.mjs",
+    "generate:calc-data": "node scripts/generate-calc-data.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

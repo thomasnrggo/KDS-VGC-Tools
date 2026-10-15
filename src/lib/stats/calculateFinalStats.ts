@@ -20,6 +20,9 @@ const IV = 31;
  */
 const STAT_POINTS_TO_EV = 8;
 
+/** The most Stat Points a Pokémon can have across all six stats. */
+export const MAX_TOTAL_STAT_POINTS = 66;
+
 const STAT_ABBREVIATIONS: Record<string, StatKey> = {
   hp: "hp",
   atk: "atk",
@@ -138,6 +141,7 @@ export function calculateFinalStats(pokemon: ParsedPokemon): FinalStats | null {
     decreasedStat: natureModifier?.decreased,
     speedBoostedByChoiceScarf: scarfed,
     speedHalvedByIronBall: ironBalled,
+    speedBeforeItem,
   };
 }
 

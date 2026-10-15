@@ -67,9 +67,11 @@ and both Speed Tiers views.
 
 ## Not translated yet
 
-- **Unreleased or admin-only screens**: Team Builder (`PokemonEditor`, `SearchableSelect`), Damage
-  Calculator, SpeedLine/RoundSpeedLine and the /admin pages. Team Builder's species/move/item pickers
-  will also need to search translated names.
+- **Unreleased or admin-only screens**: the Team Builder's own page, SpeedLine/RoundSpeedLine and the
+  /admin pages. (The Damage Calculator and the shared Pokémon editor it uses were translated
+  2026-10-14: options show translated names, keep the English name as their id — what gets saved —
+  and match it in search, so "Swords Dance" still finds "Danza Espada". The calc result line stays in
+  Showdown's English format so it can be compared and shared as-is.)
 - **On-hold Team Report calcs/matchups screens** (`TEAM_REPORT_PREP_ENABLED = false`).
 - **Descriptions**: ability/item/move short descriptions are Showdown's English text. PokeAPI has
   in-game descriptions in about 88% of cases, worded differently. To do in phase 2.

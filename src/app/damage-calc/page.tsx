@@ -6,8 +6,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { DamageCalculator } from "@/components/DamageCalculator";
 import { REGULATIONS } from "@/data/regulations";
+import { useMessages } from "@/hooks/useLanguage";
 
 export default function DamageCalcPage() {
+  const t = useMessages();
+  // One instance shared with the calculator, so a calc it saves onto a team
+  // isn't overwritten by the header's own (otherwise separate) copy.
+  const myTeams = useMyTeams();
   const {
     activeTeams,
     activeTeamId,
@@ -16,7 +21,7 @@ export default function DamageCalcPage() {
     editTeam,
     removeTeam,
     setActiveTeamId,
-  } = useMyTeams();
+  } = myTeams;
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
 
   return (
@@ -37,15 +42,14 @@ export default function DamageCalcPage() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-4 p-6">
-        <h2 className="text-xl font-semibold text-zinc-900">
-          Damage Calculator
-        </h2>
+        {/* Below xl the title sits in the calculator's sticky bar instead. */}
+        <h2 className="hidden text-xl font-semibold text-zinc-900 xl:block">{t.calc.title}</h2>
         {/* DamageCalculator reads ?opponentId= via useSearchParams — Next.js
             requires a Suspense boundary around any client component that
             does, so a static build doesn't fail with a missing-Suspense
             error (see the "Prerendering" section of useSearchParams' docs). */}
         <Suspense fallback={null}>
-          <DamageCalculator />
+          <DamageCalculator myTeams={myTeams} />
         </Suspense>
       </div>
     </div>
