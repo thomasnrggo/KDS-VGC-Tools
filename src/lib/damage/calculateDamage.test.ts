@@ -406,6 +406,29 @@ describe("calculateDamage field conditions", () => {
     });
   });
 
+  it("Unseen Fist and Piercing Drill's contact moves hit through Protect at a quarter of the damage", () => {
+    for (const [species, ability, move] of [
+      ["Golurk", "Unseen Fist", "Drain Punch"],
+      ["Excadrill", "Piercing Drill", "Iron Head"],
+    ]) {
+      const attacker = { species, ability, nature: "Hardy" };
+      const normal = calculateDamage(attacker, ditto, move);
+      const protectedHit = calculateDamage(attacker, ditto, move, { defenderProtected: true });
+      protectedHit!.rolls.forEach((roll, i) => {
+        expect(Math.abs(roll - normal!.rolls[i] / 4)).toBeLessThanOrEqual(1);
+      });
+      expect(protectedHit!.koChanceText).not.toBe("blocked by Protect");
+    }
+  });
+
+  it("Protect still blocks a non-contact move from Unseen Fist or Piercing Drill", () => {
+    for (const ability of ["Unseen Fist", "Piercing Drill"]) {
+      const attacker = { species: "Excadrill", ability, nature: "Hardy" };
+      const result = calculateDamage(attacker, ditto, "Earthquake", { defenderProtected: true });
+      expect(result!.koChanceText).toBe("blocked by Protect");
+    }
+  });
+
   it("Fairy Aura boosts Fairy-type move damage", () => {
     const sylveon = { species: "Sylveon", nature: "Hardy" };
     const normal = calculateDamage(sylveon, ditto, "Moonblast");

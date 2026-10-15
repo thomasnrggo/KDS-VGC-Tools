@@ -10,6 +10,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 ## Unreleased
 
 ### Added
+- Damage Calculator: a dashed "+" tile after each side's roster (and in the phone bar) adds a blank
+  Pokémon and opens it, while the roster has room (up to 6).
+- **Damage Calculator sets.** "Save set" in the Pokémon panel saves the current build (item,
+  ability, nature, Stat Points, moves) under a name. Your sets are saved in the browser and sync
+  to your account when signed in. The admin can save **public sets** that everyone sees. Sets
+  show under their species in the Pokémon picker, tagged "Mine" or "Public", with rename and
+  delete in place; saving under an existing name replaces that set. After picking (or saving) a
+  set, "Save set" opens with its name filled in, so saving again overwrites it. Renaming a set to a
+  name its species already uses is refused.
+- The Damage Calculator remembers the right-hand side (its Pokémon, which one is open, Mega and
+  Stat Point/nature edits) in the browser, so leaving the page and coming back resumes the work.
+  Opening it from an opponent's "Open in Damage Calculator" still loads that opponent instead.
 - **Damage Calculator accuracy pass**, checked roll for roll against Showdown's own damage calculator
   (including its Pokémon Champions mode): ~25 more abilities (Pixilate, Tough Claws, Sheer Force,
   Multiscale, Fluffy, Sharpness, Mega Sol, Aura Guard, …), variable-power moves (Low Kick, Grass
@@ -20,6 +32,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   "Open in Damage Calculator" in an opponent's menu.
 
 ### Changed
+- Damage Calculator: each move's Crit toggle and its Effect count (Last Respects, Rage Fist) or hit
+  count (multi-hit moves) moved from the Pokémon editor's move slots onto the move's row in the
+  move list, right after the move's name (the damage stays on the right).
+- Damage Calculator on phones and tablets: the open side's roster moves to a bar fixed to the bottom
+  of the screen (like the Matchup Planner's team bar) and follows the side tabs; tap a Pokémon to
+  open it, or the open one's × to remove it. The result card drops the VS sprites there, since the
+  side tabs already show both Pokémon.
+- Damage Calculator Field panel: the Weather and Terrain labels and their "None" buttons are gone;
+  click the active weather or terrain again to turn it off.
+- Damage Calculator: neither side is ever empty. Both start on the regulation's first Pokémon
+  (the left side still loads your active team when there is one); removing the open Pokémon opens
+  its neighbor, and removing the last one puts the default Pokémon back.
+- Damage Calculator move lists: each move is a higher-contrast pill with its type icon on a slanted,
+  type-colored cap, and the selected move gets a solid dark highlight. The result card shows the
+  two Pokémon centered on top (left side vs. right side, shown even before a move is picked) and a button beside the calc line that
+  copies it, in Showdown format, to the clipboard.
+- Damage Calculator layout: the two Pokémon get more room (narrower middle column). Below 1280px the
+  field moves into a drawer opened from a "Field setup" button in a bar that sticks to the top of
+  the screen, right under the site header, with the page title in it (styled like the Matchup
+  Planner's team bar). The button shows what's set as chips: each side's own
+  conditions (Tailwind, screens, …) on its side, attacker left and defender right, and what applies
+  to both (weather, terrain, Gravity, Fairy Aura) in the middle; the Pokémon sit side by side from 1024px.
+  Below 1024px the two sides are tabs (each Pokémon's sprite) in that bar, above the Field setup
+  button: only the open side's moves and panel show, under the result, with the roster as a
+  row after the moves on phones.
+- Header: its bottom border (and the Matchup Planner's bottom team bar's) is gray instead of white.
+- Header: the active-team strip shows from 1280px; between 1024 and 1280px it overlapped the page
+  links, so the Matchup Planner uses its bottom team bar there too.
 - Damage Calculator: the Pokémon search is now a compact dropdown listing each species with its sets
   underneath (Showdown-style), instead of the Team Builder's search with abilities and base stats.
   Only "Blank Set" for now; sets from your teams, opponents and saved sets come next.
@@ -38,6 +78,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   nature. Stat Points are now capped at 66 in total, as in the game.
 
 ### Fixed
+- Damage Calculator: Protect no longer blocks contact moves from Unseen Fist (Mega Golurk) or
+  Piercing Drill (Mega Excadrill); both hit through it at 1/4 damage, as in Pokémon Champions.
+  The calc line notes "through Protect".
+- Damage Calculator roster tiles: the item badge is no longer cut off at the corner, and the
+  sprite shows the Mega form (following the Mega toggle for the open Pokémon) like the calc's other
+  sprites.
 - Damage Calculator: Assault Vest no longer reduces Psyshock (it hits Defense).
 - Damage Calculator: Rage Fist's power now grows with the times the user was hit; Population Bomb
   is calculated as up to 10 hits (it was a single hit); a multi-hit move's total counts every hit,

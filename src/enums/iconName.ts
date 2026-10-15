@@ -4,6 +4,7 @@ export enum IconName {
   Archive = "archive",
   ArrowDownward = "arrow_downward",
   ArrowUpward = "arrow_upward",
+  BookmarkAdd = "bookmark_add",
   Calculate = "calculate",
   CallSplit = "call_split",
   Check = "check",

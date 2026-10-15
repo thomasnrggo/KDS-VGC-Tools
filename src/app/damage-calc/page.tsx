@@ -39,7 +39,8 @@ export default function DamageCalcPage() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-4 p-6">
-        <h2 className="text-xl font-semibold text-zinc-900">{t.calc.title}</h2>
+        {/* Below xl the title sits in the calculator's sticky bar instead. */}
+        <h2 className="hidden text-xl font-semibold text-zinc-900 xl:block">{t.calc.title}</h2>
         {/* DamageCalculator reads ?opponentId= via useSearchParams — Next.js
             requires a Suspense boundary around any client component that
             does, so a static build doesn't fail with a missing-Suspense

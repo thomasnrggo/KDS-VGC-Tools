@@ -2660,7 +2660,15 @@ leads/backs) is complete and working end to end.
       Pokémon. A set is species, item, ability, nature, Stat Points and moves (level 50); HP,
       status, stages and field stay per calc. Steps: (1) the picker with "Blank Set" only — done
       2026-10-14; (2) sets from your teams and Matchup Planner opponents; (3) saved sets per user
-      (`users/{uid}/calcSets`), save/rename/delete; (4) recommended sets, design later.
+      — done 2026-10-15; (4) public sets — done 2026-10-15. **Saved sets** (`CalcSet`,
+      `useCalcSets`): a user's own sets are local-first (IndexedDB `calcSets`) and sync to
+      `users/{uid}/calcSets` when signed in, like teams. **Public sets** are the admin's, in
+      Firestore `publicSets/{id}` (everyone reads, admin UID writes — needs the updated
+      `firestore.rules` deployed). Neither is tied to a regulation. Saved from the Pokémon panel's
+      "Save set" button (the admin gets a "Public" checkbox); saving under a name that species
+      already has replaces that set, which is how a set is edited. Renamed and deleted in place in
+      the picker (own sets; public ones only by the admin). Picker order under a species: your
+      sets, public sets, Blank Set.
 - [x] **Prep groups** (shipped 2026-10-14): a collaborative Matchup
       Planner. A group shares its opponent list (add, edit, tags, variants, order) among its
       members; picks and notes stay private in each member's account. Firestore `groups/{id}`,

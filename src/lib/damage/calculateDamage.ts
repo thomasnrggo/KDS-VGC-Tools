@@ -686,7 +686,13 @@ export function calculateDamage(
 
   // A defender that used Protect blocks the hit entirely, regardless of type
   // — checked before type effectiveness since it isn't a type interaction.
-  if (options.defenderProtected) {
+  // Except contact moves from Unseen Fist (Mega Golurk) and Piercing Drill
+  // (Mega Excadrill), which go through it at 1/4 damage (applied in the roll
+  // loop) — Pokémon Champions nerfed Unseen Fist from full damage to match.
+  const piercesProtect =
+    !!flags.contact && (attackerAbility === "Unseen Fist" || attackerAbility === "Piercing Drill");
+  const quarterThroughProtect = !!options.defenderProtected && piercesProtect;
+  if (options.defenderProtected && !piercesProtect) {
     return {
       rolls: new Array(DAMAGE_ROLL_PERCENTS.length).fill(0),
       minPercent: 0,
@@ -1026,6 +1032,12 @@ export function calculateDamage(
       // Burn (plain floor).
       if (applyBurn) {
         damage = Math.floor(damage / 2);
+      }
+      // Unseen Fist/Piercing Drill through Protect: ×0.25, after burn and before the
+      // finalMods chain — where Showdown's sim applies the same "broke
+      // through protection" quarter for Z/Max moves.
+      if (quarterThroughProtect) {
+        damage = pokeRound((damage * 0x400) / FIXED_POINT);
       }
       // Every other end-stage modifier, chained together, one pokeRound.
       if (finalModsChain !== FIXED_POINT) {

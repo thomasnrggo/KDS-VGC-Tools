@@ -1,12 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { StatOverrides } from "@/lib/stats/applyStatOverrides";
+import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { parseTeam } from "@/lib/parseTeam";
 import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
-import movesData from "@/data/moves.json";
-import { normalizeSpeciesKey } from "@/lib/species/normalize";
-import { moveHitRange } from "@/lib/damage/calculateDamage";
 import { MAX_TOTAL_STAT_POINTS } from "@/lib/stats/calculateFinalStats";
 import {
   computeBattleStat,
@@ -20,17 +17,24 @@ import { Icon } from "../Icon";
 import { Modal } from "../Modal";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
-import { PokemonEditor, computePokemonBuild } from "../PokemonEditor";
+import {
+  DEFAULT_SPECIES_KEY,
+  PokemonEditor,
+  buildCustomPokemon,
+  computePokemonBuild,
+} from "../PokemonEditor";
 import { PokemonSetPicker } from "./PokemonSetPicker";
-import type { DamageCalcOptions, MoveData, Opponent, ParsedPokemon, StatKey } from "@/types";
+import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
-
-const MOVES = movesData as unknown as Record<string, MoveData>;
+import type { CalcSetsApi, SavedSetRef } from "@/hooks/useCalcSets";
+import { findSameNameSet } from "@/lib/calcSets";
 
 /** One entry in a side's sidebar — the working roster for that side, up to MAX_SIDEBAR_POKEMON. `isCustom` tracks whether this entry came from the species search (freely editable ability/item/moves) or was loaded from a real pasted team (read-only identity). */
 export interface SidebarEntry {
   pokemon: ParsedPokemon;
   isCustom: boolean;
+  /** The saved set this entry was picked from or last saved as — "Save set" prefills its name so saving overwrites it. */
+  fromSet?: SavedSetRef;
 }
 
 export const MAX_SIDEBAR_POKEMON = 6;
@@ -95,13 +99,6 @@ export const EFFECT_MOVES: Record<
   "Rage Fist": { option: "attackerTimesHit", max: 6 },
 };
 
-const moveCountSelectClassName =
-  "min-w-0 flex-1 rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
-
-function countRange(min: number, max: number): number[] {
-  return Array.from({ length: max - min + 1 }, (_, i) => min + i);
-}
-
 const STAGE_OPTIONS = [6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6];
 
 const STAGE_KEY_BY_STAT: Partial<
@@ -121,9 +118,11 @@ interface RosterPokemonPickerProps {
   selectedIndex: number | null;
   onSelectIndex: (index: number) => void;
   /** The main species search's fallback when nothing is selected yet (an empty sidebar) — appends a fresh custom Pokémon, since there's no existing entry for `onReplacePokemon` to swap in place. */
-  onAddPokemon: (pokemon: ParsedPokemon) => void;
+  onAddPokemon: (pokemon: ParsedPokemon, fromSet?: SavedSetRef) => void;
   /** The main species search's onSelect target when a Pokémon is already selected — swaps that entry's species in place (the search input shows the current species as its value, so picking a new one reads as "change this Pokémon," not "add another"). */
-  onReplacePokemon: (pokemon: ParsedPokemon) => void;
+  onReplacePokemon: (pokemon: ParsedPokemon, fromSet?: SavedSetRef) => void;
+  /** Links the open entry to the set it was just saved as. */
+  onLinkSet: (fromSet: SavedSetRef) => void;
   /** Appends a copy of the currently displayed Pokémon (species, ability, item, nature, Stat Points, moves — everything as currently configured) as a new sidebar entry and selects it, ready for further editing — the "Save" icon's action, and now the only way (besides Import/Load Team) to grow the roster past one entry, since the old "+" tile is gone. Only called while sidebar.length < MAX_SIDEBAR_POKEMON (the button itself is hidden past the cap). */
   onSaveToSidebar: () => void;
   /** Importing more than one Pokémon at once (a full team paste) replaces this side's whole sidebar rather than appending, since a multi-mon paste represents "this is my team," not "add one more." */
@@ -143,6 +142,10 @@ interface RosterPokemonPickerProps {
   onMovesChange?: (moves: string[]) => void;
   /** Saved opponents from the Matchup Planner, for a "Load Team" picker — only passed for the Defender side (the Attacker already seeds from the header's active team), so the button only renders there. */
   loadableOpponents?: Opponent[];
+  /** Saved sets (the user's own and public ones) — listed in the species picker, and where "Save set" writes. */
+  calcSets: CalcSetsApi;
+  /** Extra classes on the card (e.g. hiding it while the other side's tab is open on phones). */
+  className?: string;
 }
 
 export function RosterPokemonPicker({
@@ -152,6 +155,7 @@ export function RosterPokemonPicker({
   onSelectIndex,
   onAddPokemon,
   onReplacePokemon,
+  onLinkSet,
   onSaveToSidebar,
   onImportTeam,
   onRemovePokemon,
@@ -168,6 +172,8 @@ export function RosterPokemonPicker({
   onItemChange,
   onMovesChange,
   loadableOpponents,
+  calcSets,
+  className = "",
 }: RosterPokemonPickerProps) {
   const t = useMessages();
   const text = usePokemonText();
@@ -176,6 +182,9 @@ export function RosterPokemonPicker({
   const [importError, setImportError] = useState<string | null>(null);
   const [isExportTeamOpen, setIsExportTeamOpen] = useState(false);
   const [isLoadOpponentOpen, setIsLoadOpponentOpen] = useState(false);
+  const [saveSetDraft, setSaveSetDraft] = useState<{ name: string; isPublic: boolean } | null>(null);
+  const [saveSetError, setSaveSetError] = useState<string | null>(null);
+  const [isSavingSet, setIsSavingSet] = useState(false);
   const selected = selectedIndex !== null ? sidebar[selectedIndex] : undefined;
   const pokemon = selected?.pokemon ?? null;
 
@@ -218,6 +227,43 @@ export function RosterPokemonPicker({
   const idBase = title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const importModalTitleId = `${idBase}-import-modal-title`;
   const loadOpponentModalTitleId = `${idBase}-load-opponent-modal-title`;
+
+  const saveSetModalTitleId = `${idBase}-save-set-modal-title`;
+  const replacedSet =
+    pokemon && saveSetDraft?.name.trim()
+      ? findSameNameSet(
+          saveSetDraft.isPublic ? calcSets.publicSets : calcSets.customSets,
+          pokemon,
+          saveSetDraft.name,
+        )
+      : undefined;
+
+  function closeSaveSet() {
+    setSaveSetDraft(null);
+    setSaveSetError(null);
+  }
+
+  async function submitSaveSet() {
+    if (!pokemon || !saveSetDraft) return;
+    const name = saveSetDraft.name.trim();
+    if (!name) {
+      setSaveSetError(t.calcPanel.setNameRequired);
+      return;
+    }
+    setIsSavingSet(true);
+    try {
+      // The Stat Point/nature edits live in statOverrides, on top of the entry — fold them in.
+      const kind = saveSetDraft.isPublic ? "public" : "custom";
+      const saved = await calcSets.saveSet(kind, applyStatOverrides(pokemon, statOverrides), name);
+      onLinkSet({ kind, id: saved.id });
+      toast.success(t.calcPanel.setSaved(name));
+      closeSaveSet();
+    } catch {
+      setSaveSetError(t.calcPanel.setSaveFailed);
+    } finally {
+      setIsSavingSet(false);
+    }
+  }
 
   function loadOpponentTeam(opponent: Opponent) {
     onImportTeam(opponent.team.pokemon.slice(0, MAX_SIDEBAR_POKEMON));
@@ -324,16 +370,16 @@ export function RosterPokemonPicker({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
+    <div className={`flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 ${className}`}>
       <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
         {title}
       </h3>
 
-      <div className="flex items-center justify-between gap-2 border-b border-zinc-200 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-3">
         <span className="text-xs font-medium text-zinc-500">
           {t.calcPanel.regulation(REGULATIONS[0].label)}
         </span>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           {loadableOpponents && (
             <button
               type="button"
@@ -469,6 +515,77 @@ export function RosterPokemonPicker({
         </Modal>
       )}
 
+      {saveSetDraft && pokemon && (
+        <Modal onClose={closeSaveSet} labelledBy={saveSetModalTitleId}>
+          <h2 id={saveSetModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
+            {t.calcPanel.saveSetTitle(text.species(pokemon.species))}
+          </h2>
+          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.saveSetIntro}</p>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void submitSaveSet();
+            }}
+          >
+            <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700">
+              {t.calcPanel.setName}
+              <input
+                type="text"
+                value={saveSetDraft.name}
+                onChange={(event) => {
+                  setSaveSetDraft({ ...saveSetDraft, name: event.target.value });
+                  setSaveSetError(null);
+                }}
+                placeholder={t.calcPanel.setNamePlaceholder}
+                autoFocus
+                maxLength={60}
+                className="rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-normal text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              />
+            </label>
+            {calcSets.canEditPublic && (
+              <label className="mt-3 flex items-center gap-2 text-sm text-zinc-700">
+                <input
+                  type="checkbox"
+                  checked={saveSetDraft.isPublic}
+                  onChange={(event) =>
+                    setSaveSetDraft({ ...saveSetDraft, isPublic: event.target.checked })
+                  }
+                />
+                {t.calcPanel.makePublic}
+              </label>
+            )}
+            {replacedSet && (
+              <p className="mt-2 text-xs text-amber-600">
+                {saveSetDraft.isPublic
+                  ? t.calcPanel.replacesPublicSet(replacedSet.name)
+                  : t.calcPanel.replacesSet(replacedSet.name)}
+              </p>
+            )}
+            {saveSetError && (
+              <p role="alert" className="mt-2 text-sm text-red-600">
+                {saveSetError}
+              </p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="submit"
+                disabled={isSavingSet}
+                className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-60 dark:hover:bg-zinc-300"
+              >
+                {isSavingSet ? t.common.saving : t.common.save}
+              </button>
+              <button
+                type="button"
+                onClick={closeSaveSet}
+                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+              >
+                {t.common.cancel}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
       {isExportTeamOpen && (
         <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId}>
           <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
@@ -502,17 +619,19 @@ export function RosterPokemonPicker({
         </Modal>
       )}
 
-      <div className="flex gap-3">
+      {/* The roster strip sits beside the editor; below lg it moves to MobileRosterBar, fixed to the bottom of the screen. */}
+      <div className="flex flex-col gap-3 sm:flex-row">
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex items-center gap-2">
             <PokemonSetPicker
               title={title}
               pokemon={pokemon}
-              onSelect={(newPokemon) => {
+              calcSets={calcSets}
+              onSelect={(newPokemon, fromSet) => {
                 if (selectedIndex !== null) {
-                  onReplacePokemon(newPokemon);
+                  onReplacePokemon(newPokemon, fromSet);
                 } else {
-                  onAddPokemon(newPokemon);
+                  onAddPokemon(newPokemon, fromSet);
                 }
               }}
             />
@@ -528,6 +647,26 @@ export function RosterPokemonPicker({
                 }`}
               >
                 {t.editor.mega}
+              </button>
+            )}
+            {pokemon && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Prefill the set this entry came from, so Save overwrites it. A
+                  // public set only stays public for the admin; anyone else saves
+                  // their own copy under the same name.
+                  const fromSet = calcSets.findSet(selected?.fromSet);
+                  setSaveSetDraft({
+                    name: fromSet?.name ?? "",
+                    isPublic: selected?.fromSet?.kind === "public" && calcSets.canEditPublic,
+                  });
+                }}
+                aria-label={t.calcPanel.saveSetLabel(text.species(pokemon.species))}
+                title={t.calcPanel.saveSet}
+                className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+              >
+                <Icon name={IconName.BookmarkAdd} size={14} />
               </button>
             )}
             {pokemon && sidebar.length < MAX_SIDEBAR_POKEMON && (
@@ -556,68 +695,6 @@ export function RosterPokemonPicker({
             onItemChange={onItemChange}
             onMovesChange={onMovesChange}
             simpleFields
-            renderMoveExtra={(move) => {
-              const isCrit = battleState.critMoves.includes(move);
-              const isStatusMove = MOVES[normalizeSpeciesKey(move)]?.category === "Status";
-              const effect = EFFECT_MOVES[move];
-              const hitRange = moveHitRange(move, effectiveAbility);
-              const setCount = (count: number) =>
-                updateBattleState({ moveCounts: { ...battleState.moveCounts, [move]: count } });
-              return (
-                <>
-                  {!isStatusMove && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        updateBattleState({
-                          critMoves: isCrit
-                            ? battleState.critMoves.filter((m) => m !== move)
-                            : [...battleState.critMoves, move],
-                        })
-                      }
-                      aria-pressed={isCrit}
-                      aria-label={t.calcPanel.critLabel(text.move(move))}
-                      className={`shrink-0 rounded-full border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                        isCrit
-                          ? "border-zinc-600 bg-zinc-600 text-white dark:bg-zinc-400"
-                          : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-                      }`}
-                    >
-                      {t.calcPanel.crit}
-                    </button>
-                  )}
-                  {effect && (
-                    <select
-                      value={battleState.moveCounts[move] ?? 0}
-                      onChange={(event) => setCount(Number(event.target.value))}
-                      aria-label={t.calcPanel.effectLabel(text.move(move))}
-                      title={t.calcPanel.effectHints[effect.option](text.move(move))}
-                      className={moveCountSelectClassName}
-                    >
-                      {countRange(0, effect.max).map((count) => (
-                        <option key={count} value={count}>
-                          {t.calcPanel.effectCount(count)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                  {hitRange && (
-                    <select
-                      value={battleState.moveCounts[move] ?? hitRange.default}
-                      onChange={(event) => setCount(Number(event.target.value))}
-                      aria-label={t.calcPanel.hitsLabel(text.move(move))}
-                      className={moveCountSelectClassName}
-                    >
-                      {countRange(hitRange.min, hitRange.max).map((count) => (
-                        <option key={count} value={count}>
-                          {t.calcPanel.hitsCount(count)}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </>
-              );
-            }}
             maxTotalStatPoints={MAX_TOTAL_STAT_POINTS}
             extraStatColumns={[
               {
@@ -698,7 +775,7 @@ export function RosterPokemonPicker({
         </div>
 
         <div
-          className="flex shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3"
+          className="hidden shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3 lg:flex"
           role="listbox"
           aria-label={t.calcPanel.sidebar(title)}
         >
@@ -706,29 +783,39 @@ export function RosterPokemonPicker({
             const isSelected = selectedIndex === index;
             return (
               <div key={index} className="flex items-center gap-1">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  title={
-                    entry.pokemon.item
-                      ? `${text.species(entry.pokemon.species)} @ ${text.item(entry.pokemon.item)}`
-                      : text.species(entry.pokemon.species)
-                  }
-                  onClick={() => onSelectIndex(index)}
-                  className={`relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors ${
-                    isSelected
-                      ? "border-zinc-600"
-                      : "border-transparent hover:border-zinc-300"
-                  }`}
-                >
-                  <PokemonSprite species={entry.pokemon.species} fill />
+                {/* The badge sits outside the button so the tile's rounded clip doesn't cut it off. */}
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    title={
+                      entry.pokemon.item
+                        ? `${text.species(entry.pokemon.species)} @ ${text.item(entry.pokemon.item)}`
+                        : text.species(entry.pokemon.species)
+                    }
+                    onClick={() => onSelectIndex(index)}
+                    className={`relative block h-12 w-12 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors ${
+                      isSelected
+                        ? "border-zinc-600"
+                        : "border-zinc-300 hover:border-zinc-400"
+                    }`}
+                  >
+                    <span className="absolute inset-0.5">
+                      {/* The open entry follows the Mega toggle (no item = base form), like the rest of the calc's sprites. */}
+                      <PokemonSprite
+                        species={entry.pokemon.species}
+                        item={isSelected && !mega ? undefined : entry.pokemon.item}
+                        fill
+                      />
+                    </span>
+                  </button>
                   {entry.pokemon.item && (
-                    <span className="absolute -bottom-1 -right-1">
+                    <span className="pointer-events-none absolute -bottom-1 -right-1">
                       <ItemIcon item={entry.pokemon.item} size={16} />
                     </span>
                   )}
-                </button>
+                </div>
                 <div className="flex shrink-0 flex-col gap-0.5">
                   <button
                     type="button"
@@ -752,6 +839,17 @@ export function RosterPokemonPicker({
               </div>
             );
           })}
+          {sidebar.length < MAX_SIDEBAR_POKEMON && (
+            <button
+              type="button"
+              onClick={() => onAddPokemon(buildCustomPokemon(DEFAULT_SPECIES_KEY))}
+              aria-label={t.calcPanel.addBlank(title)}
+              title={t.calcPanel.addBlank(title)}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-zinc-300 text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-600"
+            >
+              <Icon name={IconName.Add} size={20} />
+            </button>
+          )}
         </div>
       </div>
     </div>

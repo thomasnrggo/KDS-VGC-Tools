@@ -11,3 +11,4 @@ export * from "./itemDamageModifiers";
 export * from "./speedModifiers";
 export * from "./weatherSettingAbilities";
 export * from "./teamReportPrep";
+export * from "./typeColors";

@@ -157,6 +157,7 @@ export function MyTeamHeader({
   const menuRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileTeamNavRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const mobileNavRef = useRef<HTMLDivElement>(null);
 
   const editingTeam = editingId
@@ -240,6 +241,20 @@ export function MyTeamHeader({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isMobileNavOpen]);
+
+  // Exposes the sticky header's height as --site-header-height, so a page's
+  // own sticky bar (the Damage Calculator's) can pin just below it rather than
+  // sliding over it. It changes when the mobile nav panel opens.
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const setHeight = () =>
+      document.documentElement.style.setProperty("--site-header-height", `${el.offsetHeight}px`);
+    setHeight();
+    const observer = new ResizeObserver(setHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Exposes the fixed mobile team-switcher bar's real rendered height as a
   // CSS var, so layout.tsx's <body> can reserve exactly that much bottom
@@ -328,7 +343,10 @@ export function MyTeamHeader({
 
   return (
     <>
-    <header className="sticky top-0 z-40 border-b border-zinc-100 bg-zinc-800 dark:bg-zinc-200 backdrop-blur">
+    <header
+      ref={headerRef}
+      className="sticky top-0 z-40 border-b border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 backdrop-blur"
+    >
     {/* Wraps the whole header row + the mobile nav panel below, so opening
         the panel visually grows this one sticky header instead of overlaying
         a separate sheet — className="contents" keeps it out of the flex/box
@@ -392,10 +410,11 @@ export function MyTeamHeader({
           <>
             {activeTeam && (
               <>
-                {/* Regular (1024px+) only — below that the team preview/switcher
-                    lives in the fixed bottom drawer instead (see below); narrow
-                    widths don't have room for both (see PLANNING.md). */}
-                <div ref={menuRef} className="relative hidden lg:block">
+                {/* Wide screens (1280px+) only — below that the team preview/switcher
+                    lives in the fixed bottom drawer instead (see below): with
+                    the page links inline from 1024px there's no room for both
+                    until 1280px (see PLANNING.md). */}
+                <div ref={menuRef} className="relative hidden xl:block">
                   <button
                     type="button"
                     onClick={() => setIsTeamMenuOpen((open) => !open)}
@@ -443,7 +462,7 @@ export function MyTeamHeader({
                     ref={dropdownRef}
                     role="listbox"
                     aria-label={t.header.selectTeam}
-                    className="absolute right-6 top-full z-20 mt-2 hidden w-96 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg lg:block"
+                    className="absolute right-6 top-full z-20 mt-2 hidden w-96 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg xl:block"
                   >
                     {regulationTeams.length === 0 ? (
                       <p className="px-3 py-2 text-sm text-zinc-500">
@@ -588,7 +607,7 @@ export function MyTeamHeader({
       <nav
         ref={mobileTeamNavRef}
         aria-label={t.header.mobileTeamSwitcher}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-100 bg-zinc-800 dark:bg-zinc-200 pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 pb-[env(safe-area-inset-bottom)] xl:hidden"
       >
         <Drawer
           open={isMobileTeamDrawerOpen}

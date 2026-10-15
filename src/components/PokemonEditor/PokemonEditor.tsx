@@ -337,8 +337,6 @@ export interface PokemonEditorProps {
    * which suit building a team more than a quick calc.
    */
   simpleFields?: boolean;
-  /** With `simpleFields`: extra controls after a picked move (the calc's Crit toggle, Last Respects' fainted allies). */
-  renderMoveExtra?: (move: string) => ReactNode;
 }
 
 /**
@@ -374,7 +372,6 @@ export function PokemonEditor({
   children,
   layout = "stacked",
   simpleFields = false,
-  renderMoveExtra,
 }: PokemonEditorProps) {
   const t = useMessages();
   const text = usePokemonText();
@@ -849,8 +846,8 @@ export function PokemonEditor({
     </div>
   );
 
-  // One row per move — a name-only searchable dropdown plus the caller's
-  // extra controls — instead of the shared results panel's detailed rows.
+  // One full-width row per move — a name-only searchable dropdown — instead
+  // of the shared results panel's detailed rows.
   const simpleMoveFields =
     onMovesChange &&
     [0, 1, 2, 3].map((slot) => {
@@ -858,32 +855,28 @@ export function PokemonEditor({
       const move = moves[slot];
       const usedElsewhere = moves.filter((_, i) => i !== slot);
       return (
-        <div key={slot} className="flex items-center gap-1.5">
-          {/* Same width on every row, whatever controls follow it. */}
-          <div className="w-3/5 shrink-0">
-            <SearchableSelect
-              options={options.moves
-                .filter(
-                  (option) =>
-                    !usedElsewhere.includes(
-                      MOVES[option.id]?.name ?? option.id,
-                    ),
-                )
-                .map((option) => ({ ...option, content: undefined }))}
-              value={move ? text.move(move) : ""}
-              onSelect={(option) => {
-                // Saved by its English name — the label may be translated.
-                const moveName =
-                  MOVES[option.id]?.name ?? option.searchText ?? option.label;
-                onMovesChange(setMoveSlot(moves, slot, moveName));
-              }}
-              // Clearing keeps the other moves in their slots.
-              onClear={() => onMovesChange(setMoveSlot(moves, slot, ""))}
-              placeholder={t.editor.addMove}
-              ariaLabel={t.editor.moveSlot(title, slot + 1)}
-            />
-          </div>
-          {move && renderMoveExtra?.(move)}
+        <div key={slot}>
+          <SearchableSelect
+            options={options.moves
+              .filter(
+                (option) =>
+                  !usedElsewhere.includes(
+                    MOVES[option.id]?.name ?? option.id,
+                  ),
+              )
+              .map((option) => ({ ...option, content: undefined }))}
+            value={move ? text.move(move) : ""}
+            onSelect={(option) => {
+              // Saved by its English name — the label may be translated.
+              const moveName =
+                MOVES[option.id]?.name ?? option.searchText ?? option.label;
+              onMovesChange(setMoveSlot(moves, slot, moveName));
+            }}
+            // Clearing keeps the other moves in their slots.
+            onClear={() => onMovesChange(setMoveSlot(moves, slot, ""))}
+            placeholder={t.editor.addMove}
+            ariaLabel={t.editor.moveSlot(title, slot + 1)}
+          />
         </div>
       );
     });

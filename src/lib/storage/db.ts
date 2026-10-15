@@ -11,10 +11,10 @@ import {
 } from "@/lib/firebase";
 import { toSharedTeam } from "@/lib/sharedTeam";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
-import type { Opponent, Team, Tournament } from "@/types";
+import type { CalcSet, Opponent, Team, Tournament } from "@/types";
 
 const DB_NAME = "vgc-match-planner";
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const LEGACY_MY_TEAM_STORE = "myTeam";
 const LEGACY_MY_TEAM_KEY = "current";
 const MY_TEAMS_STORE = "myTeams";
@@ -22,6 +22,7 @@ const META_STORE = "meta";
 const ACTIVE_TEAM_ID_KEY = "activeTeamId";
 const OPPONENTS_STORE = "opponents";
 const TOURNAMENTS_STORE = "tournaments";
+const CALC_SETS_STORE = "calcSets";
 
 // IndexedDB stays the source of truth for every read/write below, signed in
 // or not — these two only get touched when a user is actually signed in
@@ -30,6 +31,7 @@ const TOURNAMENTS_STORE = "tournaments";
 const teamsSync = createCollectionSync<Team>("teams");
 const opponentsSync = createCollectionSync<Opponent>("opponents");
 const tournamentsSync = createCollectionSync<Tournament>("tournaments");
+const calcSetsSync = createCollectionSync<CalcSet>("calcSets");
 
 // Every save* below writes to IndexedDB immediately (cheap, local, no reason
 // to delay it) but debounces the Firestore push per record — a notes
@@ -43,6 +45,7 @@ const CLOUD_PUSH_DEBOUNCE_MS = 800;
 const teamCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
 const opponentCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
 const tournamentCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
+const calcSetCloudPushDebouncer = createKeyedDebouncer(CLOUD_PUSH_DEBOUNCE_MS);
 
 function currentUid(): string | null {
   return auth.currentUser?.uid ?? null;
@@ -68,6 +71,9 @@ function getDb(): Promise<IDBPDatabase> {
         }
         if (!db.objectStoreNames.contains(TOURNAMENTS_STORE)) {
           db.createObjectStore(TOURNAMENTS_STORE);
+        }
+        if (!db.objectStoreNames.contains(CALC_SETS_STORE)) {
+          db.createObjectStore(CALC_SETS_STORE);
         }
 
         // v3 introduced multiple "My Team"s: the old single-record `myTeam` store
@@ -377,6 +383,53 @@ export async function syncTournamentsWithCloud(uid: string): Promise<Tournament[
   await Promise.all([
     ...merged.map((tournament) => putTournamentLocal(tournament)),
     ...removedIds.map((id) => deleteTournamentLocal(id)),
+  ]);
+  return merged;
+}
+
+export async function getCalcSets(): Promise<CalcSet[]> {
+  const db = await getDb();
+  return db.getAll(CALC_SETS_STORE);
+}
+
+async function putCalcSetLocal(set: CalcSet): Promise<void> {
+  const db = await getDb();
+  await db.put(CALC_SETS_STORE, set, set.id);
+}
+
+async function deleteCalcSetLocal(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(CALC_SETS_STORE, id);
+}
+
+export async function saveCalcSet(set: CalcSet): Promise<void> {
+  await putCalcSetLocal(set);
+  const uid = currentUid();
+  if (uid) {
+    calcSetCloudPushDebouncer.schedule(set.id, () => {
+      void calcSetsSync.push(uid, set).catch((error) => logCloudSyncError("push calc set", error));
+    });
+  }
+}
+
+export async function deleteCalcSet(id: string): Promise<void> {
+  await deleteCalcSetLocal(id);
+  calcSetCloudPushDebouncer.cancel(id);
+  const uid = currentUid();
+  if (uid) {
+    void calcSetsSync.remove(uid, id).catch((error) => logCloudSyncError("remove calc set", error));
+  }
+}
+
+/** Same idea as syncTournamentsWithCloud — CalcSet has no legacy schema to backfill either. */
+export async function syncCalcSetsWithCloud(uid: string): Promise<CalcSet[]> {
+  const localSets = await getCalcSets();
+  const merged = await calcSetsSync.pullAndMerge(uid, localSets);
+  const mergedIds = new Set(merged.map((set) => set.id));
+  const removedIds = localSets.filter((set) => !mergedIds.has(set.id)).map((set) => set.id);
+  await Promise.all([
+    ...merged.map((set) => putCalcSetLocal(set)),
+    ...removedIds.map((id) => deleteCalcSetLocal(id)),
   ]);
   return merged;
 }

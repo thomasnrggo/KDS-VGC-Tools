@@ -112,6 +112,17 @@ service cloud.firestore {
         && groupData(resource.data.groupId).ownerUid == request.auth.uid;
     }
 
+    // The admin's public Damage Calculator sets (src/types/calcSet.ts,
+    // src/lib/firebase/publicSets.ts) — same everyone-reads/admin-writes
+    // shape as seasons. A user's own sets live under users/{uid}/calcSets,
+    // covered by the rule at the top. Keep this uid in sync with
+    // NEXT_PUBLIC_ADMIN_UID.
+    match /publicSets/{setId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+    }
+
     // Admin-controlled per-section on/off switches (see src/types/featureFlags.ts,
     // src/lib/firebase/featureFlags.ts, and /admin/features) — same
     // everyone-reads/admin-writes shape as seasons above. Keep this uid in
