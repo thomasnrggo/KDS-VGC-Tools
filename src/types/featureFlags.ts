@@ -13,14 +13,12 @@ export interface FeatureFlags {
   speedTiers: boolean;
   /** The Team Builder (see docs/team-builder.md) — not linked from the nav yet (see MyTeamHeader's NAV_LINKS), reachable only by direct URL while it's being built out, same as damage-calc was before it launched. */
   teamBuilder: boolean;
-  /** The Damage Calculator — hidden since 2026-08-22 while it's checked against other calculators; off until an admin turns it on (the admin always sees it). */
-  damageCalc: boolean;
 }
 
 /**
  * Every section defaults to on — a missing/not-yet-created Firestore doc
- * must never look like "everything's disabled" — EXCEPT `teamBuilder` and
- * `damageCalc`, which default off since it's new/still being built (see
+ * must never look like "everything's disabled" — EXCEPT `teamBuilder`,
+ * which defaults off since it's new/still being built (see
  * docs/team-builder.md §6): until an admin flips it on in /admin/features,
  * only the admin account (via FeatureGate's `isAdmin` bypass) can reach it.
  */
@@ -30,5 +28,4 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   tournaments: true,
   speedTiers: true,
   teamBuilder: false,
-  damageCalc: false,
 };

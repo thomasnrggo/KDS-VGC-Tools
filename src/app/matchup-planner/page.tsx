@@ -7,8 +7,6 @@ import { useOpponents } from "@/hooks/useOpponents";
 import { useGroups } from "@/hooks/useGroups";
 import { useGroupOpponents } from "@/hooks/useGroupOpponents";
 import { useMessages } from "@/hooks/useLanguage";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { setPlannerSource, usePlannerSource } from "@/hooks/usePlannerSource";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { OpponentsSection } from "@/components/OpponentsSection";
@@ -49,9 +47,6 @@ export default function MatchupPlanner() {
   const source = usePlannerSource();
   const group = groupsApi.groups.find((g) => g.id === source) ?? null;
   const groupList = useGroupOpponents(group);
-  const { flags } = useFeatureFlags();
-  const { isAdmin } = useIsAdmin();
-  const canUseCalc = flags.damageCalc || isAdmin;
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [copyingOpponent, setCopyingOpponent] = useState<Opponent | null>(null);
 
@@ -162,20 +157,16 @@ export default function MatchupPlanner() {
                       : undefined
               : undefined
           }
+          // The calculator finds a group's opponent through ?groupId=.
+          calcHref={(opponent) =>
+            group
+              ? `/damage-calc?groupId=${group.id}&opponentId=${opponent.id}`
+              : `/damage-calc?opponentId=${opponent.id}`
+          }
           cardActions={(opponent) =>
             group
               ? [{ label: t.groups.copyToMine, icon: IconName.ContentCopy, onClick: () => copyToMine(opponent) }]
               : [
-                  // The calculator loads opponents from your own list.
-                  ...(canUseCalc
-                    ? [
-                        {
-                          label: t.opponents.openInCalc,
-                          icon: IconName.Calculate,
-                          onClick: () => window.open(`/damage-calc?opponentId=${opponent.id}`, "_blank"),
-                        },
-                      ]
-                    : []),
                   ...(groupsApi.activeGroups.length > 0
                     ? [
                         {

@@ -2,11 +2,15 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
-import { useMyTeams } from "@/hooks/useMyTeams";
+import type { useMyTeams } from "@/hooks/useMyTeams";
 import { useOpponents } from "@/hooks/useOpponents";
+import { useGroups } from "@/hooks/useGroups";
+import { useGroupOpponents } from "@/hooks/useGroupOpponents";
 import { useCalcSets, type SavedSetRef } from "@/hooks/useCalcSets";
 import { readDefenderDraft, writeDefenderDraft } from "./defenderDraftStore";
 import { MobileRosterBar } from "./MobileRosterBar";
+import { speciesIdentity } from "@/lib/teamIdentity";
+import { generateId } from "@/lib/id";
 import { ensureSidebarSelection, removeSidebarEntry } from "@/lib/calcSidebar";
 import { calculateDamage, moveHitRange } from "@/lib/damage/calculateDamage";
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
@@ -36,7 +40,7 @@ import { toast } from "../Toast";
 import { PokemonSprite } from "../PokemonSprite";
 import { TypeIcon } from "../TypeIcon";
 import { IconName } from "@/enums";
-import type { DamageCalcOptions, DamageResult, MoveData, ParsedPokemon } from "@/types";
+import type { DamageCalcOptions, DamageResult, MoveData, ParsedPokemon, TeamCalcSide } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import type { Messages } from "@/lib/i18n/messages";
 
@@ -273,10 +277,15 @@ function resolveAutoWeather(
  */
 const THREE_COLUMNS = "lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)]";
 
-export function DamageCalculator() {
+interface DamageCalculatorProps {
+  /** The page's useMyTeams() — shared with its header (see the page). */
+  myTeams: ReturnType<typeof useMyTeams>;
+}
+
+export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
   const t = useMessages();
   const text = usePokemonText();
-  const { teams, activeTeamId, isLoading } = useMyTeams();
+  const { teams, activeTeamId, isLoading, updateTeam } = myTeams;
   // Team/opponent selection from a saved roster is otherwise omitted (see
   // PLANNING.md) — the header's active team seeds the Attacker's sidebar on
   // first load, and a specific opponent seeds the Defender's when opened via
@@ -287,7 +296,14 @@ export function DamageCalculator() {
   const calcSets = useCalcSets();
   const searchParams = useSearchParams();
   const opponentId = searchParams.get("opponentId");
-  const opponentFromUrl = opponentId ? opponents.find((o) => o.id === opponentId) : undefined;
+  // ?groupId= points at a prep group's shared list instead of your own.
+  const groupId = searchParams.get("groupId");
+  const { groups } = useGroups();
+  const urlGroup = groupId ? (groups.find((g) => g.id === groupId) ?? null) : null;
+  const { opponents: groupOpponents } = useGroupOpponents(urlGroup);
+  const opponentFromUrl = opponentId
+    ? (groupId ? groupOpponents : opponents).find((o) => o.id === opponentId)
+    : undefined;
 
   // Each side's working roster (sidebar) — up to MAX_SIDEBAR_POKEMON,
   // editable via the species search (adds a custom entry) or the sidebar's
@@ -929,6 +945,40 @@ export function DamageCalculator() {
   ];
   const hasFieldChips = fieldColumns.some((column) => column.chips.length > 0);
 
+  // Saving a calc files it on the active team — the left side is your team.
+  // Your Pokémon is the left one (found on that team by species); clicking
+  // its move makes the calc offensive, clicking the right one's (hitting
+  // yours) makes it defensive. Nothing to guess from the line's text, which
+  // can't tell a mirror match (Garchomp vs. Garchomp) apart.
+  const ourIndex =
+    activeTeam && attackerPokemon
+      ? activeTeam.pokemon.findIndex(
+          (mon) => speciesIdentity(mon.species) === speciesIdentity(attackerPokemon.species),
+        )
+      : -1;
+  const saveCalcTarget: SaveCalcTarget =
+    !activeTeam
+      ? { disabledReason: t.calc.saveCalcNoTeam }
+      : ourIndex === -1 || !attackerPokemon
+        ? { disabledReason: t.calc.saveCalcNotOnTeam(activeTeam.name) }
+        : {
+            onSave: (calcText: string) => {
+              const side: TeamCalcSide = selectedMove?.side === "defender" ? "defensive" : "offensive";
+              const species = speciesIdentity(activeTeam.pokemon[ourIndex].species);
+              updateTeam(activeTeam.id, (team) => ({
+                ...team,
+                calcs: [...(team.calcs ?? []), { id: generateId(), text: calcText, species, side }],
+              }));
+              toast.success(
+                t.calc.calcSaved(
+                  side === "offensive" ? t.calc.offensive : t.calc.defensive,
+                  text.species(attackerPokemon.species),
+                  activeTeam.name,
+                ),
+              );
+            },
+          };
+
   function sideClass(side: "attacker" | "defender"): string {
     return side === openSide ? "" : "hidden lg:flex";
   }
@@ -1070,6 +1120,7 @@ export function DamageCalculator() {
             defenderBattleState={selectedDefendingBattleState}
             options={selectedOptions}
             result={selectedResult}
+            saveCalc={saveCalcTarget}
           />
           <MoveList
             className={sideClass("defender")}
@@ -1194,7 +1245,11 @@ interface ResultPanelProps {
   defenderBattleState: PokemonBattleState;
   options: DamageCalcOptions | undefined;
   result: DamageResult | null | undefined;
+  /** Saving the calc onto the active team, or why it can't be. */
+  saveCalc: SaveCalcTarget;
 }
+
+type SaveCalcTarget = { onSave: (text: string) => void } | { disabledReason: string };
 
 /** The compact middle column between the two move lists — mirrors the reference calculator's layout of putting the result readout between both Pokémon's move lists instead of below them. */
 function ResultPanel({
@@ -1208,6 +1263,7 @@ function ResultPanel({
   defenderBattleState,
   options,
   result,
+  saveCalc,
 }: ResultPanelProps) {
   const t = useMessages();
   const text = usePokemonText();
@@ -1226,7 +1282,7 @@ function ResultPanel({
   /** The whole Showdown-format line, exactly as shown — what the copy button puts on the clipboard. */
   const resultLine =
     calcLabel && result
-      ? `${calcLabel}: ${result.rolls[0]}-${result.rolls[result.rolls.length - 1]} (${result.minPercent}% - ${result.maxPercent}%) -- ${result.koChanceText}`
+      ? `${calcLabel}: ${result.rolls[0]}-${result.rolls[result.rolls.length - 1]} (${result.minPercent} - ${result.maxPercent}%) -- ${result.koChanceText}`
       : null;
 
   async function copyResultLine() {
@@ -1267,17 +1323,31 @@ function ResultPanel({
                     <span className="font-semibold">
                       {result.rolls[0]}-{result.rolls[result.rolls.length - 1]}
                     </span>{" "}
-                    ({result.minPercent}% - {result.maxPercent}%) -- {result.koChanceText}
+                    ({result.minPercent} - {result.maxPercent}%) -- {result.koChanceText}
                   </p>
-                  <button
-                    type="button"
-                    onClick={copyResultLine}
-                    aria-label={t.calc.copyCalc}
-                    title={t.calc.copyCalc}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:bg-zinc-100 dark:hover:bg-zinc-200"
-                  >
-                    <Icon name={IconName.ContentCopy} size={16} />
-                  </button>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={copyResultLine}
+                      aria-label={t.calc.copyCalc}
+                      title={t.calc.copyCalc}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:bg-zinc-100 dark:hover:bg-zinc-200"
+                    >
+                      <Icon name={IconName.ContentCopy} size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if ("onSave" in saveCalc && resultLine) saveCalc.onSave(resultLine);
+                      }}
+                      disabled={!("onSave" in saveCalc)}
+                      aria-label={t.calc.saveCalc}
+                      title={"onSave" in saveCalc ? t.calc.saveCalc : saveCalc.disabledReason}
+                      className="flex h-8 w-8 shrink-0 disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:bg-zinc-100 dark:hover:bg-zinc-200"
+                    >
+                      <Icon name={IconName.BookmarkAdd} size={16} />
+                    </button>
+                  </div>
                 </div>
                 {result.recoilMinPercent !== undefined && (
                   <p

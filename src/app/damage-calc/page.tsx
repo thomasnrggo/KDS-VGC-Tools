@@ -10,6 +10,9 @@ import { useMessages } from "@/hooks/useLanguage";
 
 export default function DamageCalcPage() {
   const t = useMessages();
+  // One instance shared with the calculator, so a calc it saves onto a team
+  // isn't overwritten by the header's own (otherwise separate) copy.
+  const myTeams = useMyTeams();
   const {
     activeTeams,
     activeTeamId,
@@ -18,7 +21,7 @@ export default function DamageCalcPage() {
     editTeam,
     removeTeam,
     setActiveTeamId,
-  } = useMyTeams();
+  } = myTeams;
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
 
   return (
@@ -46,7 +49,7 @@ export default function DamageCalcPage() {
             does, so a static build doesn't fail with a missing-Suspense
             error (see the "Prerendering" section of useSearchParams' docs). */}
         <Suspense fallback={null}>
-          <DamageCalculator />
+          <DamageCalculator myTeams={myTeams} />
         </Suspense>
       </div>
     </div>

@@ -22,7 +22,18 @@ const SIDES: { side: TeamCalcSide | null; label: string }[] = [
   { side: null, label: "Notes" },
 ];
 
-function CalcRow({ calc, onRemove }: { calc: TeamCalc; onRemove?: () => void }) {
+/** One calc: the other Pokémon's sprite, the setup, and its % / KO verdict. `stacked` keeps the verdict under the setup at every width (a narrow card). */
+export function TeamCalcRow({
+  calc,
+  onRemove,
+  removeLabel = "Remove calc",
+  stacked = false,
+}: {
+  calc: TeamCalc;
+  onRemove?: () => void;
+  removeLabel?: string;
+  stacked?: boolean;
+}) {
   const isCalc = isCalcLine(calc.text);
   const { percent, verdict } = isCalc ? parseCalcLine(calc.text) : {};
   const threat = isCalc ? calcThreat(calc) : undefined;
@@ -46,12 +57,14 @@ function CalcRow({ calc, onRemove }: { calc: TeamCalc; onRemove?: () => void }) 
           <PokemonSprite species={formatSpeciesDisplayName(threat.spriteKey)} size={28} />
         )}
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-start md:justify-between md:gap-3">
+      <div
+        className={`flex min-w-0 flex-1 flex-col gap-0.5 ${stacked ? "" : "md:flex-row md:items-start md:justify-between md:gap-3"}`}
+      >
         <span className={`min-w-0 text-xs ${isCalc ? "text-zinc-700" : "italic text-zinc-500"}`}>
           {setup}
         </span>
         {(percent || verdict) && (
-          <span className={`shrink-0 text-xs font-medium md:text-right ${verdictTone}`}>
+          <span className={`shrink-0 text-xs font-medium ${stacked ? "" : "md:text-right"} ${verdictTone}`}>
             {percent}
             {percent && verdict ? " · " : ""}
             {verdict}
@@ -62,8 +75,8 @@ function CalcRow({ calc, onRemove }: { calc: TeamCalc; onRemove?: () => void }) 
         <button
           type="button"
           onClick={onRemove}
-          aria-label="Remove calc"
-          title="Remove calc"
+          aria-label={removeLabel}
+          title={removeLabel}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
         >
           <Icon name={IconName.Close} size={14} />
@@ -118,7 +131,7 @@ export function TeamCalcsList({ calcs, teamPokemon, onRemove }: TeamCalcsListPro
                 </h4>
                 <ul className="flex flex-col divide-y divide-zinc-300/60">
                   {entries.map((calc) => (
-                    <CalcRow
+                    <TeamCalcRow
                       key={calc.id}
                       calc={calc}
                       onRemove={onRemove ? () => onRemove(calc.id) : undefined}

@@ -10,6 +10,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 ## Unreleased
 
 ### Added
+- **Save calcs to your team** from the Damage Calculator: one click on the button next to "Copy"
+  saves the calc line (plain text, Showdown format) on your active team, under the left-side
+  Pokémon — offensive when it's that Pokémon's move, defensive when it's the right side's.
+- A **Calcs tab** on the team page: each Pokémon's card, collapsed to its sprite header until
+  clicked, with its saved calcs underneath in collapsible Offensive and Defensive lists (with a
+  remove button).
 - Damage Calculator: a dashed "+" tile after each side's roster (and in the phone bar) adds a blank
   Pokémon and opens it, while the roster has room (up to 6).
 - **Damage Calculator sets.** "Save set" in the Pokémon panel saves the current build (item,
@@ -27,11 +33,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   Multiscale, Fluffy, Sharpness, Mega Sol, Aura Guard, …), variable-power moves (Low Kick, Grass
   Knot, Heavy Slam, Gyro Ball, Last Respects, Knock Off, Weather Ball, …), Body Press and Psyshock's
   stat swaps, Parental Bond. A "Fainted allies" input for Last Respects.
-- The Damage Calculator is translated (English/Spanish) and behind its own feature flag: off for
-  everyone until turned on in /admin/features; the admin always sees it, with its nav link and
-  "Open in Damage Calculator" in an opponent's menu.
+- The Damage Calculator is translated (English/Spanish), with its nav link and "Open in Damage
+  Calculator" in an opponent's menu back.
 
 ### Changed
+- **The Damage Calculator is open to everyone**: its feature flag is gone, so its nav link always
+  shows.
+- "Open in Damage Calculator" is back as a calculator icon next to each opponent's name in the
+  Matchup Planner (it had moved into the ⋮ menu), and now works for prep-group opponents too.
+- The main menu is reordered: My Teams, Matchup Planner, Damage Calculator, Speed Tiers,
+  Tournaments.
 - Damage Calculator: each move's Crit toggle and its Effect count (Last Respects, Rage Fist) or hit
   count (multi-hit moves) moved from the Pokémon editor's move slots onto the move's row in the
   move list, right after the move's name (the damage stays on the right).
@@ -78,6 +89,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   nature. Stat Points are now capped at 66 in total, as in the game.
 
 ### Fixed
+- The Damage Calculator's calc line now writes its % range the way Showdown does ("25.8 - 31%").
 - Damage Calculator: Protect no longer blocks contact moves from Unseen Fist (Mega Golurk) or
   Piercing Drill (Mega Excadrill); both hit through it at 1/4 damage, as in Pokémon Champions.
   The calc line notes "through Protect".

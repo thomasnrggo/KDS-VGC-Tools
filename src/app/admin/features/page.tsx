@@ -14,7 +14,6 @@ const SECTION_FLAGS: { flagKey: keyof FeatureFlags; label: string }[] = [
   { flagKey: "tournaments", label: "Tournaments" },
   { flagKey: "speedTiers", label: "Speed Tiers" },
   { flagKey: "teamBuilder", label: "Team Builder" },
-  { flagKey: "damageCalc", label: "Damage Calculator" },
 ];
 
 function FlagToggle({

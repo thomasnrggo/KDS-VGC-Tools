@@ -2653,7 +2653,9 @@ leads/backs) is complete and working end to end.
       Psyshock. Translated (English/Spanish). Behind a new `damageCalc` feature flag (off by default;
       the admin always sees it) with its nav link and the opponent menu's "Open in Damage Calculator"
       back. Still not modeled: Supreme Overlord, Analytic/Stakeout, Gyro/Electro Ball with
-      Tailwind/paralysis, Eviolite.
+      Tailwind/paralysis, Eviolite. **Launched 2026-10-15:** the `damageCalc` flag is removed and
+      the calculator is open to everyone (nav link and "Open in Damage Calculator" always shown). The
+      nav order is now My Teams, Matchup Planner, Damage Calculator, Speed Tiers, Tournaments.
 - [ ] **Damage Calculator: sets**. The calc's species picker is its own component
       (`PokemonSetPicker`), separate from the Team Builder's search: a Showdown-style dropdown with
       each species and its sets underneath, since in the calc you're picking a build, not browsing
@@ -2677,6 +2679,17 @@ leads/backs) is complete and working end to end.
       `firestore.rules` deployed. Design in [docs/prep-groups.md](./docs/prep-groups.md).
       **Future:** personal invites the invited player must accept, instead of anyone with the
       link joining (see the doc's "Future" section).
+- [x] **Saved calcs on a team** (shipped 2026-10-15): the Damage Calculator's "Save calc to a team"
+      button files the Showdown-format line as a `TeamCalc` (`Team.calcs`, the same model the on-hold
+      Calcs tab below uses), one click, no dialog: always the active team (the left side is your
+      team), under the left Pokémon (matched on the team by species), offensive for its own move
+      and defensive for the right side's — read from the calculator, not the line's text, which
+      can't tell a mirror match apart. Disabled, with the reason as its tooltip, without an active
+      team or when the left Pokémon isn't on it. Shown on the team page's **Calcs tab** (now always visible; Matchups
+      stays on hold): each Pokémon's `PokemonReportCard` with `collapsible` (sprite header only
+      until clicked) and a `PokemonCalcsBox` under it (collapsible Offensive/Defensive lists), in
+      independent columns. The old paste-a-calc-document panel (`TeamCalcsPanel`) isn't shown;
+      never on a shared report.
 - [ ] **Team Report: calcs + matchups — on hold.** Benchmark calcs per Pokémon (pasted Showdown-calc
       lines), a Matchups tab, and a prep page per opponent, linked from the Matchup Planner. Built
       2026-10-12, then hidden behind `TEAM_REPORT_PREP_ENABLED = false` while the opponent-info vs

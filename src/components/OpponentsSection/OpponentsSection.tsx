@@ -62,6 +62,8 @@ interface OpponentsSectionProps {
   canClearAll?: boolean;
   /** Extra ⋮ menu items for a card — e.g. copying it between the personal list and a group. */
   cardActions?: (opponent: Opponent) => RowAction[];
+  /** Link that opens a card's team in the Damage Calculator. */
+  calcHref?: (opponent: Opponent) => string;
   /** "Added by …" after a card's name, in a prep group. */
   addedByLabel?: (opponent: Opponent) => string | undefined;
   myTeamPokemon: ParsedPokemon[];
@@ -203,6 +205,7 @@ export function OpponentsSection({
   regulationLocked = false,
   canClearAll = true,
   cardActions,
+  calcHref,
   addedByLabel,
   myTeamPokemon,
   activeTeamId,
@@ -544,6 +547,7 @@ export function OpponentsSection({
           !canRemove || canRemove(opponent) ? () => setConfirmRemoveId(opponent.id) : undefined
         }
         addedByLabel={addedByLabel?.(opponent)}
+        calcHref={calcHref?.(opponent)}
         dragHandle={options.dragHandle}
         extraActions={[
           // The prep page for this opponent vs the selected team — see

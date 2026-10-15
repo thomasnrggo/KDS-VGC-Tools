@@ -59,12 +59,12 @@ interface MyTeamHeaderProps {
 }
 
 const NAV_LINKS = [
-  { page: "matchup-planner", href: "/matchup-planner", labelKey: "matchupPlanner", flagKey: "matchupPlanner" },
   { page: "teams", href: "/teams", labelKey: "myTeams", flagKey: "teams" },
-  { page: "tournaments", href: "/tournaments", labelKey: "tournaments", flagKey: "tournaments" },
+  { page: "matchup-planner", href: "/matchup-planner", labelKey: "matchupPlanner", flagKey: "matchupPlanner" },
+  // Available to everyone — no feature flag of its own.
+  { page: "damage-calc", href: "/damage-calc", labelKey: "damageCalc", flagKey: null },
   { page: "speed-tiers", href: "/speed-tiers", labelKey: "speedTiers", flagKey: "speedTiers" },
-  // Behind its own flag (off by default) — the admin always sees it.
-  { page: "damage-calc", href: "/damage-calc", labelKey: "damageCalc", flagKey: "damageCalc" },
+  { page: "tournaments", href: "/tournaments", labelKey: "tournaments", flagKey: "tournaments" },
 ] as const;
 
 function TeamSwitcherRow({
@@ -189,7 +189,9 @@ export function MyTeamHeader({
   // rather than calling useAuth() a second time.
   const isAdmin = isAdminUid(authUser?.uid);
   const { flags } = useFeatureFlags();
-  const visibleNavLinks = NAV_LINKS.filter((link) => flags[link.flagKey] || isAdmin);
+  const visibleNavLinks = NAV_LINKS.filter(
+    (link) => link.flagKey === null || flags[link.flagKey] || isAdmin,
+  );
 
   useEffect(() => {
     if (!isTeamMenuOpen) return;

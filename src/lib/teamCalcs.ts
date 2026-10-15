@@ -86,7 +86,9 @@ export function parseCalcLine(text: string): ParsedCalcLine {
   const defenderText = colonIndex === -1 ? afterVs : afterVs.slice(0, colonIndex);
   const result = colonIndex === -1 ? "" : afterVs.slice(colonIndex + 1);
 
-  const percent = result.match(/\(([\d.]+\s*-\s*[\d.]+%)\)/)?.[1];
+  // Showdown writes "(113.6 - 134.9%)"; a "%" after the first number too is accepted (and dropped).
+  const range = result.match(/\(([\d.]+)%?\s*-\s*([\d.]+)%\)/);
+  const percent = range ? `${range[1]} - ${range[2]}%` : undefined;
   const verdictIndex = result.indexOf(" -- ");
   const verdict =
     verdictIndex === -1 ? undefined : result.slice(verdictIndex + " -- ".length).trim() || undefined;

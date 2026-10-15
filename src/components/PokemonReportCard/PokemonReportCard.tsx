@@ -15,6 +15,8 @@ import movesData from "@/data/moves.json";
 import type { ParsedPokemon, StatKey, TeamSheetMode } from "@/types";
 import type { MoveData } from "@/types/damage";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { Icon } from "../Icon";
+import { IconName } from "@/enums";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
@@ -26,7 +28,10 @@ interface PokemonReportCardProps {
   pokemon: ParsedPokemon;
   /** "open" (a shared open team sheet) leaves out nature and stats — the shared copy has no Stat Points or nature to compute them from. */
   sheet?: TeamSheetMode;
+  /** Starts collapsed to just its sprite header; clicking the header expands the rest (the Calcs tab). */
+  collapsible?: boolean;
 }
+
 
 /**
  * One Pokémon on the Team Report — a compact card (six fit in a row on
@@ -41,7 +46,11 @@ interface PokemonReportCardProps {
  * the Mega by default, like PokemonHoverCard; the "Mega" pill switches the
  * sprite, types, ability and stats to the base form and back.
  */
-export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCardProps) {
+export function PokemonReportCard({
+  pokemon,
+  sheet = "closed",
+  collapsible = false,
+}: PokemonReportCardProps) {
   const t = useMessages();
   const text = usePokemonText();
   const STAT_LABELS = t.stats.short;
@@ -49,6 +58,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
   const hasMegaForm =
     speciesIsMegaForm || candidateFormKeys(pokemon.species, pokemon.item).length > 1;
   const [showMega, setShowMega] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(!collapsible);
   // The form everything below is resolved from: dropping the item (and any
   // "-Mega" in the species) gives the base form.
   const formPokemon: ParsedPokemon =
@@ -74,8 +84,28 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
       <h3 className="sr-only">{text.species(pokemon.species)}</h3>
 
       <div className="relative h-32 bg-zinc-100">
+        {/* Collapsible: the whole header toggles the details, behind the
+            item and Mega controls (which keep their own clicks). */}
+        {collapsible && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((value) => !value)}
+            aria-expanded={isExpanded}
+            aria-label={`${text.species(pokemon.species)}: ${
+              isExpanded ? t.pokemonCard.hideDetails : t.pokemonCard.showDetails
+            }`}
+            className="absolute inset-0 z-0 hover:bg-zinc-200/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-400"
+          />
+        )}
+        {collapsible && (
+          <Icon
+            name={isExpanded ? IconName.ExpandLess : IconName.ExpandMore}
+            size={20}
+            className="pointer-events-none absolute right-2 top-2 z-10 text-zinc-500"
+          />
+        )}
         {types.length > 0 && (
-          <span className="absolute left-2 top-2 z-10 flex gap-1">
+          <span className="pointer-events-none absolute left-2 top-2 z-10 flex gap-1">
             {types.map((type) => (
               <span key={type} className="overflow-hidden rounded">
                 <TypeIcon type={type} size={22} />
@@ -83,7 +113,7 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
             ))}
           </span>
         )}
-        <div className="absolute inset-y-2 left-1/2 w-28 -translate-x-1/2">
+        <div className="pointer-events-none absolute inset-y-2 left-1/2 w-28 -translate-x-1/2">
           <div className="relative h-full w-full">
             <PokemonSprite species={formPokemon.species} item={formPokemon.item} fill />
           </div>
@@ -113,7 +143,9 @@ export function PokemonReportCard({ pokemon, sheet = "closed" }: PokemonReportCa
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-2.5 p-3 text-sm text-zinc-800">
+      <div
+        className={`flex-1 flex-col gap-2.5 p-3 text-sm text-zinc-800 ${isExpanded ? "flex" : "hidden"}`}
+      >
         {ability && (
           <p className="truncate">
             <span className="text-zinc-500">{t.pokemonCard.ability}</span> {text.ability(ability)}
