@@ -89,6 +89,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   nature. Stat Points are now capped at 66 in total, as in the game.
 
 ### Fixed
+- The Damage Calculator's calc line now says "in Electric Terrain", "in Sun" (or "in Sun and
+  Electric Terrain") when the field's weather or terrain changed the damage, like Showdown's. A
+  Mega-evolved Pokémon is written as its form ("Mega Staraptor") instead of "Staraptite Staraptor".
 - The Damage Calculator's calc line now writes its % range the way Showdown does ("25.8 - 31%").
 - Damage Calculator: Protect no longer blocks contact moves from Unseen Fist (Mega Golurk) or
   Piercing Drill (Mega Excadrill); both hit through it at 1/4 damage, as in Pokémon Champions.

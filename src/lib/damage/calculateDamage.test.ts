@@ -273,6 +273,20 @@ describe("calculateDamage battle conditions (Full Singles Accuracy)", () => {
     expect(flyingTerrain!.rolls[0]).toBe(flyingNoTerrain!.rolls[0]);
   });
 
+  it("reports whether the Field's weather/terrain changed the result (for the calc line)", () => {
+    const charizard = { species: "Charizard", nature: "Hardy" };
+    const terrainHit = calculateDamage(garchomp, ditto, "Thunder Punch", { terrain: "Electric" });
+    expect(terrainHit!.terrainApplied).toBe(true);
+    // A Flying-type isn't grounded, and an Earthquake isn't Electric: terrain didn't matter.
+    expect(calculateDamage(charizard, ditto, "Thunder Punch", { terrain: "Electric" })!.terrainApplied).toBeFalsy();
+    expect(calculateDamage(garchomp, ditto, "Earthquake", { terrain: "Electric" })!.terrainApplied).toBeFalsy();
+
+    expect(calculateDamage(charizard, ditto, "Flamethrower", { weather: "Sun" })!.weatherApplied).toBe(true);
+    expect(calculateDamage(garchomp, ditto, "Earthquake", { weather: "Sun" })!.weatherApplied).toBeFalsy();
+    const tyranitar = { species: "Tyranitar", nature: "Hardy" };
+    expect(calculateDamage(charizard, tyranitar, "Air Slash", { weather: "Sand" })!.weatherApplied).toBe(true);
+  });
+
   it("Misty Terrain halves Dragon-type damage against a grounded defender", () => {
     const normal = calculateDamage(garchomp, ditto, "Dragon Claw");
     const misty = calculateDamage(garchomp, ditto, "Dragon Claw", { terrain: "Misty" });

@@ -16,6 +16,7 @@ import { calculateDamage, moveHitRange } from "@/lib/damage/calculateDamage";
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { calculateStatBreakdown } from "@/lib/stats/calculateFinalStats";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
+import { megaDisplayName } from "@/lib/species/megaForm";
 import { TYPE_COLORS, WEATHER_SETTING_ABILITIES } from "@/constants";
 import movesData from "@/data/moves.json";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
@@ -97,7 +98,8 @@ function activeDamageReducers(
  * effect for this calculation — "Helping Hand" ahead of the move name when
  * the attacker had it, and " through Reflect"/"Light Screen"/"Aurora
  * Veil"/"Friend Guard" (joined with "and" when more than one applies) after
- * the defender's species when a damage reducer was active — so the text
+ * the defender's species when a damage reducer was active, preceded by "in
+ * Sun"/"in Electric Terrain" when the Field's weather/terrain changed the result — so the text
  * always reflects everything that went into the number, not just the SP and
  * stage figures. Each side's held item (when present) is prefixed directly
  * onto its species name — e.g. "Choice Specs Charizard" / "Occa Berry
@@ -138,10 +140,17 @@ function formatCalculationLabel(
     reducers.push("Protect");
   }
   const throughLabel = reducers.length > 0 ? ` through ${reducers.join(" and ")}` : "";
-  const attackerItemLabel = attacker.item ? `${attacker.item} ` : "";
-  const defenderItemLabel = defender.item ? `${defender.item} ` : "";
+  // Showdown's wording: "in Sun", "in Electric Terrain", "in Sun and Electric Terrain".
+  const fieldParts = [
+    result.weatherApplied && options?.weather,
+    result.terrainApplied && options?.terrain && `${options.terrain} Terrain`,
+  ].filter(Boolean);
+  const fieldLabel = fieldParts.length > 0 ? ` in ${fieldParts.join(" and ")}` : "";
+  // A Mega Stone shows as the form ("Mega Staraptor"), like Showdown's, not as an item.
+  const nameWithItem = (mon: ParsedPokemon) =>
+    megaDisplayName(mon.species, mon.item) ?? (mon.item ? `${mon.item} ${mon.species}` : mon.species);
 
-  return `${attackToken} ${attackerItemLabel}${attacker.species} ${helpingHandLabel}${moveName}${hitsLabel}${spreadLabel} vs. ${defenderHpSp} HP / ${defenseToken} ${defenderItemLabel}${defender.species}${throughLabel}`;
+  return `${attackToken} ${nameWithItem(attacker)} ${helpingHandLabel}${moveName}${hitsLabel}${spreadLabel} vs. ${defenderHpSp} HP / ${defenseToken} ${nameWithItem(defender)}${fieldLabel}${throughLabel}`;
 }
 
 const DEFAULT_STAT_OVERRIDES: StatOverrides = {};

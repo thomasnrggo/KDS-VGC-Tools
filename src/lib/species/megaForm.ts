@@ -1,3 +1,5 @@
+import speciesData from "@/data/species.json";
+import { MEGA_STONE_SUFFIX_BY_ITEM } from "@/constants/megaStones";
 import { normalizeSpeciesKey } from "./normalize";
 
 /**
@@ -29,4 +31,20 @@ export function speciesNamesMegaForm(species: string): boolean {
  */
 export function stripMegaSuffix(species: string): string {
   return species.replace(/-mega(-[xyz])?$/i, "");
+}
+
+/**
+ * The Mega form's name the way Showdown's calc writes it — "Mega Staraptor",
+ * "Mega Charizard Y" — when `item` is this species' own Mega Stone (or the
+ * species already names its Mega form, "Charizard-Mega-X"); null otherwise.
+ */
+export function megaDisplayName(species: string, item?: string): string | null {
+  const named = species.match(/^(.*)-mega(?:-([xyz]))?$/i);
+  if (named) return `Mega ${named[1]}${named[2] ? ` ${named[2].toUpperCase()}` : ""}`;
+  const suffix = item ? MEGA_STONE_SUFFIX_BY_ITEM[normalizeSpeciesKey(item)] : undefined;
+  if (!suffix) return null;
+  const formKey = `${normalizeSpeciesKey(species)}-${normalizeSpeciesKey(suffix)}`;
+  if (!(formKey in speciesData)) return null;
+  const letter = suffix.match(/-([XYZ])$/i)?.[1];
+  return `Mega ${species}${letter ? ` ${letter.toUpperCase()}` : ""}`;
 }

@@ -442,6 +442,8 @@ interface ModifierContext {
   defenderAtFullHp: boolean;
   /** The stat the hit lands on — Psyshock is Special but hits Defense. */
   defenseStatKey: "def" | "spd";
+  /** Set by sideMod4096 when a weather-/terrain-conditioned modifier applied, for the calc line's "in Sun"/"in Electric Terrain". */
+  fieldUsed: { weather: boolean; terrain: boolean };
 }
 
 function sideMatches(side: AbilityDamageModifierSide, ctx: ModifierContext): boolean {
@@ -479,6 +481,8 @@ function sideMod4096(
   if (!entry) return FIXED_POINT;
   const sides = Array.isArray(entry) ? entry : [entry];
   const matching = sides.filter((side) => side.stage === stage && sideMatches(side, ctx));
+  if (matching.some((side) => side.weathers)) ctx.fieldUsed.weather = true;
+  if (matching.some((side) => side.terrain)) ctx.fieldUsed.terrain = true;
   return matching.length === 0 ? FIXED_POINT : chainMods(matching.map((side) => side.multiplier4096));
 }
 
@@ -715,6 +719,7 @@ export function calculateDamage(
     isCritical: !!options.isCritical,
     defenderAtFullHp: (options.defenderCurrentHpPercent ?? 100) >= 100,
     defenseStatKey,
+    fieldUsed: { weather: false, terrain: false },
   };
 
   // Levitate's Ground immunity is negated by Gravity (like the Flying-type
@@ -900,6 +905,22 @@ export function calculateDamage(
     pokeRound((sandSnowAdjustedDefenseStat * chainMods(dfMods)) / FIXED_POINT),
   );
 
+  // Whether the Field's weather/terrain changed this result, so the calc line
+  // says "in Sun"/"in Electric Terrain" only when it mattered, like Showdown's.
+  // Mega Sol's own sun isn't the Field's, so it doesn't count.
+  const fieldWeatherReachedAttacker = attackerWeather === options.weather;
+  const weatherChangedDamage =
+    (fieldWeatherReachedAttacker &&
+      ((moveKey === "weather-ball" && fieldType !== undefined) ||
+        ((moveKey === "solar-beam" || moveKey === "solar-blade") && options.weather !== "Sun") ||
+        weatherBaseDamageMod4096(options.weather, move.type) !== FIXED_POINT)) ||
+    sandSnowAdjustedDefenseStat !== stageAdjustedDefenseStat;
+  const terrainChangedDamage =
+    (moveKey === "terrain-pulse" && fieldType !== undefined) ||
+    expandingForceBoosted ||
+    terrainAttackMod4096(options.terrain, move.type, attackerGrounded) !== FIXED_POINT ||
+    terrainDefenseMod4096(options.terrain, move.type, moveKey, defenderGrounded) !== FIXED_POINT;
+
   //////////////////////////////////////////////////////////////////////////
   // Stage 4: STAB — its own dedicated step (not chained with anything else,
   // per the reference), applied per-roll further down. Adaptability
@@ -1076,6 +1097,8 @@ export function calculateDamage(
     attackStatKey,
     defenseStatKey,
     isSpreadMove: !!move.isSpread,
+    ...(options.weather && (weatherChangedDamage || ctx.fieldUsed.weather) ? { weatherApplied: true } : {}),
+    ...(options.terrain && (terrainChangedDamage || ctx.fieldUsed.terrain) ? { terrainApplied: true } : {}),
     ...(hasRecoil
       ? {
           recoilMinPercent: roundPercent(recoilRolls[0], attackerStats.hp),
