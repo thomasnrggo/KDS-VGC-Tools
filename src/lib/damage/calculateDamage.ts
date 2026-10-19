@@ -722,6 +722,17 @@ export function calculateDamage(
     fieldUsed: { weather: false, terrain: false },
   };
 
+  // Which side's ability changed this result, for the calc line ("Tough Claws
+  // Mega Metagross", "… Multiscale Dragonite") — set by abilityMod below and
+  // by the special cases (Guts, Technician, Adaptability, …) further down.
+  const abilityUsed = { attacker: false, defender: false };
+  function abilityMod(side: "attacker" | "defender", stage: AbilityDamageModifierSide["stage"]): number {
+    const ability = side === "attacker" ? attackerAbility : defenderAbility;
+    const mod = sideMod4096(ability ? ABILITY_DAMAGE_MODIFIERS[ability]?.[side] : undefined, stage, ctx);
+    if (mod !== FIXED_POINT) abilityUsed[side] = true;
+    return mod;
+  }
+
   // Levitate's Ground immunity is negated by Gravity (like the Flying-type
   // chart immunity handled inside typeEffectiveness above) — the other
   // ability immunities (Water Absorb, Flash Fire, ...) are unrelated to
@@ -826,22 +837,13 @@ export function calculateDamage(
       "bp",
       ctx,
     ),
-    sideMod4096(
-      defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
-      "bp",
-      ctx,
-    ),
+    abilityMod("defender", "bp"),
   ];
   // Technician only applies if the power BEFORE it (but after every other bp
   // mod) is still ≤60 — matches the reference's own "tempBP" pre-check
   // rather than checking the move's raw listed power.
-  const attackerAbilityBpModExceptTechnician = sideMod4096(
-    attackerAbility && attackerAbility !== "Technician"
-      ? ABILITY_DAMAGE_MODIFIERS[attackerAbility]?.attacker
-      : undefined,
-    "bp",
-    ctx,
-  );
+  const attackerAbilityBpModExceptTechnician =
+    attackerAbility === "Technician" ? FIXED_POINT : abilityMod("attacker", "bp");
   const bpModsBeforeTechnician = [...bpModsBase, attackerAbilityBpModExceptTechnician];
   const tempBasePower = Math.max(1, pokeRound((rawMovePower * chainMods(bpModsBeforeTechnician)) / FIXED_POINT));
   const technicianMod =
@@ -863,16 +865,8 @@ export function calculateDamage(
       ctx,
     ),
     hasGuts && isStatused && isPhysical ? 0x1800 : FIXED_POINT,
-    sideMod4096(
-      attackerAbility ? ABILITY_DAMAGE_MODIFIERS[attackerAbility]?.attacker : undefined,
-      "at",
-      ctx,
-    ),
-    sideMod4096(
-      defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
-      "at",
-      ctx,
-    ),
+    abilityMod("attacker", "at"),
+    abilityMod("defender", "at"),
   ];
   const finalAttackStat = Math.max(1, pokeRound((stageAdjustedAttackStat * chainMods(atMods)) / FIXED_POINT));
 
@@ -894,11 +888,7 @@ export function calculateDamage(
       "df",
       ctx,
     ),
-    sideMod4096(
-      defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
-      "df",
-      ctx,
-    ),
+    abilityMod("defender", "df"),
   ];
   const finalDefenseStat = Math.max(
     1,
@@ -929,6 +919,30 @@ export function calculateDamage(
   const hasStab = attackerTypes.includes(move.type);
   const stabMod4096 = !hasStab ? FIXED_POINT : attackerAbility === "Adaptability" ? 0x2000 : 0x1800;
 
+  // Attacker abilities that act outside the modifier tables.
+  if (
+    (attackerAbility === "Adaptability" && hasStab) ||
+    (!fieldType && ateType !== undefined) ||
+    (!fieldType && !ateType && attackerAbility === "Liquid Voice" && !!flags.sound) ||
+    (attackerAbility === "Mega Sol" &&
+      options.weather !== "Sun" &&
+      (move.type === "Fire" ||
+        move.type === "Water" ||
+        moveKey === "weather-ball" ||
+        ((moveKey === "solar-beam" || moveKey === "solar-blade") && !!options.weather))) ||
+    hasParentalBond ||
+    (attackerAbility === "Skill Link" &&
+      options.hits === undefined &&
+      !HIT_RANGE_OVERRIDES[moveKey] &&
+      move.minHits !== undefined &&
+      move.minHits !== move.maxHits) ||
+    quarterThroughProtect ||
+    (hasGuts && isPhysical && (isStatused || !!options.attackerBurned)) ||
+    technicianMod !== FIXED_POINT
+  ) {
+    abilityUsed.attacker = true;
+  }
+
   //////////////////////////////////////////////////////////////////////////
   // Stage 5: the finalMods chain — everything applied once per roll,
   // together, AFTER STAB/type effectiveness/burn.
@@ -946,16 +960,8 @@ export function calculateDamage(
       "final",
       ctx,
     ),
-    sideMod4096(
-      attackerAbility ? ABILITY_DAMAGE_MODIFIERS[attackerAbility]?.attacker : undefined,
-      "final",
-      ctx,
-    ),
-    sideMod4096(
-      defenderAbility ? ABILITY_DAMAGE_MODIFIERS[defenderAbility]?.defender : undefined,
-      "final",
-      ctx,
-    ),
+    abilityMod("attacker", "final"),
+    abilityMod("defender", "final"),
   ];
   const finalModsChain = chainMods(finalMods);
 
@@ -1097,6 +1103,10 @@ export function calculateDamage(
     attackStatKey,
     defenseStatKey,
     isSpreadMove: !!move.isSpread,
+    ...(abilityUsed.attacker ? { attackerAbilityApplied: true } : {}),
+    ...(abilityUsed.defender ? { defenderAbilityApplied: true } : {}),
+    ...(applyBurn ? { burnApplied: true } : {}),
+    ...(options.fairyAura && move.type === "Fairy" ? { fairyAuraApplied: true } : {}),
     ...(options.weather && (weatherChangedDamage || ctx.fieldUsed.weather) ? { weatherApplied: true } : {}),
     ...(options.terrain && (terrainChangedDamage || ctx.fieldUsed.terrain) ? { terrainApplied: true } : {}),
     ...(hasRecoil

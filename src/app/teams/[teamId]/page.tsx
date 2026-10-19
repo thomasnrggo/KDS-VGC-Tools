@@ -323,7 +323,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               with its saved calcs underneath. Columns are independent, so
               expanding one card or one list never stretches the others. */}
           {activeTab === "calcs" && (
-            <div className="grid grid-cols-1 items-start gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+            <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
               {team.pokemon.map((mon, index) => (
                 <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">
                   <PokemonReportCard pokemon={mon} collapsible />

@@ -105,7 +105,10 @@ function activeDamageReducers(
  * onto its species name — e.g. "Choice Specs Charizard" / "Occa Berry
  * Sinistcha" — the standard Showdown-calc convention, and the only way a
  * damage-affecting item (a resist Berry, Choice item, etc.) is visible in
- * the result text itself rather than only in the picker above it. " (spread)"
+ * the result text itself rather than only in the picker above it. An ability
+ * that changed the result goes between the item and the species, "burned"
+ * right before the attacker when its burn halved the hit, and "Fairy Aura
+ * boosted" before the move when the aura applied — Showdown's wording. " (spread)"
  * appears after the hits label when the move is a spread move AND the
  * attacker's side actually has Spread Target toggled on — the ×0.75
  * reduction only applies in that combination, so the label only claims it
@@ -146,11 +149,18 @@ function formatCalculationLabel(
     result.terrainApplied && options?.terrain && `${options.terrain} Terrain`,
   ].filter(Boolean);
   const fieldLabel = fieldParts.length > 0 ? ` in ${fieldParts.join(" and ")}` : "";
-  // A Mega Stone shows as the form ("Mega Staraptor"), like Showdown's, not as an item.
-  const nameWithItem = (mon: ParsedPokemon) =>
-    megaDisplayName(mon.species, mon.item) ?? (mon.item ? `${mon.item} ${mon.species}` : mon.species);
+  // Showdown's order: item, ability (when it changed the result), "burned",
+  // then the name. A Mega Stone shows as the form ("Mega Staraptor"), not as an item.
+  const describe = (mon: ParsedPokemon, abilityApplied: boolean | undefined, burned: boolean) => {
+    const mega = megaDisplayName(mon.species, mon.item);
+    const ability = abilityApplied ? resolveEffectiveAbility(mon.species, mon.item, mon.ability) : undefined;
+    return [mega ? undefined : mon.item, ability, burned ? "burned" : undefined, mega ?? mon.species]
+      .filter(Boolean)
+      .join(" ");
+  };
+  const fairyAuraLabel = result.fairyAuraApplied ? "Fairy Aura boosted " : "";
 
-  return `${attackToken} ${nameWithItem(attacker)} ${helpingHandLabel}${moveName}${hitsLabel}${spreadLabel} vs. ${defenderHpSp} HP / ${defenseToken} ${nameWithItem(defender)}${fieldLabel}${throughLabel}`;
+  return `${attackToken} ${describe(attacker, result.attackerAbilityApplied, !!result.burnApplied)} ${helpingHandLabel}${fairyAuraLabel}${moveName}${hitsLabel}${spreadLabel} vs. ${defenderHpSp} HP / ${defenseToken} ${describe(defender, result.defenderAbilityApplied, false)}${fieldLabel}${throughLabel}`;
 }
 
 const DEFAULT_STAT_OVERRIDES: StatOverrides = {};

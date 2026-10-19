@@ -287,6 +287,25 @@ describe("calculateDamage battle conditions (Full Singles Accuracy)", () => {
     expect(calculateDamage(charizard, tyranitar, "Air Slash", { weather: "Sand" })!.weatherApplied).toBe(true);
   });
 
+  it("reports which abilities, burn and Fairy Aura changed the result (for the calc line)", () => {
+    const metagross = { species: "Metagross", ability: "Tough Claws", nature: "Adamant" };
+    const dragonite = { species: "Dragonite", ability: "Multiscale", nature: "Hardy" };
+    const contact = calculateDamage(metagross, dragonite, "Meteor Mash");
+    expect(contact!.attackerAbilityApplied).toBe(true);
+    expect(contact!.defenderAbilityApplied).toBe(true);
+    // Tough Claws needs contact; Multiscale needs full HP.
+    const noContact = calculateDamage(metagross, dragonite, "Earthquake", { defenderCurrentHpPercent: 50 });
+    expect(noContact!.attackerAbilityApplied).toBeFalsy();
+    expect(noContact!.defenderAbilityApplied).toBeFalsy();
+
+    expect(calculateDamage(garchomp, ditto, "Earthquake", { attackerBurned: true })!.burnApplied).toBe(true);
+    expect(calculateDamage(garchomp, ditto, "Draco Meteor", { attackerBurned: true })!.burnApplied).toBeFalsy();
+
+    const sylveon = { species: "Sylveon", nature: "Modest" };
+    expect(calculateDamage(sylveon, ditto, "Moonblast", { fairyAura: true })!.fairyAuraApplied).toBe(true);
+    expect(calculateDamage(sylveon, ditto, "Hyper Voice", { fairyAura: true })!.fairyAuraApplied).toBeFalsy();
+  });
+
   it("Misty Terrain halves Dragon-type damage against a grounded defender", () => {
     const normal = calculateDamage(garchomp, ditto, "Dragon Claw");
     const misty = calculateDamage(garchomp, ditto, "Dragon Claw", { terrain: "Misty" });

@@ -38,6 +38,13 @@ export interface DamageResult {
   /** Whether the Field's weather / terrain changed this result (a boosted or weakened move, Weather Ball, Sand's Sp. Def boost, a weather or terrain ability, ...) — the calc line then adds "in Sun" / "in Electric Terrain", like Showdown's. Absent when it didn't. */
   weatherApplied?: boolean;
   terrainApplied?: boolean;
+  /** Whether the attacker's / defender's ability changed this result (Tough Claws, Adaptability, Multiscale, Fluffy, …) — the calc line then names it. Absent when it didn't. */
+  attackerAbilityApplied?: boolean;
+  defenderAbilityApplied?: boolean;
+  /** The attacker's burn halved this hit (a physical move, without Guts or Facade). */
+  burnApplied?: boolean;
+  /** Fairy Aura boosted this (Fairy-type) move. */
+  fairyAuraApplied?: boolean;
   /**
    * Self-damage the ATTACKER takes from using this move — from the move's
    * own recoil (Wave Crash, Flare Blitz, ...) plus Life Orb's flat 10% max

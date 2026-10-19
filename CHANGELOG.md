@@ -9,6 +9,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 
 ## 2026-10-19
 
+### Changed
+- The Damage Calculator's calc line names what else changed the damage, like Showdown's: an ability
+  that mattered ("Tough Claws Mega Metagross", "… Multiscale Dragonite"), "burned" when a burn
+  halved the hit, and "Fairy Aura boosted" before a Fairy move.
+- The team page's Calcs tab shows one Pokémon per row on phones (two from 640px), so the calc
+  lists have room.
+
 ### Fixed
 - The Damage Calculator's calc line now says "in Electric Terrain", "in Sun" (or "in Sun and
   Electric Terrain") when the field's weather or terrain changed the damage, like Showdown's. A
