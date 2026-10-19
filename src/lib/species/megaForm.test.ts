@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { speciesNamesMegaForm, stripMegaSuffix } from "./megaForm";
+import { megaDisplayName, speciesNamesMegaForm, stripMegaSuffix } from "./megaForm";
 
 describe("speciesNamesMegaForm", () => {
   it("is true for a species name that already ends in -Mega", () => {
@@ -47,5 +47,23 @@ describe("stripMegaSuffix", () => {
 
   it("only strips a trailing suffix, not one appearing mid-string", () => {
     expect(stripMegaSuffix("Mega-Man")).toBe("Mega-Man");
+  });
+});
+
+describe("megaDisplayName", () => {
+  it("names the Mega form when the species holds its own Mega Stone", () => {
+    expect(megaDisplayName("Staraptor", "Staraptite")).toBe("Mega Staraptor");
+    expect(megaDisplayName("Charizard", "Charizardite Y")).toBe("Mega Charizard Y");
+  });
+
+  it("names the Mega form when the species name already is one", () => {
+    expect(megaDisplayName("Charizard-Mega-X")).toBe("Mega Charizard X");
+    expect(megaDisplayName("Golisopod-Mega")).toBe("Mega Golisopod");
+  });
+
+  it("is null without a Mega Stone, or for a species with no Mega form", () => {
+    expect(megaDisplayName("Staraptor")).toBeNull();
+    expect(megaDisplayName("Staraptor", "Leftovers")).toBeNull();
+    expect(megaDisplayName("Incineroar", "Staraptite")).toBeNull();
   });
 });

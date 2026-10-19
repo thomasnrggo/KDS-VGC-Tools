@@ -7,7 +7,14 @@ holds the reasoning behind each change; this file is the short "what and when".
 Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**, **Changed**,
 **Fixed**, **Removed** under each date.
 
-## Unreleased
+## 2026-10-19
+
+### Fixed
+- The Damage Calculator's calc line now says "in Electric Terrain", "in Sun" (or "in Sun and
+  Electric Terrain") when the field's weather or terrain changed the damage, like Showdown's. A
+  Mega-evolved Pokémon is written as its form ("Mega Staraptor") instead of "Staraptite Staraptor".
+
+## 2026-10-15
 
 ### Added
 - **Save calcs to your team** from the Damage Calculator: one click on the button next to "Copy"

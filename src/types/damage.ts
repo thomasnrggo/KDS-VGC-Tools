@@ -35,6 +35,9 @@ export interface DamageResult {
   defenseStatKey: "def" | "spd";
   /** Whether this move's own data marks it as a spread move (Earthquake, Rock Slide, ...) — independent of whether `attackerHitsMultipleTargets` was actually set, so the UI can label "spread move, single target" differently from "spread move, 2 targets" (the ×0.75 case). */
   isSpreadMove: boolean;
+  /** Whether the Field's weather / terrain changed this result (a boosted or weakened move, Weather Ball, Sand's Sp. Def boost, a weather or terrain ability, ...) — the calc line then adds "in Sun" / "in Electric Terrain", like Showdown's. Absent when it didn't. */
+  weatherApplied?: boolean;
+  terrainApplied?: boolean;
   /**
    * Self-damage the ATTACKER takes from using this move — from the move's
    * own recoil (Wave Crash, Flare Blitz, ...) plus Life Orb's flat 10% max
