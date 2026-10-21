@@ -12,10 +12,12 @@ function CalcSection({
   title,
   calcs,
   onRemoveCalc,
+  searching,
 }: {
   title: string;
   calcs: TeamCalc[];
   onRemoveCalc?: (id: string) => void;
+  searching?: boolean;
 }) {
   const t = useMessages();
   return (
@@ -32,7 +34,9 @@ function CalcSection({
       </CollapsibleTrigger>
       <CollapsibleContent className="px-3 pb-2">
         {calcs.length === 0 ? (
-          <p className="text-xs text-zinc-500">{t.pokemonCard.noCalcsYet}</p>
+          <p className="text-xs text-zinc-500">
+            {searching ? t.pokemonCard.noMatchingCalcs : t.pokemonCard.noCalcsYet}
+          </p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200">
             {calcs.map((calc) => (
@@ -54,16 +58,18 @@ function CalcSection({
 const CALC_SIDES: TeamCalcSide[] = ["offensive", "defensive"];
 
 interface PokemonCalcsBoxProps {
-  /** This Pokémon's saved calcs. */
+  /** This Pokémon's saved calcs (already filtered while searching). */
   calcs: TeamCalc[];
   onRemoveCalc?: (id: string) => void;
+  /** A search is narrowing `calcs` — an empty list then says nothing matched. */
+  searching?: boolean;
 }
 
 /**
  * A Pokémon's saved calcs as collapsible Offensive and Defensive lists — a
  * box of its own under its card on the team page's Calcs tab.
  */
-export function PokemonCalcsBox({ calcs, onRemoveCalc }: PokemonCalcsBoxProps) {
+export function PokemonCalcsBox({ calcs, onRemoveCalc, searching }: PokemonCalcsBoxProps) {
   const t = useMessages();
   return (
     <div className="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm">
@@ -73,6 +79,7 @@ export function PokemonCalcsBox({ calcs, onRemoveCalc }: PokemonCalcsBoxProps) {
           title={side === "offensive" ? t.pokemonCard.offensiveCalcs : t.pokemonCard.defensiveCalcs}
           calcs={calcs.filter((calc) => calc.side === side)}
           onRemoveCalc={onRemoveCalc}
+          searching={searching}
         />
       ))}
     </div>

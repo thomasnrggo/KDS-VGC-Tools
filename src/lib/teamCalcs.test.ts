@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  calcMatchesSearch,
   calcsAgainst,
   calcThreat,
+  hasSavedCalc,
   findCalcSpecies,
   parseCalcLine,
   parseCalcPaste,
@@ -117,5 +119,51 @@ describe("parseCalcLine's % range", () => {
         "32 Atk Basculegion Wave Crash vs. 0 HP / 0 Def Sneasler: 204-240 (131.6% - 154.8%) -- guaranteed OHKO",
       ).percent,
     ).toBe("131.6 - 154.8%");
+  });
+});
+
+describe("hasSavedCalc", () => {
+  const saved = {
+    id: "1",
+    species: "basculegion",
+    side: "offensive" as const,
+    text: "32 SpA Basculegion-F Shadow Ball vs. 0 HP / 0 SpD Gholdengo: 100-118 (59.5 - 70.2%) -- guaranteed 2HKO",
+  };
+
+  it("finds the same calc on the same Pokémon, ignoring extra whitespace", () => {
+    expect(hasSavedCalc([saved], "basculegion", `  ${saved.text.replace(" vs. ", "  vs.  ")} `)).toBe(true);
+  });
+
+  it("doesn't match another Pokémon's calc or a different line", () => {
+    expect(hasSavedCalc([saved], "pelipper", saved.text)).toBe(false);
+    expect(hasSavedCalc([saved], "basculegion", saved.text.replace("32 SpA", "31 SpA"))).toBe(false);
+  });
+});
+
+describe("calcMatchesSearch", () => {
+  const offensive = {
+    id: "1",
+    species: "basculegion",
+    side: "offensive" as const,
+    text: "32 SpA Basculegion-F Shadow Ball vs. 0 HP / 0 SpD Life Orb Gholdengo: 100-118 (59.5 - 70.2%) -- guaranteed 2HKO",
+  };
+  const defensive = {
+    id: "2",
+    species: "basculegion",
+    side: "defensive" as const,
+    text: "30 SpA Mega Raichu Y Zap Cannon vs. 32 HP / 1 SpD Basculegion-F: 80-95 (47.8 - 56.6%) -- guaranteed 2HKO",
+  };
+
+  it("matches on the other Pokémon, not on yours", () => {
+    expect(calcMatchesSearch(offensive, ["gholdengo"])).toBe(true);
+    expect(calcMatchesSearch(offensive, ["basculegion"])).toBe(false);
+    expect(calcMatchesSearch(defensive, ["raichu"])).toBe(true);
+    expect(calcMatchesSearch(defensive, ["gholdengo"])).toBe(false);
+  });
+
+  it("matches partial names, any of several terms, and the translated name", () => {
+    expect(calcMatchesSearch(offensive, ["ghold"])).toBe(true);
+    expect(calcMatchesSearch(defensive, ["gholdengo", "raichu"])).toBe(true);
+    expect(calcMatchesSearch(offensive, ["foo"], () => "Gholdengo FOO")).toBe(true);
   });
 });

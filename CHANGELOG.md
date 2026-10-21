@@ -7,6 +7,21 @@ holds the reasoning behind each change; this file is the short "what and when".
 Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**, **Changed**,
 **Fixed**, **Removed** under each date.
 
+## 2026-10-21
+
+### Added
+- A search box on the team page's Calcs tab: type a Pokémon (e.g. "Gholdengo") to see, under each
+  of your Pokémon, only its calcs against that one. Works with the Pokémon names in either language.
+- Damage Calculator: saving a calc that's already saved on that Pokémon does nothing; the save
+  button shows a check ("Already saved on your team") instead.
+
+### Fixed
+- Damage Calculator: against Focus Sash or Sturdy the damage rolls show the move's real damage
+  (they were all capped at the target's HP minus 1); the verdict accounts for the save and says so
+  ("guaranteed 2HKO (Focus Sash)").
+- Damage Calculator: Life Orb's recoil rounds down (a tenth of max HP, rounded down), like the
+  games; it was rounded up (e.g. 10.1% instead of 9.5%).
+
 ## 2026-10-19
 
 ### Changed

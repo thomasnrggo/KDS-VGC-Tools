@@ -3,6 +3,7 @@ import { SPECIES_ALIASES } from "@/constants";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { generateId } from "@/lib/id";
 import { speciesIdentity } from "@/lib/teamIdentity";
+import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import type { ParsedPokemon, TeamCalc, TeamCalcSide } from "@/types";
 
 const SPECIES_KEYS = new Set(Object.keys(speciesData));
@@ -179,4 +180,31 @@ export function parseCalcPaste(raw: string, roster: ParsedPokemon[]): CalcPasteR
   }
 
   return { calcs, calcCount };
+}
+
+/** Same text up to whitespace — how a re-saved calc is recognized. */
+function calcTextKey(text: string): string {
+  return text.trim().replace(/\s+/g, " ");
+}
+
+/** True when `species` already has this exact calc saved (any side), so saving it again would duplicate it. */
+export function hasSavedCalc(calcs: TeamCalc[], species: string, text: string): boolean {
+  const key = calcTextKey(text);
+  return calcs.some((calc) => calc.species === species && calcTextKey(calc.text) === key);
+}
+
+/**
+ * True when the calc's threat (the other Pokémon — see calcThreat) matches
+ * any of the search `terms` (from parseSearchTerms), by its English name or,
+ * via `translate`, its name in the Pokémon language.
+ */
+export function calcMatchesSearch(
+  calc: TeamCalc,
+  terms: string[],
+  translate?: (species: string) => string,
+): boolean {
+  const threat = calcThreat(calc);
+  if (!threat) return false;
+  const names = [threat.identity, threat.spriteKey, translate?.(threat.identity) ?? ""].map(foldForSearch);
+  return terms.some((term) => names.some((name) => name && name.includes(term)));
 }

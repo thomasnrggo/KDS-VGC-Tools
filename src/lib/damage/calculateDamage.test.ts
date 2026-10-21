@@ -632,20 +632,22 @@ describe("calculateDamage multi-hit moves and Focus Sash/Sturdy", () => {
     expect(tripleKick!.rolls[0]).toBeGreaterThan(flatTriple!.rolls[0] * 3);
   });
 
-  it("Focus Sash clips lethal damage to leave exactly 1 HP, from full HP only", () => {
+  it("Focus Sash keeps the real damage rolls but stops the OHKO, from full HP", () => {
     const sashDitto = { species: "Ditto", nature: "Hardy", item: "Focus Sash" };
     const result = calculateDamage(garchomp, sashDitto, "Earthquake");
+    const plain = calculateDamage(garchomp, ditto, "Earthquake");
 
-    // Every roll would otherwise OHKO (per the very first test in this
-    // file) — Sash should clip every single one down to exactly hp-1.
-    expect(result!.rolls.every((roll) => roll === 122)).toBe(true);
-    expect(result!.koChanceText).not.toBe("guaranteed OHKO");
+    // Every roll would OHKO (per the very first test in this file): the rolls
+    // still show that damage, and the verdict says Sash leaves it at 1 HP.
+    expect(result!.rolls).toEqual(plain!.rolls);
+    expect(result!.koChanceText).toBe("guaranteed 2HKO (Focus Sash)");
   });
 
   it("Sturdy has the same effect as Focus Sash", () => {
     const sturdyDitto = { species: "Ditto", nature: "Hardy", ability: "Sturdy" };
     const result = calculateDamage(garchomp, sturdyDitto, "Earthquake");
-    expect(result!.rolls.every((roll) => roll === 122)).toBe(true);
+    expect(result!.koChanceText).toBe("guaranteed 2HKO (Sturdy)");
+    expect(result!.defenderAbilityApplied).toBe(true);
   });
 
   it("Focus Sash does NOT trigger when the defender isn't at full HP", () => {
@@ -653,8 +655,8 @@ describe("calculateDamage multi-hit moves and Focus Sash/Sturdy", () => {
     const result = calculateDamage(garchomp, sashDitto, "Earthquake", {
       defenderCurrentHpPercent: 90,
     });
-    // Not clipped to a survival value — a real (if reduced) KO chance instead.
-    expect(result!.rolls.every((roll) => roll === 122)).toBe(false);
+    // No save: a plain OHKO.
+    expect(result!.koChanceText).toBe("guaranteed OHKO");
   });
 
   it("Focus Sash saves the first sub-hit of a multi-hit move, but the second sub-hit still finishes the KO (Sash only triggers once)", () => {
@@ -781,6 +783,12 @@ describe("calculateDamage recoil (move recoil + Life Orb)", () => {
     );
     expect(withLifeOrb!.recoilMinPercent).toBe(withLifeOrb!.recoilMaxPercent);
     expect(withLifeOrb!.recoilMinPercent).toBeCloseTo(10, 0);
+  });
+
+  it("Life Orb's recoil rounds down (floor of max HP / 10), like the games and Showdown", () => {
+    // 0 HP Gholdengo: 162 HP, so 16 HP (9.9%), not 17 (10.5%).
+    const gholdengo = { species: "Gholdengo", nature: "Modest", evs: "32 SpA", item: "Life Orb" };
+    expect(calculateDamage(gholdengo, ditto, "Flash Cannon")!.recoilMinPercent).toBe(9.9);
   });
 
   it("a recoil move's damage-proportional recoil and Life Orb's flat recoil stack", () => {

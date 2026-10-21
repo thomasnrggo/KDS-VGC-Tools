@@ -565,7 +565,9 @@ function roundPercent(damage: number, hp: number): number {
  * reduce the defender from full HP to 0 instead leaves it at 1, and the
  * save only applies once (a later hit — whether from the same multi-hit
  * move or a later describeKoChance "turn" — starts from non-full HP and
- * gets no further protection).
+ * gets no further protection). They only change the KO verdict (and recoil,
+ * which follows the damage actually dealt): the rolls stay the move's real
+ * damage, like Showdown's, and the verdict notes "(Focus Sash)"/"(Sturdy)".
  *
  * Returns `null` when either Pokémon's form isn't in the static species
  * data, the move isn't recognized, or the move doesn't do direct formula
@@ -1020,7 +1022,7 @@ export function calculateDamage(
   // attacker's own max HP, added once per roll (not per hit) since it's a
   // fixed post-move cost, not scaled by damage dealt.
   const hasLifeOrb = attacker.item === "Life Orb";
-  const lifeOrbRecoil = hasLifeOrb ? Math.ceil(attackerStats.hp / 10) : 0;
+  const lifeOrbRecoil = hasLifeOrb ? Math.max(1, Math.floor(attackerStats.hp / 10)) : 0;
   const hasRecoil = !!move.recoilFraction || hasLifeOrb;
 
   // Precomputed once for ordinary moves (power doesn't vary per hit) —
@@ -1034,9 +1036,13 @@ export function calculateDamage(
   // damage, and a Focus Sash/Sturdy save partway through, both fall out of
   // the same loop rather than needing separate special-case math.
   const recoilRolls: number[] = [];
+  // What each roll actually takes off after a Sash/Sturdy save — for the KO verdict.
+  const dealtRolls: number[] = [];
+  let sashOrSturdySaved = false;
   const rolls = DAMAGE_ROLL_PERCENTS.map((percent) => {
     let hp = defenderCurrentHp;
     let sashOrSturdyConsumed = false;
+    let totalDamage = 0;
     let totalDealt = 0;
     let totalMoveRecoil = 0;
     for (let hit = 0; hit < hitCount; hit++) {
@@ -1076,10 +1082,12 @@ export function calculateDamage(
       // e.g. 151-178 against 123 max HP. Only Focus Sash/Sturdy, triggered
       // from exactly full HP and only once, actually clips the damage dealt.
       let dealt = Math.max(1, damage);
+      totalDamage += dealt;
       if (dealt >= hp) {
         if (hp === defenderMaxHp && hasFocusSashOrSturdy && !sashOrSturdyConsumed) {
           dealt = hp - 1;
           sashOrSturdyConsumed = true;
+          sashOrSturdySaved = true;
           hp = 1;
         } else {
           hp = 0;
@@ -1091,14 +1099,26 @@ export function calculateDamage(
       if (move.recoilFraction) totalMoveRecoil += Math.floor(dealt * move.recoilFraction);
     }
     recoilRolls.push(totalMoveRecoil + lifeOrbRecoil);
-    return totalDealt;
+    dealtRolls.push(totalDealt);
+    return totalDamage;
   });
+  // Named only when the save changed the verdict (a multi-hit move that breaks
+  // the Sash and KOs anyway is still a plain OHKO).
+  const koChanceText = describeKoChance(dealtRolls, defenderCurrentHp);
+  const sashOrSturdyMattered =
+    sashOrSturdySaved && koChanceText !== describeKoChance(rolls, defenderCurrentHp);
+  const sashOrSturdyNote = !sashOrSturdyMattered
+    ? ""
+    : defender.item === "Focus Sash"
+      ? " (Focus Sash)"
+      : " (Sturdy)";
+  if (sashOrSturdyMattered && defender.item !== "Focus Sash") abilityUsed.defender = true;
 
   return {
     rolls,
     minPercent: roundPercent(rolls[0], defenderMaxHp),
     maxPercent: roundPercent(rolls[rolls.length - 1], defenderMaxHp),
-    koChanceText: describeKoChance(rolls, defenderCurrentHp),
+    koChanceText: koChanceText + sashOrSturdyNote,
     hitCount,
     attackStatKey,
     defenseStatKey,

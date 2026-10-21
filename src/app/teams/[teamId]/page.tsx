@@ -22,6 +22,9 @@ import { computeTeamUsageStats } from "@/lib/tournament";
 import { isTeamArchived } from "@/lib/team";
 import { parseTeam } from "@/lib/parseTeam";
 import { speciesIdentity } from "@/lib/teamIdentity";
+import { calcMatchesSearch } from "@/lib/teamCalcs";
+import { parseSearchTerms } from "@/lib/pokemonMatchesQuery";
+import { SearchField } from "@/components/SearchField";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 
@@ -69,6 +72,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const selectedRegulationId = team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? "";
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
+  // Calcs tab: narrows every Pokémon's calcs to the ones against the searched Pokémon.
+  const [calcQuery, setCalcQuery] = useState("");
+  const calcSearchTerms = parseSearchTerms(calcQuery);
   // The paste in the post's edit form, while editing — the Pokémon cards
   // preview it live instead of showing the saved roster.
   const [draftPaste, setDraftPaste] = useState<string | null>(null);
@@ -323,23 +329,36 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               with its saved calcs underneath. Columns are independent, so
               expanding one card or one list never stretches the others. */}
           {activeTab === "calcs" && (
-            <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-              {team.pokemon.map((mon, index) => (
-                <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">
-                  <PokemonReportCard pokemon={mon} collapsible />
-                  <PokemonCalcsBox
-                    calcs={(team.calcs ?? []).filter(
-                      (calc) => calc.species === speciesIdentity(mon.species),
-                    )}
-                    onRemoveCalc={(id) =>
-                      updateTeam(teamId, (t) => ({
-                        ...t,
-                        calcs: (t.calcs ?? []).filter((calc) => calc.id !== id),
-                      }))
-                    }
-                  />
-                </div>
-              ))}
+            <div className="flex flex-col gap-3">
+              <SearchField
+                query={calcQuery}
+                onQueryChange={setCalcQuery}
+                placeholder={t.pokemonCard.searchCalcsPlaceholder}
+                ariaLabel={t.pokemonCard.searchCalcs}
+                className="w-full sm:max-w-xs"
+              />
+              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+                {team.pokemon.map((mon, index) => (
+                  <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">
+                    <PokemonReportCard pokemon={mon} collapsible />
+                    <PokemonCalcsBox
+                      searching={calcSearchTerms.length > 0}
+                      calcs={(team.calcs ?? []).filter(
+                        (calc) =>
+                          calc.species === speciesIdentity(mon.species) &&
+                          (calcSearchTerms.length === 0 ||
+                            calcMatchesSearch(calc, calcSearchTerms, pokemonText.species)),
+                      )}
+                      onRemoveCalc={(id) =>
+                        updateTeam(teamId, (t) => ({
+                          ...t,
+                          calcs: (t.calcs ?? []).filter((calc) => calc.id !== id),
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

@@ -10,6 +10,7 @@ import { useCalcSets, type SavedSetRef } from "@/hooks/useCalcSets";
 import { readDefenderDraft, writeDefenderDraft } from "./defenderDraftStore";
 import { MobileRosterBar } from "./MobileRosterBar";
 import { speciesIdentity } from "@/lib/teamIdentity";
+import { hasSavedCalc } from "@/lib/teamCalcs";
 import { generateId } from "@/lib/id";
 import { ensureSidebarSelection, removeSidebarEntry } from "@/lib/calcSidebar";
 import { calculateDamage, moveHitRange } from "@/lib/damage/calculateDamage";
@@ -981,9 +982,17 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
       : ourIndex === -1 || !attackerPokemon
         ? { disabledReason: t.calc.saveCalcNotOnTeam(activeTeam.name) }
         : {
+            isSaved: (calcText: string) =>
+              hasSavedCalc(
+                activeTeam.calcs ?? [],
+                speciesIdentity(activeTeam.pokemon[ourIndex].species),
+                calcText,
+              ),
             onSave: (calcText: string) => {
               const side: TeamCalcSide = selectedMove?.side === "defender" ? "defensive" : "offensive";
               const species = speciesIdentity(activeTeam.pokemon[ourIndex].species);
+              // Saving the same calc again would only duplicate it.
+              if (hasSavedCalc(activeTeam.calcs ?? [], species, calcText)) return;
               updateTeam(activeTeam.id, (team) => ({
                 ...team,
                 calcs: [...(team.calcs ?? []), { id: generateId(), text: calcText, species, side }],
@@ -1268,7 +1277,9 @@ interface ResultPanelProps {
   saveCalc: SaveCalcTarget;
 }
 
-type SaveCalcTarget = { onSave: (text: string) => void } | { disabledReason: string };
+type SaveCalcTarget =
+  | { onSave: (text: string) => void; isSaved: (text: string) => boolean }
+  | { disabledReason: string };
 
 /** The compact middle column between the two move lists — mirrors the reference calculator's layout of putting the result readout between both Pokémon's move lists instead of below them. */
 function ResultPanel({
@@ -1303,6 +1314,9 @@ function ResultPanel({
     calcLabel && result
       ? `${calcLabel}: ${result.rolls[0]}-${result.rolls[result.rolls.length - 1]} (${result.minPercent} - ${result.maxPercent}%) -- ${result.koChanceText}`
       : null;
+
+  // This exact calc is already on the team: the button shows a check instead of saving it twice.
+  const alreadySaved = "onSave" in saveCalc && !!resultLine && saveCalc.isSaved(resultLine);
 
   async function copyResultLine() {
     if (!resultLine) return;
@@ -1359,12 +1373,18 @@ function ResultPanel({
                       onClick={() => {
                         if ("onSave" in saveCalc && resultLine) saveCalc.onSave(resultLine);
                       }}
-                      disabled={!("onSave" in saveCalc)}
-                      aria-label={t.calc.saveCalc}
-                      title={"onSave" in saveCalc ? t.calc.saveCalc : saveCalc.disabledReason}
+                      disabled={!("onSave" in saveCalc) || alreadySaved}
+                      aria-label={alreadySaved ? t.calc.calcAlreadySaved : t.calc.saveCalc}
+                      title={
+                        !("onSave" in saveCalc)
+                          ? saveCalc.disabledReason
+                          : alreadySaved
+                            ? t.calc.calcAlreadySaved
+                            : t.calc.saveCalc
+                      }
                       className="flex h-8 w-8 shrink-0 disabled:cursor-not-allowed disabled:opacity-40 items-center justify-center rounded-md border border-zinc-200 bg-white text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:bg-zinc-100 dark:hover:bg-zinc-200"
                     >
-                      <Icon name={IconName.BookmarkAdd} size={16} />
+                      <Icon name={alreadySaved ? IconName.Check : IconName.BookmarkAdd} size={16} />
                     </button>
                   </div>
                 </div>
