@@ -25,6 +25,7 @@ import { speciesIdentity } from "@/lib/teamIdentity";
 import { calcMatchesSearch } from "@/lib/teamCalcs";
 import { parseSearchTerms } from "@/lib/pokemonMatchesQuery";
 import { SearchField } from "@/components/SearchField";
+import { Modal } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 
@@ -74,6 +75,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const [isSharing, setIsSharing] = useState(false);
   // Calcs tab: narrows every Pokémon's calcs to the ones against the searched Pokémon.
   const [calcQuery, setCalcQuery] = useState("");
+  const [isConfirmingClearCalcs, setIsConfirmingClearCalcs] = useState(false);
   const calcSearchTerms = parseSearchTerms(calcQuery);
   // The paste in the post's edit form, while editing — the Pokémon cards
   // preview it live instead of showing the saved roster.
@@ -330,13 +332,55 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               expanding one card or one list never stretches the others. */}
           {activeTab === "calcs" && (
             <div className="flex flex-col gap-3">
-              <SearchField
-                query={calcQuery}
-                onQueryChange={setCalcQuery}
-                placeholder={t.pokemonCard.searchCalcsPlaceholder}
-                ariaLabel={t.pokemonCard.searchCalcs}
-                className="w-full sm:max-w-xs"
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <SearchField
+                  query={calcQuery}
+                  onQueryChange={setCalcQuery}
+                  placeholder={t.pokemonCard.searchCalcsPlaceholder}
+                  ariaLabel={t.pokemonCard.searchCalcs}
+                  className="min-w-0 flex-1 sm:max-w-xs"
+                />
+                {(team.calcs ?? []).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsConfirmingClearCalcs(true)}
+                    className="ml-auto flex items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-red-300 hover:text-red-600"
+                  >
+                    <Icon name={IconName.Delete} size={16} />
+                    {t.pokemonCard.clearCalcs}
+                  </button>
+                )}
+              </div>
+              {isConfirmingClearCalcs && (
+                <Modal
+                  onClose={() => setIsConfirmingClearCalcs(false)}
+                  labelledBy="confirm-clear-calcs-title"
+                >
+                  <h2 id="confirm-clear-calcs-title" className="mb-2 text-lg font-semibold text-zinc-900">
+                    {t.pokemonCard.confirmClearCalcsTitle((team.calcs ?? []).length)}
+                  </h2>
+                  <p className="mb-4 text-sm text-zinc-600">{t.pokemonCard.confirmClearCalcsBody}</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateTeam(teamId, (t) => ({ ...t, calcs: [] }));
+                        setIsConfirmingClearCalcs(false);
+                      }}
+                      className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
+                    >
+                      {t.pokemonCard.clearCalcs}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmingClearCalcs(false)}
+                      className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+                    >
+                      {t.common.cancel}
+                    </button>
+                  </div>
+                </Modal>
+              )}
               <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
                 {team.pokemon.map((mon, index) => (
                   <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">

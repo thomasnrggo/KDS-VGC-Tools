@@ -7,6 +7,12 @@ holds the reasoning behind each change; this file is the short "what and when".
 Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**, **Changed**,
 **Fixed**, **Removed** under each date.
 
+## 2026-10-22
+
+### Added
+- A "Clear all calcs" button on the team page's Calcs tab removes every saved calc from the team,
+  after a confirmation.
+
 ## 2026-10-21
 
 ### Added
