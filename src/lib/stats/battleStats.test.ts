@@ -50,6 +50,16 @@ describe("computeBattleStat", () => {
     expect(computeBattleStat("spe", context(garchomp, { paralyzed: true })).value).toBe(84);
   });
 
+  it("doubles Speed for Unburden only once it's marked active", () => {
+    const unburden = { ...garchomp, ability: "Unburden" };
+    expect(computeBattleStat("spe", context(unburden)).value).toBe(169);
+    const active = computeBattleStat("spe", context(unburden, { abilityActive: true }));
+    expect(active.value).toBe(338);
+    expect(active.sources).toEqual([{ kind: "ability", name: "Unburden" }]);
+    // The toggle does nothing for an ability it doesn't apply to.
+    expect(computeBattleStat("spe", context(garchomp, { abilityActive: true })).value).toBe(169);
+  });
+
   it("applies Choice Band to Attack only", () => {
     const banded = context({ ...garchomp, item: "Choice Band" });
     expect(computeBattleStat("atk", banded).value).toBe(Math.floor((182 * 3) / 2));

@@ -11,6 +11,7 @@ import {
   type BattleStatSource,
 } from "@/lib/stats/battleStats";
 import { REGULATIONS } from "@/data/regulations";
+import { ACTIVATED_SPEED_DOUBLING_ABILITIES } from "@/constants";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
@@ -73,6 +74,8 @@ export interface PokemonBattleState {
   critMoves: string[];
   /** Per move: its Effect count (EFFECT_MOVES) or, for a multi-hit move, how many hits land. */
   moveCounts: Record<string, number>;
+  /** An ability that needs something to happen first is on (Unburden: its item is gone). */
+  abilityActive?: boolean;
 }
 
 export const DEFAULT_BATTLE_STATE: PokemonBattleState = {
@@ -321,6 +324,7 @@ export function RosterPokemonPicker({
     weather,
     terrain,
     tailwind,
+    abilityActive: battleState.abilityActive,
   };
 
   function describeSource(source: BattleStatSource): string {
@@ -751,6 +755,21 @@ export function RosterPokemonPicker({
                     className="w-full accent-zinc-600"
                   />
                 </label>
+                {effectiveAbility && ACTIVATED_SPEED_DOUBLING_ABILITIES.includes(effectiveAbility) && (
+                  <button
+                    type="button"
+                    onClick={() => updateBattleState({ abilityActive: !battleState.abilityActive })}
+                    aria-pressed={!!battleState.abilityActive}
+                    title={t.calcPanel.abilityActiveHint(text.ability(effectiveAbility))}
+                    className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                      battleState.abilityActive
+                        ? "border-zinc-600 bg-zinc-600 text-white dark:bg-zinc-400"
+                        : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
+                    }`}
+                  >
+                    {t.calcPanel.abilityActive(text.ability(effectiveAbility))}
+                  </button>
+                )}
                 <label className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-zinc-600">
                   {t.calcPanel.status}
                   <select

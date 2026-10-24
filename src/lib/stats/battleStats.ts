@@ -1,6 +1,6 @@
 import { ABILITY_DAMAGE_MODIFIERS, type AbilityDamageModifierSide } from "@/constants/abilityDamageModifiers";
 import { ITEM_DAMAGE_MODIFIERS } from "@/constants/itemDamageModifiers";
-import { WEATHER_SPEED_DOUBLING_ABILITIES } from "@/constants";
+import { ACTIVATED_SPEED_DOUBLING_ABILITIES, WEATHER_SPEED_DOUBLING_ABILITIES } from "@/constants";
 import { FIXED_POINT, applyStatStage, chainMods, pokeRound } from "@/lib/damage/calculateDamage";
 import type { DamageCalcOptions, FinalStats, StatKey } from "@/types";
 
@@ -32,6 +32,8 @@ export interface BattleStatContext {
   weather?: DamageCalcOptions["weather"];
   terrain?: DamageCalcOptions["terrain"];
   tailwind?: boolean;
+  /** The ability's activation toggle is on (Unburden after losing its item). */
+  abilityActive?: boolean;
 }
 
 /** Which modifier-table entries boost a stat outright: an attack-stat ("at") or defense-stat ("df") modifier tied to one category, with no move-dependent condition. */
@@ -87,7 +89,11 @@ export function computeBattleStat(stat: BattleStatKey, ctx: BattleStatContext): 
       mods.push(0x800);
       sources.push({ kind: "item", name: ctx.item });
     }
-    if (ctx.ability && ctx.weather && WEATHER_SPEED_DOUBLING_ABILITIES[ctx.weather] === ctx.ability) {
+    const activatedDoubling =
+      !!ctx.abilityActive && !!ctx.ability && ACTIVATED_SPEED_DOUBLING_ABILITIES.includes(ctx.ability);
+    const weatherDoubling =
+      !!ctx.ability && !!ctx.weather && WEATHER_SPEED_DOUBLING_ABILITIES[ctx.weather] === ctx.ability;
+    if (ctx.ability && (activatedDoubling || weatherDoubling)) {
       mods.push(0x2000);
       sources.push({ kind: "ability", name: ctx.ability });
     }

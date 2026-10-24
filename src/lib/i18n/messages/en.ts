@@ -744,6 +744,8 @@ export const en = {
     remove: (name: string) => `Remove ${name}`,
     addBlank: (side: string) => `Add a new Pokémon to ${side}`,
     choosePokemon: "Choose a Pokémon",
+    abilityActive: (ability: string) => `${ability} active`,
+    abilityActiveHint: (ability: string) => `Turn on once ${ability} has activated (its item is gone): Speed ×2`,
     battleStatHint: (sources: string) => `In battle, with ${sources}`,
     blankSet: "Blank Set",
     mySetTag: "Mine",

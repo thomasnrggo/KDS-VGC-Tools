@@ -745,6 +745,8 @@ export const es: Messages = {
     remove: (name) => `Quitar ${name}`,
     addBlank: (side) => `Añadir un Pokémon nuevo a ${side}`,
     choosePokemon: "Elige un Pokémon",
+    abilityActive: (ability) => `${ability} activa`,
+    abilityActiveHint: (ability) => `Actívalo cuando ${ability} se haya activado (ya no tiene objeto): Velocidad ×2`,
     battleStatHint: (sources) => `En combate, con ${sources}`,
     blankSet: "Set en blanco",
     mySetTag: "Mío",

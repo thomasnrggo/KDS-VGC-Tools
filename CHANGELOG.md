@@ -7,6 +7,16 @@ holds the reasoning behind each change; this file is the short "what and when".
 Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**, **Changed**,
 **Fixed**, **Removed** under each date.
 
+## 2026-10-23
+
+### Added
+- Damage Calculator: an "Unburden active" toggle next to Status for a Pokémon with Unburden; on, it
+  doubles the Speed shown in the panel (for once its item is gone).
+
+### Fixed
+- Female Indeedee is available in Regulation M-C (the Damage Calculator's Pokémon search and
+  anywhere else the regulation's Pokémon are listed); only the male form was there.
+
 ## 2026-10-22
 
 ### Added

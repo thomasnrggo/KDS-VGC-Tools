@@ -14,7 +14,7 @@
  * regulationMA.ts has to M-B, just additive instead of subtractive).
  *
  * Species: the page's "Newly Useable Pokémon" table lists 29 rows covering
- * 24 new base species.json keys (below) plus 5 rows that are just a new
+ * 24 new base species.json keys (below, plus "indeedee-female") and 5 rows that are just a new
  * Mega form of a species already legal in M-B (Absol, Garchomp, Lucario —
  * see Mega Stones note) — those 5 don't add a new speciesKeys entry, since
  * this app (like M-B) grants Mega access purely through holding the right
@@ -22,10 +22,12 @@
  * reading the table literally rather than guessing: Farfetch'd (icon 083,
  * Normal/Flying types) and Mr. Mime (icon 122, Psychic/Fairy types) are each
  * a single row matching their original (non-Galar) typing, so they resolve
- * to "farfetchd"/"mr-mime", not the Galar forms; Toxtricity, Indeedee, and
+ * to "farfetchd"/"mr-mime", not the Galar forms; Toxtricity and
  * Squawkabilly each get exactly one row with no form-specific icon suffix,
- * so only their base species.json key is added (not "toxtricity-low-key",
- * "indeedee-female", or the plumage-color variants) — Persian is the one
+ * so only their base species.json key is added (not "toxtricity-low-key" or
+ * the plumage-color variants). Indeedee's row covers both genders, which
+ * differ in stats and ability, so "indeedee-female" is added alongside
+ * "indeedee" (like M-A/M-B's "basculegion-female") — Persian is the one
  * species with two distinct rows (icon 053 and 053-a), so both "persian"
  * and "persian-alola" are added. regulationMC.test.ts verifies every key
  * below resolves in species.json/baseStats.json/speciesTypes.json and
@@ -80,6 +82,7 @@ const REGULATION_M_C_NEW_SPECIES_KEYS: string[] = [
   "sirfetchd",
   "pincurchin",
   "indeedee",
+  "indeedee-female",
   "pawmot",
   "arboliva",
   "squawkabilly",

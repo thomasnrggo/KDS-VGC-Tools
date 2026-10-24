@@ -18,9 +18,9 @@ const BASE_STATS_KEYS = new Set(Object.keys(baseStatsData));
 const SPECIES_TYPES_KEYS = new Set(Object.keys(speciesTypesData));
 
 describe("REGULATION_M_C_SPECIES_KEYS", () => {
-  it("has 259 unique entries (M-B's 235 plus 24 new to M-C)", () => {
-    expect(REGULATION_M_C_SPECIES_KEYS).toHaveLength(259);
-    expect(new Set(REGULATION_M_C_SPECIES_KEYS).size).toBe(259);
+  it("has 260 unique entries (M-B's 235 plus 25 new to M-C)", () => {
+    expect(REGULATION_M_C_SPECIES_KEYS).toHaveLength(260);
+    expect(new Set(REGULATION_M_C_SPECIES_KEYS).size).toBe(260);
   });
 
   it("is a strict superset of REGULATION_M_B_SPECIES_KEYS", () => {
@@ -65,6 +65,7 @@ describe("REGULATION_M_C_SPECIES_KEYS", () => {
       "sirfetchd",
       "pincurchin",
       "indeedee",
+      "indeedee-female",
       "pawmot",
       "arboliva",
       "squawkabilly",
