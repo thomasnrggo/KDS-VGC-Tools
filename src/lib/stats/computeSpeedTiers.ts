@@ -2,7 +2,11 @@ import abilitiesData from "@/data/abilities.json";
 import { calculateFinalStats, resolveBaseStats } from "./calculateFinalStats";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
-import { WEATHER_SPEED_DOUBLING_ABILITIES, MEGA_FORM_ABILITY_BY_FORM_KEY } from "@/constants";
+import {
+  WEATHER_SPEED_DOUBLING_ABILITIES,
+  MEGA_FORM_ABILITY_BY_FORM_KEY,
+  SPECIES_ALIASES,
+} from "@/constants";
 import type { SpeciesAbility } from "@/types";
 
 const ABILITIES_DATA = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
@@ -100,10 +104,15 @@ function megaDisplayName(speciesName: string, stoneName: string): string {
  * as a plain (non-Mega) row — there's no per-row "chosen ability" here, this
  * is a species-wide reference table, not one build.
  */
-function candidateAbilities(speciesKey: string, speciesName: string, item: string | undefined): string[] {
+function candidateAbilities(
+  speciesKey: string,
+  speciesName: string,
+  item: string | undefined,
+): string[] {
   if (item) {
     for (const key of candidateFormKeys(speciesName, item)) {
-      const override = MEGA_FORM_ABILITY_BY_FORM_KEY[key];
+      const override =
+        MEGA_FORM_ABILITY_BY_FORM_KEY[key] ?? MEGA_FORM_ABILITY_BY_FORM_KEY[SPECIES_ALIASES[key]];
       if (override) return [override];
     }
   }
@@ -122,11 +131,7 @@ function findSpecialCondition(
   return undefined;
 }
 
-function buildRow(
-  speciesKey: string,
-  speciesName: string,
-  item: string | undefined,
-): SpeedTierRow {
+function buildRow(speciesKey: string, speciesName: string, item: string | undefined): SpeedTierRow {
   const isMega = item !== undefined;
   const maxSpeed = speedFor(speciesName, POSITIVE_SPEED_NATURE, MAX_STAT_POINTS, item);
   const specialCondition = findSpecialCondition(speciesKey, speciesName, item);
@@ -143,8 +148,12 @@ function buildRow(
     neutral32: speedFor(speciesName, NEUTRAL_NATURE, MAX_STAT_POINTS, item),
     neutral0: speedFor(speciesName, NEUTRAL_NATURE, 0, item),
     minSpeed: speedFor(speciesName, NEGATIVE_SPEED_NATURE, 0, item),
-    maxScarf: isMega ? null : speedFor(speciesName, POSITIVE_SPEED_NATURE, MAX_STAT_POINTS, CHOICE_SCARF),
-    neutral32Scarf: isMega ? null : speedFor(speciesName, NEUTRAL_NATURE, MAX_STAT_POINTS, CHOICE_SCARF),
+    maxScarf: isMega
+      ? null
+      : speedFor(speciesName, POSITIVE_SPEED_NATURE, MAX_STAT_POINTS, CHOICE_SCARF),
+    neutral32Scarf: isMega
+      ? null
+      : speedFor(speciesName, NEUTRAL_NATURE, MAX_STAT_POINTS, CHOICE_SCARF),
     special: specialCondition ? { ...specialCondition, value: maxSpeed * 2 } : null,
   };
 }

@@ -20,6 +20,10 @@ starting with the experience on a phone.
   in a new tab), on the same line as the credit (wrapping under it on phones).
 
 ### Changed
+- Damage Calculator: Fairy Aura turns on by itself when Mega Floette comes onto either side (picked,
+  switched to in the roster, loaded with a team, or Mega toggled on), like weather abilities set
+  the weather. Turning Mega off clears it again unless the other side's Pokémon has Fairy Aura too;
+  it can still be switched off by hand.
 - Damage Calculator on wide screens: smaller "X vs Y" sprites at the top of the result card (48px,
   down from 80px).
 - The calculator's menu link reads "Damage Calculator" ("Calculadora de daño") instead of "Damage
@@ -86,6 +90,8 @@ starting with the experience on a phone.
   browser's native dropdown (on phones, the same full-screen sheet).
 
 ### Fixed
+- Mega Floette written as "Floette-Eternal" (how Showdown exports it) got its base ability instead
+  of Fairy Aura in the calculator and Speed Tiers.
 - Signed in, the Matchup Planner (and My Teams, Tournaments, the header's team and the calculator's
   saved sets) no longer show your list and then replace it a moment later. They used to load the
   copy saved on this device before sign-in finished, then the synced copy. They now wait for

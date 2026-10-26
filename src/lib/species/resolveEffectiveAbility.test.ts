@@ -12,4 +12,14 @@ describe("resolveEffectiveAbility", () => {
     expect(resolveEffectiveAbility("Garchomp", "Garchompite", "Rough Skin")).toBe("Sand Force");
     expect(resolveEffectiveAbility("Garchomp", undefined, "Rough Skin")).toBe("Rough Skin");
   });
+
+  it("finds Mega Floette's Fairy Aura under Showdown's Floette-Eternal name", () => {
+    expect(resolveEffectiveAbility("Floette-Eternal", "Floettite", "Flower Veil")).toBe(
+      "Fairy Aura",
+    );
+    expect(resolveEffectiveAbility("Floette", "Floettite", "Flower Veil")).toBe("Fairy Aura");
+    expect(resolveEffectiveAbility("Floette-Eternal", undefined, "Flower Veil")).toBe(
+      "Flower Veil",
+    );
+  });
 });

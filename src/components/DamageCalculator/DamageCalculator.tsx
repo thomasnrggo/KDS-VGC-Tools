@@ -280,13 +280,20 @@ function toEffectivePokemon(
 }
 
 /** A Pokémon with a weather-setting ability (Drought, Drizzle, Sand Stream, Snow Warning) auto-sets the Field's weather when selected — doesn't clear it when switching to a Pokémon without one, only sets it forward. */
+/** The ability a Pokémon has on the field: its Mega form's when the Mega toggle is on. */
+function resolveFieldAbility(
+  pokemon: ParsedPokemon | null | undefined,
+  mega: boolean,
+): string | undefined {
+  if (!pokemon) return undefined;
+  return resolveEffectiveAbility(pokemon.species, mega ? pokemon.item : undefined, pokemon.ability);
+}
+
 function resolveAutoWeather(
   pokemon: ParsedPokemon | null | undefined,
   mega: boolean,
 ): DamageCalcOptions["weather"] | undefined {
-  if (!pokemon) return undefined;
-  const item = mega ? pokemon.item : undefined;
-  const ability = resolveEffectiveAbility(pokemon.species, item, pokemon.ability);
+  const ability = resolveFieldAbility(pokemon, mega);
   return ability ? WEATHER_SETTING_ABILITIES[ability] : undefined;
 }
 
@@ -368,6 +375,28 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
   const [weather, setWeather] = useState<DamageCalcOptions["weather"]>(undefined);
   const [terrain, setTerrain] = useState<DamageCalcOptions["terrain"]>(undefined);
   const [fairyAura, setFairyAura] = useState(false);
+
+  // What a Pokémon's ability sets as it comes in (picked, switched to, loaded,
+  // given its Mega Stone or Mega Evolved): the weather (Drizzle, Mega
+  // Charizard Y's Drought…) and Fairy Aura (Mega Floette). Only ever turns
+  // them on — they can still be turned off by hand.
+  function applyEntryAbility(pokemon: ParsedPokemon | null | undefined, mega: boolean) {
+    const autoWeather = resolveAutoWeather(pokemon, mega);
+    if (autoWeather) setWeather(autoWeather);
+    if (resolveFieldAbility(pokemon, mega) === "Fairy Aura") setFairyAura(true);
+  }
+
+  // Turning Mega off takes Fairy Aura with it when the Mega form was its only
+  // source — unless the other side's Pokémon has it too.
+  function clearMegaFairyAura(
+    pokemon: ParsedPokemon | null | undefined,
+    otherSideHasAura: boolean,
+  ) {
+    const auraFromMega =
+      resolveFieldAbility(pokemon, true) === "Fairy Aura" &&
+      resolveFieldAbility(pokemon, false) !== "Fairy Aura";
+    if (auraFromMega && !otherSideHasAura) setFairyAura(false);
+  }
   const [gravity, setGravity] = useState(false);
   const [isFieldOpen, setIsFieldOpen] = useState(false);
   // Below lg the two sides are tabs: only the open side's moves and panel show.
@@ -394,8 +423,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
       const seeded = activeTeam.pokemon.map((pokemon) => ({ pokemon, isCustom: false }));
       setAttackerSidebar(seeded);
       setAttackerSelectedIndex(0);
-      const autoWeather = resolveAutoWeather(seeded[0]?.pokemon, attackerMega);
-      if (autoWeather) setWeather(autoWeather);
+      applyEntryAbility(seeded[0]?.pokemon, attackerMega);
     }
   }
 
@@ -642,8 +670,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(attackerSidebar[index]?.pokemon, attackerMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(attackerSidebar[index]?.pokemon, attackerMega);
   }
 
   // Adds a species from the sidebar's own "+" tile — appends a new custom
@@ -665,8 +692,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(newPokemon, attackerMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(newPokemon, attackerMega);
   }
 
   // The main species search's onSelect target once a Pokémon is already
@@ -686,8 +712,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(newPokemon, attackerMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(newPokemon, attackerMega);
   }
 
   // The "Save" icon's action — appends a copy of whatever's currently shown
@@ -705,8 +730,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(attackerPokemon, attackerMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(attackerPokemon, attackerMega);
   }
 
   // Importing a full team paste (more than one Pokémon) replaces this side's
@@ -724,8 +748,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setAttackerBattleState(DEFAULT_BATTLE_STATE);
     setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(newSidebar[0]?.pokemon, attackerMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(newSidebar[0]?.pokemon, attackerMega);
   }
 
   function attackerRemovePokemon(index: number) {
@@ -741,11 +764,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
       setSelectedMove(null);
       setAttackerBattleState(DEFAULT_BATTLE_STATE);
       setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
-      const autoWeather = resolveAutoWeather(
-        next.sidebar[next.selectedIndex]?.pokemon,
-        attackerMega,
-      );
-      if (autoWeather) setWeather(autoWeather);
+      applyEntryAbility(next.sidebar[next.selectedIndex]?.pokemon, attackerMega);
     }
   }
 
@@ -765,11 +784,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
         i === attackerSelectedIndex ? { ...entry, pokemon: { ...entry.pokemon, item } } : entry,
       ),
     );
-    const autoWeather = resolveAutoWeather(
-      attackerPokemon ? { ...attackerPokemon, item } : undefined,
-      attackerMega,
-    );
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(attackerPokemon ? { ...attackerPokemon, item } : undefined, attackerMega);
   }
 
   function attackerMovesChange(moves: string[]) {
@@ -786,8 +801,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(defenderSidebar[index]?.pokemon, defenderMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(defenderSidebar[index]?.pokemon, defenderMega);
   }
 
   function defenderAddPokemon(newPokemon: ParsedPokemon, fromSet?: SavedSetRef) {
@@ -805,8 +819,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(newPokemon, defenderMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(newPokemon, defenderMega);
   }
 
   function defenderReplacePokemon(newPokemon: ParsedPokemon, fromSet?: SavedSetRef) {
@@ -821,8 +834,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(newPokemon, defenderMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(newPokemon, defenderMega);
   }
 
   function linkSelectedEntry(
@@ -845,8 +857,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(defenderPokemon, defenderMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(defenderPokemon, defenderMega);
   }
 
   function defenderImportTeam(pokemonList: ParsedPokemon[]) {
@@ -860,8 +871,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     setSelectedMove(null);
     setDefenderBattleState(DEFAULT_BATTLE_STATE);
     setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
-    const autoWeather = resolveAutoWeather(newSidebar[0]?.pokemon, defenderMega);
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(newSidebar[0]?.pokemon, defenderMega);
   }
 
   function defenderRemovePokemon(index: number) {
@@ -877,11 +887,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
       setSelectedMove(null);
       setDefenderBattleState(DEFAULT_BATTLE_STATE);
       setDefenderStatOverrides(DEFAULT_STAT_OVERRIDES);
-      const autoWeather = resolveAutoWeather(
-        next.sidebar[next.selectedIndex]?.pokemon,
-        defenderMega,
-      );
-      if (autoWeather) setWeather(autoWeather);
+      applyEntryAbility(next.sidebar[next.selectedIndex]?.pokemon, defenderMega);
     }
   }
 
@@ -901,11 +907,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
         i === defenderSelectedIndex ? { ...entry, pokemon: { ...entry.pokemon, item } } : entry,
       ),
     );
-    const autoWeather = resolveAutoWeather(
-      defenderPokemon ? { ...defenderPokemon, item } : undefined,
-      defenderMega,
-    );
-    if (autoWeather) setWeather(autoWeather);
+    applyEntryAbility(defenderPokemon ? { ...defenderPokemon, item } : undefined, defenderMega);
   }
 
   function defenderMovesChange(moves: string[]) {
@@ -1360,8 +1362,12 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
           mega={attackerMega}
           onMegaChange={(mega) => {
             setAttackerMega(mega);
-            const autoWeather = resolveAutoWeather(attackerPokemon, mega);
-            if (autoWeather) setWeather(autoWeather);
+            if (mega) applyEntryAbility(attackerPokemon, mega);
+            else
+              clearMegaFairyAura(
+                attackerPokemon,
+                resolveFieldAbility(defenderPokemon, defenderMega) === "Fairy Aura",
+              );
           }}
           weather={weather}
           terrain={terrain}
@@ -1403,8 +1409,12 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
           mega={defenderMega}
           onMegaChange={(mega) => {
             setDefenderMega(mega);
-            const autoWeather = resolveAutoWeather(defenderPokemon, mega);
-            if (autoWeather) setWeather(autoWeather);
+            if (mega) applyEntryAbility(defenderPokemon, mega);
+            else
+              clearMegaFairyAura(
+                defenderPokemon,
+                resolveFieldAbility(attackerPokemon, attackerMega) === "Fairy Aura",
+              );
           }}
           weather={weather}
           terrain={terrain}
