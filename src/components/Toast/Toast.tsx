@@ -10,10 +10,19 @@ import { Toaster as SonnerToaster } from "sonner";
  * green-600/red-600 this app already uses elsewhere (e.g. the Damage
  * Calculator's copy-confirmation checkmark, import error text).
  */
+// Toasts sit above whichever bar is fixed to the bottom of the screen — the
+// Damage Calculator's roster bar (--calc-bar-height, MobileRosterBar) or the
+// Matchup Planner's team bar (--mobile-bar-height, MyTeamHeader) — instead of
+// covering it. Both are 0 when there's no bar. 24px/16px are sonner's own
+// desktop/phone gaps.
+const bottomBars = "var(--calc-bar-height, 0px) + var(--mobile-bar-height, 0px)";
+
 export function Toaster() {
   return (
     <SonnerToaster
       position="bottom-right"
+      offset={{ bottom: `calc(${bottomBars} + 24px)` }}
+      mobileOffset={{ bottom: `calc(${bottomBars} + 16px)` }}
       closeButton
       toastOptions={{
         classNames: {

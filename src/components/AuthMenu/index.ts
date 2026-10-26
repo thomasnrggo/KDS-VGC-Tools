@@ -1,1 +1,1 @@
-export { AuthMenu } from "./AuthMenu";
+export { AuthMenu, GoogleLogo } from "./AuthMenu";

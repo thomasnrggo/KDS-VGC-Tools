@@ -8,7 +8,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Next.js 16.2.12 / React 19.2.4 app for planning Pokémon VGC matchups. **[PLANNING.md](./PLANNING.md) is the source of truth** for what's being built — vision, locked-in architecture decisions, data model, the Showdown-paste parsing spec, species→sprite image resolution, UI structure, and the phased roadmap. Read it before making design decisions or assuming scope; update it when a decision changes. As of the last update, all 5 roadmap phases are complete — the core app (paste team → paste opponents → plan leads/backs) works end to end; see PLANNING.md §7 for what's deferred.
 
-**[CHANGELOG.md](./CHANGELOG.md)** records what shipped and when (newest first, grouped by date). Add an entry under "Unreleased" with each user-facing change; when it's committed to main, move it under that day's date.
+**[CHANGELOG.md](./CHANGELOG.md)** records what shipped and when (newest first, grouped by version). Add an entry under "Unreleased" with each user-facing change.
+
+**Versioning:** every push to main (or merge request) is the next patch version: 0.2.0 first, then 0.2.1, 0.2.2, and so on. On each one:
+- rename CHANGELOG's "Unreleased" to `## X.Y.Z — YYYY-MM-DD`
+- bump `package.json`'s `version` (and `package-lock.json`'s, e.g. `npm version X.Y.Z --no-git-tag-version`)
+- tag the commit `vX.Y.Z` and push the tag
+
+Never bump the minor or major number (0.3, 1.0) unless the user explicitly says so. The 0.2 focus is improving and stabilizing the existing features (starting with the phone experience), not adding new ones.
 
 ## Commands
 

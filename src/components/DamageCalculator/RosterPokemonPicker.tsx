@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { parseTeam } from "@/lib/parseTeam";
+import { FLOW_ROOT } from "@/lib/fieldFlow";
 import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
 import { MAX_TOTAL_STAT_POINTS } from "@/lib/stats/calculateFinalStats";
 import {
@@ -10,12 +11,14 @@ import {
   type BattleStatContext,
   type BattleStatSource,
 } from "@/lib/stats/battleStats";
-import { REGULATIONS } from "@/data/regulations";
 import { ACTIVATED_SPEED_DOUBLING_ABILITIES } from "@/constants";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
 import { Modal } from "../Modal";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { SearchableSelect } from "../SearchableSelect";
+import { useIsPhone } from "@/hooks/useIsPhone";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
 import {
@@ -25,6 +28,7 @@ import {
   computePokemonBuild,
 } from "../PokemonEditor";
 import { PokemonSetPicker } from "./PokemonSetPicker";
+import { LoadTeamDialog } from "./LoadTeamDialog";
 import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import type { CalcSetsApi, SavedSetRef } from "@/hooks/useCalcSets";
@@ -143,7 +147,7 @@ interface RosterPokemonPickerProps {
   onAbilityChange?: (ability: string) => void;
   onItemChange?: (item: string | undefined) => void;
   onMovesChange?: (moves: string[]) => void;
-  /** Saved opponents from the Matchup Planner, for a "Load Team" picker — only passed for the Defender side (the Attacker already seeds from the header's active team), so the button only renders there. */
+  /** Your saved opponents, for "Load Team" (which can also switch to a prep group's list, see LoadTeamDialog) — only passed for the Defender side (the Attacker already seeds from the header's active team), so the button only renders there. */
   loadableOpponents?: Opponent[];
   /** Saved sets (the user's own and public ones) — listed in the species picker, and where "Save set" writes. */
   calcSets: CalcSetsApi;
@@ -179,8 +183,31 @@ export function RosterPokemonPicker({
   className = "",
 }: RosterPokemonPickerProps) {
   const t = useMessages();
+  const isPhone = useIsPhone();
   const text = usePokemonText();
-  const [isImportOpen, setIsImportOpen] = useState(false);
+  // Which import dialog is open: one Pokémon (added to the roster) or a whole team (replacing it).
+  const [importMode, setImportMode] = useState<"pokemon" | "team" | null>(null);
+  // Phones: the import/export actions live in a bottom sheet instead of a row of links.
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  // From sm up: the less-used actions in a "⋯" menu beside the inline ones.
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMoreOpen) return;
+    function handlePointerDown(event: PointerEvent) {
+      if (!moreMenuRef.current?.contains(event.target as Node)) setIsMoreOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsMoreOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMoreOpen]);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
   const [isExportTeamOpen, setIsExportTeamOpen] = useState(false);
@@ -190,6 +217,10 @@ export function RosterPokemonPicker({
   const [isSavingSet, setIsSavingSet] = useState(false);
   const selected = selectedIndex !== null ? sidebar[selectedIndex] : undefined;
   const pokemon = selected?.pokemon ?? null;
+  // What the editor's field labels and picker sheets call this side ("Garchomp move 1",
+  // "Garchomp item"): the Pokémon, not "Attacker"/"Defender", since either side can be
+  // either. `title` stays for the side-wide things (its roster, import/export).
+  const pokemonName = pokemon ? text.species(pokemon.species) : title;
 
   function submitImport() {
     const trimmed = importText.trim();
@@ -203,14 +234,14 @@ export function RosterPokemonPicker({
         setImportError(t.calcPanel.importInvalid);
         return;
       }
-      if (parsed.length === 1) {
+      if (parsed.length === 1 && importMode === "pokemon") {
         onAddPokemon(parsed[0]);
       } else {
         onImportTeam(parsed.slice(0, MAX_SIDEBAR_POKEMON));
       }
       setImportText("");
       setImportError(null);
-      setIsImportOpen(false);
+      setImportMode(null);
     } catch {
       // parseTeam only throws via parsePokemonBlock on a genuinely empty
       // block, already excluded by splitIntoBlocks — this catch is a
@@ -221,7 +252,7 @@ export function RosterPokemonPicker({
   }
 
   function closeImport() {
-    setIsImportOpen(false);
+    setImportMode(null);
     setImportText("");
     setImportError(null);
   }
@@ -271,7 +302,7 @@ export function RosterPokemonPicker({
   function loadOpponentTeam(opponent: Opponent) {
     onImportTeam(opponent.team.pokemon.slice(0, MAX_SIDEBAR_POKEMON));
     setIsLoadOpponentOpen(false);
-    toast.success(t.calcPanel.loaded(opponent.label, title));
+    toast.success(t.calcPanel.loaded(opponent.label));
   }
 
   async function copyPokemonExportText(target: ParsedPokemon) {
@@ -289,7 +320,7 @@ export function RosterPokemonPicker({
   async function copyTeamExportText() {
     try {
       await navigator.clipboard.writeText(teamExportText);
-      toast.success(t.calcPanel.copiedTeam(title, sidebar.length));
+      toast.success(t.calcPanel.copiedTeam(sidebar.length));
     } catch {
       toast.error(t.calcPanel.copyFailed);
     }
@@ -373,75 +404,198 @@ export function RosterPokemonPicker({
     onBattleStateChange({ ...battleState, ...patch });
   }
 
-  return (
-    <div className={`flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 ${className}`}>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        {title}
-      </h3>
+  // The app's own picker rather than a native select, like nature/item. On
+  // phones it sits beside the nature, label on top; above, next to HP.
+  const statusSelect = (
+    <SearchableSelect
+      options={STATUS_OPTIONS.map((status) => ({
+        id: status,
+        label: t.calcPanel.statuses[status],
+      }))}
+      value={t.calcPanel.statuses[battleState.status]}
+      onSelect={(option) => updateBattleState({ status: option.id as PokemonStatus })}
+      placeholder={t.calcPanel.statuses.Healthy}
+      skipFlow
+      ariaLabel={t.editor.fieldLabel(pokemonName, t.calcPanel.status)}
+      compact={!isPhone}
+    />
+  );
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 pb-3">
-        <span className="text-xs font-medium text-zinc-500">
-          {t.calcPanel.regulation(REGULATIONS[0].label)}
-        </span>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          {loadableOpponents && (
-            <button
-              type="button"
-              onClick={() => setIsLoadOpponentOpen(true)}
-              aria-label={t.calcPanel.loadTeamLabel(title)}
-              title={t.calcPanel.loadTeamHint}
-              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-            >
-              <Icon name={IconName.Download} size={14} />
-              {t.calcPanel.loadTeam}
-            </button>
-          )}
-          {sidebar.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setIsExportTeamOpen(true)}
-              aria-label={t.calcPanel.exportTeamLabel(title)}
-              title={t.calcPanel.exportTeamHint}
-              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-            >
-              <Icon name={IconName.ContentCopy} size={14} />
-              {t.calcPanel.exportTeam}
-            </button>
-          )}
-          {pokemon && (
-            <button
-              type="button"
-              onClick={() => copyPokemonExportText(pokemon)}
-              aria-label={t.calcPanel.exportSetLabel(title)}
-              title={t.calcPanel.exportSetHint}
-              className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-            >
-              <Icon name={IconName.ContentCopy} size={14} />
-              {t.calcPanel.exportSet}
-            </button>
-          )}
+  // The panel's import/export actions: a bottom sheet on phones (full labels); from sm
+  // up Load Team as a link on the left, the everyday Import Pokémon and Export Set as
+  // short "Import"/"Export" links on the right, and the rest in a "⋯" menu.
+  const actions: Array<{
+    key: string;
+    icon: IconName;
+    label: string;
+    hint: string;
+    onClick: () => void;
+    /** Where it sits from sm up; omitted = the "⋯" menu. */
+    placement?: "left" | "right";
+    /** Its link text from sm up, when shorter than `label`. */
+    shortLabel?: string;
+  }> = [
+    ...(loadableOpponents
+      ? [
+          {
+            key: "load",
+            placement: "left" as const,
+            icon: IconName.Download,
+            label: t.calcPanel.loadTeam,
+            hint: t.calcPanel.loadTeamHint,
+            onClick: () => setIsLoadOpponentOpen(true),
+          },
+        ]
+      : []),
+    ...(["pokemon", "team"] as const).map((mode) => ({
+      key: `import-${mode}`,
+      placement: mode === "pokemon" ? ("right" as const) : undefined,
+      shortLabel: mode === "pokemon" ? t.calcPanel.import : undefined,
+      icon: IconName.ContentPaste,
+      label: mode === "pokemon" ? t.calcPanel.importPokemon : t.calcPanel.importTeam,
+      hint: t.calcPanel.importHint,
+      onClick: () => {
+        setImportMode(mode);
+        setImportError(null);
+      },
+    })),
+    ...(pokemon
+      ? [
+          {
+            key: "export-set",
+            placement: "right" as const,
+            shortLabel: t.calcPanel.export,
+            icon: IconName.ContentCopy,
+            label: t.calcPanel.exportSet,
+            hint: t.calcPanel.exportSetHint,
+            onClick: () => void copyPokemonExportText(pokemon),
+          },
+        ]
+      : []),
+    ...(sidebar.length > 0
+      ? [
+          {
+            key: "export-team",
+            icon: IconName.ContentCopy,
+            label: t.calcPanel.exportTeam,
+            hint: t.calcPanel.exportTeamHint,
+            onClick: () => setIsExportTeamOpen(true),
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    // FLOW_ROOT: Enter in one field moves to the next (Pokémon, item, ability, Stat Points, nature, moves).
+    <div {...FLOW_ROOT} className={`flex flex-col gap-3 rounded-lg border border-zinc-200 p-3 sm:p-4 ${className}`}>
+      {/* Only for screen readers: either side can attack, so the panel is
+          known by its Pokémon (the side tabs, "X's moves"), not a role. */}
+      <h3 className="sr-only">{title}</h3>
+
+      {isPhone ? (
+        <div className="flex justify-end border-b border-zinc-200 pb-3">
           <button
             type="button"
-            onClick={() => {
-              setIsImportOpen(true);
-              setImportError(null);
-            }}
-            aria-label={t.calcPanel.importLabel(title)}
-            title={t.calcPanel.importHint}
+            onClick={() => setIsActionsOpen(true)}
+            aria-haspopup="dialog"
             className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
           >
-            <Icon name={IconName.ContentPaste} size={14} />
-            {t.calcPanel.import}
+            <Icon name={IconName.SwapVert} size={14} />
+            {t.calcPanel.importExport}
+            <Icon name={IconName.ExpandMore} size={14} />
           </button>
+          <Drawer open={isActionsOpen} onOpenChange={setIsActionsOpen} showSwipeHandle>
+            <DrawerContent>
+              <DrawerHeader>
+                <DrawerTitle>{t.calcPanel.importExport}</DrawerTitle>
+              </DrawerHeader>
+              <div className="flex flex-col gap-1 p-4 pt-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                {actions.map((action) => (
+                  <button
+                    key={action.key}
+                    type="button"
+                    onClick={() => {
+                      setIsActionsOpen(false);
+                      action.onClick();
+                    }}
+                    className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-left text-base text-zinc-800 hover:bg-zinc-100"
+                  >
+                    <Icon name={action.icon} size={20} className="text-zinc-500" />
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 border-b border-zinc-200 pb-3">
+          {actions
+            .filter((action) => action.placement)
+            .map((action) => (
+              <button
+                key={action.key}
+                type="button"
+                onClick={action.onClick}
+                title={action.hint}
+                aria-label={action.label}
+                className={`flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700 ${
+                  action.placement === "left" ? "mr-auto" : ""
+                }`}
+              >
+                <Icon name={action.icon} size={14} />
+                {action.shortLabel ?? action.label}
+              </button>
+            ))}
+          <div ref={moreMenuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsMoreOpen((open) => !open)}
+              aria-haspopup="menu"
+              aria-expanded={isMoreOpen}
+              aria-label={t.calcPanel.moreActions}
+              title={t.calcPanel.moreActions}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+            >
+              <Icon name={IconName.MoreVert} size={16} />
+            </button>
+            {isMoreOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-20 mt-1 flex w-48 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+              >
+                {actions
+                  .filter((action) => !action.placement)
+                  .map((action) => (
+                    <button
+                      key={action.key}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setIsMoreOpen(false);
+                        action.onClick();
+                      }}
+                      title={action.hint}
+                      className="flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
+                    >
+                      <Icon name={action.icon} size={16} className="text-zinc-500" />
+                      {action.label}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-      {isImportOpen && (
-        <Modal onClose={closeImport} labelledBy={importModalTitleId}>
+      {importMode && (
+        <Modal onClose={closeImport} labelledBy={importModalTitleId} fullScreenOnPhone>
           <h2 id={importModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            {t.calcPanel.importTitle(title)}
+            {importMode === "pokemon" ? t.calcPanel.importPokemon : t.calcPanel.importTeam}
           </h2>
-          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.importIntro}</p>
+          <p className="mb-4 text-sm text-zinc-600">
+            {importMode === "pokemon" ? t.calcPanel.importPokemonIntro : t.calcPanel.importTeamIntro}
+          </p>
           <textarea
             value={importText}
             onChange={(event) => {
@@ -452,9 +606,10 @@ export function RosterPokemonPicker({
               "Charizard @ Charizardite Y\nAbility: Blaze\nEVs: 17 HP / 25 Def / 11 SpA / 13 Spe\nModest Nature\n- Heat Wave\n- Weather Ball\n- Solar Beam\n- Protect"
             }
             rows={12}
-            autoFocus
+            // Not on phones: the keyboard would cover the sheet, and pasting doesn't need it.
+            autoFocus={!isPhone}
             aria-label={t.calcPanel.importTextLabel(title)}
-            className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="min-h-0 w-full flex-1 resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
           {importError && (
             <p role="alert" className="mt-2 text-sm text-red-600">
@@ -481,42 +636,12 @@ export function RosterPokemonPicker({
       )}
 
       {isLoadOpponentOpen && loadableOpponents && (
-        <Modal onClose={() => setIsLoadOpponentOpen(false)} labelledBy={loadOpponentModalTitleId}>
-          <h2 id={loadOpponentModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            {t.calcPanel.loadTitle(title)}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.loadIntro}</p>
-          {loadableOpponents.length === 0 ? (
-            <p className="text-sm text-zinc-600">
-              {t.calcPanel.noOpponents}
-            </p>
-          ) : (
-            <div className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
-              {loadableOpponents.map((opponent) => (
-                <button
-                  key={opponent.id}
-                  type="button"
-                  onClick={() => loadOpponentTeam(opponent)}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-left hover:bg-zinc-100"
-                >
-                  <span className="truncate text-sm font-medium text-zinc-900">{opponent.label}</span>
-                  <span className="shrink-0 text-xs text-zinc-500">
-                    {t.calcPanel.pokemonCount(opponent.team.pokemon.length)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setIsLoadOpponentOpen(false)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
-              Cancel
-            </button>
-          </div>
-        </Modal>
+        <LoadTeamDialog
+          opponents={loadableOpponents}
+          onLoad={loadOpponentTeam}
+          onClose={() => setIsLoadOpponentOpen(false)}
+          labelledBy={loadOpponentModalTitleId}
+        />
       )}
 
       {saveSetDraft && pokemon && (
@@ -591,9 +716,9 @@ export function RosterPokemonPicker({
       )}
 
       {isExportTeamOpen && (
-        <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId}>
+        <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId} fullScreenOnPhone>
           <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            {t.calcPanel.exportTitle(title)}
+            {t.calcPanel.exportTeam}
           </h2>
           <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.exportIntro(sidebar.length)}</p>
           <textarea
@@ -602,7 +727,7 @@ export function RosterPokemonPicker({
             rows={12}
             onFocus={(event) => event.target.select()}
             aria-label={t.calcPanel.exportTextLabel(title)}
-            className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="min-h-0 w-full flex-1 resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
           />
           <div className="mt-4 flex gap-2">
             <button
@@ -628,7 +753,7 @@ export function RosterPokemonPicker({
         <div className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex items-center gap-2">
             <PokemonSetPicker
-              title={title}
+              title={pokemonName}
               pokemon={pokemon}
               calcSets={calcSets}
               onSelect={(newPokemon, fromSet) => {
@@ -690,7 +815,7 @@ export function RosterPokemonPicker({
           </div>
 
           <PokemonEditor
-            title={title}
+            title={pokemonName}
             pokemon={pokemon}
             mega={mega}
             statOverrides={statOverrides}
@@ -731,6 +856,14 @@ export function RosterPokemonPicker({
             ]}
             // The stat screen's Speed, without its item — the Battle column
             // adds Choice Scarf/Iron Ball with everything else.
+            besideNature={
+              isPhone && (
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-[11px] font-medium text-zinc-500">{t.calcPanel.status}</span>
+                  {statusSelect}
+                </div>
+              )
+            }
             renderFinalCell={(stat, value) =>
               stat === "spe" ? (finalStats?.speedBeforeItem ?? value) : value
             }
@@ -770,24 +903,12 @@ export function RosterPokemonPicker({
                     {t.calcPanel.abilityActive(text.ability(effectiveAbility))}
                   </button>
                 )}
-                <label className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-zinc-600">
-                  {t.calcPanel.status}
-                  <select
-                    value={battleState.status}
-                    onChange={(event) =>
-                      updateBattleState({
-                        status: event.target.value as PokemonStatus,
-                      })
-                    }
-                    className="rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                  >
-                    {STATUS_OPTIONS.map((status) => (
-                      <option key={status} value={status}>
-                        {t.calcPanel.statuses[status]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {!isPhone && (
+                  <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-zinc-600">
+                    <span>{t.calcPanel.status}</span>
+                    <div className="w-28">{statusSelect}</div>
+                  </div>
+                )}
               </div>
             )}
           </PokemonEditor>

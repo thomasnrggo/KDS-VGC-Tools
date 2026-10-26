@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { PokemonSprite } from "../PokemonSprite";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 import { useMessages } from "@/hooks/useLanguage";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
+import { useIsPhone } from "@/hooks/useIsPhone";
+import { FLOW_FIELD, focusNextFlowField } from "@/lib/fieldFlow";
+import { PickerSheet, pickerSheetSearchClassName } from "../PickerSheet";
 
 export interface SearchableSelectOption {
   /** Stable key AND the value handed back to onSelect. */
@@ -31,11 +34,31 @@ interface SearchableSelectProps {
   value?: string;
   /** Smaller padding/font size for tight inline contexts (e.g. the ability/nature row) — same behavior, just sized to sit next to other small controls instead of taking a full-width form row. */
   compact?: boolean;
+  /**
+   * For narrow grid cells (the phone's 2×2 moves): on phones a long label
+   * wraps onto two lines instead of being cut off, and clearing moves from
+   * the inline "×" into a "Remove" row at the top of the sheet.
+   */
+  narrow?: boolean;
   /** Shows an inline "×" button inside the input's right edge (visible only when `value` is set) that clears the selection — an alternative to the caller rendering its own clear button next to the field. */
   onClear?: () => void;
+  /**
+   * Leave this field out of the keyboard flow (see src/lib/fieldFlow.ts) — e.g.
+   * the calculator's Status, which isn't part of filling in a set.
+   */
+  skipFlow?: boolean;
 }
 
 const MAX_VISIBLE_RESULTS = 30;
+
+/**
+ * On a phone, lists this short (abilities, natures) open without focusing the
+ * search, so the keyboard doesn't cover options you can just tap.
+ */
+const SHORT_LIST_LENGTH = 30;
+
+/** Lists this short (a species' abilities) skip the search field altogether. */
+const TINY_LIST_LENGTH = 8;
 
 /**
  * A single reusable text-input-driven combobox — filters `options` by
@@ -58,7 +81,9 @@ export function SearchableSelect({
   autoFocus,
   value,
   compact,
+  narrow,
   onClear,
+  skipFlow,
 }: SearchableSelectProps) {
   const t = useMessages();
   const [query, setQuery] = useState(value ?? "");
@@ -68,11 +93,18 @@ export function SearchableSelect({
     setQuery(value ?? "");
   }
   const [isOpen, setIsOpen] = useState(false);
+  // The keyboard-highlighted row (arrow keys), picked by Enter.
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listId = useId();
   const [dropdownWidth, setDropdownWidth] = useState<number>();
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  // How the input was last pressed — see its onFocus.
+  const pointerTypeRef = useRef<string>("");
   const style = useViewportSafePosition(isOpen, triggerRef, dropdownRef);
+  const isPhone = useIsPhone();
 
   // Matches the dropdown's width to the input's — read inside an effect
   // (not during render) since reading a ref's .current synchronously while
@@ -82,15 +114,25 @@ export function SearchableSelect({
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    // The phone sheet is portaled outside the container and has its own close.
+    if (!isOpen || isPhone) return;
 
+    // Closing without a pick puts the current value back if the field was
+    // emptied for a touch search (see the input's onFocus).
+    function close() {
+      setIsOpen(false);
+      setQuery((current) => (current === "" ? (value ?? "") : current));
+    }
     function handlePointerDown(event: PointerEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
+        close();
       }
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === "Escape") close();
     }
 
     document.addEventListener("pointerdown", handlePointerDown);
@@ -99,7 +141,7 @@ export function SearchableSelect({
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, isPhone, value]);
 
   // Until the user actually types something different, the query is just
   // the untouched `value` prop echoed back — treated as "no filter yet" so
@@ -117,37 +159,116 @@ export function SearchableSelect({
       : options
   ).slice(0, MAX_VISIBLE_RESULTS);
 
-  function pick(option: SearchableSelectOption) {
+  // Keeps the highlighted row in view while arrowing through.
+  useEffect(() => {
+    if (!isOpen) return;
+    dropdownRef.current
+      ?.querySelector<HTMLElement>(`[data-option-index="${activeIndex}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [isOpen, activeIndex]);
+
+  /** `fromKeyboard`: an Enter pick, which moves on to the next field in the flow. */
+  function pick(option: SearchableSelectOption, fromKeyboard = false) {
     onSelect(option);
-    setQuery("");
+    if (fromKeyboard && !skipFlow) focusNextFlowField(inputRef.current);
+    // A field showing a value shows the pick (re-picking the same one doesn't
+    // change `value`, so the sync above wouldn't refill it); a plain search
+    // field starts empty again.
+    setQuery(value !== undefined ? option.label : "");
     setIsOpen(false);
+  }
+
+  if (isPhone) {
+    return (
+      <PhoneSelect
+        options={options}
+        filtered={filtered}
+        query={query}
+        onQueryChange={setQuery}
+        isOpen={isOpen}
+        onOpen={() => {
+          setQuery("");
+          setIsOpen(true);
+        }}
+        onClose={() => {
+          setQuery(value ?? "");
+          setIsOpen(false);
+        }}
+        onPick={pick}
+        placeholder={placeholder}
+        ariaLabel={ariaLabel}
+        value={value}
+        compact={compact}
+        narrow={narrow}
+        onClear={onClear}
+      />
+    );
   }
 
   return (
     <div ref={containerRef} className="relative">
       <div ref={triggerRef} className="relative">
         <input
+          ref={inputRef}
           type="text"
+          {...(skipFlow ? {} : FLOW_FIELD)}
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={isOpen && filtered[activeIndex] ? `${listId}-${activeIndex}` : undefined}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
+            setActiveIndex(0);
             setIsOpen(true);
           }}
           onKeyDown={(event) => {
-            // Enter picks the top result, so typing then Enter works.
-            if (event.key === "Enter" && isOpen && filtered[0]) {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
               event.preventDefault();
-              pick(filtered[0]);
+              if (!isOpen) {
+                setIsOpen(true);
+                return;
+              }
+              const last = filtered.length - 1;
+              setActiveIndex((index) =>
+                event.key === "ArrowDown" ? Math.min(index + 1, last) : Math.max(index - 1, 0),
+              );
+            } else if (event.key === "Enter" && isOpen && filtered[activeIndex]) {
+              // Typing then Enter picks the top result; arrowing first picks that row.
+              event.preventDefault();
+              pick(filtered[activeIndex], true);
+            } else if (event.key === "Escape" && isOpen) {
+              setIsOpen(false);
+              setQuery(value ?? "");
+            } else if (event.key === "Tab") {
+              // Tabbing on leaves the list closed behind you.
+              setIsOpen(false);
+              setQuery((current) => (current === "" ? (value ?? "") : current));
             }
+          }}
+          onPointerDown={(event) => {
+            pointerTypeRef.current = event.pointerType;
           }}
           onFocus={(event) => {
             setIsOpen(true);
-            // Selects the existing text (if any) so it opens ready to
-            // either type-to-replace or just pick a different result —
-            // no separate "clear this slot" step needed first.
-            event.target.select();
+            // Starts on the current pick, so arrowing moves from there.
+            setActiveIndex(Math.max(0, filtered.findIndex((option) => option.label === value)));
+            if (pointerTypeRef.current === "touch") {
+              // A touch tap on selected text opens the device's text menu
+              // (iPadOS's Cut/Copy/Look Up bar; Chrome's context menu in its
+              // touch emulation), so on touch the field is emptied instead,
+              // the current pick showing as the placeholder until you type.
+              setQuery("");
+            } else {
+              // Selects the existing text (if any) so it opens ready to
+              // either type-to-replace or just pick a different result —
+              // no separate "clear this slot" step needed first.
+              event.target.select();
+            }
+            pointerTypeRef.current = "";
           }}
-          placeholder={placeholder}
+          placeholder={value || placeholder}
           aria-label={ariaLabel}
           autoFocus={autoFocus}
           className={
@@ -183,6 +304,7 @@ export function SearchableSelect({
       {isOpen && (
         <div
           ref={dropdownRef}
+          id={listId}
           role="listbox"
           aria-label={ariaLabel}
           style={{ ...style, width: dropdownWidth }}
@@ -191,18 +313,23 @@ export function SearchableSelect({
           {filtered.length === 0 ? (
             <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
           ) : (
-            filtered.map((option) => (
+            filtered.map((option, index) => (
               <button
                 key={option.id}
+                id={`${listId}-${index}`}
+                data-option-index={index}
                 type="button"
                 role="option"
-                aria-selected={false}
+                aria-selected={index === activeIndex}
+                // Not a tab stop: the input keeps the focus, the arrow keys move the highlight.
+                tabIndex={-1}
+                // Keeps the focus in the input, so the click doesn't blur it first.
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => pick(option)}
-                className={
-                  compact
-                    ? "flex w-full items-center gap-2 rounded-md p-1 text-left text-xs text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                    : "flex w-full items-center gap-2 rounded-md p-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-                }
+                className={`flex w-full items-center gap-2 rounded-md text-left text-zinc-900 focus:outline-none ${
+                  compact ? "p-1 text-xs" : "p-1.5 text-sm"
+                } ${index === activeIndex ? "bg-zinc-200/70" : ""}`}
               >
                 {option.content ?? (
                   <>
@@ -220,5 +347,168 @@ export function SearchableSelect({
         </div>
       )}
     </div>
+  );
+}
+
+interface PhoneSelectProps {
+  options: SearchableSelectOption[];
+  filtered: SearchableSelectOption[];
+  query: string;
+  onQueryChange: (query: string) => void;
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onPick: (option: SearchableSelectOption) => void;
+  placeholder: string;
+  ariaLabel: string;
+  value?: string;
+  compact?: boolean;
+  narrow?: boolean;
+  onClear?: () => void;
+}
+
+/**
+ * SearchableSelect on a phone: a button showing the current pick (so tapping
+ * it doesn't raise the keyboard over the page) that opens a full-screen
+ * sheet with the search and roomier rows.
+ */
+function PhoneSelect({
+  options,
+  filtered,
+  query,
+  onQueryChange,
+  isOpen,
+  onOpen,
+  onClose,
+  onPick,
+  placeholder,
+  ariaLabel,
+  value,
+  compact,
+  narrow,
+  onClear,
+}: PhoneSelectProps) {
+  const t = useMessages();
+  const inlineClear = !!onClear && !!value && !narrow;
+  return (
+    <>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={onOpen}
+          aria-haspopup="dialog"
+          aria-label={ariaLabel}
+          className={`flex w-full items-center rounded-lg border border-zinc-300 bg-zinc-50 pl-2 text-left text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
+            compact
+              ? "min-h-8 py-1 text-xs"
+              : narrow
+                ? "min-h-12 py-1 text-sm leading-tight"
+                : "min-h-10 py-2 text-sm"
+          } ${inlineClear ? (compact ? "pr-7" : "pr-9") : "pr-2"}`}
+        >
+          <span
+            className={`min-w-0 flex-1 ${narrow ? "line-clamp-2 break-words" : "truncate"} ${value ? "" : "text-zinc-500"}`}
+          >
+            {value || placeholder}
+          </span>
+        </button>
+        {inlineClear && (
+          <button
+            type="button"
+            onClick={onClear}
+            aria-label={t.editor.clear(ariaLabel)}
+            className={`absolute right-0.5 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 ${
+              compact ? "h-7 w-7" : "h-9 w-9"
+            }`}
+          >
+            <Icon name={IconName.Close} size={compact ? 12 : 14} />
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <PickerSheet
+          title={ariaLabel}
+          onClose={onClose}
+          search={
+            options.length > TINY_LIST_LENGTH && (
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => onQueryChange(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && filtered[0]) {
+                    event.preventDefault();
+                    onPick(filtered[0]);
+                  }
+                }}
+                placeholder={placeholder}
+                aria-label={ariaLabel}
+                autoFocus={options.length > SHORT_LIST_LENGTH}
+                enterKeyHint="done"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                className={pickerSheetSearchClassName}
+              />
+            )
+          }
+        >
+          <div
+            role="listbox"
+            aria-label={ariaLabel}
+            className="flex flex-col gap-0.5"
+          >
+            {narrow && onClear && value && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClear();
+                  onClose();
+                }}
+                className="flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-red-600 active:bg-zinc-200"
+              >
+                <Icon name={IconName.Close} size={16} />
+                {t.editor.removeValue(value)}
+              </button>
+            )}
+            {filtered.length === 0 ? (
+              <p className="p-3 text-sm text-zinc-500">{t.editor.noMatches}</p>
+            ) : (
+              filtered.map((option) => {
+                const isCurrent = !!value && option.label === value;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isCurrent}
+                    onClick={() => onPick(option)}
+                    className={`flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-zinc-900 active:bg-zinc-200 ${
+                      isCurrent ? "bg-zinc-100 font-semibold" : ""
+                    }`}
+                  >
+                    {option.content ?? (
+                      <>
+                        {option.sprite && (
+                          <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
+                            <PokemonSprite species={option.sprite} fill />
+                          </span>
+                        )}
+                        <span className="min-w-0 flex-1 truncate">
+                          {option.label}
+                        </span>
+                      </>
+                    )}
+                    {isCurrent && <Icon name={IconName.Check} size={16} />}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </PickerSheet>
+      )}
+    </>
   );
 }

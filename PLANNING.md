@@ -160,6 +160,19 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   (measured position, clamped to the viewport, re-measured every animation frame while open — see the
   hook's own doc comment for why every-frame). Rather than re-implement that in `PokemonSlotPicker`,
   extracted the existing (already-verified) logic out of `PokemonHoverCard` into a hook both use.
+- **On phones (below `sm`, `useIsPhone`), pickers open a full-screen `PickerSheet` instead of a
+  dropdown.** Landed 2026-10-25 after a report that the Damage Calculator was painful on a phone:
+  the keyboard covered the floating dropdowns (`useViewportSafePosition` measures against the layout
+  viewport, which a phone keyboard doesn't shrink), and iOS zoomed the page in on every sub-16px
+  field. `SearchableSelect` (item/ability/nature/moves) and `PokemonSetPicker` (species + set) render
+  a button trigger on phones, so tapping it doesn't raise the keyboard over the page. The button opens
+  a portaled sheet sized to `window.visualViewport`, so the search field and results stay above the
+  keyboard. The sheet focuses its search only for long lists (more than 30 options) and drops the
+  search entirely for 8 or fewer. Desktop keeps the dropdowns unchanged. A
+  `(max-width: 639px) and (pointer: coarse)` rule in `globals.css` sets every text field to 16px, so
+  iOS doesn't zoom. Capping the viewport's `maximum-scale` was rejected because it also disables
+  pinch-zoom on Android. The Team Builder's shared results panel (`PokemonEditor` without
+  `simpleFields`) isn't converted yet.
 - **`MyTeamHeader`'s active-team sprite row is responsive (`h-8 w-8` mobile → `md:h-12 md:w-12`),
   using `fill` mode like `TeamRoster`, instead of a fixed `size={36}` on `PokemonSprite`.** Fixed
   2026-08-12 — 6 fixed 48px sprites + a 28px chevron + header padding/gap never shrank on mobile,
@@ -310,7 +323,12 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   blocking `next/script` (`beforeInteractive`) in `layout.tsx` sets the class before first paint
   (falling back to `prefers-color-scheme` if nothing's stored yet) so there's no flash of the wrong
   theme. `ThemeToggle` (`src/components/ThemeToggle`) lives in `MyTeamHeader`'s icon-button row, next
-  to the hamburger/auth controls, visible on both desktop and mobile.
+  to the language and account controls, on wide screens (1024px+). Below that (2026-10-26, 0.2) the
+  header row is only the logo and the hamburger, which opens `MobileMenu`
+  (`src/components/MyTeamHeader/MobileMenu.tsx`): a full screen under the header row (not a panel
+  that pushes the page down, which let the Damage Calculator's sticky bar and the team bar show
+  through), ordered like a typical app drawer: account, page links, then Language (its own
+  sub-screen), a Dark mode switch and Sign out pinned to the bottom.
 - **"Load default set" — a one-click preset that bulk-imports a hand-picked opponent roster, offered
   only when there are zero opponents.** Per a 2026-08-10 user request, first preset is
   `regulation-m-b-m-4` (`src/data/presets/regulationMbM4.ts`) — 13 real Regulation M-B teams the user

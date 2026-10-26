@@ -1,60 +1,155 @@
 # Changelog
 
 What shipped and when — a record of the project's progress, not a public release notes page.
-Newest first. The app isn't versioned, so entries are grouped by date. [PLANNING.md](./PLANNING.md)
+Newest first, grouped by version (0.1.0 is grouped by date inside, from before versioning started). [PLANNING.md](./PLANNING.md)
 holds the reasoning behind each change; this file is the short "what and when".
 
 Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**, **Changed**,
-**Fixed**, **Removed** under each date.
+**Fixed**, **Removed** under each version. New entries go under "Unreleased"; every push to main
+(or merge request) becomes the next patch version (0.2.0, 0.2.1, 0.2.2, …): "Unreleased" is
+renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
+tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
-## 2026-10-23
+## Unreleased
 
-### Added
+0.2 is about making the existing features better and more stable rather than adding new ones —
+starting with the experience on a phone.
+
+### Changed
+- Damage Calculator on wide screens: smaller "X vs Y" sprites at the top of the result card (48px,
+  down from 80px).
+- The calculator's menu link reads "Damage Calculator" ("Calculadora de daño") instead of "Damage
+  Calc".
+- Damage Calculator on desktop: a set can be filled in from the keyboard alone. The item, ability,
+  nature and move lists take the arrow keys (starting on the current pick) and Enter picks the
+  highlighted row; Escape closes a list and Tab moves on with it closed. Picking with Enter moves
+  the focus to the next field and opens its list, in the order Pokémon → item → ability → the six
+  Stat Points boxes (Enter steps through them; typing replaces the number) → nature → moves 1–4.
+  Picking with the mouse doesn't move the focus.
+- Damage Calculator's Load Team: a search box (by Pokémon, item, tag or team name, every word has to
+  match, like the Opponents list) and a small preview of each team's Pokémon with their items on
+  the same line as its name, instead of just the name and "6 Pokémon". It can list your own opponents
+  or any of your prep groups', starting on whichever the Matchup Planner last showed, and teams whose
+  paste had no Stat Points are flagged under their name ("No Stat Points: loads as 0 in every
+  stat", or how many of the six are missing them).
+- Damage Calculator: import is split into Import Pokémon (adds one to the side's roster) and Import
+  Team (replaces it), and the import/export dialogs and toasts no longer name the side ("Export
+  Team", not "Export Attacker Team"). On phones the row of links is one "Import & export" button
+  that opens a bottom sheet, and the dialogs open full screen with the text box filling the space
+  (the keyboard no longer pops up over the import box before you paste). On wider screens the
+  row is Load Team on the left (when there are saved opponents) and "Import" (one Pokémon) and
+  "Export" (the current set) on the right, with Import Team and Export Team in a "⋯" menu.
+- Damage Calculator: the result card is highlighted in soft amber once there's a calc (a faint warm
+  tint in dark mode), so the line you came for stands out from the panels around it. In the line,
+  the percentage and the KO chance are bold instead of the HP range, and the percentage never
+  breaks across lines. The copy/save buttons moved down beside the damage rolls (now just the rolls in
+  parentheses, like Showdown's calc), so the calc line uses the card's full width.
+- Damage Calculator: the picker sheets and field labels name the Pokémon instead of the side
+  ("Garchomp move 4", "Garchomp item" rather than "Defender move 4"), since either side can be the
+  attacker.
+- Site header on phones and tablets: the header row is just the logo and the menu button. The menu
+  opens as its own full screen under the header (the page's sticky bars no longer show through and
+  the page behind it doesn't scroll): your account at the top, then the pages, then Language (a
+  sub-screen for the app and Pokémon-name languages), a Dark mode switch and Sign out at the
+  bottom. Wide screens are unchanged.
+- Damage Calculator on phones: the Pokémon/set, item, ability, nature and move pickers open as a
+  full-screen search sheet sized to the space above the keyboard, with larger rows and the current
+  pick checked, instead of a dropdown the keyboard covered. Short lists (abilities, natures) open
+  without raising the keyboard. Saved sets' rename/delete buttons are always visible on touch
+  screens.
+- Damage Calculator on phones and tablets: the pinned bar at the top is one row — each side's
+  Pokémon as a square sprite button (no name) with a wide Field button between them — and one line under it showing what's set under
+  each button: the first modifier and a "+N" for the rest, so the bar stays the same height however
+  many are on. Tapping that line opens the field setup too.
+- Damage Calculator on phones and tablets: the move list has a switch with both Pokémon's sprites,
+  so you can see the other side's moves (and pick one to calc) without leaving the Pokémon you're
+  editing. The side tabs at the top still switch both.
+- Damage Calculator on phones: less padding around the page and inside the panels, so the fields
+  and stat table get about 30px more width.
+- Stat table on phones (Damage Calculator and Team Builder): the base stat sits in small text under
+  the stat's name instead of in its own column, so the Stat Points slider is noticeably
+  wider and easier to drag; the number box stays for typing an exact value.
+- Damage Calculator on phones: Nature and Status sit side by side under the stat table with their
+  labels on top, like Item and Ability, and the current-HP slider gets the full width.
+- Damage Calculator on phones: the four move fields are a 2×2 grid; a long name wraps onto a
+  second line instead of being cut off. Removing a move is a "Remove …" row at the top of its
+  picker, which frees the field's width for the name.
+- Damage Calculator: each side's panel no longer shows an "Attacker"/"Defender" heading or the
+  "Regulation: Regulation M-C" line. Either side can attack, so the panels go by their Pokémon
+  (the side tabs, "X's moves"); Export/Import move up to the top.
+
+- Damage Calculator: Status uses the app's own picker, like Nature and Item, instead of the
+  browser's native dropdown (on phones, the same full-screen sheet).
+
+### Fixed
+- Damage Calculator on tablets and touch screens: tapping a move, item or ability field no longer
+  opens the device's text menu (iPadOS's Cut/Copy/Look Up bar, or the right-click menu in Chrome's
+  iPad emulation) along with the list. On touch the field empties for a fresh search, with the
+  current pick shown faintly until you type, and comes back if you close without picking. Mouse and
+  keyboard still select the text so you can type over it.
+- Notifications (e.g. "Copied calculation to clipboard") appear above the bar fixed to the bottom
+  of the screen — the Damage Calculator's Pokémon bar, the Matchup Planner's team bar — instead of
+  covering it.
+- Damage Calculator on phones and tablets: the page no longer scrolls past the last panel into an
+  empty gap with the footer hidden behind the roster bar. The page ends just above the bar, and
+  the footer is hidden there (it still shows on wide screens and on the other pages).
+- On phones, the pinned header no longer flashes white while scrolling (removed an unneeded blur
+  effect, and the calculator's bar now pins exactly under the header with no hairline gap).
+- On phones, iOS no longer zooms the page in when a field (Stat Points, stage, …) is tapped.
+
+## 0.1.0 — 2026-08-08 to 2026-10-23
+
+The first version: paste a team and its opponents, plan leads and backs, damage calculator, speed
+tiers, tournaments, groups and the team page's saved calcs.
+
+### 2026-10-23
+
+#### Added
 - Damage Calculator: an "Unburden active" toggle next to Status for a Pokémon with Unburden; on, it
   doubles the Speed shown in the panel (for once its item is gone).
 
-### Fixed
+#### Fixed
 - Female Indeedee is available in Regulation M-C (the Damage Calculator's Pokémon search and
   anywhere else the regulation's Pokémon are listed); only the male form was there.
 
-## 2026-10-22
+### 2026-10-22
 
-### Added
+#### Added
 - A "Clear all calcs" button on the team page's Calcs tab removes every saved calc from the team,
   after a confirmation.
 
-## 2026-10-21
+### 2026-10-21
 
-### Added
+#### Added
 - A search box on the team page's Calcs tab: type a Pokémon (e.g. "Gholdengo") to see, under each
   of your Pokémon, only its calcs against that one. Works with the Pokémon names in either language.
 - Damage Calculator: saving a calc that's already saved on that Pokémon does nothing; the save
   button shows a check ("Already saved on your team") instead.
 
-### Fixed
+#### Fixed
 - Damage Calculator: against Focus Sash or Sturdy the damage rolls show the move's real damage
   (they were all capped at the target's HP minus 1); the verdict accounts for the save and says so
   ("guaranteed 2HKO (Focus Sash)").
 - Damage Calculator: Life Orb's recoil rounds down (a tenth of max HP, rounded down), like the
   games; it was rounded up (e.g. 10.1% instead of 9.5%).
 
-## 2026-10-19
+### 2026-10-19
 
-### Changed
+#### Changed
 - The Damage Calculator's calc line names what else changed the damage, like Showdown's: an ability
   that mattered ("Tough Claws Mega Metagross", "… Multiscale Dragonite"), "burned" when a burn
   halved the hit, and "Fairy Aura boosted" before a Fairy move.
 - The team page's Calcs tab shows one Pokémon per row on phones (two from 640px), so the calc
   lists have room.
 
-### Fixed
+#### Fixed
 - The Damage Calculator's calc line now says "in Electric Terrain", "in Sun" (or "in Sun and
   Electric Terrain") when the field's weather or terrain changed the damage, like Showdown's. A
   Mega-evolved Pokémon is written as its form ("Mega Staraptor") instead of "Staraptite Staraptor".
 
-## 2026-10-15
+### 2026-10-15
 
-### Added
+#### Added
 - **Save calcs to your team** from the Damage Calculator: one click on the button next to "Copy"
   saves the calc line (plain text, Showdown format) on your active team, under the left-side
   Pokémon — offensive when it's that Pokémon's move, defensive when it's the right side's.
@@ -81,7 +176,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 - The Damage Calculator is translated (English/Spanish), with its nav link and "Open in Damage
   Calculator" in an opponent's menu back.
 
-### Changed
+#### Changed
 - **The Damage Calculator is open to everyone**: its feature flag is gone, so its nav link always
   shows.
 - "Open in Damage Calculator" is back as a calculator icon next to each opponent's name in the
@@ -133,7 +228,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 - Damage Calculator: one line under the stats with the Stat Points remaining (x / 66) and the
   nature. Stat Points are now capped at 66 in total, as in the game.
 
-### Fixed
+#### Fixed
 - The Damage Calculator's calc line now writes its % range the way Showdown does ("25.8 - 31%").
 - Damage Calculator: Protect no longer blocks contact moves from Unseen Fist (Mega Golurk) or
   Piercing Drill (Mega Excadrill); both hit through it at 1/4 damage, as in Pokémon Champions.
@@ -146,18 +241,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   is calculated as up to 10 hits (it was a single hit); a multi-hit move's total counts every hit,
   even past a KO, like Showdown's calc (stopping at the KO could show a range like 189-175).
 
-## 2026-10-14
+### 2026-10-14
 
-### Added
+#### Added
 - **Prep groups (collaborative Matchup Planner):** a shared opponent list for an event. Members add,
   edit, tag, group and order opponents together, live; each player's picks and notes stay private.
   Invite by link, several groups (one per event), archive, leave, owner removes members. Only the
   group's owner or whoever added an opponent can remove it. Copy opponents between your list and a
   group. See [docs/prep-groups.md](./docs/prep-groups.md).
 
-## 2026-10-13
+### 2026-10-13
 
-### Added
+#### Added
 - **Localization: English and Spanish.** A language menu in the header with two separate settings:
   the app's own text (English / Español) and the official Pokémon names (English, Spain Spanish or
   Latin-American Spanish) for Pokémon, forms, moves, items, abilities, types and natures. Saved
@@ -165,7 +260,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
   accents. See [docs/localization.md](./docs/localization.md).
 - `npm run generate:names` to regenerate the localized name data from PokeAPI.
 
-### Changed
+#### Changed
 - **Pokémon picker** (Matchup Planner lead/back, Strategy combinations, tournament game picks): a
   Pokémon can only be in one slot of a group. Ones already used show dimmed with a tag ("L1",
   "B2", "#3"); picking one swaps it with the current slot. Older data with a repeat gets a warning
@@ -180,7 +275,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 - Strategy tab: each common combination shows Leads above Back, with its notes box beside them
   matching their height.
 
-### Fixed
+#### Fixed
 - The Pokémon hover/click card and the tournament round's opponent cards show the Mega form's
   ability (Mega Raichu X: Electric Surge), not the pasted base ability.
 - Only one Pokémon card is open at a time: hovering a lead/back pick closes an opponent card opened
@@ -191,9 +286,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 - Opening a lead/back picker (or a Pokémon card) no longer makes the page jump: for one frame the
   dropdown sat in the page flow, pushing the rows below it down and back.
 
-## 2026-10-12
+### 2026-10-12
 
-### Added
+#### Added
 - **Opponent organization:** manual ordering (drag or menu), tags with suggestions,
   duplicate-team detection on import, and variants (alternate versions of a team grouped under a
   main team, sharing its plan).
@@ -207,86 +302,86 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 - Team Report calcs and matchups (benchmark calcs, per-opponent prep pages), built but hidden while
   on hold.
 
-### Changed
+#### Changed
 - My Teams rows: the menu only has Archive and Remove. Name and paste are edited on the team's page.
 
-### Fixed
+#### Fixed
 - Z Mega abilities: Mega Garchomp Z now has Levitate, Mega Absol Z Sharpness, Mega Lucario Z Aura
   Guard.
 
-## 2026-10-11
+### 2026-10-11
 
-### Fixed
+#### Fixed
 - Opponent team sort order.
 
-## 2026-09-15
+### 2026-09-15
 
-### Added
+#### Added
 - More admin functions and feature flags per section.
 
-### Changed
+#### Changed
 - Theme update.
 
-## 2026-09-08
+### 2026-09-08
 
-### Added
+#### Added
 - **My Teams** and **Tournaments** sections.
 - **Speed Tiers** page, with numeric speed search and a grouped view.
 
-## 2026-09-01
+### 2026-09-01
 
-### Fixed
+#### Fixed
 - Matchup Planner styles and layout on mobile and tablet.
 
-## 2026-08-23
+### 2026-08-23
 
-### Added
+#### Added
 - Support for multiple regulations.
 - My Team section.
 
-## 2026-08-22
+### 2026-08-22
 
-### Added
+#### Added
 - Firebase: Google sign-in, with teams and opponents synced across devices through Firestore.
 
-### Changed
+#### Changed
 - Damage calculator hidden from the nav while its known issues are worked out.
 
-## 2026-08-20 – 2026-08-21
+### 2026-08-20 – 2026-08-21
 
-### Added
+#### Added
 - Damage calculator, reworked to match Game Freak's damage formula.
 
-### Fixed
+#### Fixed
 - Importing into the damage calculator, and its layout.
 
-## 2026-08-12
+### 2026-08-12
 
-### Added
+#### Added
 - Opponent search.
 - Onboarding and missing sprites.
 
-### Fixed
+#### Fixed
 - Team selection in the mobile header, the lead/back picker interaction, and sprite sizes.
 
-## 2026-08-11
+### 2026-08-11
 
-### Changed
+#### Changed
 - Calculation updates, hover card design, and stats calculation.
 
-## 2026-08-10
+### 2026-08-10
 
-### Changed
+#### Changed
 - Design and experience updates.
 - Smaller build: removed the Material Symbols library and serve Pokémon sprites unoptimized.
 
-## 2026-08-09
+### 2026-08-09
 
-### Added
+#### Added
 - The app's own Pokémon sprites, team display and selection in the header, and stats calculation.
 
-## 2026-08-08
+### 2026-08-08
 
-### Added
+#### Added
 - **First version: the Matchup Planner.** Paste your team, paste opponents, plan leads and backs.
 - Deployment setup.

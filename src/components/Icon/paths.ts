@@ -46,6 +46,10 @@ export const ICON_PATHS: Record<IconName, string> = {
   // is symmetric so deriving it this way is exact.
   [IconName.ExpandLess]: "M480-627 240-387l43 43 197-197 197 197 43-43-240-240Z",
   [IconName.ExpandMore]: "M480-344 240-584l43-43 197 197 197-197 43 43-240 240Z",
+  // ExpandMore's path turned a quarter turn (ChevronRight) and that mirrored
+  // (ChevronLeft): same stroke and size, no new source glyph needed.
+  [IconName.ChevronRight]: "M616-480 376-240l-43-43 197-197-197-197 43-43 240 240Z",
+  [IconName.ChevronLeft]: "M344-480 584-240l43-43-197-197 197-197-43-43-240 240Z",
   // Fetched from Google's Material Symbols CDN (fonts.gstatic.com,
   // materialsymbolsoutlined/<name>/default/24px) — same sourcing as
   // DragIndicator above. Used by RichTextEditor's toolbar.

@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
+import { FLOW_FIELD, focusNextFlowField } from "@/lib/fieldFlow";
 import { NATURE_MODIFIERS } from "@/constants";
 import { REGULATIONS } from "@/data/regulations";
 import abilitiesData from "@/data/abilities.json";
@@ -26,6 +27,7 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { computePokemonBuild } from "./computePokemonBuild";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { useIsPhone } from "@/hooks/useIsPhone";
 import {
   ENGLISH_POKEMON_TEXT,
   type PokemonText,
@@ -319,6 +321,8 @@ export interface PokemonEditorProps {
   extraStatColumns?: StatColumn[];
   /** Overrides how a stat's Final-column value is displayed (e.g. RosterPokemonPicker's Speed row, which layers a weather/Tailwind/status multiplier on top) — defaults to just the plain number. */
   renderFinalCell?: (stat: StatKey, value: number) => ReactNode;
+  /** On phones, shown beside the nature with its label on top (the calc's Status) — elsewhere the caller renders it itself. */
+  besideNature?: ReactNode;
   /** Rendered directly below the stat table, above Moves (e.g. RosterPokemonPicker's Status/current-HP controls) — a battle-state concern this editor itself knows nothing about. */
   children?: ReactNode;
   /**
@@ -369,12 +373,14 @@ export function PokemonEditor({
   maxTotalStatPoints,
   extraStatColumns = [],
   renderFinalCell,
+  besideNature,
   children,
   layout = "stacked",
   simpleFields = false,
 }: PokemonEditorProps) {
   const t = useMessages();
   const text = usePokemonText();
+  const isPhone = useIsPhone();
   const options = localizedOptions({ text, t });
   const {
     hasMegaForm,
@@ -670,9 +676,12 @@ export function PokemonEditor({
     );
 
   // One line per stat: name, base, SP box, SP slider (takes the spare
-  // width), final value, then the caller's extra columns.
+  // width), final value, then the caller's extra columns. Phones fold the
+  // base under the name, giving that column's width to the slider.
   const statGridStyle = {
-    gridTemplateColumns: `2.75rem 1.75rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`,
+    gridTemplateColumns: isPhone
+      ? `2.25rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`
+      : `2.75rem 1.75rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`,
   };
   const remainingSp =
     maxTotalStatPoints !== undefined ? maxTotalStatPoints - totalSp : undefined;
@@ -688,10 +697,19 @@ export function PokemonEditor({
       onSelect={(option) =>
         onStatOverridesChange({ ...statOverrides, nature: option.id })
       }
-      compact
+      compact={!isPhone}
     />
   );
-  const inlineNatureField = (
+  // Phones: label on top like Item/Ability, sharing the row with besideNature.
+  const inlineNatureField = isPhone ? (
+    <div className={`grid gap-2 ${besideNature ? "grid-cols-2" : "grid-cols-1"}`}>
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <FieldLabel>{t.editor.nature}</FieldLabel>
+        {natureSelect}
+      </div>
+      {besideNature}
+    </div>
+  ) : (
     <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
       <span className="shrink-0 text-zinc-500">{t.editor.nature}</span>
       <div className="min-w-0 max-w-48 flex-1">{natureSelect}</div>
@@ -704,7 +722,9 @@ export function PokemonEditor({
         style={statGridStyle}
       >
         <span className="text-zinc-500">{t.editor.stat}</span>
-        <span className="text-right text-zinc-500">{t.editor.base}</span>
+        {!isPhone && (
+          <span className="text-right text-zinc-500">{t.editor.base}</span>
+        )}
         <span className="text-center text-zinc-500">{t.editor.sp}</span>
         <span />
         <span className="text-right text-zinc-500">{t.editor.final}</span>
@@ -720,7 +740,7 @@ export function PokemonEditor({
             <Fragment key={stat}>
               {/* Nature-raised stat in red, lowered in blue, like the Pokémon card. */}
               <span
-                className={`whitespace-nowrap ${natureColor(isIncreased, isDecreased)}`}
+                className={`whitespace-nowrap ${natureColor(isIncreased, isDecreased)} ${isPhone ? "flex flex-col leading-tight" : ""}`}
                 title={
                   isIncreased
                     ? t.editor.boosted
@@ -730,16 +750,35 @@ export function PokemonEditor({
                 }
               >
                 {statLabels[stat]}
+                {isPhone && (
+                  <span
+                    className="text-[10px] font-normal text-zinc-400"
+                    aria-label={`${t.editor.base} ${breakdown.base[stat]}`}
+                  >
+                    {breakdown.base[stat]}
+                  </span>
+                )}
               </span>
-              <span className="text-right">{breakdown.base[stat]}</span>
+              {!isPhone && (
+                <span className="text-right">{breakdown.base[stat]}</span>
+              )}
               <input
                 type="number"
                 min={0}
                 max={32}
                 value={breakdown.statPoints[stat]}
                 onChange={(event) => updateSp(stat, Number(event.target.value))}
+                {...FLOW_FIELD}
+                // Part of the keyboard flow: typing replaces the number, Enter moves on.
+                onFocus={(event) => event.target.select()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    focusNextFlowField(event.currentTarget);
+                  }
+                }}
                 aria-label={t.editor.statPointsLabel(title, statLabels[stat])}
-                className="w-full rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-right text-xs text-zinc-900"
+                className={`w-full rounded border border-zinc-300 bg-zinc-50 px-1 text-xs text-zinc-900 ${isPhone ? "py-1 text-center" : "py-0.5 text-right"}`}
               />
               <input
                 type="range"
@@ -748,7 +787,7 @@ export function PokemonEditor({
                 value={breakdown.statPoints[stat]}
                 onChange={(event) => updateSp(stat, Number(event.target.value))}
                 aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
-                className="w-full min-w-0 accent-zinc-600"
+                className={`w-full min-w-0 accent-zinc-600 ${isPhone ? "h-8" : ""}`}
               />
               <span className="text-right font-medium tabular-nums">
                 {finalCellRenderer(stat, breakdown.final[stat])}
@@ -762,7 +801,9 @@ export function PokemonEditor({
           );
         })}
       </div>
-      <div className="flex items-center gap-3 pt-1 text-xs">
+      <div
+        className={`flex gap-3 pt-1 text-xs ${isPhone ? "flex-col items-stretch gap-2" : "items-center"}`}
+      >
         {maxTotalStatPoints !== undefined ? (
           <span
             className="flex shrink-0 items-baseline gap-1.5"
@@ -876,6 +917,7 @@ export function PokemonEditor({
             onClear={() => onMovesChange(setMoveSlot(moves, slot, ""))}
             placeholder={t.editor.addMove}
             ariaLabel={t.editor.moveSlot(title, slot + 1)}
+            narrow={isPhone}
           />
         </div>
       );
@@ -1020,7 +1062,14 @@ export function PokemonEditor({
             <div className="flex flex-col gap-1.5 py-2 border-t border-zinc-200">
               <FieldLabel>{t.editor.moves}</FieldLabel>
               {simpleFields ? (
-                <div className="flex flex-col gap-1.5">{simpleMoveFields}</div>
+                // Phones: a 2×2 grid — picking happens in the full-screen sheet.
+                <div
+                  className={
+                    isPhone ? "grid grid-cols-2 gap-1.5" : "flex flex-col gap-1.5"
+                  }
+                >
+                  {simpleMoveFields}
+                </div>
               ) : (
                 <div className="grid grid-cols-2 gap-1.5">{moveFields}</div>
               )}

@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { CalcSet, ParsedPokemon } from "@/types";
+import { FLOW_FIELD, focusNextFlowField } from "@/lib/fieldFlow";
 import { SPECIES_OPTIONS, buildCustomPokemon } from "../PokemonEditor";
 import { toast } from "../Toast";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
+import { useIsPhone } from "@/hooks/useIsPhone";
+import { PickerSheet, pickerSheetSearchClassName } from "../PickerSheet";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
@@ -78,13 +81,15 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
   const inputRef = useRef<HTMLInputElement>(null);
   const style = useViewportSafePosition(isOpen, triggerRef, dropdownRef);
   const listId = useId();
+  const isPhone = useIsPhone();
 
   useEffect(() => {
     if (isOpen) setDropdownWidth(triggerRef.current?.offsetWidth);
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    // The phone sheet is portaled outside the container and has its own close.
+    if (!isOpen || isPhone) return;
     function handlePointerDown(event: PointerEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -92,7 +97,7 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
     }
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [isOpen]);
+  }, [isOpen, isPhone]);
 
   // The dropdown stays hidden until it's been positioned, and a hidden input
   // can't take focus — so focus it once it's visible rather than autoFocus.
@@ -216,10 +221,12 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
     }
   }
 
-  function pick(set: SetOption) {
+  /** `fromKeyboard`: an Enter pick moves on to the next field (the item) instead of back to this one. */
+  function pick(set: SetOption, fromKeyboard = false) {
     onSelect(set.build(), set.kind ? { kind: set.kind, id: savedSetId(set) } : undefined);
     setIsOpen(false);
     triggerRef.current?.focus();
+    if (fromKeyboard) focusNextFlowField(triggerRef.current);
   }
 
   function handleKeyDown(event: KeyboardEvent) {
@@ -232,7 +239,7 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
     } else if (event.key === "Enter") {
       event.preventDefault();
       const set = flatSets[activeIndex];
-      if (set) pick(set);
+      if (set) pick(set, true);
     } else if (event.key === "Escape") {
       setIsOpen(false);
       triggerRef.current?.focus();
@@ -242,11 +249,161 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
   const ariaLabel = t.calcPanel.setPickerLabel(title);
   let setIndex = 0;
 
+  const searchInput = (
+    <input
+      ref={inputRef}
+      type={isPhone ? "search" : "text"}
+      autoFocus={isPhone}
+      autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="off"
+      spellCheck={false}
+      value={query}
+      onChange={(event) => {
+        setQuery(event.target.value);
+        setActiveIndex(0);
+      }}
+      onKeyDown={handleKeyDown}
+      placeholder={t.editor.searchPokemon}
+      aria-label={ariaLabel}
+      aria-controls={listId}
+      className={isPhone ? pickerSheetSearchClassName : "w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"}
+    />
+  );
+
+  const list = (
+    <div
+      ref={listRef}
+      id={listId}
+      role="listbox"
+      aria-label={ariaLabel}
+      className="overflow-y-auto p-1"
+    >
+      {visibleGroups.length === 0 ? (
+        <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
+      ) : (
+        visibleGroups.map((group) => {
+          return (
+            <div key={group.speciesKey} role="group" aria-label={group.label}>
+              <div className={`truncate px-2 font-semibold text-zinc-900 ${isPhone ? "pt-3 text-base" : "pt-1.5 text-sm"}`}>
+                {group.label}
+              </div>
+              {group.sets.map((set) => {
+                const index = setIndex++;
+                const isActive = index === activeIndex;
+                const isRenaming = renaming?.optionId === set.id;
+                const isConfirmingDelete = confirmingDeleteId === set.id;
+                return (
+                  <div
+                    key={set.id}
+                    role="option"
+                    aria-selected={isActive}
+                    data-set-index={index}
+                    onClick={() => {
+                      if (!isRenaming) pick(set);
+                    }}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    className={`group flex w-full cursor-pointer items-center gap-2 rounded-md pl-5 pr-1 text-left text-sm text-zinc-700 ${
+                      isPhone ? "min-h-11 py-1.5" : "py-1"
+                    } ${
+                      isActive ? "bg-zinc-200 text-zinc-900" : ""
+                    }`}
+                  >
+                    {isRenaming ? (
+                      <input
+                        type="text"
+                        value={renaming.name}
+                        autoFocus
+                        aria-label={t.calcPanel.renameSet(set.name)}
+                        onClick={(event) => event.stopPropagation()}
+                        onChange={(event) =>
+                          setRenaming({ optionId: set.id, name: event.target.value })
+                        }
+                        onKeyDown={(event) => {
+                          event.stopPropagation();
+                          if (event.key === "Enter") void commitRename(set, true);
+                          else if (event.key === "Escape") setRenaming(null);
+                        }}
+                        onBlur={() => {
+                          if (renaming?.optionId === set.id) void commitRename(set, false);
+                        }}
+                        className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"
+                      />
+                    ) : (
+                      <span className="min-w-0 flex-1 truncate">{set.name}</span>
+                    )}
+                    {set.kind && !isRenaming && (
+                      <span className="shrink-0 rounded-full bg-zinc-100 px-1.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                        {set.kind === "custom" ? t.calcPanel.mySetTag : t.calcPanel.publicSetTag}
+                      </span>
+                    )}
+                    {canEdit(set) && !isRenaming && (
+                      <span
+                        className={`flex shrink-0 items-center gap-0.5 ${
+                          isActive || isConfirmingDelete ? "" : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setConfirmingDeleteId(null);
+                            setRenaming({ optionId: set.id, name: set.name });
+                          }}
+                          aria-label={t.calcPanel.renameSet(set.name)}
+                          title={t.calcPanel.renameSet(set.name)}
+                          className={`flex items-center justify-center rounded text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900 ${isPhone ? "h-9 w-9" : "h-6 w-6"}`}
+                        >
+                          <Icon name={IconName.Edit} size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void removeSet(set);
+                          }}
+                          aria-label={
+                            isConfirmingDelete
+                              ? t.calcPanel.confirmDeleteSet(set.name)
+                              : t.calcPanel.deleteSet(set.name)
+                          }
+                          title={
+                            isConfirmingDelete
+                              ? t.calcPanel.confirmDeleteSet(set.name)
+                              : t.calcPanel.deleteSet(set.name)
+                          }
+                          className={`flex items-center justify-center rounded ${isPhone ? "h-9 w-9" : "h-6 w-6"} ${
+                            isConfirmingDelete
+                              ? "bg-red-600 text-white hover:bg-red-700"
+                              : "text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900"
+                          }`}
+                        >
+                          <Icon
+                            name={isConfirmingDelete ? IconName.Check : IconName.Delete}
+                            size={14}
+                          />
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })
+      )}
+      {filteredGroups.length > MAX_VISIBLE_GROUPS && (
+        <p className="p-2 text-[11px] text-zinc-500">{t.calcPanel.keepTyping(MAX_VISIBLE_GROUPS)}</p>
+      )}
+    </div>
+  );
+
   return (
     <div ref={containerRef} className="relative min-w-0 flex-1">
       <button
         ref={triggerRef}
         type="button"
+        {...FLOW_FIELD}
         onClick={() => (isOpen ? setIsOpen(false) : open())}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -259,150 +416,19 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
         <Icon name={isOpen ? IconName.ExpandLess : IconName.ExpandMore} size={16} />
       </button>
 
-      {isOpen && (
+      {isOpen && isPhone && (
+        <PickerSheet title={ariaLabel} onClose={() => setIsOpen(false)} search={searchInput}>
+          {list}
+        </PickerSheet>
+      )}
+      {isOpen && !isPhone && (
         <div
           ref={dropdownRef}
           style={{ ...style, width: dropdownWidth }}
           className="z-20 flex max-h-96 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 shadow-lg"
         >
-          <div className="border-b border-zinc-200 p-1.5">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setActiveIndex(0);
-              }}
-              onKeyDown={handleKeyDown}
-              placeholder={t.editor.searchPokemon}
-              aria-label={ariaLabel}
-              aria-controls={listId}
-              className="w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"
-            />
-          </div>
-          <div
-            ref={listRef}
-            id={listId}
-            role="listbox"
-            aria-label={ariaLabel}
-            className="overflow-y-auto p-1"
-          >
-            {visibleGroups.length === 0 ? (
-              <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
-            ) : (
-              visibleGroups.map((group) => {
-                return (
-                  <div key={group.speciesKey} role="group" aria-label={group.label}>
-                    <div className="truncate px-2 pt-1.5 text-sm font-semibold text-zinc-900">
-                      {group.label}
-                    </div>
-                    {group.sets.map((set) => {
-                      const index = setIndex++;
-                      const isActive = index === activeIndex;
-                      const isRenaming = renaming?.optionId === set.id;
-                      const isConfirmingDelete = confirmingDeleteId === set.id;
-                      return (
-                        <div
-                          key={set.id}
-                          role="option"
-                          aria-selected={isActive}
-                          data-set-index={index}
-                          onClick={() => {
-                            if (!isRenaming) pick(set);
-                          }}
-                          onMouseEnter={() => setActiveIndex(index)}
-                          className={`group flex w-full cursor-pointer items-center gap-2 rounded-md py-1 pl-5 pr-1 text-left text-sm text-zinc-700 ${
-                            isActive ? "bg-zinc-200 text-zinc-900" : ""
-                          }`}
-                        >
-                          {isRenaming ? (
-                            <input
-                              type="text"
-                              value={renaming.name}
-                              autoFocus
-                              aria-label={t.calcPanel.renameSet(set.name)}
-                              onClick={(event) => event.stopPropagation()}
-                              onChange={(event) =>
-                                setRenaming({ optionId: set.id, name: event.target.value })
-                              }
-                              onKeyDown={(event) => {
-                                event.stopPropagation();
-                                if (event.key === "Enter") void commitRename(set, true);
-                                else if (event.key === "Escape") setRenaming(null);
-                              }}
-                              onBlur={() => {
-                                if (renaming?.optionId === set.id) void commitRename(set, false);
-                              }}
-                              className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"
-                            />
-                          ) : (
-                            <span className="min-w-0 flex-1 truncate">{set.name}</span>
-                          )}
-                          {set.kind && !isRenaming && (
-                            <span className="shrink-0 rounded-full bg-zinc-100 px-1.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
-                              {set.kind === "custom" ? t.calcPanel.mySetTag : t.calcPanel.publicSetTag}
-                            </span>
-                          )}
-                          {canEdit(set) && !isRenaming && (
-                            <span
-                              className={`flex shrink-0 items-center gap-0.5 ${
-                                isActive || isConfirmingDelete ? "" : "opacity-0 group-hover:opacity-100"
-                              }`}
-                            >
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setConfirmingDeleteId(null);
-                                  setRenaming({ optionId: set.id, name: set.name });
-                                }}
-                                aria-label={t.calcPanel.renameSet(set.name)}
-                                title={t.calcPanel.renameSet(set.name)}
-                                className="flex h-6 w-6 items-center justify-center rounded text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900"
-                              >
-                                <Icon name={IconName.Edit} size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  void removeSet(set);
-                                }}
-                                aria-label={
-                                  isConfirmingDelete
-                                    ? t.calcPanel.confirmDeleteSet(set.name)
-                                    : t.calcPanel.deleteSet(set.name)
-                                }
-                                title={
-                                  isConfirmingDelete
-                                    ? t.calcPanel.confirmDeleteSet(set.name)
-                                    : t.calcPanel.deleteSet(set.name)
-                                }
-                                className={`flex h-6 w-6 items-center justify-center rounded ${
-                                  isConfirmingDelete
-                                    ? "bg-red-600 text-white hover:bg-red-700"
-                                    : "text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900"
-                                }`}
-                              >
-                                <Icon
-                                  name={isConfirmingDelete ? IconName.Check : IconName.Delete}
-                                  size={14}
-                                />
-                              </button>
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })
-            )}
-            {filteredGroups.length > MAX_VISIBLE_GROUPS && (
-              <p className="p-2 text-[11px] text-zinc-500">{t.calcPanel.keepTyping(MAX_VISIBLE_GROUPS)}</p>
-            )}
-          </div>
+          <div className="border-b border-zinc-200 p-1.5">{searchInput}</div>
+          {list}
         </div>
       )}
     </div>

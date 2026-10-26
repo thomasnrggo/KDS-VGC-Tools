@@ -41,7 +41,7 @@ export default function DamageCalcPage() {
         onSignIn={signInWithGoogle}
         onSignOut={signOut}
       />
-      <div className="flex w-full flex-col gap-4 p-6">
+      <div className="flex w-full flex-col gap-4 px-3 py-4 sm:p-6">
         {/* Below xl the title sits in the calculator's sticky bar instead. */}
         <h2 className="hidden text-xl font-semibold text-zinc-900 xl:block">{t.calc.title}</h2>
         {/* DamageCalculator reads ?opponentId= via useSearchParams — Next.js

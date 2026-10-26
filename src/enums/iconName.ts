@@ -8,6 +8,8 @@ export enum IconName {
   Calculate = "calculate",
   CallSplit = "call_split",
   Check = "check",
+  ChevronLeft = "chevron_left",
+  ChevronRight = "chevron_right",
   Close = "close",
   ContentCopy = "content_copy",
   ContentPaste = "content_paste",

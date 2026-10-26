@@ -15,7 +15,7 @@ interface AuthMenuProps {
 // Google's official multicolor "G" mark — brand guidelines require using it
 // unmodified on sign-in buttons, so this stays separate from the app's own
 // single-color Icon set (src/components/Icon).
-function GoogleLogo() {
+export function GoogleLogo() {
   return (
     <svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true">
       <path

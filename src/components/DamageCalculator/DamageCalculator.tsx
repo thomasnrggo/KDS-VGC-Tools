@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { useMyTeams } from "@/hooks/useMyTeams";
 import { useOpponents } from "@/hooks/useOpponents";
@@ -367,6 +367,10 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
   const [isFieldOpen, setIsFieldOpen] = useState(false);
   // Below lg the two sides are tabs: only the open side's moves and panel show.
   const [openSide, setOpenSide] = useState<"attacker" | "defender">("attacker");
+  // Below lg, whose moves are listed — follows the side tabs, but the move
+  // list's own switch changes it alone, so you can check the other side's
+  // moves without leaving the Pokémon you're editing.
+  const [movesSide, setMovesSide] = useState<"attacker" | "defender">("attacker");
 
   // Seeds the Attacker's sidebar with the header's active team, the first
   // time activeTeamId becomes available (it loads asynchronously from
@@ -1011,6 +1015,10 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     return side === openSide ? "" : "hidden lg:flex";
   }
 
+  function moveListClass(side: "attacker" | "defender"): string {
+    return side === movesSide ? "" : "hidden lg:flex";
+  }
+
   const sideTabs: Array<{
     side: "attacker" | "defender";
     label: string;
@@ -1021,54 +1029,139 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     { side: "defender", label: t.calc.defender, pokemon: defenderPokemon, mega: defenderMega },
   ];
 
+  // Below lg, switches whose moves are listed without switching the panel being edited.
+  const movesSwitcher = attackerPokemon && defenderPokemon && (
+    <div role="group" aria-label={t.calc.showMovesOf} className="flex shrink-0 gap-1 rounded-full bg-zinc-200/70 p-0.5 lg:hidden">
+      {sideTabs.map(({ side, label, pokemon, mega }) => {
+        const isShown = side === movesSide;
+        return (
+          <button
+            key={side}
+            type="button"
+            onClick={() => setMovesSide(side)}
+            aria-pressed={isShown}
+            aria-label={`${label}: ${pokemon ? text.species(pokemon.species) : "—"}`}
+            title={pokemon ? text.species(pokemon.species) : label}
+            className={`flex h-9 w-11 items-center justify-center rounded-full transition-colors ${
+              isShown ? "bg-white shadow-sm dark:bg-zinc-100" : "opacity-50 hover:opacity-100"
+            }`}
+          >
+            {pokemon && (
+              <span className="relative h-8 w-8">
+                <PokemonSprite species={pokemon.species} item={mega ? pokemon.item : undefined} fill />
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Below xl the field lives in a drawer, opened from a bar that sticks to
           the top of the screen — styled like the Matchup Planner's team bar.
           Below lg the bar also holds the Attacker/Defender tabs, above the
           Field setup button, and the page title. Spans the page's full width
-          (-mx-6 undoes its padding). */}
+          (the negative margins undo its padding: 12px on phones, 24px above). */}
       <nav
         aria-label={t.calc.field}
-        className="sticky top-[var(--site-header-height,0px)] z-30 -mx-6 -mt-6 border-b border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 xl:hidden"
+        className="sticky top-[var(--site-header-height,0px)] z-30 -mx-3 -mt-4 border-b sm:-mx-6 sm:-mt-6 border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 xl:hidden"
       >
-        {/* The page title, which the page itself hides below xl. -mt-6 joins the bar to the site header;
+        {/* The page title, which the page itself hides below xl. The negative top margin joins the bar to the site header;
             it pins just below that sticky header (--site-header-height, set by MyTeamHeader). */}
-        <h2 className="px-4 pt-2.5 text-center text-sm font-semibold text-zinc-100 dark:text-zinc-900">
+        {/* Below lg it's for screen readers only — the bar stays pinned, so every line costs screen. */}
+        <h2 className="sr-only px-4 pt-2.5 text-center text-sm font-semibold text-zinc-100 lg:not-sr-only dark:text-zinc-900">
           {t.calc.title}
         </h2>
-        {/* Phones and tablets: one side at a time, picked from these tabs. */}
-        <div role="tablist" aria-label={t.calc.sides} className="grid grid-cols-2 gap-2 px-3 pt-2 lg:hidden">
-          {sideTabs.map(({ side, label, pokemon, mega }) => {
-            const isOpen = side === openSide;
-            return (
-              <button
-                key={side}
-                type="button"
-                role="tab"
-                aria-selected={isOpen}
-                onClick={() => setOpenSide(side)}
-                className={`flex min-w-0 items-center justify-center rounded-lg border py-1 transition-colors ${
-                  isOpen
-                    ? "border-zinc-400 bg-zinc-100/15 dark:border-zinc-600 dark:bg-zinc-900/15"
-                    : "border-transparent opacity-60 hover:opacity-100"
-                }`}
-              >
-                {/* Sprite only — the label stays for screen readers. */}
-                {pokemon ? (
-                  <span className="relative h-16 w-16 shrink-0">
-                    {/* The item is what resolves the Mega sprite — dropped when that side's Mega toggle is off. */}
-                    <PokemonSprite species={pokemon.species} item={mega ? pokemon.item : undefined} fill />
+        {/* Phones and tablets: one row — each side's tab (a square-ish sprite button; one side edited at
+            a time) with the wider Field button between them — and under it one line of what's set:
+            each side's modifiers from its own edge, the field-wide ones in the middle, the first
+            one and a "+N" for the rest, so the bar never grows. */}
+        <div className="flex flex-col gap-1.5 px-3 py-2 lg:hidden">
+          <div className="grid grid-cols-[auto_1fr_auto] items-stretch gap-1.5">
+            {[sideTabs[0], null, sideTabs[1]].map((tab) => {
+              if (!tab) {
+                return (
+                  <button
+                    key="field"
+                    type="button"
+                    onClick={() => setIsFieldOpen(true)}
+                    aria-haspopup="dialog"
+                    className="flex min-w-0 flex-col items-center justify-center rounded-lg border border-zinc-500 bg-zinc-700 px-3 transition-colors hover:bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-300 dark:hover:bg-zinc-400"
+                  >
+                    <span className="flex items-center gap-0.5 text-sm font-semibold text-zinc-100 dark:text-zinc-900">
+                      {t.calc.field}
+                      <Icon name={IconName.ExpandLess} size={16} className="text-zinc-200 dark:text-zinc-800" />
+                    </span>
+                    <span className="text-[10px] leading-tight text-zinc-300 dark:text-zinc-700">
+                      {battleFormat === "Singles" ? t.calc.singles : t.calc.doubles}
+                    </span>
+                  </button>
+                );
+              }
+              const { side, label, pokemon, mega } = tab;
+              const isOpen = side === openSide;
+              return (
+                <button
+                  key={side}
+                  type="button"
+                  aria-pressed={isOpen}
+                  onClick={() => {
+                    setOpenSide(side);
+                    setMovesSide(side);
+                  }}
+                  className={`flex w-16 items-center justify-center rounded-lg border py-0.5 transition-colors ${
+                    isOpen
+                      ? "border-zinc-400 bg-zinc-100/15 dark:border-zinc-600 dark:bg-zinc-900/15"
+                      : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  {/* Sprite only — the name is for screen readers; the move list's title names it. */}
+                  {pokemon ? (
+                    <span className="relative -my-1.5 h-14 w-14 shrink-0">
+                      {/* The item is what resolves the Mega sprite — dropped when that side's Mega toggle is off. */}
+                      <PokemonSprite species={pokemon.species} item={mega ? pokemon.item : undefined} fill />
+                    </span>
+                  ) : (
+                    <span className="-my-1.5 h-14 w-14" />
+                  )}
+                  <span className="sr-only">{label}: </span>
+                  <span className="sr-only">
+                    {pokemon ? text.species(pokemon.species) : "—"}
                   </span>
-                ) : (
-                  <span className="h-16 w-16" />
-                )}
-                <span className="sr-only">
-                  {label}: {pokemon ? text.species(pokemon.species) : "—"}
+                </button>
+              );
+            })}
+          </div>
+          {hasFieldChips && (
+            <button
+              type="button"
+              onClick={() => setIsFieldOpen(true)}
+              aria-label={`${t.calc.fieldSetup}: ${fieldColumns.flatMap((column) => column.chips).join(", ")}`}
+              className="grid grid-cols-3 gap-1.5"
+            >
+              {fieldColumns.map((column) => (
+                <span key={column.key} className={`flex min-w-0 items-center gap-1 ${column.align}`}>
+                  {column.chips.length > 0 && (
+                    <>
+                      <span className="min-w-0 truncate rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+                        {column.chips[0]}
+                      </span>
+                      {column.chips.length > 1 && (
+                        <span
+                          title={column.chips.slice(1).join(", ")}
+                          className="shrink-0 rounded-full border border-zinc-400 px-1.5 py-0.5 text-[11px] font-semibold text-zinc-100 dark:border-zinc-600 dark:text-zinc-900"
+                        >
+                          +{column.chips.length - 1}
+                        </span>
+                      )}
+                    </>
+                  )}
                 </span>
-              </button>
-            );
-          })}
+              ))}
+            </button>
+          )}
         </div>
 
         <Drawer open={isFieldOpen} onOpenChange={setIsFieldOpen} showSwipeHandle>
@@ -1076,7 +1169,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
             render={
               <button
                 type="button"
-                className="mx-3 my-3 flex w-[calc(100%-1.5rem)] flex-col gap-1.5 rounded-lg border border-zinc-500 bg-zinc-700 px-3 py-2 transition-colors hover:bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-300 dark:hover:bg-zinc-400"
+                className="mx-3 my-2 hidden w-[calc(100%-1.5rem)] flex-col lg:flex gap-1.5 rounded-lg border border-zinc-500 bg-zinc-700 px-3 py-2 transition-colors hover:bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-300 dark:hover:bg-zinc-400"
               />
             }
           >
@@ -1103,7 +1196,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
                 ))}
               </span>
             ) : (
-              <span className="text-center text-xs text-zinc-400 dark:text-zinc-600">
+              <span className="hidden text-center text-xs text-zinc-400 sm:block dark:text-zinc-600">
                 {t.calc.nothingSet}
               </span>
             )}
@@ -1122,7 +1215,8 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
       {(attackerPokemon || defenderPokemon) && (
         <div className={`grid grid-cols-1 gap-4 ${THREE_COLUMNS}`}>
           <MoveList
-            className={sideClass("attacker")}
+            className={moveListClass("attacker")}
+            switcher={movesSwitcher}
             title={t.calc.movesOf(attackerPokemon ? text.species(attackerPokemon.species) : t.calc.attacker)}
             pokemon={attackerPokemon}
             results={attackerMoveResults}
@@ -1151,7 +1245,8 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
             saveCalc={saveCalcTarget}
           />
           <MoveList
-            className={sideClass("defender")}
+            className={moveListClass("defender")}
+            switcher={movesSwitcher}
             title={t.calc.movesOf(defenderPokemon ? text.species(defenderPokemon.species) : t.calc.defender)}
             pokemon={defenderPokemon}
             results={defenderMoveResults}
@@ -1335,13 +1430,21 @@ function ResultPanel({
         <h3 className="text-xs font-semibold uppercase tracking-wide">{t.calc.result}</h3>
         <p className="text-[11px]">{t.calc.clickMove}</p>
       </div>
-      <div className="flex flex-col justify-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+      {/* Highlighted once there's a result: the calc line is the page's answer, so it gets the same
+          soft amber as the app's other callouts (Speed Tiers' highlighted rows, the regulation badge). */}
+      <div
+        className={`flex flex-col justify-center gap-2 rounded-lg border p-3 sm:p-4 ${
+          result
+            ? "border-amber-300 bg-amber-50 dark:border-amber-800/70 dark:bg-amber-950/40"
+            : "border-zinc-200 bg-zinc-50"
+        }`}
+      >
         {/* Desktop only — on phones the side tabs above already show both Pokémon. */}
         {leftPokemon && rightPokemon && (
-          <div className="hidden items-center justify-center gap-4 lg:flex">
-            <PokemonSprite species={leftPokemon.species} item={leftPokemon.item} size={80} />
-            <span className="text-sm font-semibold uppercase text-zinc-400">vs</span>
-            <PokemonSprite species={rightPokemon.species} item={rightPokemon.item} size={80} />
+          <div className="hidden items-center justify-center gap-3 lg:flex">
+            <PokemonSprite species={leftPokemon.species} item={leftPokemon.item} size={48} />
+            <span className="text-xs font-semibold uppercase text-zinc-400">vs</span>
+            <PokemonSprite species={rightPokemon.species} item={rightPokemon.item} size={48} />
           </div>
         )}
         {!selectedMove || !attacker || !defender ? (
@@ -1350,13 +1453,32 @@ function ResultPanel({
           <>
             {result ? (
               <>
-                <div className="flex items-start gap-2">
-                  <p className="flex-1 text-sm text-zinc-900" title={t.calc.resultLineHint}>
-                    {calcLabel}:{" "}
-                    <span className="font-semibold">
-                      {result.rolls[0]}-{result.rolls[result.rolls.length - 1]}
-                    </span>{" "}
-                    ({result.minPercent} - {result.maxPercent}%) -- {result.koChanceText}
+                <p className="text-sm text-zinc-900" title={t.calc.resultLineHint}>
+                  {/* Bold where the decision is — the percentage and the KO chance; the raw
+                      HP range stays plain. The words match the copied line exactly. */}
+                  {calcLabel}: {result.rolls[0]}-{result.rolls[result.rolls.length - 1]}{" "}
+                  <span className="font-semibold whitespace-nowrap">
+                    ({result.minPercent} - {result.maxPercent}%)
+                  </span>{" "}
+                  -- <span className="font-semibold">{result.koChanceText}</span>
+                </p>
+                {result.recoilMinPercent !== undefined && (
+                  <p
+                    className="text-xs text-zinc-600"
+                    title={t.calc.recoilHint}
+                  >
+                    {t.calc.recoilTo(text.species(attacker.species))}{" "}
+                    {result.recoilMinPercent === result.recoilMaxPercent
+                      ? `${result.recoilMinPercent}%`
+                      : `${result.recoilMinPercent}% - ${result.recoilMaxPercent}%`}
+                  </p>
+                )}
+                {/* The rolls (secondary) share a row with the copy/save buttons, so the calc line above
+                    gets the card's full width. */}
+                <div className="flex items-end gap-2">
+                  <p className="min-w-0 flex-1 text-xs text-zinc-600" title={t.calc.rollsHint}>
+                    {/* Just the rolls in parentheses, the way Showdown's calc shows them; the label stays for screen readers. */}
+                    <span className="sr-only">{t.calc.rolls} </span>({result.rolls.join(", ")})
                   </p>
                   <div className="flex shrink-0 gap-1">
                     <button
@@ -1388,23 +1510,6 @@ function ResultPanel({
                     </button>
                   </div>
                 </div>
-                {result.recoilMinPercent !== undefined && (
-                  <p
-                    className="text-xs text-zinc-500"
-                    title={t.calc.recoilHint}
-                  >
-                    {t.calc.recoilTo(text.species(attacker.species))}{" "}
-                    {result.recoilMinPercent === result.recoilMaxPercent
-                      ? `${result.recoilMinPercent}%`
-                      : `${result.recoilMinPercent}% - ${result.recoilMaxPercent}%`}
-                  </p>
-                )}
-                <p
-                  className="text-xs text-zinc-500"
-                  title={t.calc.rollsHint}
-                >
-                  {t.calc.rolls} {result.rolls.join(", ")}
-                </p>
               </>
             ) : (
               <p className="text-sm text-amber-600">
@@ -1511,6 +1616,8 @@ interface MoveListProps {
   onBattleStateChange: (state: PokemonBattleState) => void;
   /** The effective (Mega-aware) ability — Skill Link changes a multi-hit move's hit range. */
   ability: string | undefined;
+  /** Rendered at the right of the header — the phone/tablet switch between both sides' moves. */
+  switcher?: ReactNode;
   className?: string;
 }
 
@@ -1528,6 +1635,7 @@ function MoveList({
   battleState,
   onBattleStateChange,
   ability,
+  switcher,
   className = "",
 }: MoveListProps) {
   const t = useMessages();
@@ -1536,11 +1644,14 @@ function MoveList({
 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <div>
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          {title}
-        </h3>
-        <p className="text-[11px] text-zinc-400">{t.calc.clickMove}</p>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            {title}
+          </h3>
+          <p className="text-[11px] text-zinc-400">{t.calc.clickMove}</p>
+        </div>
+        {switcher}
       </div>
       {results.length === 0 ? (
         <p className="text-sm text-zinc-500">{t.calc.noMoves}</p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
@@ -28,8 +28,12 @@ interface MobileRosterBarProps {
  * side's panel. Switching side tabs switches which roster it shows. Copying
  * a set stays in the panel ("Export Set"); the open Pokémon's × removes it.
  *
- * Renders a spacer of its own height in the page flow, so the bottom of the
- * page can still scroll out from under the fixed bar.
+ * Publishes its height as --calc-bar-height, which layout.tsx's <body> adds
+ * to its bottom padding, so the end of the page scrolls out from under the
+ * fixed bar. (It used to leave a spacer at the end of the calculator, which
+ * put the footer after it, behind the bar, with a gap above it; the footer
+ * is now hidden on this page below lg, see Footer.) 0 from lg up, where the
+ * bar is hidden.
  */
 export function MobileRosterBar({
   title,
@@ -43,20 +47,24 @@ export function MobileRosterBar({
   const t = useMessages();
   const text = usePokemonText();
   const barRef = useRef<HTMLElement>(null);
-  const [barHeight, setBarHeight] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = barRef.current;
     if (!el) return;
-    // Fires once on observe(), then on every size change (e.g. rotating).
-    const observer = new ResizeObserver(() => setBarHeight(el.offsetHeight));
+    const root = document.documentElement;
+    const setHeight = () => root.style.setProperty("--calc-bar-height", `${el.offsetHeight}px`);
+    setHeight();
+    // Also fires on every size change (rotating, crossing lg).
+    const observer = new ResizeObserver(setHeight);
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      root.style.setProperty("--calc-bar-height", "0px");
+    };
   }, []);
 
   return (
     <>
-      <div aria-hidden="true" className="lg:hidden" style={{ height: barHeight }} />
       <nav
         ref={barRef}
         aria-label={t.calcPanel.sidebar(title)}

@@ -13,6 +13,7 @@ import { Icon } from "../Icon";
 import { AuthMenu } from "../AuthMenu";
 import { ThemeToggle } from "../ThemeToggle";
 import { LanguageMenu } from "../LanguageMenu";
+import { MobileMenu } from "./MobileMenu";
 import { IconName } from "@/enums";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useMessages } from "@/hooks/useLanguage";
@@ -24,11 +25,6 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 interface MyTeamHeaderProps {
   teams: Team[];
@@ -158,7 +154,6 @@ export function MyTeamHeader({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileTeamNavRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const mobileNavRef = useRef<HTMLDivElement>(null);
 
   const editingTeam = editingId
     ? (teams.find((team) => team.id === editingId) ?? null)
@@ -218,40 +213,31 @@ export function MyTeamHeader({
     };
   }, [isTeamMenuOpen]);
 
-  // Non-modal (unlike the Drawer it replaced), so it doesn't get click-outside/
-  // Escape-to-close for free — same pattern as the desktop team-switcher
-  // dropdown above.
+  // The phone menu covers everything under the header row, so there's no
+  // "outside" to click — only Escape, plus the menu button and the links.
   useEffect(() => {
     if (!isMobileNavOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      const target = event.target as Node;
-      if (!mobileNavRef.current?.contains(target)) {
-        setIsMobileNavOpen(false);
-      }
-    }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsMobileNavOpen(false);
-      }
+      if (event.key === "Escape") setIsMobileNavOpen(false);
     }
-
-    document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobileNavOpen]);
 
   // Exposes the sticky header's height as --site-header-height, so a page's
   // own sticky bar (the Damage Calculator's) can pin just below it rather than
-  // sliding over it. It changes when the mobile nav panel opens.
+  // sliding over it. The phone menu is fixed, so it never changes this. The exact
+  // (fractional) height, not offsetHeight's rounded one: rounding down left a
+  // sub-pixel gap under the header that the page flickered through while
+  // scrolling on phones.
   useLayoutEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const setHeight = () =>
-      document.documentElement.style.setProperty("--site-header-height", `${el.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        "--site-header-height",
+        `${el.getBoundingClientRect().height}px`,
+      );
     setHeight();
     const observer = new ResizeObserver(setHeight);
     observer.observe(el);
@@ -347,18 +333,11 @@ export function MyTeamHeader({
     <>
     <header
       ref={headerRef}
-      className="sticky top-0 z-40 border-b border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 backdrop-blur"
-    >
-    {/* Wraps the whole header row + the mobile nav panel below, so opening
-        the panel visually grows this one sticky header instead of overlaying
-        a separate sheet — className="contents" keeps it out of the flex/box
-        layout entirely, it's just here to share Collapsible context between
-        the trigger (in the row) and the content (below it) (see PLANNING.md). */}
-    <Collapsible
-      ref={mobileNavRef}
-      open={isMobileNavOpen}
-      onOpenChange={setIsMobileNavOpen}
-      className="contents"
+      // Above the Matchup Planner's fixed team bar (also z-40) while the phone
+      // menu is open, since the menu is drawn inside this header.
+      className={`sticky top-0 border-b border-zinc-700 bg-zinc-800 dark:border-zinc-300 dark:bg-zinc-200 ${
+        isMobileNavOpen ? "z-50" : "z-40"
+      }`}
     >
     <div className="relative flex items-center justify-between gap-2 px-4 py-4 lg:gap-4 lg:px-6">
       <div className="flex min-w-0 shrink items-center gap-3 lg:gap-6">
@@ -496,55 +475,55 @@ export function MyTeamHeader({
             )}
           </>
         )}
-        {/* Mobile: a hamburger that expands this same sticky header downward
-            to reveal the page links, instead of overlaying a sheet — a
-            Collapsible, not a Drawer, since it's simpler and non-modal fits
-            a plain nav menu better; the team switcher below still uses a
-            Drawer, which earns its modality (see PLANNING.md). */}
-        <CollapsibleTrigger
+        {/* Phones and tablets: a menu button that opens MobileMenu, a full
+            screen under this header row holding the page links, account and
+            settings (see PLANNING.md). */}
+        <button
+          type="button"
+          onClick={() => setIsMobileNavOpen((open) => !open)}
           aria-label={isMobileNavOpen ? t.nav.closeMenu : t.nav.openMenu}
-          aria-haspopup="menu"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-100 dark:text-zinc-900 hover:bg-zinc-500 lg:hidden"
+          aria-expanded={isMobileNavOpen}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-zinc-100 dark:text-zinc-900 hover:bg-zinc-500 lg:hidden"
         >
-          <Icon name={isMobileNavOpen ? IconName.Close : IconName.Menu} size={22} />
-        </CollapsibleTrigger>
-        <LanguageMenu />
-        <ThemeToggle />
-        <AuthMenu
-          user={authUser}
-          isLoading={isAuthLoading}
-          onSignIn={onSignIn}
-          onSignOut={onSignOut}
-        />
+          <Icon name={isMobileNavOpen ? IconName.Close : IconName.Menu} size={24} />
+        </button>
+        {/* Wide screens only: on phones and tablets these live in the menu
+            phone menu (MobileMenu), so the header row is just the logo
+            and the menu button. */}
+        <div className="hidden items-center gap-2 lg:flex">
+          <LanguageMenu />
+          <ThemeToggle />
+          <AuthMenu
+            user={authUser}
+            isLoading={isAuthLoading}
+            onSignIn={onSignIn}
+            onSignOut={onSignOut}
+          />
+        </div>
       </div>
     </div>
 
-    <CollapsibleContent className="lg:hidden">
-      <nav className="flex flex-col gap-1 border-t border-zinc-500 p-4">
-        {visibleNavLinks.map((link) => {
-          const isActive = link.page === currentPage;
-          return isActive ? (
-            <span
-              key={link.page}
-              aria-current="page"
-              className="rounded-lg bg-zinc-500 px-3 py-2.5 text-sm font-bold text-white"
-            >
-              {t.nav[link.labelKey]}
-            </span>
-          ) : (
-            <Link
-              key={link.page}
-              href={link.href}
-              onClick={() => setIsMobileNavOpen(false)}
-              className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-zinc-200 dark:text-zinc-800 hover:bg-zinc-500 hover:text-white"
-            >
-              {t.nav[link.labelKey]}
-            </Link>
-          );
-        })}
-      </nav>
-    </CollapsibleContent>
-    </Collapsible>
+    {isMobileNavOpen && (
+      <MobileMenu
+        links={visibleNavLinks.map((link) => ({
+          page: link.page,
+          href: link.href,
+          label: t.nav[link.labelKey],
+        }))}
+        currentPage={currentPage}
+        user={authUser}
+        isAuthLoading={isAuthLoading}
+        onSignIn={() => {
+          setIsMobileNavOpen(false);
+          onSignIn();
+        }}
+        onSignOut={() => {
+          setIsMobileNavOpen(false);
+          onSignOut();
+        }}
+        onClose={() => setIsMobileNavOpen(false)}
+      />
+    )}
 
       {modalMode && (
         <Modal onClose={closeModal} labelledBy="my-team-modal-title">
