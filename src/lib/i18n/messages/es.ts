@@ -100,6 +100,8 @@ export const es: Messages = {
   },
   footer: {
     credit: "VGC Box desarrollado por AnthosVGC",
+    enjoying: "¿Te gusta este proyecto?",
+    buyMeACoffee: "Invítame un café",
     disclaimer:
       "Todas las imágenes y datos usados en este sitio son propiedad de Pokémon y sus filiales. Este sitio no está afiliado de ninguna forma con The Pokémon Company, Game Freak, ILCA ni Nintendo.",
   },

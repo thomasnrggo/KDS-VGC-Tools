@@ -30,6 +30,7 @@ import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
+import { LoadingState } from "@/components/LoadingState";
 
 interface TeamReportPageProps {
   params: Promise<{ teamId: string }>;
@@ -145,7 +146,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
+        <LoadingState />
       ) : !team ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
           <p className="text-lg font-semibold text-zinc-900">{t.teamPage.notFound}</p>

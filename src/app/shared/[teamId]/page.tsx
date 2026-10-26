@@ -11,6 +11,7 @@ import { TeamPost } from "@/components/TeamPost";
 import { getSharedTeam } from "@/lib/firebase";
 import { REGULATIONS } from "@/data/regulations";
 import type { SharedTeam } from "@/types";
+import { LoadingState } from "@/components/LoadingState";
 
 interface SharedTeamPageProps {
   params: Promise<{ teamId: string }>;
@@ -36,7 +37,10 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
   } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const [state, setState] = useState<
-    { kind: "loading" } | { kind: "missing" } | { kind: "error" } | { kind: "ready"; team: SharedTeam }
+    | { kind: "loading" }
+    | { kind: "missing" }
+    | { kind: "error" }
+    | { kind: "ready"; team: SharedTeam }
   >({ kind: "loading" });
 
   useEffect(() => {
@@ -73,7 +77,7 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
       />
 
       {state.kind === "loading" ? (
-        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
+        <LoadingState />
       ) : state.kind !== "ready" ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
           <p className="text-lg font-semibold text-zinc-900">

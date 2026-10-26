@@ -33,6 +33,7 @@ import { TEAM_REPORT_PREP_ENABLED } from "@/constants";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
+import { LoadingState } from "@/components/LoadingState";
 
 /**
  * The opponent list the section shows and edits — the personal one
@@ -877,7 +878,7 @@ export function OpponentsSection({
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">{t.common.loading}</p>
+        <LoadingState />
       ) : regulationOpponents.length === 0 && !isAdding && !isBulkImporting ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center">
           <Image

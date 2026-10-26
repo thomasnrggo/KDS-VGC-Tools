@@ -15,6 +15,10 @@ tagged `vX.Y.Z`. The minor or major number only changes when the project owner s
 0.2 is about making the existing features better and more stable rather than adding new ones —
 starting with the experience on a phone.
 
+### Added
+- Footer: "Enjoying this project?" with a Buy me a coffee button (buymeacoffee.com/thomasnrggo, opens
+  in a new tab), on the same line as the credit (wrapping under it on phones).
+
 ### Changed
 - Damage Calculator on wide screens: smaller "X vs Y" sprites at the top of the result card (48px,
   down from 80px).
@@ -82,6 +86,10 @@ starting with the experience on a phone.
   browser's native dropdown (on phones, the same full-screen sheet).
 
 ### Fixed
+- Signed in, the Matchup Planner (and My Teams, Tournaments, the header's team and the calculator's
+  saved sets) no longer show your list and then replace it a moment later. They used to load the
+  copy saved on this device before sign-in finished, then the synced copy. They now wait for
+  sign-in and load once, with a spinner meanwhile.
 - Damage Calculator on tablets and touch screens: tapping a move, item or ability field no longer
   opens the device's text menu (iPadOS's Cut/Copy/Look Up bar, or the right-click menu in Chrome's
   iPad emulation) along with the list. On touch the field empties for a fresh search, with the

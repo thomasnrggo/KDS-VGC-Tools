@@ -98,6 +98,8 @@ export const en = {
   },
   footer: {
     credit: "VGC Box developed by AnthosVGC",
+    enjoying: "Enjoying this project?",
+    buyMeACoffee: "Buy me a coffee",
     disclaimer:
       "All images and data used on this site are owned by Pokémon and its subsidiaries. This site is not affiliated with The Pokémon Company, Game Freak, ILCA, or Nintendo in any way.",
   },

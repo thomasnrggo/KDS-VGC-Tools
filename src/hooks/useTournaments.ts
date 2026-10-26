@@ -25,7 +25,7 @@ function sortByUpdatedAtDesc(tournaments: Tournament[]): Tournament[] {
 let cached: Tournament[] | null = null;
 
 export function useTournaments() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [tournaments, setTournaments] = useState<Tournament[]>(() => cached ?? []);
   const [isLoading, setIsLoading] = useState(() => cached === null);
 
@@ -34,6 +34,9 @@ export function useTournaments() {
   }, [tournaments, isLoading]);
 
   useEffect(() => {
+    // Wait until we know whether someone is signed in: loading the local copy
+    // first and the cloud sync after showed the list, then replaced it.
+    if (isAuthLoading) return;
     let cancelled = false;
     const load = user
       ? () =>
@@ -51,15 +54,22 @@ export function useTournaments() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   /** Creates a new tournament for `teamId`/`regulationId` and returns it. */
-  const addTournament = useCallback((name: string, teamId: string, regulationId: string): Tournament => {
-    const tournament = createTournament(name.trim() || getMessages().errors.untitledTournament, teamId, regulationId);
-    setTournaments((prev) => sortByUpdatedAtDesc([tournament, ...prev]));
-    void saveTournament(tournament);
-    return tournament;
-  }, []);
+  const addTournament = useCallback(
+    (name: string, teamId: string, regulationId: string): Tournament => {
+      const tournament = createTournament(
+        name.trim() || getMessages().errors.untitledTournament,
+        teamId,
+        regulationId,
+      );
+      setTournaments((prev) => sortByUpdatedAtDesc([tournament, ...prev]));
+      void saveTournament(tournament);
+      return tournament;
+    },
+    [],
+  );
 
   /** Applies `updater` to the tournament with `id`, persisting the result. No-op if not found. */
   const updateTournament = useCallback(

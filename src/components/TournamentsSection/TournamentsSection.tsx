@@ -12,6 +12,7 @@ import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
+import { LoadingState } from "@/components/LoadingState";
 
 interface TournamentsSectionProps {
   tournaments: Tournament[];
@@ -191,7 +192,7 @@ export function TournamentsSection({
       )}
 
       {isLoading ? (
-        <p className="text-sm text-zinc-500">{t.common.loading}</p>
+        <LoadingState />
       ) : regulationActiveTeams.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center text-sm text-zinc-600">
           {activeTeams.length === 0 ? t.tournaments.needTeam : t.tournaments.needRegulationTeam}

@@ -53,6 +53,7 @@ import type {
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import type { Messages } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/LoadingState";
 
 type StageField = "atkStage" | "defStage" | "spaStage" | "spdStage";
 const STAGE_FIELD_BY_ATTACK_STAT: Record<DamageResult["attackStatKey"], StageField> = {
@@ -917,7 +918,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
   }
 
   if (isLoading) {
-    return <p className="text-sm text-zinc-500">{t.common.loading}</p>;
+    return <LoadingState />;
   }
 
   const fieldControls = (

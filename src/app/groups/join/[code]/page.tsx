@@ -13,6 +13,7 @@ import { IconName } from "@/enums";
 import { getInvite, joinGroup } from "@/lib/firebase";
 import { REGULATIONS } from "@/data/regulations";
 import type { GroupInvite } from "@/types";
+import { LoadingState } from "@/components/LoadingState";
 
 interface JoinGroupPageProps {
   params: Promise<{ code: string }>;
@@ -97,7 +98,7 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
 
   let body;
   if (isAuthLoading) {
-    body = <p className="text-sm text-zinc-500">{t.common.loading}</p>;
+    body = <LoadingState />;
   } else if (!user) {
     body = (
       <>
@@ -108,7 +109,7 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
       </>
     );
   } else if (!loaded) {
-    body = <p className="text-sm text-zinc-500">{t.common.loading}</p>;
+    body = <LoadingState />;
   } else if (loaded.state !== "ready") {
     body = (
       <p className="text-sm text-zinc-600">

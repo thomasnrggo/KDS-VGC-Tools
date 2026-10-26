@@ -27,7 +27,7 @@ const PERSONAL_STORE: OpponentStore = {
 let cached: Opponent[] | null = null;
 
 export function useOpponents() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [opponents, setOpponents] = useState<Opponent[]>(() => cached ?? []);
   const [isLoading, setIsLoading] = useState(() => cached === null);
 
@@ -36,6 +36,9 @@ export function useOpponents() {
   }, [opponents, isLoading]);
 
   useEffect(() => {
+    // Wait until we know whether someone is signed in: loading the local copy
+    // first and the cloud sync after showed the list, then replaced it.
+    if (isAuthLoading) return;
     let cancelled = false;
     const load = user
       ? () =>
@@ -53,7 +56,7 @@ export function useOpponents() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   const actions = useOpponentActions(opponents, setOpponents, PERSONAL_STORE);
 

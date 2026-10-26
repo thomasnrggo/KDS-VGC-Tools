@@ -36,12 +36,15 @@ let cachedPublic: CalcSet[] | null = null;
  * caller can report it; custom writes never fail visibly (local save first).
  */
 export function useCalcSets() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const canEditPublic = isAdminUid(user?.uid);
   const [customSets, setCustomSets] = useState<CalcSet[]>(() => cachedCustom ?? []);
   const [publicSets, setPublicSets] = useState<CalcSet[]>(() => cachedPublic ?? []);
 
   useEffect(() => {
+    // Wait until we know whether someone is signed in: loading the local copy
+    // first and the cloud sync after showed the list, then replaced it.
+    if (isAuthLoading) return;
     let cancelled = false;
     const load = user
       ? () =>
@@ -58,7 +61,7 @@ export function useCalcSets() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +102,11 @@ export function useCalcSets() {
   }
 
   /** Saves `pokemon` as a set named `name`, replacing a same-species set of that name if there is one. */
-  async function saveSet(kind: CalcSetKind, pokemon: ParsedPokemon, name: string): Promise<CalcSet> {
+  async function saveSet(
+    kind: CalcSetKind,
+    pokemon: ParsedPokemon,
+    name: string,
+  ): Promise<CalcSet> {
     const existing = findSameNameSet(setsOf(kind), pokemon, name);
     const set: CalcSet = {
       id: existing?.id ?? generateId(),

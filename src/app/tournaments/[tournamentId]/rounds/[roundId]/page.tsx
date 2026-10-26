@@ -19,6 +19,7 @@ import type { TournamentGame, TournamentRound } from "@/types";
 import { useMessages } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
+import { LoadingState } from "@/components/LoadingState";
 
 interface RoundPageProps {
   params: Promise<{ tournamentId: string; roundId: string }>;
@@ -113,7 +114,7 @@ export default function RoundPage({ params }: RoundPageProps) {
       />
 
       {isLoading ? (
-        <p className="p-6 text-sm text-zinc-500">{t.common.loading}</p>
+        <LoadingState />
       ) : !tournament || !round ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
           <p className="text-lg font-semibold text-zinc-900">{t.round.notFound}</p>

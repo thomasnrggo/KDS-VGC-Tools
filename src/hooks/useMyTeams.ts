@@ -43,7 +43,7 @@ function sortByCustomOrder(teams: Team[]): Team[] {
 let cached: { teams: Team[]; activeTeamId: string | null } | null = null;
 
 export function useMyTeams() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [teams, setTeams] = useState<Team[]>(() => cached?.teams ?? []);
   const [activeTeamId, setActiveTeamIdState] = useState<string | null>(
     () => cached?.activeTeamId ?? null,
@@ -55,6 +55,9 @@ export function useMyTeams() {
   }, [teams, activeTeamId, isLoading]);
 
   useEffect(() => {
+    // Wait until we know whether someone is signed in: loading the local copy
+    // first and the cloud sync after showed the list, then replaced it.
+    if (isAuthLoading) return;
     let cancelled = false;
     const load = user
       ? () =>
@@ -81,7 +84,7 @@ export function useMyTeams() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   const setActiveTeamId = useCallback(
     (id: string | null) => {
@@ -105,7 +108,11 @@ export function useMyTeams() {
         return getMessages().errors.pasteTeamFirst;
       }
 
-      const newTeam = createTeam(trimmed, name.trim() || getMessages().errors.defaultTeamName(teams.length + 1), regulationId);
+      const newTeam = createTeam(
+        trimmed,
+        name.trim() || getMessages().errors.defaultTeamName(teams.length + 1),
+        regulationId,
+      );
       const sizeError = validateTeamSize(newTeam.pokemon);
       if (sizeError) {
         return sizeError;
@@ -142,7 +149,11 @@ export function useMyTeams() {
    */
   const addBlankTeam = useCallback(
     (name: string, regulationId: string): Team => {
-      const newTeam = createTeam("", name.trim() || getMessages().errors.defaultTeamName(teams.length + 1), regulationId);
+      const newTeam = createTeam(
+        "",
+        name.trim() || getMessages().errors.defaultTeamName(teams.length + 1),
+        regulationId,
+      );
       setTeams((prev) => [...prev, newTeam]);
       void saveMyTeam(newTeam);
       setActiveTeamId(newTeam.id);
@@ -208,9 +219,7 @@ export function useMyTeams() {
     (id: string) => {
       setTeams((prev) => prev.filter((team) => team.id !== id));
       if (activeTeamId === id) {
-        setActiveTeamId(
-          teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null,
-        );
+        setActiveTeamId(teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null);
       }
       void deleteMyTeam(id, !!teams.find((team) => team.id === id)?.share);
     },
@@ -226,9 +235,7 @@ export function useMyTeams() {
       setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
       void saveMyTeam(updated);
       if (activeTeamId === id) {
-        setActiveTeamId(
-          teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null,
-        );
+        setActiveTeamId(teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null);
       }
     },
     [teams, activeTeamId, setActiveTeamId],
