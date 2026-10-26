@@ -3,11 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getPlanForTeam } from "@/lib/opponent";
 import { suggestTags } from "@/lib/opponentTags";
-import type {
-  MatchupPlan,
-  Opponent,
-  ParsedPokemon,
-} from "@/types";
+import type { MatchupPlan, Opponent, ParsedPokemon } from "@/types";
 import { TeamRoster } from "../TeamRoster";
 import { OpponentTags } from "../OpponentTags";
 import { leadBackSlotProps, PokemonSlotPicker } from "../PokemonSlotPicker";
@@ -16,11 +12,8 @@ import { Icon } from "../Icon";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
 
 export interface OpponentCardProps {
   opponent: Opponent;
@@ -111,7 +104,7 @@ function GamePlanNotes({
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <h3 className={`${COLUMN_TITLE_CLASSES} shrink-0`}>{t.opponentCard.gamePlan}</h3>
+          <h3 className={cn(COLUMN_TITLE_CLASSES, "shrink-0")}>{t.opponentCard.gamePlan}</h3>
           {copiedFromLabel && <CopiedFromBadge label={copiedFromLabel} />}
         </div>
         {titleAccessory}
@@ -125,11 +118,9 @@ function GamePlanNotes({
         }}
         disabled={!activeTeamId}
         rows={2}
-        placeholder={
-          activeTeamId ? t.opponentCard.notesPlaceholder : t.opponentCard.notesNeedTeam
-        }
+        placeholder={activeTeamId ? t.opponentCard.notesPlaceholder : t.opponentCard.notesNeedTeam}
         aria-label={t.opponentCard.notes}
-        className="min-h-16 max-h-32 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-transparent disabled:cursor-not-allowed disabled:opacity-60"
+        className="max-h-32 min-h-16 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-zinc-800 focus:ring-2 focus:ring-transparent focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
       />
     </>
   );
@@ -194,13 +185,10 @@ export function OpponentCard({
       onClick={variantToggle.onToggle}
       aria-expanded={variantToggle.isExpanded}
       title={variantToggle.isExpanded ? t.opponentCard.hideVariants : t.opponentCard.showVariants}
-      className="flex h-7 shrink-0 items-center gap-0.5 rounded-full border border-zinc-400 pl-2 pr-1 text-xs font-medium text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100"
+      className="flex h-7 shrink-0 items-center gap-0.5 rounded-full border border-zinc-400 pr-1 pl-2 text-xs font-medium text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100"
     >
       {t.opponentCard.variantCount(variantToggle.count)}
-      <Icon
-        name={variantToggle.isExpanded ? IconName.ExpandLess : IconName.ExpandMore}
-        size={16}
-      />
+      <Icon name={variantToggle.isExpanded ? IconName.ExpandLess : IconName.ExpandMore} size={16} />
     </button>
   );
 
@@ -219,13 +207,9 @@ export function OpponentCard({
   );
 
   const leadBackContent = !activeTeamId ? (
-    <p className="max-w-48 text-sm text-amber-600">
-      {t.opponentCard.needTeam}
-    </p>
+    <p className="max-w-48 text-sm text-amber-600">{t.opponentCard.needTeam}</p>
   ) : !activeTeamMatchesRegulation ? (
-    <p className="max-w-48 text-sm text-amber-600">
-      {t.opponentCard.teamNotInRegulation}
-    </p>
+    <p className="max-w-48 text-sm text-amber-600">{t.opponentCard.teamNotInRegulation}</p>
   ) : (
     // Stacked (Lead row, then Back row) ONLY in the medium/tablet range —
     // same idea as TeamRoster's md compression — since this column is
@@ -238,8 +222,8 @@ export function OpponentCard({
     // covers both instead of two separate ones.
     <div className="flex flex-wrap gap-6 md:flex-col md:gap-2 lg:flex-row lg:flex-wrap lg:gap-6">
       <div className="flex flex-col gap-1">
-        <h3 className={`${COLUMN_TITLE_CLASSES} md:hidden lg:flex`}>{t.opponentCard.lead}</h3>
-        <h3 className={`${COLUMN_TITLE_CLASSES} hidden md:flex lg:hidden`}>
+        <h3 className={cn(COLUMN_TITLE_CLASSES, "md:hidden lg:flex")}>{t.opponentCard.lead}</h3>
+        <h3 className={cn(COLUMN_TITLE_CLASSES, "hidden md:flex lg:hidden")}>
           {t.opponentCard.leadsAndBacks}
         </h3>
         <div className="flex gap-2">
@@ -248,7 +232,7 @@ export function OpponentCard({
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <h3 className={`${COLUMN_TITLE_CLASSES} md:hidden lg:flex`}>{t.opponentCard.back}</h3>
+        <h3 className={cn(COLUMN_TITLE_CLASSES, "md:hidden lg:flex")}>{t.opponentCard.back}</h3>
         <div className="flex gap-2">
           <PokemonSlotPicker {...slotProps(2)} />
           <PokemonSlotPicker {...slotProps(3)} />
@@ -270,17 +254,19 @@ export function OpponentCard({
                 {dragHandle}
                 <span
                   title={opponent.label}
-                  className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-zinc-600"
+                  className="max-w-48 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase"
                 >
                   {opponent.label}
                 </span>
                 {isVariant && (
-                  <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                  <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-600 uppercase">
                     {t.opponentCard.variant}
                   </span>
                 )}
                 {addedByLabel && (
-                  <span className="shrink-0 truncate text-[11px] text-zinc-500">{addedByLabel}</span>
+                  <span className="shrink-0 truncate text-[11px] text-zinc-500">
+                    {addedByLabel}
+                  </span>
                 )}
                 {opponent.pokepasteUrl && (
                   <a
@@ -317,10 +303,7 @@ export function OpponentCard({
                   title={isExpanded ? t.opponentCard.collapse : t.opponentCard.expand}
                   className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
                 >
-                  <Icon
-                    name={isExpanded ? IconName.ExpandLess : IconName.ExpandMore}
-                    size={18}
-                  />
+                  <Icon name={isExpanded ? IconName.ExpandLess : IconName.ExpandMore} size={18} />
                 </CollapsibleTrigger>
               </div>
             </div>
@@ -350,17 +333,19 @@ export function OpponentCard({
                 {dragHandle}
                 <span
                   title={opponent.label}
-                  className="max-w-48 truncate text-xs font-semibold uppercase tracking-wide text-zinc-600 md:max-w-36 lg:max-w-xs"
+                  className="max-w-48 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase md:max-w-36 lg:max-w-xs"
                 >
                   {opponent.label}
                 </span>
                 {isVariant && (
-                  <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+                  <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-600 uppercase">
                     {t.opponentCard.variant}
                   </span>
                 )}
                 {addedByLabel && (
-                  <span className="shrink-0 truncate text-[11px] text-zinc-500">{addedByLabel}</span>
+                  <span className="shrink-0 truncate text-[11px] text-zinc-500">
+                    {addedByLabel}
+                  </span>
                 )}
                 {opponent.pokepasteUrl && (
                   <a

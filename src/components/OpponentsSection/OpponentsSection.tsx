@@ -8,17 +8,8 @@ import { useOpponentListReversed } from "@/hooks/useOpponentListReversed";
 import { useSeasons } from "@/hooks/useSeasons";
 import { parseTeamFolder } from "@/lib/teamFolder";
 import { REGULATIONS } from "@/data/regulations";
-import type {
-  BulkImportResult,
-  Opponent,
-  ParsedPokemon,
-  Season,
-  TeamFolderEntry,
-} from "@/types";
-import {
-  parseSearchTerms,
-  pokemonMatchesQuery,
-} from "@/lib/pokemonMatchesQuery";
+import type { BulkImportResult, Opponent, ParsedPokemon, Season, TeamFolderEntry } from "@/types";
+import { parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { tagsMatchQuery } from "@/lib/opponentTags";
 import {
   defaultDecision,
@@ -40,6 +31,8 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { TEAM_REPORT_PREP_ENABLED } from "@/constants";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 /**
  * The opponent list the section shows and edits — the personal one
@@ -149,7 +142,7 @@ function OpponentsMoreMenu({
           ref={dropdownRef}
           role="menu"
           aria-label={t.opponents.moreOptions}
-          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+          className="absolute top-full right-0 z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           {!isLoading &&
             regulationSeasons.map((season) => (
@@ -186,7 +179,7 @@ function OpponentsMoreMenu({
                 setIsOpen(false);
               }}
               disabled={clearDisabled}
-              className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
+              className="flex w-full items-center gap-2 border-t border-zinc-200 px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent dark:hover:bg-red-950"
             >
               {t.opponents.clearAll}
             </button>
@@ -196,7 +189,6 @@ function OpponentsMoreMenu({
     </div>
   );
 }
-
 
 export function OpponentsSection({
   source,
@@ -313,9 +305,7 @@ export function OpponentsSection({
 
   /** Moves main `movedId` to `toDisplayIndex` of the list as shown, translating a reversed view back to list order. */
   function moveInDisplay(movedId: string, toDisplayIndex: number) {
-    const displayIds = displayedGroups
-      .map((group) => group.main.id)
-      .filter((id) => id !== movedId);
+    const displayIds = displayedGroups.map((group) => group.main.id).filter((id) => id !== movedId);
     displayIds.splice(toDisplayIndex, 0, movedId);
     const listIds = isReversed ? displayIds.reverse() : displayIds;
     moveOpponent(
@@ -492,11 +482,7 @@ export function OpponentsSection({
   }
 
   /** Move up/down/top/bottom for the row at `index` of a `count`-row list as shown — the mains, or one group's variants. */
-  function moveActions(
-    index: number,
-    count: number,
-    move: (toIndex: number) => void,
-  ): RowAction[] {
+  function moveActions(index: number, count: number, move: (toIndex: number) => void): RowAction[] {
     const lastIndex = count - 1;
     return [
       {
@@ -611,7 +597,7 @@ export function OpponentsSection({
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
           aria-label={t.common.regulation}
-          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
+          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
@@ -622,7 +608,7 @@ export function OpponentsSection({
         <Icon
           name={IconName.ExpandMore}
           size={14}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
         />
       </div>
     ) : (
@@ -635,8 +621,7 @@ export function OpponentsSection({
       </span>
     );
 
-  const canSearch =
-    !isLoading && !isAdding && !isBulkImporting && regulationOpponents.length > 0;
+  const canSearch = !isLoading && !isAdding && !isBulkImporting && regulationOpponents.length > 0;
 
   // Hidden once search is open — the field itself (below) has its own icon,
   // and its trailing button takes over closing search (see PLANNING.md).
@@ -660,11 +645,12 @@ export function OpponentsSection({
       aria-pressed={isReversed}
       aria-label={t.opponents.reverse}
       title={isReversed ? t.opponents.reversed : t.opponents.reverse}
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+      className={cn(
+        "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
         isReversed
           ? "bg-zinc-200 text-zinc-900"
-          : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
-      }`}
+          : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700",
+      )}
     >
       <Icon name={IconName.SwapVert} size={18} />
     </button>
@@ -677,7 +663,7 @@ export function OpponentsSection({
           pill against the title/regulation/search cluster (see PLANNING.md). */}
       <div className="flex flex-col gap-3 md:hidden">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="whitespace-nowrap text-xl font-semibold text-zinc-900">
+          <h2 className="text-xl font-semibold whitespace-nowrap text-zinc-900">
             {title ?? t.opponents.title}
           </h2>
           {regulationControl}
@@ -703,7 +689,7 @@ export function OpponentsSection({
                 onClick={startAdding}
                 aria-label={t.opponents.add}
                 title={t.opponents.add}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-600 dark:bg-zinc-400 text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-chrome-600 text-white hover:bg-chrome-700"
               >
                 <Icon name={IconName.Add} size={20} />
               </button>
@@ -725,21 +711,13 @@ export function OpponentsSection({
       {/* Desktop: unchanged single-row layout. */}
       <div className="hidden items-center justify-between md:flex">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-zinc-900">
-            {title ?? t.opponents.title}
-          </h2>
+          <h2 className="text-xl font-semibold text-zinc-900">{title ?? t.opponents.title}</h2>
           {regulationControl}
         </div>
         {!isAdding && !isBulkImporting && (
           <div className="flex gap-2">
             {reverseButton}
-            <button
-              type="button"
-              onClick={startAdding}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-            >
-              {t.opponents.add}
-            </button>
+            <Button onClick={startAdding}>{t.opponents.add}</Button>
             <OpponentsMoreMenu
               isLoading={isLoading}
               regulationSeasons={regulationSeasons}
@@ -771,10 +749,7 @@ export function OpponentsSection({
 
       {isAdding && (
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-opponent-title">
-          <h2
-            id="add-opponent-title"
-            className="mb-4 text-lg font-semibold text-zinc-900"
-          >
+          <h2 id="add-opponent-title" className="mb-4 text-lg font-semibold text-zinc-900">
             {t.opponents.add}
           </h2>
           <OpponentForm
@@ -785,14 +760,8 @@ export function OpponentsSection({
         </Modal>
       )}
       {editingOpponent && (
-        <Modal
-          onClose={() => setEditingId(null)}
-          labelledBy="edit-opponent-title"
-        >
-          <h2
-            id="edit-opponent-title"
-            className="mb-4 text-lg font-semibold text-zinc-900"
-          >
+        <Modal onClose={() => setEditingId(null)} labelledBy="edit-opponent-title">
+          <h2 id="edit-opponent-title" className="mb-4 text-lg font-semibold text-zinc-900">
             {t.opponents.edit}
           </h2>
           <OpponentForm
@@ -802,12 +771,7 @@ export function OpponentsSection({
             initialRawPaste={editingOpponent.team.rawPaste}
             submitLabel={t.opponents.saveChanges}
             onSubmit={(label, rawPaste, pokepasteUrl) => {
-              const result = editOpponentTeam(
-                editingOpponent.id,
-                label,
-                rawPaste,
-                pokepasteUrl,
-              );
+              const result = editOpponentTeam(editingOpponent.id, label, rawPaste, pokepasteUrl);
               if (result) {
                 return result;
               }
@@ -819,10 +783,7 @@ export function OpponentsSection({
         </Modal>
       )}
       {isBulkImporting && (
-        <BulkImportForm
-          onImport={handleBulkImport}
-          onCancel={() => setIsBulkImporting(false)}
-        />
+        <BulkImportForm onImport={handleBulkImport} onCancel={() => setIsBulkImporting(false)} />
       )}
       {importNotice && (
         <div
@@ -860,20 +821,12 @@ export function OpponentsSection({
             {t.opponents.clearBody(regulationOpponents.length)}
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={confirmClearAll}
-              className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-            >
+            <Button variant="danger" onClick={confirmClearAll}>
               {t.opponents.clearAll}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsConfirmingClear(false)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            </Button>
+            <Button variant="outline" onClick={() => setIsConfirmingClear(false)}>
               {t.common.cancel}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
@@ -900,10 +853,7 @@ export function OpponentsSection({
       )}
 
       {confirmRemoveOpponent && (
-        <Modal
-          onClose={() => setConfirmRemoveId(null)}
-          labelledBy="confirm-remove-opponent-title"
-        >
+        <Modal onClose={() => setConfirmRemoveId(null)} labelledBy="confirm-remove-opponent-title">
           <h2
             id="confirm-remove-opponent-title"
             className="mb-2 text-lg font-semibold text-zinc-900"
@@ -916,20 +866,12 @@ export function OpponentsSection({
               ` ${t.opponents.removeSuccessor(confirmRemoveSuccessor.label)}`}
           </p>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={confirmRemove}
-              className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-            >
+            <Button variant="danger" onClick={confirmRemove}>
               {t.opponents.remove}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmRemoveId(null)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmRemoveId(null)}>
               {t.common.cancel}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
@@ -947,30 +889,20 @@ export function OpponentsSection({
             className="h-14 w-14"
           />
           <div className="flex flex-col gap-1">
-            <h3 className="text-lg font-semibold text-zinc-900">
-              {t.opponents.emptyTitle}
-            </h3>
-            <p className="max-w-md text-sm text-zinc-600">
-              {t.opponents.emptyBody}
-            </p>
+            <h3 className="text-lg font-semibold text-zinc-900">{t.opponents.emptyTitle}</h3>
+            <p className="max-w-md text-sm text-zinc-600">{t.opponents.emptyBody}</p>
           </div>
           <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center">
-            <button
-              type="button"
-              onClick={startAdding}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-            >
-              {t.opponents.add}
-            </button>
+            <Button onClick={startAdding}>{t.opponents.add}</Button>
             {regulationSeasons.map((season) => (
-              <button
+              <Button
+                variant="outline"
                 key={season.id}
-                type="button"
                 onClick={() => loadPreset(season.rawPaste, season.regulationId)}
-                className="rounded-full border border-zinc-300 bg-zinc-50 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+                className="bg-zinc-50"
               >
                 {t.opponents.useDefaultSet(season.label, season.id === currentSeasonId)}
-              </button>
+              </Button>
             ))}
           </div>
           <button
@@ -1016,13 +948,13 @@ export function OpponentsSection({
                   event.preventDefault();
                   handleDrop(main.id);
                 }}
-                className={`${index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"} ${
-                  draggedId === main.id ? "opacity-40" : ""
-                } ${
-                  dragOverId === main.id && draggedId !== main.id
-                    ? "outline outline-2 -outline-offset-2 outline-zinc-500"
-                    : ""
-                }`}
+                className={cn(
+                  index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100",
+                  draggedId === main.id && "opacity-40",
+                  dragOverId === main.id &&
+                    draggedId !== main.id &&
+                    "outline outline-2 -outline-offset-2 outline-zinc-500",
+                )}
               >
                 {renderCard(main, {
                   dragHandle: canReorder && dragHandle(main.id),
@@ -1084,13 +1016,13 @@ export function OpponentsSection({
                         event.preventDefault();
                         handleVariantDrop(group, variant.id);
                       }}
-                      className={`border-t border-zinc-300 shadow-[inset_4px_0_0_0_var(--color-zinc-400)] ${
-                        draggedId === variant.id ? "opacity-40" : ""
-                      } ${
-                        dragOverId === variant.id && draggedId !== variant.id
-                          ? "outline outline-2 -outline-offset-2 outline-zinc-500"
-                          : ""
-                      }`}
+                      className={cn(
+                        "border-t border-zinc-300 shadow-[inset_4px_0_0_0_var(--color-zinc-400)]",
+                        draggedId === variant.id && "opacity-40",
+                        dragOverId === variant.id &&
+                          draggedId !== variant.id &&
+                          "outline outline-2 -outline-offset-2 outline-zinc-500",
+                      )}
                     >
                       {renderCard(variant, {
                         isVariant: true,

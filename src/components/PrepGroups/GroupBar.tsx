@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Image from "next/image";
-import { Modal } from "../Modal";
+import { Modal, ModalDescription, ModalTitle } from "../Modal";
 import { Icon } from "../Icon";
 import { RowActionsMenu, type RowAction } from "../RowActionsMenu";
 import { toast } from "../Toast";
@@ -11,7 +11,7 @@ import { useMessages } from "@/hooks/useLanguage";
 import type { GroupMember, PrepGroup } from "@/types";
 
 const PRIMARY_BUTTON =
-  "rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-400 dark:hover:bg-zinc-300";
+  "rounded-full bg-chrome-600 px-5 py-2 text-sm font-medium text-white hover:bg-chrome-700 disabled:cursor-not-allowed disabled:opacity-50";
 const SECONDARY_BUTTON =
   "rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100";
 
@@ -132,7 +132,10 @@ export function GroupBar({
   function submitRename(event: FormEvent) {
     event.preventDefault();
     if (!name.trim()) return;
-    void run(() => onRename(name), () => setDialog(null));
+    void run(
+      () => onRename(name),
+      () => setDialog(null),
+    );
   }
 
   return (
@@ -182,7 +185,7 @@ export function GroupBar({
               onChange={(event) => setName(event.target.value)}
               aria-label={t.groups.create.name}
               autoFocus
-              className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
             />
             <div className="flex gap-2">
               <button type="submit" disabled={!name.trim() || isBusy} className={PRIMARY_BUTTON}>
@@ -198,9 +201,9 @@ export function GroupBar({
 
       {dialog === "members" && (
         <Modal onClose={() => setDialog(null)} labelledBy="group-members-title">
-          <h2 id="group-members-title" className="mb-3 text-lg font-semibold text-zinc-900">
+          <ModalTitle id="group-members-title" className="mb-3">
             {t.groups.membersTitle(group.name)}
-          </h2>
+          </ModalTitle>
           <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200">
             {members.map(({ uid: memberUid, member }) => (
               <li key={memberUid} className="flex items-center gap-3 px-3 py-2">
@@ -247,10 +250,10 @@ export function GroupBar({
 
       {dialog === "leave" && (
         <Modal onClose={() => setDialog(null)} labelledBy="leave-group-title">
-          <h2 id="leave-group-title" className="mb-2 text-lg font-semibold text-zinc-900">
+          <ModalTitle id="leave-group-title" className="mb-2">
             {t.groups.leaveTitle(group.name)}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-600">{t.groups.leaveBody}</p>
+          </ModalTitle>
+          <ModalDescription>{t.groups.leaveBody}</ModalDescription>
           <div className="flex gap-2">
             <button
               type="button"

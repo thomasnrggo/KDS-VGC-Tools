@@ -6,7 +6,11 @@ import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { speciesNamesMegaForm, stripMegaSuffix } from "@/lib/species/megaForm";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
-import { isLikelyMegaStoneItem, NATURE_MODIFIERS, WEATHER_SPEED_DOUBLING_ABILITIES } from "@/constants";
+import {
+  isLikelyMegaStoneItem,
+  NATURE_MODIFIERS,
+  WEATHER_SPEED_DOUBLING_ABILITIES,
+} from "@/constants";
 import {
   estimateOpponentSpeedRange,
   type SpeedRange,
@@ -17,6 +21,7 @@ import { TypeIcon } from "../TypeIcon";
 import movesData from "@/data/moves.json";
 import type { ParsedPokemon } from "@/types";
 import type { MoveData } from "@/types/damage";
+import { cn } from "@/lib/utils";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
@@ -162,9 +167,7 @@ export function PokemonHoverCard({
   const hasMegaForm =
     speciesIsMegaForm || candidateFormKeys(pokemon.species, pokemon.item).length > 1;
   const holdsUnsupportedMegaStone =
-    !hasMegaForm &&
-    Boolean(pokemon.item) &&
-    isLikelyMegaStoneItem(pokemon.item!);
+    !hasMegaForm && Boolean(pokemon.item) && isLikelyMegaStoneItem(pokemon.item!);
   const [internalShowMega, setInternalShowMega] = useState(true);
   const isMegaControlled = onMegaToggle !== undefined;
   const showMega = isMegaControlled ? (megaEnabled ?? true) : internalShowMega;
@@ -198,18 +201,14 @@ export function PokemonHoverCard({
     pokemon.ability,
   );
   const speedDoubler = speedDoublerFor(ability);
-  const resolvedChildren =
-    typeof children === "function" ? children(effectivePokemon) : children;
+  const resolvedChildren = typeof children === "function" ? children(effectivePokemon) : children;
 
   useEffect(() => {
     if (trigger !== "click" || !isOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      if (
-        triggerRef.current?.contains(target) ||
-        tooltipRef.current?.contains(target)
-      ) {
+      if (triggerRef.current?.contains(target) || tooltipRef.current?.contains(target)) {
         return;
       }
       setOpenId(null);
@@ -312,7 +311,7 @@ export function PokemonHoverCard({
   return (
     <div
       ref={triggerRef}
-      className={`relative inline-flex ${triggerClassName ?? ""}`}
+      className={cn("relative inline-flex", triggerClassName ?? "")}
       {...interactionProps}
     >
       {resolvedChildren}
@@ -350,11 +349,12 @@ export function PokemonHoverCard({
                     }
                   }}
                   aria-pressed={showMega}
-                  className={`shrink-0 cursor-pointer select-none rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${
+                  className={cn(
+                    "shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors select-none",
                     showMega
-                      ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
-                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-                  }`}
+                      ? "border-zinc-600 bg-chrome-600 text-white"
+                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100",
+                  )}
                 >
                   {t.pokemonCard.mega}
                 </span>
@@ -368,9 +368,7 @@ export function PokemonHoverCard({
                 </span>
               )}
             </div>
-            {ability && (
-              <p className="truncate text-sm text-zinc-500">{text.ability(ability)}</p>
-            )}
+            {ability && <p className="truncate text-sm text-zinc-500">{text.ability(ability)}</p>}
             {pokemon.item && (
               <p className="truncate text-sm text-zinc-500">{text.item(pokemon.item)}</p>
             )}
@@ -402,10 +400,10 @@ export function PokemonHoverCard({
                 className="mt-2 flex flex-col"
               >
                 <span className="flex items-baseline gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     {t.quickCard.speed}
                   </span>
-                  <span className="text-lg font-bold tabular-nums text-zinc-900">
+                  <span className="text-lg font-bold text-zinc-900 tabular-nums">
                     {formatSpeed(speed)}
                   </span>
                 </span>

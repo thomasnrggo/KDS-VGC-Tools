@@ -5,6 +5,7 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
 import type { PrepGroup } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface PlannerSourcePickerProps {
   /** The open list: "personal" or a group id. */
@@ -69,7 +70,7 @@ export function PlannerSourcePicker({
         role="menuitemradio"
         aria-checked={source === group.id}
         onClick={() => pick(group.id)}
-        className={`${ITEM_CLASSES} ${source === group.id ? "font-semibold text-zinc-900" : ""}`}
+        className={cn(ITEM_CLASSES, source === group.id && "font-semibold text-zinc-900")}
       >
         <Icon name={IconName.Group} size={16} className="shrink-0 text-zinc-500" />
         <span className="min-w-0 flex-1 truncate">{group.name}</span>
@@ -101,14 +102,14 @@ export function PlannerSourcePicker({
         <div
           role="menu"
           aria-label={t.groups.switchList}
-          className="absolute left-0 top-full z-30 mt-1 w-72 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+          className="absolute top-full left-0 z-30 mt-1 w-72 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           <button
             type="button"
             role="menuitemradio"
             aria-checked={source === "personal" || !current}
             onClick={() => pick("personal")}
-            className={`${ITEM_CLASSES} ${!current ? "font-semibold text-zinc-900" : ""}`}
+            className={cn(ITEM_CLASSES, !current && "font-semibold text-zinc-900")}
           >
             <Icon name={IconName.Description} size={16} className="shrink-0 text-zinc-500" />
             {t.groups.myOpponents}
@@ -117,7 +118,7 @@ export function PlannerSourcePicker({
           {isSignedIn ? (
             <>
               {activeGroups.length > 0 && (
-                <p className="border-t border-zinc-200 px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                <p className="border-t border-zinc-200 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase">
                   {t.groups.groupsHeading}
                 </p>
               )}
@@ -128,7 +129,7 @@ export function PlannerSourcePicker({
                     type="button"
                     onClick={() => setShowArchived((value) => !value)}
                     aria-expanded={showArchived}
-                    className="flex w-full items-center justify-between border-t border-zinc-200 px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 hover:text-zinc-700"
+                    className="flex w-full items-center justify-between border-t border-zinc-200 px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase hover:text-zinc-700"
                   >
                     {t.groups.archivedHeading} ({archivedGroups.length})
                     <Icon
@@ -146,7 +147,7 @@ export function PlannerSourcePicker({
                   setIsOpen(false);
                   onCreateGroup();
                 }}
-                className={`${ITEM_CLASSES} border-t border-zinc-200`}
+                className={cn(ITEM_CLASSES, "border-t border-zinc-200")}
               >
                 <Icon name={IconName.Add} size={16} className="shrink-0 text-zinc-500" />
                 {t.groups.newGroup}
@@ -160,7 +161,7 @@ export function PlannerSourcePicker({
                 setIsOpen(false);
                 onSignIn();
               }}
-              className={`${ITEM_CLASSES} border-t border-zinc-200 text-zinc-500`}
+              className={cn(ITEM_CLASSES, "border-t border-zinc-200 text-zinc-500")}
             >
               <Icon name={IconName.Group} size={16} className="shrink-0" />
               {t.groups.signInForGroups}

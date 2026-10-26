@@ -10,17 +10,8 @@ import movesData from "@/data/moves.json";
 import speciesTypesData from "@/data/speciesTypes.json";
 import baseStatsData from "@/data/baseStats.json";
 import type { StatOverrides } from "@/lib/stats/applyStatOverrides";
-import type {
-  BaseStats,
-  MoveData,
-  ParsedPokemon,
-  SpeciesAbility,
-  StatKey,
-} from "@/types";
-import {
-  SearchableSelect,
-  type SearchableSelectOption,
-} from "../SearchableSelect";
+import type { BaseStats, MoveData, ParsedPokemon, SpeciesAbility, StatKey } from "@/types";
+import { SearchableSelect, type SearchableSelectOption } from "../SearchableSelect";
 import { PokemonSprite } from "../PokemonSprite";
 import { TypeIcon } from "../TypeIcon";
 import { Icon } from "../Icon";
@@ -28,12 +19,10 @@ import { IconName } from "@/enums";
 import { computePokemonBuild } from "./computePokemonBuild";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import {
-  ENGLISH_POKEMON_TEXT,
-  type PokemonText,
-} from "@/lib/i18n/pokemonNames";
+import { ENGLISH_POKEMON_TEXT, type PokemonText } from "@/lib/i18n/pokemonNames";
 import { MESSAGES, type Messages } from "@/lib/i18n/messages";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
+import { cn } from "@/lib/utils";
 
 const ABILITIES = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
 const MOVES = movesData as unknown as Record<string, MoveData>;
@@ -89,8 +78,8 @@ function speciesOptionContent(
           </span>
           {stats && (
             <span className="shrink-0">
-              {stats.hp}/{stats.atk}/{stats.def}/{stats.spa}/{stats.spd}/
-              {stats.spe} {t.editor.bst} {bst}
+              {stats.hp}/{stats.atk}/{stats.def}/{stats.spa}/{stats.spd}/{stats.spe} {t.editor.bst}{" "}
+              {bst}
             </span>
           )}
         </div>
@@ -100,16 +89,15 @@ function speciesOptionContent(
 }
 
 /** Every legal Regulation M-B species — only one regulation exists today, see src/data/regulations/index.ts. This is the *only* way to pick a Pokémon's identity (team/opponent selection is a separate, caller-provided affordance — see RosterPokemonPicker's "Load Team"). */
-export const SPECIES_OPTIONS: SearchableSelectOption[] =
-  REGULATIONS[0].speciesKeys.map((key) => {
-    const label = formatSpeciesDisplayName(key);
-    return {
-      id: key,
-      label,
-      sprite: label,
-      content: speciesOptionContent(key, label),
-    };
-  });
+export const SPECIES_OPTIONS: SearchableSelectOption[] = REGULATIONS[0].speciesKeys.map((key) => {
+  const label = formatSpeciesDisplayName(key);
+  return {
+    id: key,
+    label,
+    sprite: label,
+    content: speciesOptionContent(key, label),
+  };
+});
 
 /** A Showdown-style Name/Type/Category/Pow/Acc/PP row with the effect text underneath — the move search's shared-panel row. */
 function moveOptionContent(
@@ -123,32 +111,27 @@ function moveOptionContent(
       <div className="flex items-center gap-1.5">
         <span className="truncate font-medium">{name}</span>
         <TypeIcon type={move.type} size={14} />
-        <span className="shrink-0 text-[10px] uppercase text-zinc-500">
+        <span className="shrink-0 text-[10px] text-zinc-500 uppercase">
           {t.editor.categories[move.category]}
         </span>
-        <span className="ml-auto shrink-0 whitespace-nowrap text-[10px] text-zinc-500">
-          {move.power ?? "—"} {t.editor.power} ·{" "}
-          {move.accuracy ? `${move.accuracy}%` : "—"} {t.editor.accuracy} ·{" "}
-          {move.pp ?? "—"} {t.editor.pp}
+        <span className="ml-auto shrink-0 text-[10px] whitespace-nowrap text-zinc-500">
+          {move.power ?? "—"} {t.editor.power} · {move.accuracy ? `${move.accuracy}%` : "—"}{" "}
+          {t.editor.accuracy} · {move.pp ?? "—"} {t.editor.pp}
         </span>
       </div>
       {move.shortDesc && (
-        <span className="truncate text-[11px] text-zinc-500">
-          {move.shortDesc}
-        </span>
+        <span className="truncate text-[11px] text-zinc-500">{move.shortDesc}</span>
       )}
     </div>
   );
 }
 
 /** Every move in the data set, for the move-search combobox — moves aren't Regulation-gated (this app doesn't enforce per-species learnsets, see PLANNING.md). */
-export const MOVE_OPTIONS: SearchableSelectOption[] = Object.entries(MOVES).map(
-  ([key, move]) => ({
-    id: key,
-    label: move.name ?? key,
-    content: moveOptionContent(move, key),
-  }),
-);
+export const MOVE_OPTIONS: SearchableSelectOption[] = Object.entries(MOVES).map(([key, move]) => ({
+  id: key,
+  label: move.name ?? key,
+  content: moveOptionContent(move, key),
+}));
 
 /** Builds a fresh from-scratch Pokémon for a given species.json key — defaults to its first (non-hidden) ability, no item, Hardy nature, no moves. */
 export function buildCustomPokemon(speciesKey: string): ParsedPokemon {
@@ -257,10 +240,7 @@ function setMoveSlot(moves: string[], slot: number, move: string): string[] {
   return next;
 }
 
-function filterOptions(
-  options: SearchableSelectOption[],
-  query: string,
-): SearchableSelectOption[] {
+function filterOptions(options: SearchableSelectOption[], query: string): SearchableSelectOption[] {
   const trimmed = foldForSearch(query.trim());
   return (
     trimmed
@@ -286,9 +266,7 @@ const fieldInputClassName =
   "w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1.5 pl-2 pr-7 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
 
 function FieldLabel({ children }: { children: ReactNode }) {
-  return (
-    <span className="text-[11px] font-medium text-zinc-500">{children}</span>
-  );
+  return <span className="text-[11px] font-medium text-zinc-500">{children}</span>;
 }
 
 /** A caller-provided column of the stat table: its header and one cell per stat. */
@@ -409,10 +387,7 @@ export function PokemonEditor({
     if (!activeField) return;
 
     function handlePointerDown(event: PointerEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setActiveField(null);
       }
     }
@@ -428,10 +403,7 @@ export function PokemonEditor({
     };
   }, [activeField]);
 
-  function activateField(
-    field: NonNullable<ActiveField>,
-    currentValue: string,
-  ) {
+  function activateField(field: NonNullable<ActiveField>, currentValue: string) {
     setActiveField(field);
     setQuery(currentValue);
   }
@@ -448,8 +420,7 @@ export function PokemonEditor({
       const moves = pokemon?.moves ?? [];
       const next = [...moves];
       // Saved by its English name — the label may be translated.
-      const moveName =
-        MOVES[option.id]?.name ?? option.searchText ?? option.label;
+      const moveName = MOVES[option.id]?.name ?? option.searchText ?? option.label;
       if (activeField.slot < moves.length) {
         next[activeField.slot] = moveName;
       } else {
@@ -511,9 +482,7 @@ export function PokemonEditor({
     );
     activeAriaLabel = t.editor.moveSlot(title, activeField.slot + 1);
   }
-  const filteredOptions = activeField
-    ? filterOptions(activeOptions, query)
-    : [];
+  const filteredOptions = activeField ? filterOptions(activeOptions, query) : [];
 
   const speciesField = onSpeciesChange && (
     <div className="flex flex-col gap-0.5">
@@ -538,11 +507,12 @@ export function PokemonEditor({
             type="button"
             onClick={() => onMegaChange(!mega)}
             aria-pressed={mega}
-            className={`shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors ${
+            className={cn(
+              "shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors",
               mega
-                ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
-                : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-            }`}
+                ? "border-zinc-600 bg-chrome-600 text-white"
+                : "border-zinc-300 text-zinc-500 hover:bg-zinc-100",
+            )}
           >
             {t.editor.mega}
           </button>
@@ -579,12 +549,8 @@ export function PokemonEditor({
   // A Mega form has only its own ability; a pasted ability off the list is
   // kept as an option so the select still shows it.
   const simpleAbilityOptions =
-    effectiveAbility &&
-    !abilitySelectOptions.some((option) => option.id === effectiveAbility)
-      ? [
-          { id: effectiveAbility, label: abilityDisplay },
-          ...abilitySelectOptions,
-        ]
+    effectiveAbility && !abilitySelectOptions.some((option) => option.id === effectiveAbility)
+      ? [{ id: effectiveAbility, label: abilityDisplay }, ...abilitySelectOptions]
       : abilitySelectOptions;
   const simpleAbilityField = onAbilityChange && (
     <div className="flex flex-col gap-0.5">
@@ -627,10 +593,8 @@ export function PokemonEditor({
               onItemChange(undefined);
               setActiveField(null);
             }}
-            aria-label={t.editor.clear(
-              t.editor.fieldLabel(title, t.editor.item),
-            )}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+            aria-label={t.editor.clear(t.editor.fieldLabel(title, t.editor.item))}
+            className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
           >
             <Icon name={IconName.Close} size={12} />
           </button>
@@ -668,9 +632,7 @@ export function PokemonEditor({
       effectiveAbility && (
         <div className="flex flex-col gap-0.5">
           <FieldLabel>{t.editor.ability}</FieldLabel>
-          <span className="truncate text-sm text-zinc-700">
-            {abilityDisplay}
-          </span>
+          <span className="truncate text-sm text-zinc-700">{abilityDisplay}</span>
         </div>
       )
     );
@@ -683,8 +645,7 @@ export function PokemonEditor({
       ? `2.25rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`
       : `2.75rem 1.75rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`,
   };
-  const remainingSp =
-    maxTotalStatPoints !== undefined ? maxTotalStatPoints - totalSp : undefined;
+  const remainingSp = maxTotalStatPoints !== undefined ? maxTotalStatPoints - totalSp : undefined;
   // The stacked layout (the calc) puts the nature on the stats' footer line;
   // the Team Builder's columns layout keeps it in its own column.
   const natureInFooter = layout === "stacked";
@@ -694,15 +655,13 @@ export function PokemonEditor({
       placeholder={t.editor.selectNature}
       ariaLabel={t.editor.fieldLabel(title, t.editor.nature)}
       value={natureLabel(currentNature.toLowerCase(), { text, t })}
-      onSelect={(option) =>
-        onStatOverridesChange({ ...statOverrides, nature: option.id })
-      }
+      onSelect={(option) => onStatOverridesChange({ ...statOverrides, nature: option.id })}
       compact={!isPhone}
     />
   );
   // Phones: label on top like Item/Ability, sharing the row with besideNature.
   const inlineNatureField = isPhone ? (
-    <div className={`grid gap-2 ${besideNature ? "grid-cols-2" : "grid-cols-1"}`}>
+    <div className={cn("grid gap-2", besideNature ? "grid-cols-2" : "grid-cols-1")}>
       <div className="flex min-w-0 flex-col gap-0.5">
         <FieldLabel>{t.editor.nature}</FieldLabel>
         {natureSelect}
@@ -712,7 +671,7 @@ export function PokemonEditor({
   ) : (
     <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5">
       <span className="shrink-0 text-zinc-500">{t.editor.nature}</span>
-      <div className="min-w-0 max-w-48 flex-1">{natureSelect}</div>
+      <div className="max-w-48 min-w-0 flex-1">{natureSelect}</div>
     </div>
   );
   const statSection = breakdown ? (
@@ -722,9 +681,7 @@ export function PokemonEditor({
         style={statGridStyle}
       >
         <span className="text-zinc-500">{t.editor.stat}</span>
-        {!isPhone && (
-          <span className="text-right text-zinc-500">{t.editor.base}</span>
-        )}
+        {!isPhone && <span className="text-right text-zinc-500">{t.editor.base}</span>}
         <span className="text-center text-zinc-500">{t.editor.sp}</span>
         <span />
         <span className="text-right text-zinc-500">{t.editor.final}</span>
@@ -740,14 +697,12 @@ export function PokemonEditor({
             <Fragment key={stat}>
               {/* Nature-raised stat in red, lowered in blue, like the Pokémon card. */}
               <span
-                className={`whitespace-nowrap ${natureColor(isIncreased, isDecreased)} ${isPhone ? "flex flex-col leading-tight" : ""}`}
-                title={
-                  isIncreased
-                    ? t.editor.boosted
-                    : isDecreased
-                      ? t.editor.lowered
-                      : undefined
-                }
+                className={cn(
+                  "whitespace-nowrap",
+                  natureColor(isIncreased, isDecreased),
+                  isPhone && "flex flex-col leading-tight",
+                )}
+                title={isIncreased ? t.editor.boosted : isDecreased ? t.editor.lowered : undefined}
               >
                 {statLabels[stat]}
                 {isPhone && (
@@ -759,9 +714,7 @@ export function PokemonEditor({
                   </span>
                 )}
               </span>
-              {!isPhone && (
-                <span className="text-right">{breakdown.base[stat]}</span>
-              )}
+              {!isPhone && <span className="text-right">{breakdown.base[stat]}</span>}
               <input
                 type="number"
                 min={0}
@@ -778,7 +731,10 @@ export function PokemonEditor({
                   }
                 }}
                 aria-label={t.editor.statPointsLabel(title, statLabels[stat])}
-                className={`w-full rounded border border-zinc-300 bg-zinc-50 px-1 text-xs text-zinc-900 ${isPhone ? "py-1 text-center" : "py-0.5 text-right"}`}
+                className={cn(
+                  "w-full rounded border border-zinc-300 bg-zinc-50 px-1 text-xs text-zinc-900",
+                  isPhone ? "py-1 text-center" : "py-0.5 text-right",
+                )}
               />
               <input
                 type="range"
@@ -787,7 +743,7 @@ export function PokemonEditor({
                 value={breakdown.statPoints[stat]}
                 onChange={(event) => updateSp(stat, Number(event.target.value))}
                 aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
-                className={`w-full min-w-0 accent-zinc-600 ${isPhone ? "h-8" : ""}`}
+                className={cn("w-full min-w-0 accent-zinc-600", isPhone && "h-8")}
               />
               <span className="text-right font-medium tabular-nums">
                 {finalCellRenderer(stat, breakdown.final[stat])}
@@ -802,33 +758,32 @@ export function PokemonEditor({
         })}
       </div>
       <div
-        className={`flex gap-3 pt-1 text-xs ${isPhone ? "flex-col items-stretch gap-2" : "items-center"}`}
+        className={cn(
+          "flex gap-3 pt-1 text-xs",
+          isPhone ? "flex-col items-stretch" : "items-center",
+        )}
       >
         {maxTotalStatPoints !== undefined ? (
           <span
             className="flex shrink-0 items-baseline gap-1.5"
-            aria-label={t.editor.remainingLabel(
-              remainingSp ?? 0,
-              maxTotalStatPoints,
-            )}
+            aria-label={t.editor.remainingLabel(remainingSp ?? 0, maxTotalStatPoints)}
           >
             <span className="text-zinc-500">{t.editor.remaining}</span>
             <span
-              className={`font-medium tabular-nums ${
+              className={cn(
+                "font-medium tabular-nums",
                 (remainingSp ?? 0) < 0
                   ? "text-red-600"
                   : remainingSp === 0
                     ? "text-orange-600"
-                    : "text-zinc-900"
-              }`}
+                    : "text-zinc-900",
+              )}
             >
               {remainingSp} / {maxTotalStatPoints}
             </span>
           </span>
         ) : (
-          <span className="text-zinc-500">
-            {t.editor.statPointsUsed(totalSp)}
-          </span>
+          <span className="text-zinc-500">{t.editor.statPointsUsed(totalSp)}</span>
         )}
         {natureInFooter && inlineNatureField}
       </div>
@@ -848,11 +803,12 @@ export function PokemonEditor({
     <button
       type="button"
       onClick={() => setActiveField({ kind: "stats" })}
-      className={`flex w-full flex-col gap-1 rounded-lg border p-1.5 text-left transition-colors ${
+      className={cn(
+        "flex w-full flex-col gap-1 rounded-lg border p-1.5 text-left transition-colors",
         activeField?.kind === "stats"
           ? "border-zinc-600 bg-zinc-100"
-          : "border-transparent hover:border-zinc-200 hover:bg-zinc-100"
-      }`}
+          : "border-transparent hover:border-zinc-200 hover:bg-zinc-100",
+      )}
     >
       <div className="flex items-center justify-between">
         <FieldLabel>{t.editor.stats}</FieldLabel>
@@ -866,13 +822,8 @@ export function PokemonEditor({
         const isDecreased = breakdown.final.decreasedStat === stat;
         const sp = breakdown.statPoints[stat];
         return (
-          <div
-            key={stat}
-            className="flex items-center justify-between text-xs text-zinc-700"
-          >
-            <span className={natureColor(isIncreased, isDecreased)}>
-              {statLabels[stat]}
-            </span>
+          <div key={stat} className="flex items-center justify-between text-xs text-zinc-700">
+            <span className={natureColor(isIncreased, isDecreased)}>{statLabels[stat]}</span>
             <span className="font-medium">{sp > 0 ? sp : "–"}</span>
           </div>
         );
@@ -899,18 +850,12 @@ export function PokemonEditor({
         <div key={slot}>
           <SearchableSelect
             options={options.moves
-              .filter(
-                (option) =>
-                  !usedElsewhere.includes(
-                    MOVES[option.id]?.name ?? option.id,
-                  ),
-              )
+              .filter((option) => !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id))
               .map((option) => ({ ...option, content: undefined }))}
             value={move ? text.move(move) : ""}
             onSelect={(option) => {
               // Saved by its English name — the label may be translated.
-              const moveName =
-                MOVES[option.id]?.name ?? option.searchText ?? option.label;
+              const moveName = MOVES[option.id]?.name ?? option.searchText ?? option.label;
               onMovesChange(setMoveSlot(moves, slot, moveName));
             }}
             // Clearing keeps the other moves in their slots.
@@ -928,18 +873,14 @@ export function PokemonEditor({
     [0, 1, 2, 3].map((slot) => {
       const moves = pokemon?.moves ?? [];
       const move = moves[slot];
-      const isActive =
-        activeField?.kind === "move" && activeField.slot === slot;
+      const isActive = activeField?.kind === "move" && activeField.slot === slot;
       return (
         <div key={slot} className="relative">
           <input
             type="text"
             value={isActive ? query : move ? text.move(move) : ""}
             onFocus={(event) => {
-              activateField(
-                { kind: "move", slot },
-                move ? text.move(move) : "",
-              );
+              activateField({ kind: "move", slot }, move ? text.move(move) : "");
               event.target.select();
             }}
             onChange={(event) => setQuery(event.target.value)}
@@ -957,7 +898,7 @@ export function PokemonEditor({
                 setActiveField(null);
               }}
               aria-label={t.editor.clear(t.editor.moveSlot(title, slot + 1))}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+              className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
             >
               <Icon name={IconName.Close} size={12} />
             </button>
@@ -991,7 +932,7 @@ export function PokemonEditor({
             role="option"
             aria-selected={false}
             onClick={() => selectOption(option)}
-            className="flex w-full items-center gap-2 rounded-md p-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="flex w-full items-center gap-2 rounded-md p-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
           >
             {option.content ?? (
               <>
@@ -1051,7 +992,7 @@ export function PokemonEditor({
             {abilityField}
           </div>
 
-          <div className="py-4 border-t border-b border-zinc-200">
+          <div className="border-t border-b border-zinc-200 py-4">
             {statSection}
             {!breakdown && natureField}
           </div>
@@ -1059,15 +1000,11 @@ export function PokemonEditor({
           {children}
 
           {onMovesChange && (
-            <div className="flex flex-col gap-1.5 py-2 border-t border-zinc-200">
+            <div className="flex flex-col gap-1.5 border-t border-zinc-200 py-2">
               <FieldLabel>{t.editor.moves}</FieldLabel>
               {simpleFields ? (
                 // Phones: a 2×2 grid — picking happens in the full-screen sheet.
-                <div
-                  className={
-                    isPhone ? "grid grid-cols-2 gap-1.5" : "flex flex-col gap-1.5"
-                  }
-                >
+                <div className={isPhone ? "grid grid-cols-2 gap-1.5" : "flex flex-col gap-1.5"}>
                   {simpleMoveFields}
                 </div>
               ) : (

@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 interface SpeedTiersListProps {
   /** src/data/species.json keys legal under the selected regulation. */
@@ -25,13 +26,7 @@ interface SpeedTiersListProps {
 }
 
 type MetricKey =
-  | "baseSpe"
-  | "maxSpeed"
-  | "neutral32"
-  | "neutral0"
-  | "minSpeed"
-  | "maxScarf"
-  | "neutral32Scarf";
+  "baseSpe" | "maxSpeed" | "neutral32" | "neutral0" | "minSpeed" | "maxScarf" | "neutral32Scarf";
 
 interface SpeedRecord {
   id: string;
@@ -171,11 +166,10 @@ function MetricFilterChip({
       role="checkbox"
       aria-checked={active}
       onClick={onClick}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-          : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
-      }`}
+      className={cn(
+        "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+        active ? "bg-chrome-600 text-white" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200",
+      )}
     >
       {label}
     </button>
@@ -287,12 +281,12 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
             <thead className="sticky top-0 z-10 bg-zinc-50">
               <tr className="border-b border-zinc-200">
                 <th className="w-12 p-0 font-normal">
-                  <span className="flex w-full items-center pl-3 pr-1 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="flex w-full items-center py-2 pr-1 pl-3 text-left text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     #
                   </span>
                 </th>
                 <th className="p-0 font-normal">
-                  <span className="flex w-full items-center px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="flex w-full items-center px-3 py-2 text-left text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     {t.speedTable.pokemon}
                   </span>
                 </th>
@@ -300,7 +294,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                   <button
                     type="button"
                     onClick={() => setSortDirection((d) => (d === "asc" ? "desc" : "asc"))}
-                    className="flex w-full items-center justify-end gap-0.5 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-900 whitespace-nowrap"
+                    className="flex w-full items-center justify-end gap-0.5 px-3 py-2 text-xs font-semibold tracking-wide whitespace-nowrap text-zinc-900 uppercase"
                   >
                     <Icon
                       name={sortDirection === "asc" ? IconName.ExpandLess : IconName.ExpandMore}
@@ -310,7 +304,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                   </button>
                 </th>
                 <th className="p-0 font-normal">
-                  <span className="flex w-full items-center px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="flex w-full items-center px-3 py-2 text-left text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     {t.speedList.config}
                   </span>
                 </th>
@@ -318,20 +312,23 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
             </thead>
             <tbody>
               {visibleGroups.map((group, index) => {
-                const tier = numericQuery !== null ? speedQueryTier(group.value, numericQuery) : null;
+                const tier =
+                  numericQuery !== null ? speedQueryTier(group.value, numericQuery) : null;
                 return (
                   <tr
                     key={group.id}
-                    className={`border-b border-zinc-100 last:border-b-0 ${tierRowClass(tier)}`}
+                    className={cn("border-b border-zinc-100 last:border-b-0", tierRowClass(tier))}
                   >
-                    <td className="w-12 pl-3 pr-1 py-1.5 text-zinc-400">{index + 1}</td>
+                    <td className="w-12 py-1.5 pr-1 pl-3 text-zinc-400">{index + 1}</td>
                     <td className="px-3 py-1.5">
                       {groupMode ? (
                         // max-w caps the row at 7 sprites (7 * 56px sprite + 6 * 6px gap) before wrapping to a new line.
                         <div className="flex max-w-[428px] flex-wrap items-center gap-1.5">
                           {group.records.map((record) => (
                             <Tooltip key={record.id}>
-                              <TooltipTrigger render={<span className="relative h-14 w-14 shrink-0" />}>
+                              <TooltipTrigger
+                                render={<span className="relative h-14 w-14 shrink-0" />}
+                              >
                                 <PokemonSprite
                                   species={record.row.speciesName}
                                   item={record.row.item}
@@ -357,7 +354,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
                         </div>
                       )}
                     </td>
-                    <td className={`px-3 py-1.5 text-right font-semibold ${tierTextClass(tier)}`}>
+                    <td className={cn("px-3 py-1.5 text-right font-semibold", tierTextClass(tier))}>
                       {group.value}
                     </td>
                     <td className="px-3 py-1.5 whitespace-nowrap text-zinc-600">

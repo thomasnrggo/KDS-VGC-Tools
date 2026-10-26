@@ -8,6 +8,8 @@ import { publishTeamShare, unpublishTeamShare } from "@/lib/storage/db";
 import { sharedTeamPath } from "@/lib/sharedTeam";
 import type { Team, TeamSheetMode } from "@/types";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 const INPUT_CLASSES =
   "w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";
@@ -54,9 +56,7 @@ export function ShareDialog({
     { value: "open", label: t.share.openSheet, description: t.share.openSheetHint },
     { value: "closed", label: t.share.closedSheet, description: t.share.closedSheetHint },
   ];
-  const [status, setStatus] = useState<{ kind: "saving" | "error"; message: string } | null>(
-    null,
-  );
+  const [status, setStatus] = useState<{ kind: "saving" | "error"; message: string } | null>(null);
   const url =
     typeof window === "undefined" ? "" : `${window.location.origin}${sharedTeamPath(team.id)}`;
 
@@ -91,13 +91,11 @@ export function ShareDialog({
 
         {!isSignedIn ? (
           <div className="flex flex-col items-start gap-3">
-            <p className="text-sm text-zinc-600">
-              {t.share.signInPrompt}
-            </p>
+            <p className="text-sm text-zinc-600">{t.share.signInPrompt}</p>
             <button
               type="button"
               onClick={onSignIn}
-              className="rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-400 dark:hover:bg-zinc-300"
+              className="rounded-full bg-chrome-600 px-5 py-2 text-sm font-medium text-white hover:bg-chrome-700"
             >
               {t.auth.signIn}
             </button>
@@ -105,7 +103,7 @@ export function ShareDialog({
         ) : (
           <>
             <fieldset className="flex flex-col gap-2">
-              <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <legend className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                 {t.share.whoCanSee}
               </legend>
               {[
@@ -131,7 +129,7 @@ export function ShareDialog({
             {team.share && (
               <>
                 <fieldset className="flex flex-col gap-2">
-                  <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <legend className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     {t.share.whatItShows}
                   </legend>
                   {sheetOptions.map((option) => (
@@ -152,7 +150,7 @@ export function ShareDialog({
                 </fieldset>
 
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     {t.share.link}
                   </span>
                   <div className="flex items-center gap-1">
@@ -161,7 +159,7 @@ export function ShareDialog({
                       value={url}
                       onFocus={(event) => event.target.select()}
                       aria-label={t.share.linkLabel}
-                      className={`${INPUT_CLASSES} font-mono text-xs`}
+                      className={cn(INPUT_CLASSES, "font-mono text-xs")}
                     />
                     <CopyButton text={url} label={t.share.copyLink} />
                     <a
@@ -175,9 +173,7 @@ export function ShareDialog({
                       <Icon name={IconName.OpenInNew} size={16} />
                     </a>
                   </div>
-                  <p className="text-xs text-zinc-500">
-                    {t.share.updatesHint}
-                  </p>
+                  <p className="text-xs text-zinc-500">{t.share.updatesHint}</p>
                 </div>
               </>
             )}
@@ -185,7 +181,10 @@ export function ShareDialog({
             {status && (
               <p
                 role={status.kind === "error" ? "alert" : "status"}
-                className={`text-sm ${status.kind === "error" ? "text-red-600" : "text-zinc-500"}`}
+                className={cn(
+                  "text-sm",
+                  status.kind === "error" ? "text-red-600" : "text-zinc-500",
+                )}
               >
                 {status.message}
               </p>
@@ -193,13 +192,9 @@ export function ShareDialog({
           </>
         )}
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="self-start rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-        >
+        <Button variant="outline" onClick={onClose} className="self-start">
           {t.share.done}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

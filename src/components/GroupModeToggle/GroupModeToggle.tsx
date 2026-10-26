@@ -3,6 +3,7 @@
 import { Group, Ungroup } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 interface GroupModeToggleProps {
   grouped: boolean;
@@ -19,7 +20,7 @@ interface GroupModeToggleProps {
 export function GroupModeToggle({ grouped, onChange, className = "" }: GroupModeToggleProps) {
   const t = useMessages();
   return (
-    <div role="tablist" aria-label={t.groupMode.label} className={`flex gap-1.5 ${className}`}>
+    <div role="tablist" aria-label={t.groupMode.label} className={cn("flex gap-1.5", className)}>
       <Tooltip>
         <TooltipTrigger
           type="button"
@@ -27,9 +28,10 @@ export function GroupModeToggle({ grouped, onChange, className = "" }: GroupMode
           aria-selected={grouped}
           aria-label={t.groupMode.grouped}
           onClick={() => onChange(true)}
-          className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-            grouped ? "bg-zinc-600 dark:bg-zinc-400 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-          }`}
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+            grouped ? "bg-chrome-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+          )}
         >
           <Group size={18} aria-hidden="true" />
         </TooltipTrigger>
@@ -42,9 +44,10 @@ export function GroupModeToggle({ grouped, onChange, className = "" }: GroupMode
           aria-selected={!grouped}
           aria-label={t.groupMode.byPokemon}
           onClick={() => onChange(false)}
-          className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
-            !grouped ? "bg-zinc-600 dark:bg-zinc-400 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-          }`}
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-full transition-colors",
+            !grouped ? "bg-chrome-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+          )}
         >
           <Ungroup size={18} aria-hidden="true" />
         </TooltipTrigger>

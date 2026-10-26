@@ -114,7 +114,7 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}
-            className="mb-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none dark:bg-zinc-900"
+            className="mb-2 w-full rounded-lg border border-zinc-300 bg-field px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
           />
           <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto sm:max-h-96">
             {isLoadingGroup && (

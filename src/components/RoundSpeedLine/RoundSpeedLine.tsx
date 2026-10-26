@@ -7,6 +7,7 @@ import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import type { ParsedPokemon } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface RoundSpeedLineProps {
   myTeam: ParsedPokemon[];
@@ -147,7 +148,12 @@ interface BadgeGroup {
 }
 
 /** Merges badges whose raw axis position is within `threshold` of each other into one touching, no-gap pill — mirrors SpeedLine's groupBadges. */
-function groupBadges(items: BadgeItem[], threshold: number, low: number, high: number): BadgeGroup[] {
+function groupBadges(
+  items: BadgeItem[],
+  threshold: number,
+  low: number,
+  high: number,
+): BadgeGroup[] {
   const sorted = [...items].sort((a, b) => a.raw - b.raw);
   const groups: BadgeGroup[] = [];
   let current: BadgeItem[] = [];
@@ -204,17 +210,21 @@ function buildOpponentEntries(opponentTeam: ParsedPokemon[]): LineEntry[] {
 function MarkerIcon({ entry, highlighted }: { entry: LineEntry; highlighted: boolean }) {
   return (
     <div
-      className={`relative h-9 w-9 shrink-0 rounded-lg transition-shadow ${
-        highlighted ? `ring-2 ring-offset-2 ${HIGHLIGHT_RING_CLASS_BY_SIDE[entry.side]}` : ""
-      }`}
+      className={cn(
+        "relative h-9 w-9 shrink-0 rounded-lg transition-shadow",
+        highlighted ? `ring-2 ring-offset-2 ${HIGHLIGHT_RING_CLASS_BY_SIDE[entry.side]}` : "",
+      )}
     >
       <div
-        className={`h-full w-full overflow-hidden rounded-lg border-2 bg-zinc-50 ${RING_CLASS_BY_SIDE[entry.side]}`}
+        className={cn(
+          "h-full w-full overflow-hidden rounded-lg border-2 bg-zinc-50",
+          RING_CLASS_BY_SIDE[entry.side],
+        )}
       >
         <PokemonSprite species={entry.pokemon.species} item={entry.pokemon.item} fill />
       </div>
       {entry.pokemon.item && entry.speedAffectingItem && (
-        <span className="absolute -bottom-1 -right-1">
+        <span className="absolute -right-1 -bottom-1">
           <ItemIcon item={entry.pokemon.item} size={16} />
         </span>
       )}
@@ -239,9 +249,11 @@ function BadgeGroupPill({
           onMouseEnter={() => onHoverChange(id)}
           onMouseLeave={() => onHoverChange(null)}
           style={{ minWidth: `${estimatedBadgeWidth(entry.label)}px` }}
-          className={`whitespace-nowrap px-1.5 py-0.5 text-center text-xs font-semibold leading-none transition-colors ${
-            hoveredId === id ? HIGHLIGHT_BG_CLASS_BY_SIDE[entry.side] : ""
-          } ${entry.speedAffectingItem ? "text-amber-600" : "text-zinc-700"}`}
+          className={cn(
+            "px-1.5 py-0.5 text-center text-xs leading-none font-semibold whitespace-nowrap transition-colors",
+            hoveredId === id ? HIGHLIGHT_BG_CLASS_BY_SIDE[entry.side] : "",
+            entry.speedAffectingItem ? "text-amber-600" : "text-zinc-700",
+          )}
         >
           {entry.label}
         </span>
@@ -310,7 +322,10 @@ export function RoundSpeedLine({ myTeam, opponentTeam }: RoundSpeedLineProps) {
     });
   }
 
-  function resolvePosition(id: string, fallbackPercent: number): { percent: number; offsetPx: number } {
+  function resolvePosition(
+    id: string,
+    fallbackPercent: number,
+  ): { percent: number; offsetPx: number } {
     return positionById.get(id) ?? { percent: fallbackPercent, offsetPx: 0 };
   }
 
@@ -331,10 +346,10 @@ export function RoundSpeedLine({ myTeam, opponentTeam }: RoundSpeedLineProps) {
 
         <div className="relative min-w-[560px]" style={{ height: `${LINE_HEIGHT_PX}px` }}>
           <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-zinc-200" />
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-zinc-50 pr-1.5 text-[11px] font-medium text-zinc-400">
+          <span className="absolute top-1/2 left-0 -translate-y-1/2 rounded-full bg-zinc-50 pr-1.5 text-[11px] font-medium whitespace-nowrap text-zinc-400">
             {axisMin}
           </span>
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-zinc-50 pl-1.5 text-[11px] font-medium text-zinc-400">
+          <span className="absolute top-1/2 right-0 -translate-y-1/2 rounded-full bg-zinc-50 pl-1.5 text-[11px] font-medium whitespace-nowrap text-zinc-400">
             {axisMax}
           </span>
 

@@ -7,6 +7,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 function isEmptyHtml(html: string): boolean {
   return html === "" || html === "<p></p>";
@@ -150,9 +151,10 @@ function ToolbarButton({
       aria-label={label}
       aria-pressed={active}
       title={label}
-      className={`flex h-7 w-7 items-center justify-center rounded ${
-        active ? "bg-zinc-600 dark:bg-zinc-400 text-white" : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700"
-      }`}
+      className={cn(
+        "flex h-7 w-7 items-center justify-center rounded",
+        active ? "bg-chrome-600 text-white" : "text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700",
+      )}
     >
       <Icon name={icon} size={16} />
     </button>
@@ -172,7 +174,9 @@ export function RichTextView({ html, className = "" }: { html: string; className
     editable: false,
     immediatelyRender: false,
     editorProps: {
-      attributes: { class: `text-sm text-zinc-800 focus:outline-none ${CONTENT_CLASSES} ${className}` },
+      attributes: {
+        class: `text-sm text-zinc-800 focus:outline-none ${CONTENT_CLASSES} ${className}`,
+      },
     },
   });
 

@@ -1,10 +1,15 @@
 "use client";
 
-import { candidateGroupsFrom, findVariantCandidates, type OpponentGroup } from "@/lib/opponentVariants";
+import {
+  candidateGroupsFrom,
+  findVariantCandidates,
+  type OpponentGroup,
+} from "@/lib/opponentVariants";
 import type { Opponent } from "@/types";
-import { Modal } from "../Modal";
+import { Modal, ModalDescription, ModalTitle } from "../Modal";
 import { TeamRoster } from "../TeamRoster";
 import { useMessages } from "@/hooks/useLanguage";
+import { Button } from "@/components/Button";
 
 interface MakeVariantPickerProps {
   opponent: Opponent;
@@ -34,9 +39,9 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
           onClick={() => onPick(main.id)}
           className="flex w-full flex-col gap-1 p-3 text-left hover:bg-zinc-100"
         >
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-700">
+          <span className="text-xs font-semibold tracking-wide text-zinc-700 uppercase">
             {main.label}
-            {note && <span className="ml-2 font-normal normal-case text-zinc-500">{note}</span>}
+            {note && <span className="ml-2 font-normal text-zinc-500 normal-case">{note}</span>}
           </span>
           <div className="self-start">
             <TeamRoster pokemon={main.team.pokemon} speedMode="range" />
@@ -48,16 +53,12 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
 
   return (
     <Modal onClose={onCancel} labelledBy="make-variant-title" size="wide">
-      <h2 id="make-variant-title" className="mb-1 text-lg font-semibold text-zinc-900">
-        {t.makeVariant.title(opponent.label)}
-      </h2>
-      <p className="mb-4 text-sm text-zinc-600">
-        {t.makeVariant.intro}
-      </p>
+      <ModalTitle id="make-variant-title">{t.makeVariant.title(opponent.label)}</ModalTitle>
+      <ModalDescription>{t.makeVariant.intro}</ModalDescription>
       <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
         {suggested.length > 0 && (
           <section>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <h3 className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
               {t.makeVariant.suggested}
             </h3>
             <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200">
@@ -72,7 +73,7 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
         )}
         {others.length > 0 && (
           <section>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <h3 className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
               {suggested.length > 0 ? t.makeVariant.allOther : t.makeVariant.teams}
             </h3>
             <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200">
@@ -81,13 +82,9 @@ export function MakeVariantPicker({ opponent, groups, onPick, onCancel }: MakeVa
           </section>
         )}
       </div>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="mt-4 rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-      >
+      <Button variant="outline" onClick={onCancel} className="mt-4">
         {t.common.cancel}
-      </button>
+      </Button>
     </Modal>
   );
 }

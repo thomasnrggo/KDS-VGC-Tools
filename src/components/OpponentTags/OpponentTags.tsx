@@ -5,6 +5,7 @@ import { addTag, removeTag } from "@/lib/opponentTags";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 interface OpponentTagsProps {
   tags: string[];
@@ -18,8 +19,7 @@ interface OpponentTagsProps {
   className?: string;
 }
 
-const CHIP_CLASSES =
-  "flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-medium";
+const CHIP_CLASSES = "flex h-6 items-center gap-1 rounded-full border px-2 text-xs font-medium";
 
 /**
  * A row of tag chips plus an "+ Tag" button that opens an inline input —
@@ -55,15 +55,16 @@ export function OpponentTags({
   }
 
   return (
-    <div className={`flex flex-wrap items-center gap-1.5 ${className}`}>
+    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
       {tags.map((tag) => (
         <span
           key={tag}
-          className={`${CHIP_CLASSES} ${
+          className={cn(
+            CHIP_CLASSES,
             isMatch?.(tag)
               ? "border-zinc-600 bg-zinc-600 text-white"
-              : "border-zinc-300 bg-zinc-50 text-zinc-700"
-          }`}
+              : "border-zinc-300 bg-zinc-50 text-zinc-700",
+          )}
         >
           {tag}
           <button
@@ -120,7 +121,10 @@ export function OpponentTags({
                 inputRef.current?.focus();
               }}
               title={t.tags.suggested}
-              className={`${CHIP_CLASSES} border-dashed border-zinc-400 text-zinc-500 hover:border-zinc-600 hover:text-zinc-700`}
+              className={cn(
+                CHIP_CLASSES,
+                "border-dashed border-zinc-400 text-zinc-500 hover:border-zinc-600 hover:text-zinc-700",
+              )}
             >
               <Icon name={IconName.Add} size={12} />
               {tag}
@@ -136,7 +140,10 @@ export function OpponentTags({
               ? t.tags.addWithSuggestions(openSuggestions.join(", "))
               : t.tags.add
           }
-          className={`${CHIP_CLASSES} border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-500 hover:text-zinc-700`}
+          className={cn(
+            CHIP_CLASSES,
+            "border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-500 hover:text-zinc-700",
+          )}
         >
           <Icon name={IconName.Add} size={12} />
           {t.tags.tag}

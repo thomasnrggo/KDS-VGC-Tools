@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface OpponentFormProps {
   initialLabel?: string;
@@ -11,11 +13,7 @@ interface OpponentFormProps {
   submitLabel?: string;
   /** Set false when the caller already provides a bordered container (e.g. a Modal), to avoid a card-in-a-card look. */
   bordered?: boolean;
-  onSubmit: (
-    label: string,
-    rawPaste: string,
-    pokepasteUrl: string,
-  ) => string | null;
+  onSubmit: (label: string, rawPaste: string, pokepasteUrl: string) => string | null;
   onCancel: () => void;
 }
 
@@ -72,11 +70,7 @@ export function OpponentForm({
         setPokepasteUrl(resolvedPokepasteUrl);
       } catch (fetchError) {
         setIsFetching(false);
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : t.errors.pokepasteFailed,
-        );
+        setError(fetchError instanceof Error ? fetchError.message : t.errors.pokepasteFailed);
         return;
       }
       setIsFetching(false);
@@ -88,7 +82,7 @@ export function OpponentForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`flex flex-col gap-3 ${bordered ? "rounded-lg border border-zinc-200 p-4" : ""}`}
+      className={cn("flex flex-col gap-3", bordered && "rounded-lg border border-zinc-200 p-4")}
     >
       <input
         value={label}
@@ -110,7 +104,7 @@ export function OpponentForm({
         rows={12}
         placeholder={t.opponentForm.pastePlaceholder}
         aria-label={t.opponentForm.pasteLabel}
-        className={`${INPUT_CLASSES} resize-y p-3 font-mono`}
+        className={cn(INPUT_CLASSES, "resize-y p-3 font-mono")}
       />
       {error && (
         <p role="alert" className="text-sm text-red-600">
@@ -118,20 +112,12 @@ export function OpponentForm({
         </p>
       )}
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isFetching}
-          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="submit" disabled={isFetching} className="disabled:cursor-not-allowed">
           {isFetching ? t.common.loading : (submitLabel ?? t.opponents.add)}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-        >
+        </Button>
+        <Button variant="outline" onClick={onCancel}>
           {t.common.cancel}
-        </button>
+        </Button>
       </div>
     </form>
   );

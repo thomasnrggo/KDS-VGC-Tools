@@ -15,6 +15,7 @@ import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOve
 import { formatTeamPaste } from "@/lib/formatPokemonPaste";
 import { REGULATIONS } from "@/data/regulations";
 import type { ParsedPokemon } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface TeamBuilderDetailPageProps {
   params: Promise<{ teamId: string }>;
@@ -147,13 +148,14 @@ export default function TeamBuilderDetailPage({ params }: TeamBuilderDetailPageP
                   type="button"
                   onClick={() => setSelectedIndex(index)}
                   title={mon.item ? `${mon.species} @ ${mon.item}` : mon.species}
-                  className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors ${
-                    isSelected ? "border-zinc-600" : "border-transparent hover:border-zinc-300"
-                  }`}
+                  className={cn(
+                    "relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors",
+                    isSelected ? "border-zinc-600" : "border-transparent hover:border-zinc-300",
+                  )}
                 >
                   <PokemonSprite species={mon.species} item={mon.item} fill />
                   {mon.item && (
-                    <span className="absolute -bottom-1 -right-1">
+                    <span className="absolute -right-1 -bottom-1">
                       <ItemIcon item={mon.item} size={16} />
                     </span>
                   )}
@@ -166,11 +168,12 @@ export default function TeamBuilderDetailPage({ params }: TeamBuilderDetailPageP
                 onClick={() => setSelectedIndex(pokemonList.length)}
                 aria-label="Add Pokémon"
                 title="Add Pokémon"
-                className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
+                className={cn(
+                  "flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-colors",
                   clampedIndex === pokemonList.length
                     ? "border-zinc-600 text-zinc-700"
-                    : "border-zinc-300 text-zinc-400 hover:border-zinc-400 hover:text-zinc-600"
-                }`}
+                    : "border-zinc-300 text-zinc-400 hover:border-zinc-400 hover:text-zinc-600",
+                )}
               >
                 <Icon name={IconName.Add} size={20} />
               </button>

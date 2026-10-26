@@ -49,12 +49,7 @@ interface PickerSheetProps {
  * Replaces the desktop dropdowns, which on a phone open under the keyboard
  * or off the bottom of a small screen. Locks the page's scroll while open.
  */
-export function PickerSheet({
-  title,
-  onClose,
-  search,
-  children,
-}: PickerSheetProps) {
+export function PickerSheet({ title, onClose, search, children }: PickerSheetProps) {
   const t = useMessages();
   const box = useVisibleViewport();
 
@@ -80,9 +75,7 @@ export function PickerSheet({
       className="fixed inset-x-0 z-50 flex flex-col bg-zinc-50 text-zinc-900"
     >
       <div className="flex shrink-0 items-center gap-2 border-b border-zinc-200 px-3 py-2">
-        <h2 className="min-w-0 flex-1 truncate text-base font-semibold">
-          {title}
-        </h2>
+        <h2 className="min-w-0 flex-1 truncate text-base font-semibold">{title}</h2>
         <button
           type="button"
           onClick={onClose}
@@ -92,12 +85,8 @@ export function PickerSheet({
           <Icon name={IconName.Close} size={20} />
         </button>
       </div>
-      {search && (
-        <div className="shrink-0 border-b border-zinc-200 p-2">{search}</div>
-      )}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
-        {children}
-      </div>
+      {search && <div className="shrink-0 border-b border-zinc-200 p-2">{search}</div>}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">{children}</div>
     </div>,
     document.body,
   );
@@ -105,4 +94,4 @@ export function PickerSheet({
 
 /** The sheet's search input: 16px text so iOS doesn't zoom the page in when it's focused. */
 export const pickerSheetSearchClassName =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900";
+  "w-full rounded-lg border border-zinc-300 bg-field px-3 py-2 text-base text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400";

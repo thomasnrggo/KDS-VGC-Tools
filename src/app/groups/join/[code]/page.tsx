@@ -19,7 +19,7 @@ interface JoinGroupPageProps {
 }
 
 const PRIMARY_BUTTON =
-  "rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-400 dark:hover:bg-zinc-300";
+  "rounded-full bg-chrome-600 px-5 py-2 text-sm font-medium text-white hover:bg-chrome-700 disabled:cursor-not-allowed disabled:opacity-50";
 
 /**
  * A prep group's invite link (see docs/prep-groups.md): shows which group
@@ -42,7 +42,9 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const { groups } = useGroups();
   const [invite, setInvite] = useState<
-    { code: string; state: "missing" | "error" } | { code: string; state: "ready"; invite: GroupInvite } | null
+    | { code: string; state: "missing" | "error" }
+    | { code: string; state: "ready"; invite: GroupInvite }
+    | null
   >(null);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState(false);
@@ -127,7 +129,12 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
             {t.groups.join.open}
           </button>
         ) : (
-          <button type="button" onClick={() => void join()} disabled={isJoining} className={PRIMARY_BUTTON}>
+          <button
+            type="button"
+            onClick={() => void join()}
+            disabled={isJoining}
+            className={PRIMARY_BUTTON}
+          >
             {isJoining ? t.groups.join.joining : t.groups.join.join}
           </button>
         )}

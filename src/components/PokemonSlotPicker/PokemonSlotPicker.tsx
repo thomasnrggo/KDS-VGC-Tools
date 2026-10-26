@@ -9,6 +9,7 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 interface PokemonSlotPickerProps {
   label: string;
@@ -54,10 +55,7 @@ export function PokemonSlotPicker({
     if (!isOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
@@ -81,14 +79,8 @@ export function PokemonSlotPicker({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative flex flex-col items-center gap-1"
-    >
-      <div
-        ref={triggerRef}
-        className="relative flex h-16 w-16 items-center justify-center"
-      >
+    <div ref={containerRef} className="relative flex flex-col items-center gap-1">
+      <div ref={triggerRef} className="relative flex h-16 w-16 items-center justify-center">
         <button
           type="button"
           onClick={() => setIsOpen((open) => !open)}
@@ -100,9 +92,10 @@ export function PokemonSlotPicker({
               : t.slotPicker.empty(label)
           }
           title={isDuplicate ? t.slotPicker.duplicate : undefined}
-          className={`flex h-16 w-16 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-600 ${
-            isDuplicate ? "ring-2 ring-amber-500" : ""
-          }`}
+          className={cn(
+            "flex h-16 w-16 items-center justify-center rounded-lg focus:ring-2 focus:ring-zinc-600 focus:outline-none",
+            isDuplicate && "ring-2 ring-amber-500",
+          )}
         >
           {selected ? (
             <PokemonHoverCard
@@ -115,16 +108,12 @@ export function PokemonSlotPicker({
             >
               {(displayPokemon) => (
                 <div className="relative h-full w-full overflow-hidden rounded-lg bg-zinc-500/20">
-                  <PokemonSprite
-                    species={displayPokemon.species}
-                    item={displayPokemon.item}
-                    fill
-                  />
+                  <PokemonSprite species={displayPokemon.species} item={displayPokemon.item} fill />
                 </div>
               )}
             </PokemonHoverCard>
           ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-zinc-500 transition-all hover:border-zinc-600 hover:bg-zinc-300/50 cursor-pointer">
+            <span className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-zinc-500 transition-all hover:border-zinc-600 hover:bg-zinc-300/50">
               <Icon className="text-zinc-500" name={IconName.Add} size={24} />
             </span>
           )}
@@ -135,7 +124,7 @@ export function PokemonSlotPicker({
             onClick={() => onChange(null)}
             aria-label={t.slotPicker.clear(label)}
             title={t.slotPicker.clear(label)}
-            className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-400 text-zinc-700 hover:bg-zinc-500 hover:text-zinc-200 cursor-pointer"
+            className="absolute -top-1 -right-1 flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-zinc-400 text-zinc-700 hover:bg-zinc-500 hover:text-zinc-200"
           >
             <Icon name={IconName.Close} size={12} />
           </button>
@@ -166,15 +155,16 @@ export function PokemonSlotPicker({
                   aria-selected={value === index}
                   onClick={() => pick(index)}
                   title={otherSlot ? t.slotPicker.usedIn(name, otherSlot.label) : name}
-                  className={`relative flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
-                    value === index ? "bg-zinc-200" : ""
-                  }`}
+                  className={cn(
+                    "relative flex flex-col items-center gap-0.5 rounded-md p-1.5 hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-400 focus:outline-none",
+                    value === index && "bg-zinc-200",
+                  )}
                 >
                   <span className={otherSlot ? "opacity-40" : ""}>
                     <PokemonSprite species={mon.species} size={48} />
                   </span>
                   {otherSlot && (
-                    <span className="absolute right-0.5 top-0.5 rounded-full bg-zinc-600 px-1.5 py-px text-[10px] font-semibold text-white dark:bg-zinc-400">
+                    <span className="absolute top-0.5 right-0.5 rounded-full bg-chrome-600 px-1.5 py-px text-[10px] font-semibold text-white">
                       {otherSlot.tag}
                     </span>
                   )}

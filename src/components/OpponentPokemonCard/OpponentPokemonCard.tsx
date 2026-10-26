@@ -57,21 +57,23 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
 
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-      <div className="flex items-center gap-3 bg-zinc-800 px-4 py-3 dark:bg-zinc-200">
+      <div className="flex items-center gap-3 bg-chrome-800 px-4 py-3">
         <span className="relative h-12 w-12 shrink-0">
-          <span className="absolute inset-0 overflow-hidden rounded-lg bg-zinc-700 dark:bg-zinc-300">
+          <span className="absolute inset-0 overflow-hidden rounded-lg bg-chrome-700">
             <PokemonSprite species={pokemon.species} item={pokemon.item} fill />
           </span>
           {pokemon.item && (
-            <span className="absolute -bottom-1 -right-1">
+            <span className="absolute -right-1 -bottom-1">
               <ItemIcon item={pokemon.item} size={18} />
             </span>
           )}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-base font-bold text-white">{text.species(pokemon.species)}</span>
+          <span className="truncate text-base font-bold text-white">
+            {text.species(pokemon.species)}
+          </span>
           {hasDetails && (
-            <div className="flex min-w-0 items-center justify-between gap-4 text-sm text-zinc-100 dark:text-zinc-900">
+            <div className="flex min-w-0 items-center justify-between gap-4 text-sm text-chrome-100">
               {pokemon.item && <span className="min-w-0 truncate">{text.item(pokemon.item)}</span>}
               {ability && (
                 <span className="min-w-0 truncate">
@@ -141,7 +143,7 @@ export function OpponentPokemonCard({ pokemon, note, onNoteChange }: OpponentPok
             rows={2}
             placeholder={t.opponentPokemon.notesPlaceholder}
             aria-label={t.opponentPokemon.notesLabel(text.species(pokemon.species))}
-            className="min-h-24 max-h-40 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="max-h-40 min-h-24 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-zinc-100 p-2 text-sm text-zinc-800 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
           />
         </div>
       </div>

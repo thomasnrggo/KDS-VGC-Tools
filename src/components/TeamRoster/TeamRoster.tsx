@@ -2,6 +2,7 @@ import type { ParsedPokemon } from "@/types";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { PokemonHoverCard } from "../PokemonHoverCard";
+import { cn } from "@/lib/utils";
 
 interface TeamRosterProps {
   pokemon: ParsedPokemon[];
@@ -29,18 +30,17 @@ export function TeamRoster({ pokemon, isMatch, speedMode }: TeamRosterProps) {
             >
               {(displayPokemon) => (
                 <div
-                  className={`relative h-full w-full overflow-hidden rounded-lg bg-zinc-500/20 ${matched ? "ring-2 ring-amber-400" : ""}`}
+                  className={cn(
+                    "relative h-full w-full overflow-hidden rounded-lg bg-zinc-500/20",
+                    matched && "ring-2 ring-amber-400",
+                  )}
                 >
-                  <PokemonSprite
-                    species={displayPokemon.species}
-                    item={displayPokemon.item}
-                    fill
-                  />
+                  <PokemonSprite species={displayPokemon.species} item={displayPokemon.item} fill />
                 </div>
               )}
             </PokemonHoverCard>
             {mon.item && (
-              <span className="absolute -bottom-1 -right-1">
+              <span className="absolute -right-1 -bottom-1">
                 <ItemIcon item={mon.item} size={24} />
               </span>
             )}

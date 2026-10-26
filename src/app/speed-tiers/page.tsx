@@ -12,29 +12,20 @@ import { SpeedLine } from "@/components/SpeedLine";
 import { REGULATIONS } from "@/data/regulations";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
+import { cn } from "@/lib/utils";
 
 type View = "table" | "list" | "speedline";
 
 export default function SpeedTiersPage() {
   const t = useMessages();
-  const {
-    activeTeams,
-    activeTeamId,
-    isLoading,
-    addTeam,
-    editTeam,
-    removeTeam,
-    setActiveTeamId,
-  } = useMyTeams();
+  const { activeTeams, activeTeamId, isLoading, addTeam, editTeam, removeTeam, setActiveTeamId } =
+    useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
 
-  const [selectedRegulationId, setSelectedRegulationId] = useState(
-    REGULATIONS[0]?.id ?? "",
-  );
+  const [selectedRegulationId, setSelectedRegulationId] = useState(REGULATIONS[0]?.id ?? "");
   const selectedRegulation =
-    REGULATIONS.find((regulation) => regulation.id === selectedRegulationId) ??
-    REGULATIONS[0];
+    REGULATIONS.find((regulation) => regulation.id === selectedRegulationId) ?? REGULATIONS[0];
 
   const [view, setView] = useState<View>("table");
   // Belt-and-suspenders: the tab below only ever lets an admin select
@@ -71,7 +62,7 @@ export default function SpeedTiersPage() {
                 value={selectedRegulationId}
                 onChange={(event) => setSelectedRegulationId(event.target.value)}
                 aria-label={t.common.regulation}
-                className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
+                className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
               >
                 {REGULATIONS.map((regulation) => (
                   <option key={regulation.id} value={regulation.id}>
@@ -82,7 +73,7 @@ export default function SpeedTiersPage() {
               <Icon
                 name={IconName.ExpandMore}
                 size={14}
-                className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
               />
             </div>
           ) : (
@@ -106,11 +97,12 @@ export default function SpeedTiersPage() {
             role="tab"
             aria-selected={effectiveView === "table"}
             onClick={() => setView("table")}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={cn(
+              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               effectiveView === "table"
-                ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-            }`}
+                ? "bg-chrome-600 text-white"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+            )}
           >
             {t.speedTiers.table}
           </button>
@@ -119,11 +111,12 @@ export default function SpeedTiersPage() {
             role="tab"
             aria-selected={effectiveView === "list"}
             onClick={() => setView("list")}
-            className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+            className={cn(
+              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               effectiveView === "list"
-                ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-            }`}
+                ? "bg-chrome-600 text-white"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+            )}
           >
             {t.speedTiers.tiers}
           </button>
@@ -133,11 +126,12 @@ export default function SpeedTiersPage() {
               role="tab"
               aria-selected={view === "speedline"}
               onClick={() => setView("speedline")}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
                 view === "speedline"
-                  ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-              }`}
+                  ? "bg-chrome-600 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+              )}
             >
               {t.speedTiers.speedLine}
             </button>

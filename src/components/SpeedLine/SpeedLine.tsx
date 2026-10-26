@@ -8,6 +8,7 @@ import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import type { ParsedPokemon, Team } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface SpeedLineProps {
   /** The user's own teams (src/hooks/useMyTeams' activeTeams) — which one is compared is chosen locally in this view, independent of the app-wide "active team". */
@@ -211,7 +212,12 @@ interface BadgeGroup {
  * apart by a minimum gap the way the sprite layer does — the user asked for
  * literally touching, no-gap segments instead of spaced-out badges.
  */
-function groupBadges(items: BadgeItem[], threshold: number, low: number, high: number): BadgeGroup[] {
+function groupBadges(
+  items: BadgeItem[],
+  threshold: number,
+  low: number,
+  high: number,
+): BadgeGroup[] {
   const sorted = [...items].sort((a, b) => a.raw - b.raw);
   const groups: BadgeGroup[] = [];
   let current: BadgeItem[] = [];
@@ -270,7 +276,7 @@ function placeEntries(
 function LegendDot({ colorClassName, label }: { colorClassName: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`h-2.5 w-2.5 rounded-full ${colorClassName}`} />
+      <span className={cn("h-2.5 w-2.5 rounded-full", colorClassName)} />
       {label}
     </span>
   );
@@ -294,9 +300,10 @@ function ModifierToggle({
       role="switch"
       aria-checked={active}
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-        active ? activeClassName : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-      }`}
+      className={cn(
+        "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+        active ? activeClassName : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+      )}
     >
       {label}
     </button>
@@ -324,17 +331,21 @@ function SpeedLineMarkerIcon({
 }) {
   return (
     <div
-      className={`relative h-12 w-12 shrink-0 rounded-lg transition-shadow ${
-        highlighted ? `ring-2 ring-offset-2 ${HIGHLIGHT_RING_CLASS_BY_SIDE[entry.side]}` : ""
-      }`}
+      className={cn(
+        "relative h-12 w-12 shrink-0 rounded-lg transition-shadow",
+        highlighted ? `ring-2 ring-offset-2 ${HIGHLIGHT_RING_CLASS_BY_SIDE[entry.side]}` : "",
+      )}
     >
       <div
-        className={`h-full w-full overflow-hidden rounded-lg border-2 bg-zinc-50 ${RING_CLASS_BY_SIDE[entry.side]}`}
+        className={cn(
+          "h-full w-full overflow-hidden rounded-lg border-2 bg-zinc-50",
+          RING_CLASS_BY_SIDE[entry.side],
+        )}
       >
         <PokemonSprite species={entry.pokemon.species} item={entry.pokemon.item} fill />
       </div>
       {entry.pokemon.item && entry.speedAffectingItem && (
-        <span className="absolute -bottom-1 -right-1">
+        <span className="absolute -right-1 -bottom-1">
           <ItemIcon item={entry.pokemon.item} size={18} />
         </span>
       )}
@@ -381,20 +392,23 @@ function SpeedLineBadgeGroup({
   const ordered = orientation === "vertical" ? [...members].reverse() : members;
   return (
     <div
-      className={`flex items-stretch overflow-hidden rounded-full border border-zinc-200 bg-zinc-50 ${
+      className={cn(
+        "flex items-stretch overflow-hidden rounded-full border border-zinc-200 bg-zinc-50",
         orientation === "vertical"
           ? "flex-col divide-y divide-zinc-200"
-          : "divide-x divide-zinc-200"
-      }`}
+          : "divide-x divide-zinc-200",
+      )}
     >
       {ordered.map(({ id, entry }) => (
         <span
           key={id}
           onMouseEnter={() => onHoverChange(id)}
           onMouseLeave={() => onHoverChange(null)}
-          className={`whitespace-nowrap px-1.5 py-0.5 text-center text-xs font-semibold leading-none transition-colors ${
-            hoveredId === id ? HIGHLIGHT_BG_CLASS_BY_SIDE[entry.side] : ""
-          } ${entry.scarfed ? "text-amber-600" : "text-zinc-700"}`}
+          className={cn(
+            "px-1.5 py-0.5 text-center text-xs leading-none font-semibold whitespace-nowrap transition-colors",
+            hoveredId === id ? HIGHLIGHT_BG_CLASS_BY_SIDE[entry.side] : "",
+            entry.scarfed ? "text-amber-600" : "text-zinc-700",
+          )}
         >
           {entry.speed}
         </span>
@@ -426,14 +440,15 @@ function StageStepper({
         aria-label="Decrease Speed stage"
         disabled={stage <= SPEED_STAGE_MIN}
         onClick={onDecrease}
-        className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold leading-none text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent"
+        className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] leading-none font-bold text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent"
       >
         −
       </button>
       <span
-        className={`w-4 text-center text-[10px] font-semibold tabular-nums ${
-          stage > 0 ? "text-emerald-600" : stage < 0 ? "text-rose-600" : "text-zinc-400"
-        }`}
+        className={cn(
+          "w-4 text-center text-[10px] font-semibold tabular-nums",
+          stage > 0 ? "text-emerald-600" : stage < 0 ? "text-rose-600" : "text-zinc-400",
+        )}
       >
         {stage > 0 ? `+${stage}` : stage}
       </span>
@@ -442,7 +457,7 @@ function StageStepper({
         aria-label="Increase Speed stage"
         disabled={stage >= SPEED_STAGE_MAX}
         onClick={onIncrease}
-        className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold leading-none text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent"
+        className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] leading-none font-bold text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:hover:bg-transparent"
       >
         +
       </button>
@@ -599,11 +614,11 @@ function SpeedLineTrack({
           to, and grouped badges stack vertically (SpeedLineBadgeGroup's
           "vertical" orientation) instead of side by side. */}
       <div className="flex flex-col gap-2 md:hidden">
-        <span className="text-center text-xs font-semibold uppercase tracking-wide text-zinc-400">
+        <span className="text-center text-xs font-semibold tracking-wide text-zinc-400 uppercase">
           {reversed ? "Slower" : "Faster"}
         </span>
         <div className="relative w-full" style={{ height: `${verticalHeight}px` }}>
-          <div className="absolute inset-y-0 left-1/2 w-1 -ml-0.5 rounded-full bg-zinc-200" />
+          <div className="absolute inset-y-0 left-1/2 -ml-0.5 w-1 rounded-full bg-zinc-200" />
 
           {placedMine.map((entry) => {
             const pos = resolvePosition(`mine-${entry.id}`, entry.speed);
@@ -676,7 +691,7 @@ function SpeedLineTrack({
             </span>
           )}
         </div>
-        <span className="text-center text-xs font-semibold uppercase tracking-wide text-zinc-400">
+        <span className="text-center text-xs font-semibold tracking-wide text-zinc-400 uppercase">
           {reversed ? "Faster" : "Slower"}
         </span>
       </div>
@@ -701,10 +716,10 @@ function SpeedLineTrack({
                 the edge, so anchoring the label there too risked the two
                 colliding right at the boundary. Markers never reach the true
                 0%/100% edge, so the label stays clear of them there. */}
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-zinc-50 pr-1.5 text-[11px] font-medium text-zinc-400">
+            <span className="absolute top-1/2 left-0 -translate-y-1/2 rounded-full bg-zinc-50 pr-1.5 text-[11px] font-medium whitespace-nowrap text-zinc-400">
               {edgeLow}
             </span>
-            <span className="absolute right-0 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-zinc-50 pl-1.5 text-[11px] font-medium text-zinc-400">
+            <span className="absolute top-1/2 right-0 -translate-y-1/2 rounded-full bg-zinc-50 pl-1.5 text-[11px] font-medium whitespace-nowrap text-zinc-400">
               {edgeHigh}
             </span>
           </>
@@ -906,7 +921,7 @@ export function SpeedLine({ myTeams, defaultTeamId, regulationId }: SpeedLinePro
             value={effectiveTeamId}
             onChange={(event) => setSelectedTeamId(event.target.value)}
             aria-label="Your team"
-            className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-2 pl-3 pr-8 text-sm font-medium text-zinc-700"
+            className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-2 pr-8 pl-3 text-sm font-medium text-zinc-700"
           >
             {regulationTeams.map((team) => (
               <option key={team.id} value={team.id}>
@@ -917,7 +932,7 @@ export function SpeedLine({ myTeams, defaultTeamId, regulationId }: SpeedLinePro
           <Icon
             name={IconName.ExpandMore}
             size={16}
-            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
           />
         </div>
         <div className="relative shrink-0">
@@ -925,7 +940,7 @@ export function SpeedLine({ myTeams, defaultTeamId, regulationId }: SpeedLinePro
             value={effectiveOpponentId}
             onChange={(event) => setSelectedOpponentId(event.target.value)}
             aria-label="Opponent team"
-            className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-2 pl-3 pr-8 text-sm font-medium text-zinc-700"
+            className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-2 pr-8 pl-3 text-sm font-medium text-zinc-700"
           >
             {regulationOpponents.map((opponent) => (
               <option key={opponent.id} value={opponent.id}>
@@ -936,7 +951,7 @@ export function SpeedLine({ myTeams, defaultTeamId, regulationId }: SpeedLinePro
           <Icon
             name={IconName.ExpandMore}
             size={16}
-            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+            className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
           />
         </div>
 
@@ -968,7 +983,7 @@ export function SpeedLine({ myTeams, defaultTeamId, regulationId }: SpeedLinePro
             <LegendDot colorClassName="bg-sky-500" label="My Team" />
             <LegendDot colorClassName="bg-rose-500" label={selectedOpponent?.label ?? "Opponent"} />
           </div>
-          <div className="hidden items-center gap-2 text-xs font-semibold uppercase tracking-wide text-zinc-400 md:flex">
+          <div className="hidden items-center gap-2 text-xs font-semibold tracking-wide text-zinc-400 uppercase md:flex">
             <span>{trickRoom ? "Faster" : "Slower"}</span>
             <span>—</span>
             <span>{trickRoom ? "Slower" : "Faster"}</span>

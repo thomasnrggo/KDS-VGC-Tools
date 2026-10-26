@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
 import { useMessages } from "@/hooks/useLanguage";
+import { Button } from "@/components/Button";
 
 interface TeamPasteFormProps {
   initialName?: string;
@@ -42,11 +43,7 @@ export function TeamPasteForm({
         setName(resolvedName);
       } catch (fetchError) {
         setIsFetching(false);
-        setError(
-          fetchError instanceof Error
-            ? fetchError.message
-            : t.errors.pokepasteFailed,
-        );
+        setError(fetchError instanceof Error ? fetchError.message : t.errors.pokepasteFailed);
         return;
       }
       setIsFetching(false);
@@ -63,7 +60,7 @@ export function TeamPasteForm({
         onChange={(event) => setName(event.target.value)}
         placeholder={t.teamPaste.namePlaceholder}
         aria-label={t.teamPaste.nameLabel}
-        className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
       />
       <textarea
         value={value}
@@ -71,7 +68,7 @@ export function TeamPasteForm({
         rows={16}
         placeholder={t.teamPaste.pastePlaceholder}
         aria-label={t.teamPaste.pasteLabel}
-        className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
       />
       {error && (
         <p role="alert" className="text-sm text-red-600">
@@ -79,21 +76,13 @@ export function TeamPasteForm({
         </p>
       )}
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={isFetching}
-          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <Button type="submit" disabled={isFetching} className="disabled:cursor-not-allowed">
           {isFetching ? t.common.loading : t.teamPaste.saveTeam}
-        </button>
+        </Button>
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-          >
+          <Button variant="outline" onClick={onCancel}>
             {t.common.cancel}
-          </button>
+          </Button>
         )}
       </div>
     </form>

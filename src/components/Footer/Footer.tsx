@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 const TWITTER_URL = "https://x.com/AnthosVGC";
 
@@ -11,7 +12,12 @@ export function Footer() {
   // bottom there, and the footer only added scrolling under it.
   const isCalc = usePathname() === "/damage-calc";
   return (
-    <footer className={`bg-zinc-100 px-6 py-4 text-center text-xs text-zinc-700 ${isCalc ? "hidden lg:block" : ""}`}>
+    <footer
+      className={cn(
+        "bg-zinc-100 px-6 py-4 text-center text-xs text-zinc-700",
+        isCalc && "hidden lg:block",
+      )}
+    >
       <p className="font-medium">
         {t.footer.credit} [
         <a
@@ -24,9 +30,7 @@ export function Footer() {
         </a>
         ]
       </p>
-      <p className="mt-1 text-zinc-500">
-        {t.footer.disclaimer}
-      </p>
+      <p className="mt-1 text-zinc-500">{t.footer.disclaimer}</p>
     </footer>
   );
 }

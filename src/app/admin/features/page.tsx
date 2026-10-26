@@ -7,6 +7,7 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { AuthMenu } from "@/components/AuthMenu";
 import { toast } from "@/components/Toast";
 import type { FeatureFlags } from "@/types";
+import { cn } from "@/lib/utils";
 
 const SECTION_FLAGS: { flagKey: keyof FeatureFlags; label: string }[] = [
   { flagKey: "matchupPlanner", label: "Matchup Planner" },
@@ -30,7 +31,9 @@ function FlagToggle({
       <div className="flex flex-col">
         <span className="text-sm font-semibold text-zinc-900">{label}</span>
         <span className="text-xs text-zinc-500">
-          {active ? "Visible to everyone." : "Only visible to you (admin) — hidden from everyone else."}
+          {active
+            ? "Visible to everyone."
+            : "Only visible to you (admin) — hidden from everyone else."}
         </span>
       </div>
       <button
@@ -38,11 +41,10 @@ function FlagToggle({
         role="switch"
         aria-checked={active}
         onClick={onClick}
-        className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-          active
-            ? "bg-zinc-600 text-white dark:bg-zinc-400"
-            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-        }`}
+        className={cn(
+          "shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors",
+          active ? "bg-chrome-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+        )}
       >
         {active ? "Enabled" : "Disabled"}
       </button>
@@ -77,7 +79,7 @@ export default function AdminFeaturesPage() {
         <button
           type="button"
           onClick={signInWithGoogle}
-          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
+          className="rounded-full bg-chrome-600 px-5 py-2 text-sm font-medium text-white hover:bg-chrome-700"
         >
           Sign in with Google
         </button>
@@ -99,17 +101,28 @@ export default function AdminFeaturesPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-zinc-200 bg-zinc-600 dark:bg-zinc-400 px-6 py-4">
+      <header className="flex items-center justify-between border-b border-zinc-200 bg-chrome-600 px-6 py-4">
         <div className="flex items-center gap-4">
-          <Link href="/matchup-planner" className="text-sm font-medium text-zinc-100 hover:text-white">
+          <Link
+            href="/matchup-planner"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
             ← Matchup Planner
           </Link>
           <h1 className="text-lg font-semibold text-white">Admin: Features</h1>
-          <Link href="/admin/seasons" className="text-sm font-medium text-zinc-100 hover:text-white">
+          <Link
+            href="/admin/seasons"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
             Seasons →
           </Link>
         </div>
-        <AuthMenu user={user} isLoading={isAuthLoading} onSignIn={signInWithGoogle} onSignOut={signOut} />
+        <AuthMenu
+          user={user}
+          isLoading={isAuthLoading}
+          onSignIn={signInWithGoogle}
+          onSignOut={signOut}
+        />
       </header>
 
       <div className="flex flex-col gap-3 p-6 md:max-w-md">

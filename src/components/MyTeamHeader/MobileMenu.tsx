@@ -15,6 +15,7 @@ import {
   POKEMON_LANGUAGE_NAMES,
   POKEMON_LANGUAGES,
 } from "@/lib/i18n/languages";
+import { cn } from "@/lib/utils";
 
 export interface MobileMenuLink {
   page: string;
@@ -36,8 +37,8 @@ interface MobileMenuProps {
 // zinc-200 in dark), so its text uses the same theme-invariant pairings as
 // the header's own links and icon buttons.
 const rowClassName =
-  "flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-base text-zinc-200 hover:bg-zinc-700 dark:text-zinc-800 dark:hover:bg-zinc-300";
-const mutedTextClassName = "text-zinc-400 dark:text-zinc-600";
+  "flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-base text-chrome-200 hover:bg-chrome-700";
+const mutedTextClassName = "text-chrome-400";
 
 function Avatar({ user }: { user: User }) {
   return (
@@ -77,7 +78,12 @@ function LanguageChoices<T extends string>({
 }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex flex-col">
-      <span className={`px-3 pb-1 text-xs font-semibold uppercase tracking-wide ${mutedTextClassName}`}>
+      <span
+        className={cn(
+          "px-3 pb-1 text-xs font-semibold tracking-wide uppercase",
+          mutedTextClassName,
+        )}
+      >
         {label}
       </span>
       {options.map((option) => {
@@ -89,7 +95,7 @@ function LanguageChoices<T extends string>({
             role="radio"
             aria-checked={isSelected}
             onClick={() => onChange(option)}
-            className={`${rowClassName} ${isSelected ? "font-semibold" : ""}`}
+            className={cn(rowClassName, isSelected && "font-semibold")}
           >
             <span lang={option} className="flex-1">
               {names[option]}
@@ -98,7 +104,7 @@ function LanguageChoices<T extends string>({
           </button>
         );
       })}
-      {hint && <p className={`px-3 pt-1 text-xs ${mutedTextClassName}`}>{hint}</p>}
+      {hint && <p className={cn("px-3 pt-1 text-xs", mutedTextClassName)}>{hint}</p>}
     </div>
   );
 }
@@ -141,7 +147,7 @@ export function MobileMenu({
         <button
           type="button"
           onClick={() => setView("main")}
-          className={`${rowClassName} font-semibold`}
+          className={cn(rowClassName, "font-semibold")}
         >
           <Icon name={IconName.ChevronLeft} size={22} />
           {t.language.menu}
@@ -167,7 +173,7 @@ export function MobileMenu({
     content = (
       <>
         {!isAuthLoading && (
-          <div className="border-b border-zinc-600 p-4 dark:border-zinc-400">
+          <div className="border-b border-chrome-600 p-4">
             {user ? (
               <div className="flex items-center gap-3">
                 <Avatar user={user} />
@@ -176,7 +182,7 @@ export function MobileMenu({
                     {user.displayName ?? t.auth.signedIn}
                   </span>
                   {user.email && (
-                    <span className={`truncate text-sm ${mutedTextClassName}`}>{user.email}</span>
+                    <span className={cn("truncate text-sm", mutedTextClassName)}>{user.email}</span>
                   )}
                 </span>
               </div>
@@ -199,7 +205,7 @@ export function MobileMenu({
               <span
                 key={link.page}
                 aria-current="page"
-                className="flex min-h-12 items-center rounded-lg bg-zinc-600 px-3 text-base font-bold text-white dark:bg-zinc-400 dark:text-zinc-900"
+                className="flex min-h-12 items-center rounded-lg bg-chrome-600 px-3 text-base font-bold text-white dark:text-zinc-900"
               >
                 {link.label}
               </span>
@@ -211,11 +217,13 @@ export function MobileMenu({
           )}
         </nav>
 
-        <div className="mt-auto flex flex-col gap-1 border-t border-zinc-600 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] dark:border-zinc-400">
+        <div className="mt-auto flex flex-col gap-1 border-t border-chrome-600 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <button type="button" onClick={() => setView("language")} className={rowClassName}>
             <Icon name={IconName.Translate} size={22} />
             <span className="flex-1">{t.language.menu}</span>
-            <span className={`text-sm ${mutedTextClassName}`}>{APP_LANGUAGE_NAMES[appLanguage]}</span>
+            <span className={cn("text-sm", mutedTextClassName)}>
+              {APP_LANGUAGE_NAMES[appLanguage]}
+            </span>
             <Icon name={IconName.ChevronRight} size={22} className={mutedTextClassName} />
           </button>
           <button
@@ -229,23 +237,21 @@ export function MobileMenu({
             <span className="flex-1">{t.theme.darkMode}</span>
             <span
               aria-hidden="true"
-              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-                isDark ? "bg-emerald-500" : "bg-zinc-500"
-              }`}
+              className={cn(
+                "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                isDark ? "bg-emerald-500" : "bg-zinc-500",
+              )}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-[left] ${
-                  isDark ? "left-[1.375rem]" : "left-0.5"
-                }`}
+                className={cn(
+                  "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-[left]",
+                  isDark ? "left-[1.375rem]" : "left-0.5",
+                )}
               />
             </span>
           </button>
           {user && (
-            <button
-              type="button"
-              onClick={onSignOut}
-              className={`${rowClassName} !text-red-400`}
-            >
+            <button type="button" onClick={onSignOut} className={cn(rowClassName, "!text-red-400")}>
               <Icon name={IconName.Logout} size={22} />
               {t.auth.signOut}
             </button>
@@ -256,7 +262,7 @@ export function MobileMenu({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[var(--site-header-height,5rem)] flex flex-col overflow-y-auto overscroll-contain border-t border-zinc-600 bg-zinc-800 dark:border-zinc-400 dark:bg-zinc-200 lg:hidden">
+    <div className="fixed inset-x-0 top-[var(--site-header-height,5rem)] bottom-0 flex flex-col overflow-y-auto overscroll-contain border-t border-chrome-600 bg-chrome-800 lg:hidden">
       {content}
     </div>
   );

@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import {
-  defaultDecision,
-  type ImportDecision,
-  type ImportRow,
-} from "@/lib/opponentImport";
-import { Modal } from "../Modal";
+import { defaultDecision, type ImportDecision, type ImportRow } from "@/lib/opponentImport";
+import { Modal, ModalDescription, ModalTitle } from "../Modal";
 import { TeamRoster } from "../TeamRoster";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface ImportReviewProps {
   rows: ImportRow[];
@@ -29,7 +27,6 @@ function decisionFromValue(value: string): ImportDecision {
   return { action: "variant", candidateIndex: Number(value) };
 }
 
-
 /**
  * The import step that asks before grouping: lists every incoming team with
  * what will happen to it — duplicates and unparseable teams are skipped
@@ -43,18 +40,15 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
   const [decisions, setDecisions] = useState<ImportDecision[]>(() => rows.map(defaultDecision));
 
   const importCount = rows.filter(
-    (row, index) => !row.error && row.duplicateOf === undefined && decisions[index].action !== "skip",
+    (row, index) =>
+      !row.error && row.duplicateOf === undefined && decisions[index].action !== "skip",
   ).length;
   const variantCount = decisions.filter((decision) => decision.action === "variant").length;
 
   return (
     <Modal onClose={onCancel} labelledBy="import-review-title" size="wide">
-      <h2 id="import-review-title" className="mb-1 text-lg font-semibold text-zinc-900">
-        {t.importReview.title}
-      </h2>
-      <p className="mb-4 text-sm text-zinc-600">
-        {t.importReview.intro}
-      </p>
+      <ModalTitle id="import-review-title">{t.importReview.title}</ModalTitle>
+      <ModalDescription>{t.importReview.intro}</ModalDescription>
 
       <ul className="flex max-h-[60vh] flex-col divide-y divide-zinc-200 overflow-y-auto rounded-lg border border-zinc-200">
         {rows.map((row, index) => {
@@ -65,18 +59,21 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
           return (
             <li
               key={index}
-              className={`flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between ${
-                isLocked ? "opacity-60" : ""
-              }`}
+              className={cn(
+                "flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between",
+                isLocked && "opacity-60",
+              )}
             >
               <div className="flex min-w-0 flex-col gap-1">
-                <span className="truncate text-xs font-semibold uppercase tracking-wide text-zinc-700">
+                <span className="truncate text-xs font-semibold tracking-wide text-zinc-700 uppercase">
                   {row.label}
                 </span>
                 {row.pokemon.length > 0 && <TeamRoster pokemon={row.pokemon} speedMode="range" />}
               </div>
               {row.error ? (
-                <span className="shrink-0 text-sm text-zinc-500">{t.importReview.cantImport(row.error)}</span>
+                <span className="shrink-0 text-sm text-zinc-500">
+                  {t.importReview.cantImport(row.error)}
+                </span>
               ) : row.duplicateOf !== undefined ? (
                 <span className="shrink-0 text-sm text-zinc-500">
                   {t.importReview.alreadySaved(row.duplicateOf)}
@@ -119,21 +116,16 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
       </ul>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
+        <Button
           onClick={() => onConfirm(decisions)}
           disabled={importCount === 0}
-          className="rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-400 dark:hover:bg-zinc-300"
+          className="disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t.importReview.importButton(importCount, variantCount)}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-        >
+        </Button>
+        <Button variant="outline" onClick={onCancel}>
           {t.common.cancel}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

@@ -10,6 +10,7 @@ import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { FLOW_FIELD, focusNextFlowField } from "@/lib/fieldFlow";
 import { PickerSheet, pickerSheetSearchClassName } from "../PickerSheet";
+import { cn } from "@/lib/utils";
 
 export interface SearchableSelectOption {
   /** Stable key AND the value handed back to onSelect. */
@@ -124,10 +125,7 @@ export function SearchableSelect({
       setQuery((current) => (current === "" ? (value ?? "") : current));
     }
     function handlePointerDown(event: PointerEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         close();
       }
     }
@@ -216,7 +214,9 @@ export function SearchableSelect({
           aria-expanded={isOpen}
           aria-controls={listId}
           aria-autocomplete="list"
-          aria-activedescendant={isOpen && filtered[activeIndex] ? `${listId}-${activeIndex}` : undefined}
+          aria-activedescendant={
+            isOpen && filtered[activeIndex] ? `${listId}-${activeIndex}` : undefined
+          }
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -253,7 +253,12 @@ export function SearchableSelect({
           onFocus={(event) => {
             setIsOpen(true);
             // Starts on the current pick, so arrowing moves from there.
-            setActiveIndex(Math.max(0, filtered.findIndex((option) => option.label === value)));
+            setActiveIndex(
+              Math.max(
+                0,
+                filtered.findIndex((option) => option.label === value),
+              ),
+            );
             if (pointerTypeRef.current === "touch") {
               // A touch tap on selected text opens the device's text menu
               // (iPadOS's Cut/Copy/Look Up bar; Chrome's context menu in its
@@ -273,8 +278,8 @@ export function SearchableSelect({
           autoFocus={autoFocus}
           className={
             compact
-              ? `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1 pl-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-6" : "pr-2"}`
-              : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${onClear ? "pr-8" : "pr-2"}`
+              ? `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1 pl-2 text-xs text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none ${onClear ? "pr-6" : "pr-2"}`
+              : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none ${onClear ? "pr-8" : "pr-2"}`
           }
         />
         {onClear && value && (
@@ -292,8 +297,8 @@ export function SearchableSelect({
             aria-label={t.editor.clear(ariaLabel)}
             className={
               compact
-                ? "absolute right-1 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-                : "absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                ? "absolute top-1/2 right-1 -translate-y-1/2 rounded-full p-0.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                : "absolute top-1/2 right-1.5 -translate-y-1/2 rounded-full p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
             }
           >
             <Icon name={IconName.Close} size={compact ? 10 : 12} />
@@ -327,9 +332,11 @@ export function SearchableSelect({
                 onMouseDown={(event) => event.preventDefault()}
                 onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => pick(option)}
-                className={`flex w-full items-center gap-2 rounded-md text-left text-zinc-900 focus:outline-none ${
-                  compact ? "p-1 text-xs" : "p-1.5 text-sm"
-                } ${index === activeIndex ? "bg-zinc-200/70" : ""}`}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md text-left text-zinc-900 focus:outline-none",
+                  compact ? "p-1 text-xs" : "p-1.5 text-sm",
+                  index === activeIndex && "bg-zinc-200/70",
+                )}
               >
                 {option.content ?? (
                   <>
@@ -398,16 +405,22 @@ function PhoneSelect({
           onClick={onOpen}
           aria-haspopup="dialog"
           aria-label={ariaLabel}
-          className={`flex w-full items-center rounded-lg border border-zinc-300 bg-zinc-50 pl-2 text-left text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 ${
+          className={cn(
+            "flex w-full items-center rounded-lg border border-zinc-300 bg-zinc-50 pl-2 text-left text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none",
             compact
               ? "min-h-8 py-1 text-xs"
               : narrow
                 ? "min-h-12 py-1 text-sm leading-tight"
-                : "min-h-10 py-2 text-sm"
-          } ${inlineClear ? (compact ? "pr-7" : "pr-9") : "pr-2"}`}
+                : "min-h-10 py-2 text-sm",
+            inlineClear ? (compact ? "pr-7" : "pr-9") : "pr-2",
+          )}
         >
           <span
-            className={`min-w-0 flex-1 ${narrow ? "line-clamp-2 break-words" : "truncate"} ${value ? "" : "text-zinc-500"}`}
+            className={cn(
+              "min-w-0 flex-1",
+              narrow ? "line-clamp-2 break-words" : "truncate",
+              value ? "" : "text-zinc-500",
+            )}
           >
             {value || placeholder}
           </span>
@@ -417,9 +430,10 @@ function PhoneSelect({
             type="button"
             onClick={onClear}
             aria-label={t.editor.clear(ariaLabel)}
-            className={`absolute right-0.5 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 ${
-              compact ? "h-7 w-7" : "h-9 w-9"
-            }`}
+            className={cn(
+              "absolute top-1/2 right-0.5 flex -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600",
+              compact ? "h-7 w-7" : "h-9 w-9",
+            )}
           >
             <Icon name={IconName.Close} size={compact ? 12 : 14} />
           </button>
@@ -455,11 +469,7 @@ function PhoneSelect({
             )
           }
         >
-          <div
-            role="listbox"
-            aria-label={ariaLabel}
-            className="flex flex-col gap-0.5"
-          >
+          <div role="listbox" aria-label={ariaLabel} className="flex flex-col gap-0.5">
             {narrow && onClear && value && (
               <button
                 type="button"
@@ -485,9 +495,10 @@ function PhoneSelect({
                     role="option"
                     aria-selected={isCurrent}
                     onClick={() => onPick(option)}
-                    className={`flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-zinc-900 active:bg-zinc-200 ${
-                      isCurrent ? "bg-zinc-100 font-semibold" : ""
-                    }`}
+                    className={cn(
+                      "flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-zinc-900 active:bg-zinc-200",
+                      isCurrent && "bg-zinc-100 font-semibold",
+                    )}
                   >
                     {option.content ?? (
                       <>
@@ -496,9 +507,7 @@ function PhoneSelect({
                             <PokemonSprite species={option.sprite} fill />
                           </span>
                         )}
-                        <span className="min-w-0 flex-1 truncate">
-                          {option.label}
-                        </span>
+                        <span className="min-w-0 flex-1 truncate">{option.label}</span>
                       </>
                     )}
                     {isCurrent && <Icon name={IconName.Check} size={16} />}

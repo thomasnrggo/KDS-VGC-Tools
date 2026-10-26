@@ -12,6 +12,7 @@ import { AuthMenu } from "@/components/AuthMenu";
 import { Modal } from "@/components/Modal";
 import { toast } from "@/components/Toast";
 import type { Season } from "@/types";
+import { Button } from "@/components/Button";
 
 interface SeasonFormState {
   regulationId: string;
@@ -91,7 +92,7 @@ export default function AdminSeasonsPage() {
     const teamCount = parseTeamFolder(form.rawPaste.trim()).length;
     if (teamCount === 0) {
       toast.error(
-        "No teams detected — this needs Showdown's \"Team Folder\" export format (each team preceded by a === [format] Title === header line), not a plain team paste.",
+        'No teams detected — this needs Showdown\'s "Team Folder" export format (each team preceded by a === [format] Title === header line), not a plain team paste.',
       );
       return;
     }
@@ -112,7 +113,9 @@ export default function AdminSeasonsPage() {
         const exists = prev.some((s) => s.id === season.id);
         return exists ? prev.map((s) => (s.id === season.id ? season : s)) : [...prev, season];
       });
-      toast.success(`Saved season ${season.label} (${teamCount} team${teamCount === 1 ? "" : "s"})`);
+      toast.success(
+        `Saved season ${season.label} (${teamCount} team${teamCount === 1 ? "" : "s"})`,
+      );
       startAdding();
     } catch (error) {
       console.error("[admin/seasons] save failed:", error);
@@ -149,7 +152,7 @@ export default function AdminSeasonsPage() {
         <button
           type="button"
           onClick={signInWithGoogle}
-          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
+          className="rounded-full bg-chrome-600 px-5 py-2 text-sm font-medium text-white hover:bg-chrome-700"
         >
           Sign in with Google
         </button>
@@ -162,10 +165,7 @@ export default function AdminSeasonsPage() {
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
         <p className="text-lg font-semibold text-zinc-900">Not authorized</p>
         <p className="text-sm text-zinc-600">This page is only available to the site admin.</p>
-        <Link
-          href="/matchup-planner"
-          className="text-sm font-medium text-zinc-600 hover:underline"
-        >
+        <Link href="/matchup-planner" className="text-sm font-medium text-zinc-600 hover:underline">
           ← Back to Matchup Planner
         </Link>
       </div>
@@ -174,7 +174,7 @@ export default function AdminSeasonsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-center justify-between border-b border-zinc-200 bg-zinc-600 dark:bg-zinc-400 px-6 py-4">
+      <header className="flex items-center justify-between border-b border-zinc-200 bg-chrome-600 px-6 py-4">
         <div className="flex items-center gap-4">
           <Link
             href="/matchup-planner"
@@ -183,11 +183,19 @@ export default function AdminSeasonsPage() {
             ← Matchup Planner
           </Link>
           <h1 className="text-lg font-semibold text-white">Admin: Seasons</h1>
-          <Link href="/admin/features" className="text-sm font-medium text-zinc-100 hover:text-white">
+          <Link
+            href="/admin/features"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
             Features →
           </Link>
         </div>
-        <AuthMenu user={user} isLoading={isAuthLoading} onSignIn={signInWithGoogle} onSignOut={signOut} />
+        <AuthMenu
+          user={user}
+          isLoading={isAuthLoading}
+          onSignIn={signInWithGoogle}
+          onSignOut={signOut}
+        />
       </header>
 
       <div className="flex flex-col gap-6 p-6 md:flex-row">
@@ -244,14 +252,16 @@ export default function AdminSeasonsPage() {
           </div>
 
           <label className="flex flex-col gap-1 text-sm text-zinc-700">
-            Default team set — Showdown&apos;s &ldquo;Team Folder&rdquo; export, each team
-            preceded by its own <code className="text-xs">=== [format] Title ===</code> header line
-            (a plain single-team paste won&apos;t work)
+            Default team set — Showdown&apos;s &ldquo;Team Folder&rdquo; export, each team preceded
+            by its own <code className="text-xs">=== [format] Title ===</code> header line (a plain
+            single-team paste won&apos;t work)
             <textarea
               value={form.rawPaste}
               onChange={(event) => setForm((f) => ({ ...f, rawPaste: event.target.value }))}
               rows={12}
-              placeholder={"=== [gen9championsvgc2026regmb] Team Name ===\n\nSpecies @ Item\n...\n\n=== [gen9championsvgc2026regmb] Another Team ===\n\n..."}
+              placeholder={
+                "=== [gen9championsvgc2026regmb] Team Name ===\n\nSpecies @ Item\n...\n\n=== [gen9championsvgc2026regmb] Another Team ===\n\n..."
+              }
               className="rounded-lg border border-zinc-300 px-3 py-2 font-mono text-xs"
             />
             {form.rawPaste.trim() && (
@@ -266,18 +276,14 @@ export default function AdminSeasonsPage() {
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:opacity-50"
+              className="rounded-full bg-chrome-600 px-5 py-2 text-sm font-medium text-white hover:bg-chrome-700 disabled:opacity-50"
             >
               {editingId ? "Save changes" : "Add season"}
             </button>
             {editingId && (
-              <button
-                type="button"
-                onClick={startAdding}
-                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              <Button variant="outline" onClick={startAdding}>
                 Cancel
-              </button>
+              </Button>
             )}
           </div>
         </form>
@@ -330,10 +336,7 @@ export default function AdminSeasonsPage() {
 
       {confirmDeleteSeason && (
         <Modal onClose={() => setConfirmDeleteId(null)} labelledBy="confirm-delete-season-title">
-          <h2
-            id="confirm-delete-season-title"
-            className="mb-2 text-lg font-semibold text-zinc-900"
-          >
+          <h2 id="confirm-delete-season-title" className="mb-2 text-lg font-semibold text-zinc-900">
             Delete season {confirmDeleteSeason.label}?
           </h2>
           <p className="mb-4 text-sm text-zinc-600">This can&apos;t be undone.</p>
@@ -345,13 +348,9 @@ export default function AdminSeasonsPage() {
             >
               Delete
             </button>
-            <button
-              type="button"
-              onClick={() => setConfirmDeleteId(null)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

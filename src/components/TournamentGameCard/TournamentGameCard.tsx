@@ -11,6 +11,7 @@ import {
   usedInOtherSlots,
   type SlotTag,
 } from "@/lib/slotPicks";
+import { cn } from "@/lib/utils";
 
 type Side = "opponentPicks" | "myPicks";
 
@@ -79,7 +80,13 @@ export function TournamentGameCard({
 
   /** Puts `index` into `slot` on `side` — the 4 picks hold different Pokémon, so one already picked swaps places (see pickIntoSlot). */
   function setPick(side: Side, roster: ParsedPokemon[], slot: number, index: TeamPokemonSlot) {
-    const next = pickIntoSlot({ picks: game[side], megas: megas[side] }, slot, index, roster, false);
+    const next = pickIntoSlot(
+      { picks: game[side], megas: megas[side] },
+      slot,
+      index,
+      roster,
+      false,
+    );
     onUpdate((g) => ({ ...g, [side]: next.picks as TournamentGame[Side] }));
     setMegas((prev) => ({ ...prev, [side]: next.megas }));
   }
@@ -116,8 +123,8 @@ export function TournamentGameCard({
 
   return (
     <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50">
-      <div className="flex items-center justify-between gap-3 bg-zinc-800 px-4 py-3 dark:bg-zinc-200">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-white">{label}</h3>
+      <div className="flex items-center justify-between gap-3 bg-chrome-800 px-4 py-3">
+        <h3 className="text-sm font-semibold tracking-wide text-white uppercase">{label}</h3>
         <div className="flex gap-1">
           {showAllResults ? (
             <>
@@ -125,11 +132,12 @@ export function TournamentGameCard({
                 type="button"
                 onClick={() => setResult("win")}
                 aria-pressed={game.result === "win"}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                   game.result === "win"
                     ? "border-green-600 bg-green-600 text-white"
-                    : "border-zinc-500 text-zinc-300 dark:text-zinc-700 hover:bg-white/10"
-                }`}
+                    : "border-zinc-500 text-chrome-300 hover:bg-white/10",
+                )}
               >
                 {t.game.win}
               </button>
@@ -137,11 +145,12 @@ export function TournamentGameCard({
                 type="button"
                 onClick={() => setResult("loss")}
                 aria-pressed={game.result === "loss"}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                   game.result === "loss"
                     ? "border-red-600 bg-red-600 text-white"
-                    : "border-zinc-500 text-zinc-300 dark:text-zinc-700 hover:bg-white/10"
-                }`}
+                    : "border-zinc-500 text-chrome-300 hover:bg-white/10",
+                )}
               >
                 {t.game.loss}
               </button>
@@ -150,11 +159,12 @@ export function TournamentGameCard({
                 onClick={() => setResult("tie")}
                 aria-pressed={game.result === "tie"}
                 title={t.game.tieHint}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                   game.result === "tie"
-                    ? "border-zinc-600 bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-400 text-white"
-                    : "border-zinc-500 text-zinc-300 dark:text-zinc-700 hover:bg-white/10"
-                }`}
+                    ? "border-chrome-600 bg-chrome-600 text-white"
+                    : "border-zinc-500 text-chrome-300 hover:bg-white/10",
+                )}
               >
                 {t.game.tie}
               </button>
@@ -164,15 +174,20 @@ export function TournamentGameCard({
               type="button"
               onClick={() => setResultExpanded(true)}
               title={t.game.changeResult}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                 game.result === "win"
                   ? "border-green-600 bg-green-600 text-white"
                   : game.result === "loss"
                     ? "border-red-600 bg-red-600 text-white"
-                    : "border-zinc-600 bg-zinc-600 dark:border-zinc-400 dark:bg-zinc-400 text-white"
-              }`}
+                    : "border-chrome-600 bg-chrome-600 text-white",
+              )}
             >
-              {game.result === "win" ? t.game.win : game.result === "loss" ? t.game.loss : t.game.tie}
+              {game.result === "win"
+                ? t.game.win
+                : game.result === "loss"
+                  ? t.game.loss
+                  : t.game.tie}
             </button>
           )}
         </div>
@@ -180,7 +195,7 @@ export function TournamentGameCard({
 
       <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
             {t.game.opponentPicks}
           </span>
           <div className="flex flex-wrap gap-2">
@@ -189,12 +204,10 @@ export function TournamentGameCard({
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
             {t.game.yourPicks}
           </span>
-          <div className="flex flex-wrap gap-2">
-            {pickerSlots("myPicks", myTeam, game.myPicks)}
-          </div>
+          <div className="flex flex-wrap gap-2">{pickerSlots("myPicks", myTeam, game.myPicks)}</div>
         </div>
 
         <textarea
@@ -207,7 +220,7 @@ export function TournamentGameCard({
           rows={2}
           placeholder={t.game.notesPlaceholder}
           aria-label={t.game.notesLabel(label)}
-          className="min-h-16 max-h-40 w-full resize-none overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          className="max-h-40 min-h-16 w-full resize-none overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
         />
       </div>
     </div>

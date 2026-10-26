@@ -7,6 +7,7 @@ import { calcThreat, isCalcLine, parseCalcLine } from "@/lib/teamCalcs";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
 import { speciesIdentity } from "@/lib/teamIdentity";
 import type { ParsedPokemon, TeamCalc, TeamCalcSide } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface TeamCalcsListProps {
   calcs: TeamCalc[];
@@ -53,18 +54,25 @@ export function TeamCalcRow({
   return (
     <li className="flex items-start gap-2 py-1.5">
       <span className="flex h-7 w-7 shrink-0 items-center justify-center">
-        {threat && (
-          <PokemonSprite species={formatSpeciesDisplayName(threat.spriteKey)} size={28} />
-        )}
+        {threat && <PokemonSprite species={formatSpeciesDisplayName(threat.spriteKey)} size={28} />}
       </span>
       <div
-        className={`flex min-w-0 flex-1 flex-col gap-0.5 ${stacked ? "" : "md:flex-row md:items-start md:justify-between md:gap-3"}`}
+        className={cn(
+          "flex min-w-0 flex-1 flex-col gap-0.5",
+          stacked ? "" : "md:flex-row md:items-start md:justify-between md:gap-3",
+        )}
       >
-        <span className={`min-w-0 text-xs ${isCalc ? "text-zinc-700" : "italic text-zinc-500"}`}>
+        <span className={cn("min-w-0 text-xs", isCalc ? "text-zinc-700" : "text-zinc-500 italic")}>
           {setup}
         </span>
         {(percent || verdict) && (
-          <span className={`shrink-0 text-xs font-medium ${stacked ? "" : "md:text-right"} ${verdictTone}`}>
+          <span
+            className={cn(
+              "shrink-0 text-xs font-medium",
+              stacked ? "" : "md:text-right",
+              verdictTone,
+            )}
+          >
             {percent}
             {percent && verdict ? " · " : ""}
             {verdict}
@@ -113,9 +121,12 @@ export function TeamCalcsList({ calcs, teamPokemon, onRemove }: TeamCalcsListPro
       {sections.map((section, index) => (
         <section
           key={section.key}
-          className={`flex flex-col gap-2 px-4 py-3 ${index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"}`}
+          className={cn(
+            "flex flex-col gap-2 px-4 py-3",
+            index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100",
+          )}
         >
-          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-zinc-700">
+          <h3 className="flex items-center gap-2 text-sm font-semibold tracking-wide text-zinc-700 uppercase">
             {section.mon && (
               <PokemonSprite species={section.mon.species} item={section.mon.item} size={36} />
             )}
@@ -126,7 +137,7 @@ export function TeamCalcsList({ calcs, teamPokemon, onRemove }: TeamCalcsListPro
             if (entries.length === 0) return null;
             return (
               <div key={label} className="flex flex-col">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                <h4 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                   {label}
                 </h4>
                 <ul className="flex flex-col divide-y divide-zinc-300/60">

@@ -8,6 +8,7 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import type { Team } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { Button } from "@/components/Button";
 
 interface TeamRegulationTagsProps {
   team: Team;
@@ -47,7 +48,7 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
         return (
           <span
             key={regulationId}
-            className="flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-50 py-0.5 pl-2 pr-1 text-[11px] font-medium text-zinc-700"
+            className="flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-50 py-0.5 pr-1 pl-2 text-[11px] font-medium text-zinc-700"
           >
             {shortLabel(regulation.label)}
             {canUntag && (
@@ -84,15 +85,10 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
 
       {isPickerOpen && (
         <Modal onClose={() => setIsPickerOpen(false)} labelledBy="tag-regulation-modal-title">
-          <h2
-            id="tag-regulation-modal-title"
-            className="mb-1 text-lg font-semibold text-zinc-900"
-          >
+          <h2 id="tag-regulation-modal-title" className="mb-1 text-lg font-semibold text-zinc-900">
             {t.regulationTags.pickerTitle(team.name)}
           </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            {t.regulationTags.pickerBody}
-          </p>
+          <p className="mb-4 text-sm text-zinc-600">{t.regulationTags.pickerBody}</p>
           <ul className="flex flex-col gap-2">
             {untaggedRegulations.map((regulation) => {
               const issues = getRegulationLegalityIssues(team.pokemon, regulation);
@@ -140,13 +136,9 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
             })}
           </ul>
           <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setIsPickerOpen(false)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            <Button variant="outline" onClick={() => setIsPickerOpen(false)}>
               {t.common.cancel}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

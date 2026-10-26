@@ -269,7 +269,7 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
       className={
         isPhone
           ? pickerSheetSearchClassName
-          : "w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none dark:bg-zinc-900"
+          : "w-full rounded border border-zinc-300 bg-field px-2 py-1 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
       }
     />
   );
@@ -335,7 +335,7 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
                         onBlur={() => {
                           if (renaming?.optionId === set.id) void commitRename(set, false);
                         }}
-                        className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none dark:bg-zinc-900"
+                        className="min-w-0 flex-1 rounded border border-zinc-300 bg-field px-1.5 py-0.5 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
                       />
                     ) : (
                       <span className="min-w-0 flex-1 truncate">{set.name}</span>

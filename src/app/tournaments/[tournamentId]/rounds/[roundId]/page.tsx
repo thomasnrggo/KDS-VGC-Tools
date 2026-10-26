@@ -9,7 +9,7 @@ import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { OpponentPokemonCard } from "@/components/OpponentPokemonCard";
 import { TournamentGameCard } from "@/components/TournamentGameCard";
 import { RoundSpeedLine } from "@/components/RoundSpeedLine";
-import { Modal } from "@/components/Modal";
+import { Modal, ModalTitle } from "@/components/Modal";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { parseRoundOpponentTeam } from "@/lib/tournament";
@@ -17,6 +17,8 @@ import { REGULATIONS } from "@/data/regulations";
 import { isAdminUid } from "@/lib/admin";
 import type { TournamentGame, TournamentRound } from "@/types";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface RoundPageProps {
   params: Promise<{ tournamentId: string; roundId: string }>;
@@ -143,11 +145,12 @@ export default function RoundPage({ params }: RoundPageProps) {
                   onClick={() => setRoundOutcome("walkover")}
                   aria-pressed={round.roundOutcome === "walkover"}
                   title={t.round.walkoverHint}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                     round.roundOutcome === "walkover"
                       ? "border-green-600 bg-green-600 text-white"
-                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-                  }`}
+                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100",
+                  )}
                 >
                   {t.round.walkover}
                 </button>
@@ -156,21 +159,18 @@ export default function RoundPage({ params }: RoundPageProps) {
                   onClick={() => setRoundOutcome("bye")}
                   aria-pressed={round.roundOutcome === "bye"}
                   title={t.round.byeHint}
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                     round.roundOutcome === "bye"
                       ? "border-green-600 bg-green-600 text-white"
-                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-                  }`}
+                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100",
+                  )}
                 >
                   {t.round.bye}
                 </button>
               </div>
             </div>
-            {round.roundOutcome && (
-              <p className="text-xs text-zinc-500">
-                {t.round.decidedNotice}
-              </p>
-            )}
+            {round.roundOutcome && <p className="text-xs text-zinc-500">{t.round.decidedNotice}</p>}
           </div>
 
           {/* A bye has no opponent by definition — skip the roster section entirely rather
@@ -240,9 +240,9 @@ export default function RoundPage({ params }: RoundPageProps) {
 
       {isEditingRoster && (
         <Modal onClose={() => setIsEditingRoster(false)} labelledBy="edit-roster-modal-title">
-          <h2 id="edit-roster-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
+          <ModalTitle id="edit-roster-modal-title" className="mb-4">
             {t.round.opponentTeam}
-          </h2>
+          </ModalTitle>
           <div className="flex flex-col gap-3">
             <textarea
               value={rosterDraft}
@@ -250,23 +250,13 @@ export default function RoundPage({ params }: RoundPageProps) {
               rows={16}
               placeholder={t.round.rosterPlaceholder}
               aria-label={t.round.opponentTeam}
-              className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
             />
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={saveRoster}
-                className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-              >
-                {t.common.save}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditingRoster(false)}
-                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              <Button onClick={saveRoster}>{t.common.save}</Button>
+              <Button variant="outline" onClick={() => setIsEditingRoster(false)}>
                 {t.common.cancel}
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

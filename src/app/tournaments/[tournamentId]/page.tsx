@@ -22,6 +22,8 @@ import {
 import { REGULATIONS } from "@/data/regulations";
 import type { Tournament } from "@/types";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface TournamentPageProps {
   params: Promise<{ tournamentId: string }>;
@@ -48,11 +50,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
     removeTeam,
     setActiveTeamId,
   } = useMyTeams();
-  const {
-    tournaments,
-    isLoading: isTournamentsLoading,
-    updateTournament,
-  } = useTournaments();
+  const { tournaments, isLoading: isTournamentsLoading, updateTournament } = useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [participantsDraft, setParticipantsDraft] = useState("");
@@ -208,11 +206,12 @@ export default function TournamentPage({ params }: TournamentPageProps) {
               <button
                 type="button"
                 onClick={toggleCompleted}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                className={cn(
+                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                   completed
                     ? "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
-                    : "border-green-600 bg-green-600 text-white hover:bg-green-700"
-                }`}
+                    : "border-green-600 bg-green-600 text-white hover:bg-green-700",
+                )}
               >
                 {completed ? t.tournament.reopen : t.tournament.markCompleted}
               </button>
@@ -226,7 +225,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
               onClick={addRound}
               disabled={completed}
               title={completed ? t.tournament.reopenToAdd : undefined}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-chrome-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-chrome-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t.tournament.addRound}
             </button>
@@ -252,9 +251,10 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                         router.push(`/tournaments/${tournamentId}/rounds/${round.id}`);
                       }
                     }}
-                    className={`grid cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 p-4 ${
-                      index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"
-                    }`}
+                    className={cn(
+                      "grid cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-4 p-4",
+                      index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100",
+                    )}
                   >
                     <span className="truncate text-sm font-semibold text-zinc-900">
                       {round.label}
@@ -262,7 +262,10 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                     <OpponentTeamPreview pokemon={round.opponentTeam} />
                     <span className="flex items-center gap-3">
                       <span
-                        className={`flex items-center text-xs font-semibold ${RESULT_CLASSES[result]}`}
+                        className={cn(
+                          "flex items-center text-xs font-semibold",
+                          RESULT_CLASSES[result],
+                        )}
                       >
                         {t.tournament.result[result]}
                         {round.roundOutcome && (
@@ -272,7 +275,9 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                             >
                               *
                             </TooltipTrigger>
-                            <TooltipContent>{t.tournament.outcomeHint[round.roundOutcome]}</TooltipContent>
+                            <TooltipContent>
+                              {t.tournament.outcomeHint[round.roundOutcome]}
+                            </TooltipContent>
                           </Tooltip>
                         )}
                       </span>
@@ -291,7 +296,10 @@ export default function TournamentPage({ params }: TournamentPageProps) {
       )}
 
       {isEditingDetails && (
-        <Modal onClose={() => setIsEditingDetails(false)} labelledBy="edit-tournament-details-title">
+        <Modal
+          onClose={() => setIsEditingDetails(false)}
+          labelledBy="edit-tournament-details-title"
+        >
           <h2
             id="edit-tournament-details-title"
             className="mb-4 text-lg font-semibold text-zinc-900"
@@ -308,7 +316,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                 onChange={(event) => setParticipantsDraft(event.target.value)}
                 placeholder={t.tournament.participantsPlaceholder}
                 aria-label={t.tournament.participantsLabel}
-                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
@@ -320,7 +328,7 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                 onChange={(event) => setPlacementDraft(event.target.value)}
                 placeholder={t.tournament.placementPlaceholder}
                 aria-label={t.tournament.placement}
-                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
@@ -331,24 +339,14 @@ export default function TournamentPage({ params }: TournamentPageProps) {
                 onChange={(event) => setUrlDraft(event.target.value)}
                 placeholder="https://…"
                 aria-label={t.tournament.link}
-                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
               />
             </label>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={saveDetails}
-                className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-              >
-                {t.common.save}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsEditingDetails(false)}
-                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              <Button onClick={saveDetails}>{t.common.save}</Button>
+              <Button variant="outline" onClick={() => setIsEditingDetails(false)}>
                 {t.common.cancel}
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>

@@ -1,5 +1,6 @@
 import { IconName } from "@/enums";
 import { ICON_PATHS } from "./paths";
+import { cn } from "@/lib/utils";
 
 interface IconProps {
   name: IconName;
@@ -15,7 +16,7 @@ export function Icon({ name, size = 20, className = "" }: IconProps) {
       width={size}
       height={size}
       fill="currentColor"
-      className={`shrink-0 select-none ${className}`}
+      className={cn("shrink-0 select-none", className)}
     >
       <path d={ICON_PATHS[name]} />
     </svg>

@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/Toast";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 /**
  * Sets the "dark" class on <html> before the page paints, so there's no
@@ -41,8 +42,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "VGC Box",
-  description:
-    "Plan Pokémon VGC matchups: your team, opponent teams, and lead/back game plans.",
+  description: "Plan Pokémon VGC matchups: your team, opponent teams, and lead/back game plans.",
 };
 
 export default function RootLayout({
@@ -53,10 +53,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={cn(geistSans.variable, geistMono.variable, "h-full antialiased")}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 pb-[calc(var(--mobile-bar-height,0px)+var(--calc-bar-height,0px))] xl:pb-0">
+      <body className="flex min-h-full flex-col bg-zinc-50 pb-[calc(var(--mobile-bar-height,0px)+var(--calc-bar-height,0px))] xl:pb-0">
         <Script
           id="theme-init"
           strategy="beforeInteractive"

@@ -25,9 +25,11 @@ import { speciesIdentity } from "@/lib/teamIdentity";
 import { calcMatchesSearch } from "@/lib/teamCalcs";
 import { parseSearchTerms } from "@/lib/pokemonMatchesQuery";
 import { SearchField } from "@/components/SearchField";
-import { Modal } from "@/components/Modal";
+import { Modal, ModalDescription, ModalTitle } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface TeamReportPageProps {
   params: Promise<{ teamId: string }>;
@@ -113,9 +115,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   ) {
     updateTeam(teamId, (t) => ({
       ...t,
-      combinations: (t.combinations ?? []).map((c) =>
-        c.id === combinationId ? updater(c) : c,
-      ),
+      combinations: (t.combinations ?? []).map((c) => (c.id === combinationId ? updater(c) : c)),
     }));
   }
 
@@ -149,13 +149,8 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
       ) : !team ? (
         <div className="flex flex-col items-center gap-3 p-14 text-center">
           <p className="text-lg font-semibold text-zinc-900">{t.teamPage.notFound}</p>
-          <p className="text-sm text-zinc-600">
-            {t.teamPage.notFoundBody}
-          </p>
-          <Link
-            href="/teams"
-            className="text-sm font-medium text-zinc-600 hover:underline"
-          >
+          <p className="text-sm text-zinc-600">{t.teamPage.notFoundBody}</p>
+          <Link href="/teams" className="text-sm font-medium text-zinc-600 hover:underline">
             {t.teamPage.backToMyTeams}
           </Link>
         </div>
@@ -166,7 +161,10 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           <div className="flex flex-wrap items-center justify-between gap-3">
             {/* On the Team report tab the post titles the page; elsewhere the
                 team's name joins the breadcrumb (as the page's h1). */}
-            <nav aria-label={t.teamPage.breadcrumb} className="flex min-w-0 items-center gap-1 text-sm">
+            <nav
+              aria-label={t.teamPage.breadcrumb}
+              className="flex min-w-0 items-center gap-1 text-sm"
+            >
               <Link
                 href="/teams"
                 className="flex shrink-0 items-center gap-1 rounded-full py-1 pr-1 font-medium text-zinc-500 hover:text-zinc-800"
@@ -193,11 +191,12 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   role="tab"
                   aria-selected={activeTab === tab}
                   onClick={() => selectTab(tab)}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  className={cn(
+                    "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
                     activeTab === tab
-                      ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                  }`}
+                      ? "bg-chrome-600 text-white"
+                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+                  )}
                 >
                   {t.teamPage.tabs[tab]}
                 </button>
@@ -267,9 +266,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           {activeTab === "report" && (
             <div className="flex flex-col gap-2">
               {isPreviewing && (
-                <p className="text-xs font-medium text-zinc-500">
-                  {t.teamPage.previewNotSaved}
-                </p>
+                <p className="text-xs font-medium text-zinc-500">{t.teamPage.previewNotSaved}</p>
               )}
               <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
                 {rosterShown.map((mon, index) => (
@@ -298,9 +295,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   </button>
                 </div>
                 {(team.combinations ?? []).length === 0 ? (
-                  <p className="text-sm text-zinc-500">
-                    {t.teamPage.noCombinations}
-                  </p>
+                  <p className="text-sm text-zinc-500">{t.teamPage.noCombinations}</p>
                 ) : (
                   (team.combinations ?? []).map((combination) => (
                     <TeamCombinationCard
@@ -315,7 +310,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </section>
 
               <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
-                <h2 className="flex h-8 items-center text-sm font-semibold text-zinc-900">{t.teamPage.notes}</h2>
+                <h2 className="flex h-8 items-center text-sm font-semibold text-zinc-900">
+                  {t.teamPage.notes}
+                </h2>
                 <RichTextEditor
                   value={team.notes ?? ""}
                   onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
@@ -356,28 +353,23 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   onClose={() => setIsConfirmingClearCalcs(false)}
                   labelledBy="confirm-clear-calcs-title"
                 >
-                  <h2 id="confirm-clear-calcs-title" className="mb-2 text-lg font-semibold text-zinc-900">
+                  <ModalTitle id="confirm-clear-calcs-title" className="mb-2">
                     {t.pokemonCard.confirmClearCalcsTitle((team.calcs ?? []).length)}
-                  </h2>
-                  <p className="mb-4 text-sm text-zinc-600">{t.pokemonCard.confirmClearCalcsBody}</p>
+                  </ModalTitle>
+                  <ModalDescription>{t.pokemonCard.confirmClearCalcsBody}</ModalDescription>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
+                    <Button
+                      variant="danger"
                       onClick={() => {
                         updateTeam(teamId, (t) => ({ ...t, calcs: [] }));
                         setIsConfirmingClearCalcs(false);
                       }}
-                      className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
                     >
                       {t.pokemonCard.clearCalcs}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsConfirmingClearCalcs(false)}
-                      className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-                    >
+                    </Button>
+                    <Button variant="outline" onClick={() => setIsConfirmingClearCalcs(false)}>
                       {t.common.cancel}
-                    </button>
+                    </Button>
                   </div>
                 </Modal>
               )}

@@ -49,7 +49,7 @@ export function LanguageMenu() {
         aria-expanded={isOpen}
         aria-label={t.language.menu}
         title={t.language.menu}
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-100 hover:bg-zinc-500 dark:text-zinc-900"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-chrome-100 hover:bg-zinc-500"
       >
         <Icon name={IconName.Translate} size={20} />
       </button>
@@ -58,10 +58,10 @@ export function LanguageMenu() {
         <div
           role="dialog"
           aria-label={t.language.menu}
-          className="absolute right-0 top-full z-20 mt-2 flex w-64 flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 shadow-lg"
+          className="absolute top-full right-0 z-20 mt-2 flex w-64 flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 shadow-lg"
         >
           <fieldset className="flex flex-col gap-1">
-            <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <legend className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
               {t.language.appLanguage}
             </legend>
             {APP_LANGUAGES.map((language) => (
@@ -81,7 +81,7 @@ export function LanguageMenu() {
           </fieldset>
           <div className="border-t border-zinc-200" />
           <fieldset className="flex flex-col gap-1">
-            <legend className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <legend className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
               {t.language.pokemonLanguage}
             </legend>
             {POKEMON_LANGUAGES.map((language) => (

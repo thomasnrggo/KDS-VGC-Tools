@@ -25,7 +25,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       aria-label={isDark ? t.theme.toLight : t.theme.toDark}
       title={isDark ? t.theme.toLight : t.theme.toDark}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-100 hover:bg-zinc-500 dark:text-zinc-900"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-chrome-100 hover:bg-zinc-500"
     >
       <Icon name={isDark ? IconName.LightMode : IconName.DarkMode} size={20} />
     </button>

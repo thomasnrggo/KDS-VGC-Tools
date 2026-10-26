@@ -58,6 +58,9 @@
    *
    * raised: a surface a step above the page — white in light mode, the
    * zinc-100 step in dark (replaces bg-white … dark:bg-zinc-100).
+   *
+   * field: the background of text inputs and search boxes — white in light
+   * mode, the zinc-900 step in dark (replaces bg-white … dark:bg-zinc-900).
    */
   --color-chrome-50: oklch(98.5% 0 none);
   --color-chrome-100: oklch(96.7% 0.001 286.375);
@@ -71,6 +74,7 @@
   --color-chrome-900: oklch(21% 0.006 285.885);
   --color-chrome-950: oklch(14.1% 0.005 285.823);
   --color-raised: var(--raised);
+  --color-field: var(--field);
 }
 
 :root {
@@ -99,6 +103,7 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --raised: #fff;
+  --field: #fff;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -127,8 +132,7 @@
    * The flip is wrong for anything meant to look the same in both themes —
    * the dark header and bars, primary buttons and active pills with white
    * text. Those use the fixed chrome-* scale (see @theme above) instead of
-   * a zinc class plus a dark: override; older code still has the
-   * dark:bg-zinc-400-style pairs (e.g. MyTeamHeader's CTA buttons).
+   * a zinc class plus a dark: override.
    */
   --color-zinc-50: oklch(14.1% 0.005 285.823);
   --color-zinc-100: oklch(21% 0.006 285.885);
@@ -143,6 +147,7 @@
   --color-zinc-950: oklch(98.5% 0 none);
 
   --raised: var(--color-zinc-100);
+  --field: var(--color-zinc-900);
 
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

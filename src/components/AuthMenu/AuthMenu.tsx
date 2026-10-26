@@ -76,7 +76,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
       <button
         type="button"
         onClick={onSignIn}
-        className="flex h-8 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900 md:h-9"
+        className="flex h-8 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-sm font-medium text-chrome-700 transition-colors hover:bg-chrome-100 md:h-9"
       >
         <GoogleLogo />
         <span className="hidden sm:inline">{t.auth.signIn}</span>
@@ -116,7 +116,7 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
           ref={dropdownRef}
           role="menu"
           aria-label={t.auth.accountMenu}
-          className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+          className="absolute top-full right-0 z-20 mt-2 w-56 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           <div className="truncate px-3 py-2 text-sm font-medium text-zinc-900">
             {user.displayName ?? t.auth.signedIn}

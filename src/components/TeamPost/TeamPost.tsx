@@ -8,6 +8,7 @@ import { hasRichText } from "@/lib/richText";
 import { fetchPokepaste, isPokepasteUrl } from "@/lib/pokepaste/fetchPokepaste";
 import { CopyButton } from "./ShareDialog";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 export interface TeamPostContent {
   creator?: string;
@@ -111,15 +112,14 @@ function DetailsLine({
  */
 export function TeamPost({ name, rawPaste = "", status, owner, ...content }: TeamPostProps) {
   const t = useMessages();
-  const [draft, setDraft] = useState<
-    (TeamPostContent & { name: string; rawPaste: string }) | null
-  >(null);
+  const [draft, setDraft] = useState<(TeamPostContent & { name: string; rawPaste: string }) | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const isEditing = !!owner && draft !== null;
   const hasOverview = hasRichText(content.overview);
-  const isEmpty =
-    !content.creator && !content.pokepasteUrl && !content.replicaCode && !hasOverview;
+  const isEmpty = !content.creator && !content.pokepasteUrl && !content.replicaCode && !hasOverview;
 
   function startEditing() {
     setError(null);
@@ -180,7 +180,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
   return (
     <article className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
-        <div className={`flex min-w-0 flex-col gap-1 ${isEditing ? "flex-1" : ""}`}>
+        <div className={cn("flex min-w-0 flex-col gap-1", isEditing && "flex-1")}>
           {isEditing && draft ? (
             <input
               value={draft.name ?? ""}
@@ -188,7 +188,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
               form="team-post-form"
               aria-label={t.teamPost.teamName}
               placeholder={name}
-              className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-2xl font-semibold text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-2xl font-semibold text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
             />
           ) : (
             <h1 className="truncate text-2xl font-semibold text-zinc-900">{name}</h1>
@@ -202,13 +202,13 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
               onClick={owner.onShare}
               aria-label={owner.shareLabel}
               title={owner.shareLabel}
-              className={`relative ${ICON_BUTTON_CLASSES}`}
+              className={cn("relative", ICON_BUTTON_CLASSES)}
             >
               <Icon name={IconName.Share} size={16} />
               {owner.isShared && (
                 <span
                   aria-hidden="true"
-                  className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-50 bg-green-600"
+                  className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-50 bg-green-600"
                 />
               )}
             </button>
@@ -260,7 +260,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
                 value={draft.replicaCode ?? ""}
                 onChange={(event) => setDraft({ ...draft, replicaCode: event.target.value })}
                 placeholder={t.teamPost.replicaPlaceholder}
-                className={`${INPUT_CLASSES} font-mono`}
+                className={cn(INPUT_CLASSES, "font-mono")}
               />
             </label>
           </div>
@@ -281,7 +281,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
               }}
               rows={10}
               placeholder={t.teamPaste.pastePlaceholder}
-              className={`${INPUT_CLASSES} resize-y font-mono`}
+              className={cn(INPUT_CLASSES, "resize-y font-mono")}
             />
           </label>
           {error && (
@@ -293,7 +293,7 @@ export function TeamPost({ name, rawPaste = "", status, owner, ...content }: Tea
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-full bg-zinc-600 px-5 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-400 dark:hover:bg-zinc-300"
+              className="rounded-full bg-chrome-600 px-5 py-1.5 text-sm font-medium text-white hover:bg-chrome-700"
             >
               {isSaving ? t.teamPost.loadingPokepaste : t.common.save}
             </button>

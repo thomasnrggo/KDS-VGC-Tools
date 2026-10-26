@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 interface SpeedTiersTableProps {
   /** src/data/species.json keys legal under the selected regulation. */
@@ -145,7 +146,7 @@ function defaultDirectionFor(key: SortKey): SortDirection {
 function StaticHeader({ label }: { label: string }) {
   return (
     <th className="p-0 font-normal">
-      <span className="flex w-full items-center justify-end px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500 whitespace-nowrap">
+      <span className="flex w-full items-center justify-end px-3 py-2 text-xs font-semibold tracking-wide whitespace-nowrap text-zinc-500 uppercase">
         {label}
       </span>
     </th>
@@ -170,9 +171,11 @@ function SortableHeader({
       <button
         type="button"
         onClick={onClick}
-        className={`flex w-full items-center gap-0.5 px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap ${
-          active ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-800"
-        } ${align === "right" ? "justify-end" : "justify-start"}`}
+        className={cn(
+          "flex w-full items-center gap-0.5 px-3 py-2 text-xs font-semibold tracking-wide whitespace-nowrap uppercase",
+          active ? "text-zinc-900" : "text-zinc-500 hover:text-zinc-800",
+          align === "right" ? "justify-end" : "justify-start",
+        )}
       >
         {align === "right" && active && (
           <Icon name={direction === "asc" ? IconName.ExpandLess : IconName.ExpandMore} size={16} />
@@ -297,7 +300,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
             <thead className="sticky top-0 z-10 bg-zinc-50">
               <tr className="border-b border-zinc-200">
                 <th className="w-10 p-0 font-normal">
-                  <span className="flex w-full items-center pl-3 pr-1 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  <span className="flex w-full items-center py-2 pr-1 pl-3 text-left text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                     #
                   </span>
                 </th>
@@ -335,16 +338,18 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                 return (
                   <tr
                     key={group.id}
-                    className={`border-b border-zinc-100 last:border-b-0 ${tierRowClass(tier)}`}
+                    className={cn("border-b border-zinc-100 last:border-b-0", tierRowClass(tier))}
                   >
-                    <td className="w-10 pl-3 pr-1 py-1.5 text-zinc-400">{index + 1}</td>
+                    <td className="w-10 py-1.5 pr-1 pl-3 text-zinc-400">{index + 1}</td>
                     <td className="px-3 py-1.5">
                       {groupMode ? (
                         // max-w caps the row at 7 sprites (7 * 56px sprite + 6 * 6px gap) before wrapping to a new line.
                         <div className="flex max-w-[428px] flex-wrap items-center gap-1.5">
                           {group.rows.map((row) => (
                             <Tooltip key={row.id}>
-                              <TooltipTrigger render={<span className="relative h-14 w-14 shrink-0" />}>
+                              <TooltipTrigger
+                                render={<span className="relative h-14 w-14 shrink-0" />}
+                              >
                                 <PokemonSprite species={row.speciesName} item={row.item} fill />
                               </TooltipTrigger>
                               <TooltipContent>{displayName(row)}</TooltipContent>
@@ -354,7 +359,11 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                       ) : (
                         <div className="flex items-center gap-2">
                           <span className="relative h-14 w-14 shrink-0">
-                            <PokemonSprite species={representative.speciesName} item={representative.item} fill />
+                            <PokemonSprite
+                              species={representative.speciesName}
+                              item={representative.item}
+                              fill
+                            />
                           </span>
                           <span className="truncate font-medium text-zinc-900">
                             {displayName(representative)}
@@ -362,13 +371,21 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.baseSpe}</td>
+                    <td className="px-3 py-1.5 text-right text-zinc-700">
+                      {representative.baseSpe}
+                    </td>
                     <td className="px-3 py-1.5 text-right font-semibold text-zinc-900">
                       {representative.maxSpeed}
                     </td>
-                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.neutral32}</td>
-                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.neutral0}</td>
-                    <td className="px-3 py-1.5 text-right text-zinc-700">{representative.minSpeed}</td>
+                    <td className="px-3 py-1.5 text-right text-zinc-700">
+                      {representative.neutral32}
+                    </td>
+                    <td className="px-3 py-1.5 text-right text-zinc-700">
+                      {representative.neutral0}
+                    </td>
+                    <td className="px-3 py-1.5 text-right text-zinc-700">
+                      {representative.minSpeed}
+                    </td>
                     <td className="px-3 py-1.5 text-right font-semibold text-zinc-900">
                       {group.maxScarf ?? "–"}
                       {group.scarfNotApplicable && (

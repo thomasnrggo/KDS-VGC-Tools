@@ -7,7 +7,7 @@ import { REGULATIONS } from "@/data/regulations";
 import { isTeamArchived, addRegulationTag, removeRegulationTag } from "@/lib/team";
 import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { TeamRoster } from "../TeamRoster";
-import { Modal } from "../Modal";
+import { Modal, ModalDescription, ModalTitle } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
 import { SearchField } from "../SearchField";
 import { RowActionsMenu } from "../RowActionsMenu";
@@ -15,6 +15,8 @@ import { TeamRegulationTags } from "../TeamRegulationTags";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface MyTeamsSectionProps {
   teams: Team[];
@@ -144,7 +146,7 @@ export function MyTeamsSection({
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
           aria-label={t.common.regulation}
-          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
+          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
@@ -155,7 +157,7 @@ export function MyTeamsSection({
         <Icon
           name={IconName.ExpandMore}
           size={14}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
         />
       </div>
     ) : (
@@ -186,11 +188,12 @@ export function MyTeamsSection({
         role="tab"
         aria-selected={tab === "active"}
         onClick={() => switchTab("active")}
-        className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+        className={cn(
+          "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
           tab === "active"
-            ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-        }`}
+            ? "bg-chrome-600 text-white"
+            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+        )}
       >
         {t.myTeams.active(activeRegulationTeams.length)}
       </button>
@@ -199,11 +202,12 @@ export function MyTeamsSection({
         role="tab"
         aria-selected={tab === "archived"}
         onClick={() => switchTab("archived")}
-        className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+        className={cn(
+          "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
           tab === "archived"
-            ? "bg-zinc-600 dark:bg-zinc-400 text-white"
-            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-        }`}
+            ? "bg-chrome-600 text-white"
+            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+        )}
       >
         {t.myTeams.archived(archivedRegulationTeams.length)}
       </button>
@@ -216,7 +220,7 @@ export function MyTeamsSection({
           (right) below — mirrors OpponentsSection's mobile header. */}
       <div className="flex flex-col gap-3 md:hidden">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="whitespace-nowrap text-xl font-semibold text-zinc-900">
+          <h2 className="text-xl font-semibold whitespace-nowrap text-zinc-900">
             {t.myTeams.title}
           </h2>
           {regulationControl}
@@ -239,7 +243,7 @@ export function MyTeamsSection({
             onClick={() => setIsAdding(true)}
             aria-label={t.myTeams.addTeam}
             title={t.myTeams.addTeam}
-            className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-zinc-600 dark:bg-zinc-400 text-white hover:bg-zinc-700 dark:hover:bg-zinc-300"
+            className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-chrome-600 text-white hover:bg-chrome-700"
           >
             <Icon name={IconName.Add} size={20} />
           </button>
@@ -252,13 +256,7 @@ export function MyTeamsSection({
           <h2 className="text-xl font-semibold text-zinc-900">{t.myTeams.title}</h2>
           {regulationControl}
         </div>
-        <button
-          type="button"
-          onClick={() => setIsAdding(true)}
-          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-        >
-          {t.myTeams.addTeam}
-        </button>
+        <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
       </div>
 
       {tabsControl}
@@ -276,37 +274,26 @@ export function MyTeamsSection({
 
       {isAdding && (
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-team-modal-title">
-          <h2 id="add-team-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
+          <ModalTitle id="add-team-modal-title" className="mb-4">
             {t.myTeams.addTeamTitle}
-          </h2>
+          </ModalTitle>
           <TeamPasteForm onSubmit={handleAddSubmit} onCancel={() => setIsAdding(false)} />
         </Modal>
       )}
 
-
       {confirmRemoveTeam && (
         <Modal onClose={() => setConfirmRemoveId(null)} labelledBy="confirm-remove-team-title">
-          <h2 id="confirm-remove-team-title" className="mb-2 text-lg font-semibold text-zinc-900">
+          <ModalTitle id="confirm-remove-team-title" className="mb-2">
             {t.myTeams.confirmRemoveTitle(confirmRemoveTeam.name)}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            {t.myTeams.confirmRemoveBody}
-          </p>
+          </ModalTitle>
+          <ModalDescription>{t.myTeams.confirmRemoveBody}</ModalDescription>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={confirmRemove}
-              className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
-            >
+            <Button variant="danger" onClick={confirmRemove}>
               {t.myTeams.removeTeam}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmRemoveId(null)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmRemoveId(null)}>
               {t.common.cancel}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
@@ -322,18 +309,10 @@ export function MyTeamsSection({
             <p className="max-w-md text-sm text-zinc-600">
               {regulationTeams.length === 0 ? t.myTeams.noTeamsBody : t.myTeams.allArchivedBody}
             </p>
-            <button
-              type="button"
-              onClick={() => setIsAdding(true)}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-            >
-              {t.myTeams.addTeam}
-            </button>
+            <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
           </div>
         ) : (
-          <p className="py-12 text-center text-sm text-zinc-500">
-            {t.myTeams.noArchived}
-          </p>
+          <p className="py-12 text-center text-sm text-zinc-500">{t.myTeams.noArchived}</p>
         )
       ) : isSearching && visibleTeams.length === 0 ? (
         <p className="py-12 text-center text-sm text-zinc-500">
@@ -378,13 +357,15 @@ export function MyTeamsSection({
                 event.preventDefault();
                 handleDrop(team.id);
               }}
-              className={`flex flex-col gap-2 p-4 ${!isSearching ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"} ${
-                index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"
-              } ${draggedId === team.id ? "opacity-40" : ""} ${
-                dragOverId === team.id && draggedId !== team.id
-                  ? "outline outline-2 -outline-offset-2 outline-zinc-500"
-                  : ""
-              }`}
+              className={cn(
+                "flex flex-col gap-2 p-4",
+                !isSearching ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+                index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100",
+                draggedId === team.id && "opacity-40",
+                dragOverId === team.id &&
+                  draggedId !== team.id &&
+                  "outline outline-2 -outline-offset-2 outline-zinc-500",
+              )}
             >
               {/* Its own full-width row (rather than living inside the
                   roster wrapper below) so RowActionsMenu can sit flush
@@ -397,12 +378,12 @@ export function MyTeamsSection({
                     <Icon
                       name={IconName.DragIndicator}
                       size={16}
-                      className="shrink-0 -ml-1 text-zinc-400"
+                      className="-ml-1 shrink-0 text-zinc-400"
                     />
                   )}
                   <span
                     title={team.name}
-                    className="max-w-xs truncate text-xs font-semibold uppercase tracking-wide text-zinc-600"
+                    className="max-w-xs truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase"
                   >
                     {team.name}
                   </span>
@@ -452,7 +433,8 @@ export function MyTeamsSection({
                     pokemon={team.pokemon}
                     isMatch={
                       isSearching
-                        ? (mon) => searchTerms.some((term) => pokemonMatchesQuery(mon, term, pokemonText))
+                        ? (mon) =>
+                            searchTerms.some((term) => pokemonMatchesQuery(mon, term, pokemonText))
                         : undefined
                     }
                   />

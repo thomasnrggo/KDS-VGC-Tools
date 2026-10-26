@@ -6,10 +6,12 @@ import type { Team, Tournament } from "@/types";
 import { REGULATIONS } from "@/data/regulations";
 import { getTournamentRecord, isTournamentCompleted } from "@/lib/tournament";
 import { isTeamArchived } from "@/lib/team";
-import { Modal } from "../Modal";
+import { Modal, ModalTitle } from "../Modal";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/Button";
 
 interface TournamentsSectionProps {
   tournaments: Tournament[];
@@ -79,7 +81,7 @@ export function TournamentsSection({
           value={selectedRegulationId}
           onChange={(event) => setSelectedRegulationId(event.target.value)}
           aria-label={t.common.regulation}
-          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pl-3 pr-8 text-xs font-medium text-zinc-700"
+          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
         >
           {REGULATIONS.map((regulation) => (
             <option key={regulation.id} value={regulation.id}>
@@ -90,7 +92,7 @@ export function TournamentsSection({
         <Icon
           name={IconName.ExpandMore}
           size={14}
-          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500"
+          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
         />
       </div>
     ) : (
@@ -106,21 +108,20 @@ export function TournamentsSection({
           <h2 className="text-xl font-semibold text-zinc-900">{t.tournaments.title}</h2>
           {regulationControl}
         </div>
-        <button
-          type="button"
+        <Button
           onClick={openAdd}
           disabled={regulationActiveTeams.length === 0}
-          className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
+          className="disabled:cursor-not-allowed disabled:opacity-50"
         >
           {t.tournaments.add}
-        </button>
+        </Button>
       </div>
 
       {isAdding && (
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-tournament-modal-title">
-          <h2 id="add-tournament-modal-title" className="mb-4 text-lg font-semibold text-zinc-900">
+          <ModalTitle id="add-tournament-modal-title" className="mb-4">
             {t.tournaments.addTitle}
-          </h2>
+          </ModalTitle>
           <div className="flex flex-col gap-3">
             <input
               type="text"
@@ -128,7 +129,7 @@ export function TournamentsSection({
               onChange={(event) => setName(event.target.value)}
               placeholder={t.tournaments.namePlaceholder}
               aria-label={t.tournaments.nameLabel}
-              className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
             />
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
               {t.tournaments.team}
@@ -145,55 +146,46 @@ export function TournamentsSection({
               </select>
             </label>
             <div className="flex gap-2">
-              <button
-                type="button"
+              <Button
                 onClick={handleAddSubmit}
                 disabled={!teamId}
-                className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300 disabled:cursor-not-allowed disabled:opacity-50"
+                className="disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t.tournaments.create}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsAdding(false)}
-                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              </Button>
+              <Button variant="outline" onClick={() => setIsAdding(false)}>
                 {t.common.cancel}
-              </button>
+              </Button>
             </div>
           </div>
         </Modal>
       )}
 
       {confirmRemoveTournament && (
-        <Modal onClose={() => setConfirmRemoveId(null)} labelledBy="confirm-remove-tournament-title">
+        <Modal
+          onClose={() => setConfirmRemoveId(null)}
+          labelledBy="confirm-remove-tournament-title"
+        >
           <h2
             id="confirm-remove-tournament-title"
             className="mb-2 text-lg font-semibold text-zinc-900"
           >
             {t.tournaments.removeTitle(confirmRemoveTournament.name)}
           </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            {t.tournaments.removeBody}
-          </p>
+          <p className="mb-4 text-sm text-zinc-600">{t.tournaments.removeBody}</p>
           <div className="flex gap-2">
-            <button
-              type="button"
+            <Button
+              variant="danger"
               onClick={() => {
                 removeTournament(confirmRemoveTournament.id);
                 setConfirmRemoveId(null);
               }}
-              className="rounded-full bg-red-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700"
             >
               {t.tournaments.remove}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmRemoveId(null)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            </Button>
+            <Button variant="outline" onClick={() => setConfirmRemoveId(null)}>
               {t.common.cancel}
-            </button>
+            </Button>
           </div>
         </Modal>
       )}
@@ -202,23 +194,13 @@ export function TournamentsSection({
         <p className="text-sm text-zinc-500">{t.common.loading}</p>
       ) : regulationActiveTeams.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center text-sm text-zinc-600">
-          {activeTeams.length === 0
-            ? t.tournaments.needTeam
-            : t.tournaments.needRegulationTeam}
+          {activeTeams.length === 0 ? t.tournaments.needTeam : t.tournaments.needRegulationTeam}
         </p>
       ) : regulationTournaments.length === 0 ? (
         <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-6 py-14 text-center">
           <h3 className="text-lg font-semibold text-zinc-900">{t.tournaments.empty}</h3>
-          <p className="max-w-md text-sm text-zinc-600">
-            {t.tournaments.emptyBody}
-          </p>
-          <button
-            type="button"
-            onClick={openAdd}
-            className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-          >
-            {t.tournaments.add}
-          </button>
+          <p className="max-w-md text-sm text-zinc-600">{t.tournaments.emptyBody}</p>
+          <Button onClick={openAdd}>{t.tournaments.add}</Button>
         </div>
       ) : (
         <ul className="flex flex-col">
@@ -237,9 +219,10 @@ export function TournamentsSection({
                     router.push(`/tournaments/${tournament.id}`);
                   }
                 }}
-                className={`flex cursor-pointer items-center justify-between gap-4 p-4 ${
-                  index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100"
-                }`}
+                className={cn(
+                  "flex cursor-pointer items-center justify-between gap-4 p-4",
+                  index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100",
+                )}
               >
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate text-sm font-semibold text-zinc-900">
@@ -247,8 +230,8 @@ export function TournamentsSection({
                   </span>
                   <span className="truncate text-xs text-zinc-500">
                     {team?.name ?? t.tournaments.unknownTeam} ·{" "}
-                    {t.tournaments.rounds(tournament.rounds.length)} · {record.wins}-{record.losses}-
-                    {record.ties}
+                    {t.tournaments.rounds(tournament.rounds.length)} · {record.wins}-{record.losses}
+                    -{record.ties}
                   </span>
                   {/* Final standing details only mean anything once the event is over — an
                       in-progress tournament's participant count/placement are usually still
@@ -273,15 +256,11 @@ export function TournamentsSection({
                     }}
                     aria-label={t.tournaments.removeNamed(tournament.name)}
                     title={t.tournaments.remove}
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-600"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-500 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-950"
                   >
                     <Icon name={IconName.Delete} size={16} />
                   </button>
-                  <Icon
-                    name={IconName.ExpandMore}
-                    size={20}
-                    className="-rotate-90 text-zinc-400"
-                  />
+                  <Icon name={IconName.ExpandMore} size={20} className="-rotate-90 text-zinc-400" />
                 </div>
               </li>
             );

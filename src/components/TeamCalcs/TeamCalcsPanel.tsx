@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "../Modal";
+import { Modal, ModalDescription, ModalTitle } from "../Modal";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { parseCalcPaste } from "@/lib/teamCalcs";
 import type { ParsedPokemon, TeamCalc } from "@/types";
 import { TeamCalcsList } from "./TeamCalcsList";
+import { Button } from "@/components/Button";
 
 interface TeamCalcsPanelProps {
   calcs: TeamCalc[];
@@ -58,7 +59,7 @@ export function TeamCalcsPanel({ calcs, teamPokemon, onAdd, onRemove }: TeamCalc
             setNotice(null);
             setIsAdding(true);
           }}
-          className="flex shrink-0 items-center gap-1.5 rounded-full bg-zinc-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-400 dark:hover:bg-zinc-300"
+          className="flex shrink-0 items-center gap-1.5 rounded-full bg-chrome-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-chrome-700"
         >
           <Icon name={IconName.Add} size={18} />
           Add calcs
@@ -71,8 +72,7 @@ export function TeamCalcsPanel({ calcs, teamPokemon, onAdd, onRemove }: TeamCalc
         <p className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
           No calcs yet. Paste calcs from a damage calculator — put a Pokémon&apos;s name on its own
           line to start its section, and &ldquo;Offensive&rdquo; or &ldquo;Defensive&rdquo; before
-          its calcs. Calcs without a section are filed under whichever of your Pokémon they
-          involve.
+          its calcs. Calcs without a section are filed under whichever of your Pokémon they involve.
         </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-zinc-200">
@@ -82,14 +82,12 @@ export function TeamCalcsPanel({ calcs, teamPokemon, onAdd, onRemove }: TeamCalc
 
       {isAdding && (
         <Modal onClose={closeAdd} labelledBy="add-calcs-title" size="wide">
-          <h2 id="add-calcs-title" className="mb-1 text-lg font-semibold text-zinc-900">
-            Add calcs
-          </h2>
-          <p className="mb-3 text-sm text-zinc-600">
+          <ModalTitle id="add-calcs-title">Add calcs</ModalTitle>
+          <ModalDescription className="mb-3">
             Paste calc lines (&ldquo;… vs. …: … -- …&rdquo;). A Pokémon&apos;s name on its own line
             starts its section, &ldquo;Offensive&rdquo;/&ldquo;Defensive&rdquo; set the side, and
             any other line is kept as a note.
-          </p>
+          </ModalDescription>
           <textarea
             value={paste}
             onChange={(event) => setPaste(event.target.value)}
@@ -97,24 +95,19 @@ export function TeamCalcsPanel({ calcs, teamPokemon, onAdd, onRemove }: TeamCalc
             placeholder={PLACEHOLDER}
             aria-label="Calcs to add"
             autoFocus
-            className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="w-full resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-xs text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
           />
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
+            <Button
               onClick={submit}
               disabled={!paste.trim()}
-              className="rounded-full bg-zinc-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-400 dark:hover:bg-zinc-300"
+              className="disabled:cursor-not-allowed disabled:opacity-50"
             >
               Add
-            </button>
-            <button
-              type="button"
-              onClick={closeAdd}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+            </Button>
+            <Button variant="outline" onClick={closeAdd}>
               Cancel
-            </button>
+            </Button>
           </div>
         </Modal>
       )}

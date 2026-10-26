@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { TeamRoster } from "@/components/TeamRoster";
 import { REGULATIONS } from "@/data/regulations";
+import { Button } from "@/components/Button";
 
 export default function TeamBuilderPage() {
   const router = useRouter();
@@ -50,17 +51,13 @@ export default function TeamBuilderPage() {
           <div>
             <h2 className="text-xl font-semibold text-zinc-900">Team Builder</h2>
             <p className="text-sm text-zinc-600">
-              Build a team from scratch, or open any existing team here to edit its species,
-              items, abilities, moves, and Stat Points directly.
+              Build a team from scratch, or open any existing team here to edit its species, items,
+              abilities, moves, and Stat Points directly.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={createTeamAndOpen}
-            className="shrink-0 rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-          >
+          <Button onClick={createTeamAndOpen} className="shrink-0">
             New team
-          </button>
+          </Button>
         </div>
 
         {isLoading ? (
@@ -82,13 +79,13 @@ export default function TeamBuilderPage() {
                 className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 p-4 hover:border-zinc-300 hover:bg-zinc-50"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <span className="truncate text-sm font-semibold text-zinc-900">
-                    {team.name}
-                  </span>
+                  <span className="truncate text-sm font-semibold text-zinc-900">{team.name}</span>
                   {team.pokemon.length > 0 ? (
                     <TeamRoster pokemon={team.pokemon} />
                   ) : (
-                    <span className="text-xs text-zinc-500">Empty roster — click to add Pokémon.</span>
+                    <span className="text-xs text-zinc-500">
+                      Empty roster — click to add Pokémon.
+                    </span>
                   )}
                 </div>
                 <span className="shrink-0 text-sm font-medium text-zinc-500">
