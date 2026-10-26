@@ -981,6 +981,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
           )}
           conditions={defenderSide}
           onToggle={toggleDefenderSide}
+          align="right"
         />
       </div>
     </>
@@ -1382,8 +1383,10 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
         />
 
         {/* Wide screens show the field between the two Pokémon; narrower
-            ones open it in a drawer (the Field button below). */}
-        <div className="hidden flex-col gap-3 rounded-lg border border-zinc-200 p-4 xl:flex">
+            ones open it in a drawer (the Field button below). A step darker
+            than the two Pokémon panels, so the shared battlefield stands apart
+            from them; its unpressed pills stay white on it. */}
+        <div className="hidden flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-100 p-4 xl:flex [&_button[aria-pressed=false]]:bg-raised">
           <h3 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
             {t.calc.field}
           </h3>
@@ -1612,13 +1615,23 @@ interface SideConditionsPanelProps {
   title: string;
   conditions: SideConditions;
   onToggle: (key: keyof SideConditions) => void;
+  /** Which edge the title sits on — the right side's panel mirrors the left. */
+  align?: "left" | "right";
 }
 
-function SideConditionsPanel({ title, conditions, onToggle }: SideConditionsPanelProps) {
+function SideConditionsPanel({
+  title,
+  conditions,
+  onToggle,
+  align = "left",
+}: SideConditionsPanelProps) {
   const text = usePokemonText();
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-medium text-zinc-600">{title}</span>
+      {/* Each side's label sits on its own edge, matching where that Pokémon is on the page. */}
+      <span className={cn("text-xs font-medium text-zinc-600", align === "right" && "text-right")}>
+        {title}
+      </span>
       <div className="flex flex-col gap-1.5">
         <TogglePill
           active={conditions.protect}

@@ -23,6 +23,7 @@ import { ENGLISH_POKEMON_TEXT, type PokemonText } from "@/lib/i18n/pokemonNames"
 import { MESSAGES, type Messages } from "@/lib/i18n/messages";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { cn } from "@/lib/utils";
+import { Slider } from "@/components/Slider";
 
 const ABILITIES = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
 const MOVES = movesData as unknown as Record<string, MoveData>;
@@ -736,14 +737,13 @@ export function PokemonEditor({
                   isPhone ? "py-1 text-center" : "py-0.5 text-right",
                 )}
               />
-              <input
-                type="range"
+              <Slider
                 min={0}
                 max={32}
                 value={breakdown.statPoints[stat]}
                 onChange={(event) => updateSp(stat, Number(event.target.value))}
                 aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
-                className={cn("w-full min-w-0 accent-zinc-600", isPhone && "h-8")}
+                className={cn("min-w-0", isPhone && "h-8")}
               />
               <span className="text-right font-medium tabular-nums">
                 {finalCellRenderer(stat, breakdown.final[stat])}

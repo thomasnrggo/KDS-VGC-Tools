@@ -206,3 +206,65 @@
     font-size: 16px !important;
   }
 }
+
+/*
+ * The range slider (see components/Slider): a thin light track filled in
+ * green up to the value (--fill, set inline) and a round green knob with a
+ * white ring. Styled here because `accent-color` makes Chrome darken the
+ * whole track whenever the accent is a light color like this green.
+ */
+@layer components {
+  .slider {
+    --slider-color: var(--color-green-500);
+    appearance: none;
+    height: 1.25rem;
+    background: transparent;
+    cursor: pointer;
+  }
+  .slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--slider-color) var(--fill, 0%),
+      var(--color-zinc-200) var(--fill, 0%)
+    );
+  }
+  .slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-zinc-200);
+  }
+  .slider::-moz-range-progress {
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--slider-color);
+  }
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -5px;
+    border: 2px solid #fff;
+    border-radius: 9999px;
+    background: var(--slider-color);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  }
+  .slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-radius: 9999px;
+    background: var(--slider-color);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  }
+  .slider:focus-visible {
+    outline: none;
+  }
+  .slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--slider-color) 35%, transparent);
+  }
+  .slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--slider-color) 35%, transparent);
+  }
+}

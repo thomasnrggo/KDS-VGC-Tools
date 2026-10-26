@@ -20,6 +20,12 @@ starting with the experience on a phone.
   in a new tab), on the same line as the credit (wrapping under it on phones).
 
 ### Changed
+- Sliders (Stat Points and current HP, in the calculator and the Team Builder) are green: a light
+  track filled in green up to the value, with a round green knob, the same in every browser and
+  in both themes.
+- Damage Calculator on wide screens: the Field panel between the two Pokémon has a slightly darker
+  background (its unpressed options stay white), so the middle of the page has some contrast. The
+  right side's conditions label is right-aligned, mirroring the left.
 - Damage Calculator: Fairy Aura turns on by itself when Mega Floette comes onto either side (picked,
   switched to in the roster, loaded with a team, or Mega toggled on), like weather abilities set
   the weather. Turning Mega off clears it again unless the other side's Pokémon has Fairy Aura too;
@@ -90,6 +96,13 @@ starting with the experience on a phone.
   browser's native dropdown (on phones, the same full-screen sheet).
 
 ### Fixed
+- Damage Calculator field effects, checked against the games:
+  - a critical hit now ignores Reflect, Light Screen and Aurora Veil (it used to be reduced by them);
+  - Rising Voltage doubles against a grounded target in Electric Terrain; Misty Explosion (grounded
+    user, Misty Terrain) and Psyblade (Electric Terrain) get ×1.5;
+  - Hydro Steam is boosted ×1.5 in Sun instead of halved;
+  - Utility Umbrella: a holder takes no Sun/Rain damage change, and its own Weather Ball, Solar
+    Beam and Hydro Steam ignore Sun/Rain.
 - Mega Floette written as "Floette-Eternal" (how Showdown exports it) got its base ability instead
   of Fairy Aura in the calculator and Speed Tiers.
 - Faster loading without lists swapping: My Teams, the Matchup Planner, Tournaments and the

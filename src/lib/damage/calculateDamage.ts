@@ -131,9 +131,20 @@ function isGrounded(
  * Sp.Def/Def boost applied to the defense stat instead, before the
  * base-damage formula runs).
  */
-function weatherBaseDamageMod4096(weather: DamageCalcOptions["weather"], moveType: string): number {
-  if (weather === "Sun") return moveType === "Fire" ? 0x1800 : moveType === "Water" ? 0x800 : FIXED_POINT;
-  if (weather === "Rain") return moveType === "Water" ? 0x1800 : moveType === "Fire" ? 0x800 : FIXED_POINT;
+function weatherBaseDamageMod4096(
+  weather: DamageCalcOptions["weather"],
+  moveType: string,
+  moveKey: string,
+  umbrella: { attacker: boolean; defender: boolean },
+): number {
+  // A target holding Utility Umbrella takes no Sun/Rain change at all.
+  if ((weather === "Sun" || weather === "Rain") && umbrella.defender) return FIXED_POINT;
+  // Hydro Steam is boosted in Sun instead of halved — unless its user holds Utility Umbrella.
+  if (weather === "Sun" && moveKey === "hydro-steam" && !umbrella.attacker) return 0x1800;
+  if (weather === "Sun")
+    return moveType === "Fire" ? 0x1800 : moveType === "Water" ? 0x800 : FIXED_POINT;
+  if (weather === "Rain")
+    return moveType === "Water" ? 0x1800 : moveType === "Fire" ? 0x800 : FIXED_POINT;
   return FIXED_POINT;
 }
 
@@ -187,9 +198,11 @@ function screenMod4096(
   screens: DamageCalcOptions["defenderScreens"],
   category: MoveCategory,
   isDoublesFormat: boolean,
+  isCritical: boolean,
 ): number {
   const half = isDoublesFormat ? 0xaac : 0x800;
-  if (!screens) return FIXED_POINT;
+  // A critical hit goes straight through Reflect, Light Screen and Aurora Veil.
+  if (!screens || isCritical) return FIXED_POINT;
   if (screens.auroraVeil) return half;
   if (screens.reflect && category === "Physical") return half;
   if (screens.lightScreen && category === "Special") return half;
@@ -312,7 +325,10 @@ function resolveMovePower(moveKey: string, basePower: number, ctx: PowerContext)
       return ratio >= 5 ? 120 : ratio >= 4 ? 100 : ratio >= 3 ? 80 : ratio >= 2 ? 60 : 40;
     }
     case "gyro-ball":
-      return Math.min(150, Math.floor((25 * ctx.defenderSpeed) / Math.max(1, ctx.attackerSpeed)) + 1);
+      return Math.min(
+        150,
+        Math.floor((25 * ctx.defenderSpeed) / Math.max(1, ctx.attackerSpeed)) + 1,
+      );
     case "electro-ball": {
       const ratio = ctx.attackerSpeed / Math.max(1, ctx.defenderSpeed);
       return ratio >= 4 ? 150 : ratio >= 3 ? 120 : ratio >= 2 ? 80 : ratio >= 1 ? 60 : 40;
@@ -483,7 +499,9 @@ function sideMod4096(
   const matching = sides.filter((side) => side.stage === stage && sideMatches(side, ctx));
   if (matching.some((side) => side.weathers)) ctx.fieldUsed.weather = true;
   if (matching.some((side) => side.terrain)) ctx.fieldUsed.terrain = true;
-  return matching.length === 0 ? FIXED_POINT : chainMods(matching.map((side) => side.multiplier4096));
+  return matching.length === 0
+    ? FIXED_POINT
+    : chainMods(matching.map((side) => side.multiplier4096));
 }
 
 /**
@@ -624,23 +642,54 @@ export function calculateDamage(
     defender.ability,
   );
 
-  const attackerGrounded = isGrounded(attackerTypes, attackerAbility, attacker.item, options.gravity);
-  const defenderGrounded = isGrounded(defenderTypes, defenderAbility, defender.item, options.gravity);
+  const attackerGrounded = isGrounded(
+    attackerTypes,
+    attackerAbility,
+    attacker.item,
+    options.gravity,
+  );
+  const defenderGrounded = isGrounded(
+    defenderTypes,
+    defenderAbility,
+    defender.item,
+    options.gravity,
+  );
   // Mega Sol (Pokémon Champions): its user's moves act as if it were sunny.
   const attackerWeather = attackerAbility === "Mega Sol" ? "Sun" : options.weather;
+  const umbrella = {
+    attacker: attacker.item === "Utility Umbrella",
+    defender: defender.item === "Utility Umbrella",
+  };
+  // The weather the user's own moves see: Utility Umbrella shields its holder
+  // from Sun and Rain, so its Weather Ball stays Normal and its Solar Beam
+  // isn't halved in Rain.
+  const attackerMoveWeather =
+    umbrella.attacker && (attackerWeather === "Sun" || attackerWeather === "Rain")
+      ? undefined
+      : attackerWeather;
 
   // The move's type can change before anything else looks at it: Weather
   // Ball/Terrain Pulse follow the field (and double to 100 power), -ate
   // abilities turn Normal moves into their type, Liquid Voice turns sound
   // moves into Water.
-  const fieldType = fieldMoveType(moveKey, attackerWeather, options.terrain, attackerGrounded);
+  const fieldType = fieldMoveType(moveKey, attackerMoveWeather, options.terrain, attackerGrounded);
   const ateType =
-    resolvedMove.type === "Normal" && attackerAbility ? TYPE_CHANGING_ABILITIES[attackerAbility] : undefined;
+    resolvedMove.type === "Normal" && attackerAbility
+      ? TYPE_CHANGING_ABILITIES[attackerAbility]
+      : undefined;
   const moveType =
     fieldType ??
     ateType ??
     (attackerAbility === "Liquid Voice" && flags.sound ? "Water" : resolvedMove.type);
-  const listedPower = fieldType ? 100 : (resolvedMove.power ?? 0);
+  // Rising Voltage doubles against a grounded target in Electric Terrain.
+  const risingVoltageBoosted =
+    moveKey === "rising-voltage" && options.terrain === "Electric" && defenderGrounded;
+  const listedPower = fieldType ? 100 : (resolvedMove.power ?? 0) * (risingVoltageBoosted ? 2 : 1);
+  // Misty Explosion ×1.5 in Misty Terrain (if its user is grounded); Psyblade
+  // ×1.5 in Electric Terrain (whoever's grounded).
+  const terrainMoveBoosted =
+    (moveKey === "misty-explosion" && options.terrain === "Misty" && attackerGrounded) ||
+    (moveKey === "psyblade" && options.terrain === "Electric");
   // Expanding Force hits both foes in Psychic Terrain (if its user is grounded).
   const expandingForceBoosted =
     moveKey === "expanding-force" && options.terrain === "Psychic" && attackerGrounded;
@@ -683,12 +732,9 @@ export function calculateDamage(
     move.minHits === undefined &&
     !HIT_RANGE_OVERRIDES[moveKey] &&
     !(move.isSpread && options.attackerHitsMultipleTargets);
-  const hitCount = hasParentalBond ? 2 : resolveHitCount(
-        move,
-        moveKey,
-        attackerAbility === "Skill Link",
-        options.hits,
-      );
+  const hitCount = hasParentalBond
+    ? 2
+    : resolveHitCount(move, moveKey, attackerAbility === "Skill Link", options.hits);
 
   // A defender that used Protect blocks the hit entirely, regardless of type
   // — checked before type effectiveness since it isn't a type interaction.
@@ -728,9 +774,16 @@ export function calculateDamage(
   // Mega Metagross", "… Multiscale Dragonite") — set by abilityMod below and
   // by the special cases (Guts, Technician, Adaptability, …) further down.
   const abilityUsed = { attacker: false, defender: false };
-  function abilityMod(side: "attacker" | "defender", stage: AbilityDamageModifierSide["stage"]): number {
+  function abilityMod(
+    side: "attacker" | "defender",
+    stage: AbilityDamageModifierSide["stage"],
+  ): number {
     const ability = side === "attacker" ? attackerAbility : defenderAbility;
-    const mod = sideMod4096(ability ? ABILITY_DAMAGE_MODIFIERS[ability]?.[side] : undefined, stage, ctx);
+    const mod = sideMod4096(
+      ability ? ABILITY_DAMAGE_MODIFIERS[ability]?.[side] : undefined,
+      stage,
+      ctx,
+    );
     if (mod !== FIXED_POINT) abilityUsed[side] = true;
     return mod;
   }
@@ -789,7 +842,10 @@ export function calculateDamage(
   const effectiveDefenderStage = options.isCritical
     ? Math.min(defenderStage ?? 0, 0)
     : defenderStage;
-  const stageAdjustedDefenseStat = applyStatStage(defenderStats[defenseStatKey], effectiveDefenderStage);
+  const stageAdjustedDefenseStat = applyStatStage(
+    defenderStats[defenseStatKey],
+    effectiveDefenderStage,
+  );
 
   // Guts both cancels burn's halving and separately boosts Attack ×1.5 while
   // afflicted by ANY status condition (not just burn) — two distinct effects
@@ -812,10 +868,11 @@ export function calculateDamage(
     moveKey === "knock-off" && defenderItemRemovable ? 0x1800 : FIXED_POINT,
     // Expanding Force ×1.5 in Psychic Terrain (if its user is grounded).
     expandingForceBoosted ? 0x1800 : FIXED_POINT,
+    terrainMoveBoosted ? 0x1800 : FIXED_POINT,
     // Solar Beam/Blade are halved in any weather but sun.
     (moveKey === "solar-beam" || moveKey === "solar-blade") &&
-    attackerWeather &&
-    attackerWeather !== "Sun"
+    attackerMoveWeather &&
+    attackerMoveWeather !== "Sun"
       ? 0x800
       : FIXED_POINT,
   ]);
@@ -847,7 +904,10 @@ export function calculateDamage(
   const attackerAbilityBpModExceptTechnician =
     attackerAbility === "Technician" ? FIXED_POINT : abilityMod("attacker", "bp");
   const bpModsBeforeTechnician = [...bpModsBase, attackerAbilityBpModExceptTechnician];
-  const tempBasePower = Math.max(1, pokeRound((rawMovePower * chainMods(bpModsBeforeTechnician)) / FIXED_POINT));
+  const tempBasePower = Math.max(
+    1,
+    pokeRound((rawMovePower * chainMods(bpModsBeforeTechnician)) / FIXED_POINT),
+  );
   const technicianMod =
     attackerAbility === "Technician" && tempBasePower <= 60 ? 0x1800 : FIXED_POINT;
   const bpModsChain = chainMods([...bpModsBeforeTechnician, technicianMod]);
@@ -870,7 +930,10 @@ export function calculateDamage(
     abilityMod("attacker", "at"),
     abilityMod("defender", "at"),
   ];
-  const finalAttackStat = Math.max(1, pokeRound((stageAdjustedAttackStat * chainMods(atMods)) / FIXED_POINT));
+  const finalAttackStat = Math.max(
+    1,
+    pokeRound((stageAdjustedAttackStat * chainMods(atMods)) / FIXED_POINT),
+  );
 
   //////////////////////////////////////////////////////////////////////////
   // Stage 3: defense stat — Sand/Snow's boost applies directly (its own
@@ -905,11 +968,13 @@ export function calculateDamage(
     (fieldWeatherReachedAttacker &&
       ((moveKey === "weather-ball" && fieldType !== undefined) ||
         ((moveKey === "solar-beam" || moveKey === "solar-blade") && options.weather !== "Sun") ||
-        weatherBaseDamageMod4096(options.weather, move.type) !== FIXED_POINT)) ||
+        weatherBaseDamageMod4096(options.weather, move.type, moveKey, umbrella) !== FIXED_POINT)) ||
     sandSnowAdjustedDefenseStat !== stageAdjustedDefenseStat;
   const terrainChangedDamage =
     (moveKey === "terrain-pulse" && fieldType !== undefined) ||
     expandingForceBoosted ||
+    risingVoltageBoosted ||
+    terrainMoveBoosted ||
     terrainAttackMod4096(options.terrain, move.type, attackerGrounded) !== FIXED_POINT ||
     terrainDefenseMod4096(options.terrain, move.type, moveKey, defenderGrounded) !== FIXED_POINT;
 
@@ -950,7 +1015,12 @@ export function calculateDamage(
   // together, AFTER STAB/type effectiveness/burn.
   //////////////////////////////////////////////////////////////////////////
   const finalMods: number[] = [
-    screenMod4096(options.defenderScreens, move.category, !!options.isDoublesFormat),
+    screenMod4096(
+      options.defenderScreens,
+      move.category,
+      !!options.isDoublesFormat,
+      !!options.isCritical,
+    ),
     options.defenderFriendGuard ? 0xc00 : FIXED_POINT,
     sideMod4096(
       attacker.item ? ITEM_DAMAGE_MODIFIERS[attacker.item]?.attacker : undefined,
@@ -990,7 +1060,7 @@ export function calculateDamage(
     if (isParentalBondChild) {
       baseDamage = pokeRound((baseDamage * 0x400) / FIXED_POINT);
     }
-    const weatherMod = weatherBaseDamageMod4096(attackerWeather, move.type);
+    const weatherMod = weatherBaseDamageMod4096(attackerWeather, move.type, moveKey, umbrella);
     if (weatherMod !== FIXED_POINT) {
       baseDamage = pokeRound((baseDamage * weatherMod) / FIXED_POINT);
     }
@@ -1127,8 +1197,12 @@ export function calculateDamage(
     ...(abilityUsed.defender ? { defenderAbilityApplied: true } : {}),
     ...(applyBurn ? { burnApplied: true } : {}),
     ...(options.fairyAura && move.type === "Fairy" ? { fairyAuraApplied: true } : {}),
-    ...(options.weather && (weatherChangedDamage || ctx.fieldUsed.weather) ? { weatherApplied: true } : {}),
-    ...(options.terrain && (terrainChangedDamage || ctx.fieldUsed.terrain) ? { terrainApplied: true } : {}),
+    ...(options.weather && (weatherChangedDamage || ctx.fieldUsed.weather)
+      ? { weatherApplied: true }
+      : {}),
+    ...(options.terrain && (terrainChangedDamage || ctx.fieldUsed.terrain)
+      ? { terrainApplied: true }
+      : {}),
     ...(hasRecoil
       ? {
           recoilMinPercent: roundPercent(recoilRolls[0], attackerStats.hp),

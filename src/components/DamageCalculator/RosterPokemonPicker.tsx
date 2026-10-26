@@ -36,6 +36,7 @@ import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/type
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import type { CalcSetsApi, SavedSetRef } from "@/hooks/useCalcSets";
 import { findSameNameSet } from "@/lib/calcSets";
+import { Slider } from "@/components/Slider";
 
 /** One entry in a side's sidebar — the working roster for that side, up to MAX_SIDEBAR_POKEMON. `isCustom` tracks whether this entry came from the species search (freely editable ability/item/moves) or was loaded from a real pasted team (read-only identity). */
 export interface SidebarEntry {
@@ -842,8 +843,7 @@ export function RosterPokemonPicker({
                   <span className="tabular-nums">
                     {t.calcPanel.currentHp(currentHp, maxHp, battleState.currentHpPercent)}
                   </span>
-                  <input
-                    type="range"
+                  <Slider
                     min={0}
                     max={100}
                     value={battleState.currentHpPercent}
@@ -853,7 +853,6 @@ export function RosterPokemonPicker({
                       })
                     }
                     aria-label={t.calcPanel.currentHpLabel(title)}
-                    className="w-full accent-zinc-600"
                   />
                 </label>
                 {effectiveAbility &&
