@@ -23,6 +23,7 @@ import { copyOpponent, splitGroupOpponent } from "@/lib/groupOpponents";
 import { generateId } from "@/lib/id";
 import { REGULATIONS } from "@/data/regulations";
 import type { Opponent, PrepGroup } from "@/types";
+import { LoadingState } from "@/components/LoadingState";
 
 export default function MatchupPlanner() {
   const t = useMessages();
@@ -46,6 +47,11 @@ export default function MatchupPlanner() {
   const groupsApi = useGroups();
   const source = usePlannerSource();
   const group = groupsApi.groups.find((g) => g.id === source) ?? null;
+  // The saved list is a prep group, but whether it's still yours isn't known
+  // yet (sign-in or your groups still loading). Showing your own list meanwhile
+  // made the page swap lists a moment later, so it waits instead.
+  const isResolvingSource =
+    source !== "personal" && !group && (isAuthLoading || groupsApi.isLoading);
   const groupList = useGroupOpponents(group);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [copyingOpponent, setCopyingOpponent] = useState<Opponent | null>(null);
@@ -138,52 +144,62 @@ export default function MatchupPlanner() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-6 p-6">
-        <OpponentsSection
-          // Remount per list, so view state (expanded variants, search,
-          // dialogs) doesn't carry over between your list and a group.
-          key={group ? group.id : "personal"}
-          source={group ? groupList : personal}
-          title={title}
-          banner={banner}
-          regulationLocked={!!group}
-          canClearAll={!group || group.ownerUid === user?.uid}
-          addedByLabel={
-            group
-              ? (opponent) =>
-                  opponent.addedBy === user?.uid
-                    ? t.groups.addedByYou
-                    : opponent.addedByName
-                      ? t.groups.addedBy(opponent.addedByName)
-                      : undefined
-              : undefined
-          }
-          // The calculator finds a group's opponent through ?groupId=.
-          calcHref={(opponent) =>
-            group
-              ? `/damage-calc?groupId=${group.id}&opponentId=${opponent.id}`
-              : `/damage-calc?opponentId=${opponent.id}`
-          }
-          cardActions={(opponent) =>
-            group
-              ? [{ label: t.groups.copyToMine, icon: IconName.ContentCopy, onClick: () => copyToMine(opponent) }]
-              : [
-                  ...(groupsApi.activeGroups.length > 0
-                    ? [
-                        {
-                          label: t.groups.copyToGroup,
-                          icon: IconName.Group,
-                          onClick: () => setCopyingOpponent(opponent),
-                        },
-                      ]
-                    : []),
-                ]
-          }
-          myTeamPokemon={activeTeam?.pokemon ?? []}
-          activeTeamId={activeTeamId}
-          activeTeamMatchesRegulation={activeTeamMatchesRegulation}
-          selectedRegulationId={selectedRegulationId}
-          setSelectedRegulationId={setSelectedRegulationId}
-        />
+        {isResolvingSource ? (
+          <LoadingState />
+        ) : (
+          <OpponentsSection
+            // Remount per list, so view state (expanded variants, search,
+            // dialogs) doesn't carry over between your list and a group.
+            key={group ? group.id : "personal"}
+            source={group ? groupList : personal}
+            title={title}
+            banner={banner}
+            regulationLocked={!!group}
+            canClearAll={!group || group.ownerUid === user?.uid}
+            addedByLabel={
+              group
+                ? (opponent) =>
+                    opponent.addedBy === user?.uid
+                      ? t.groups.addedByYou
+                      : opponent.addedByName
+                        ? t.groups.addedBy(opponent.addedByName)
+                        : undefined
+                : undefined
+            }
+            // The calculator finds a group's opponent through ?groupId=.
+            calcHref={(opponent) =>
+              group
+                ? `/damage-calc?groupId=${group.id}&opponentId=${opponent.id}`
+                : `/damage-calc?opponentId=${opponent.id}`
+            }
+            cardActions={(opponent) =>
+              group
+                ? [
+                    {
+                      label: t.groups.copyToMine,
+                      icon: IconName.ContentCopy,
+                      onClick: () => copyToMine(opponent),
+                    },
+                  ]
+                : [
+                    ...(groupsApi.activeGroups.length > 0
+                      ? [
+                          {
+                            label: t.groups.copyToGroup,
+                            icon: IconName.Group,
+                            onClick: () => setCopyingOpponent(opponent),
+                          },
+                        ]
+                      : []),
+                  ]
+            }
+            myTeamPokemon={activeTeam?.pokemon ?? []}
+            activeTeamId={activeTeamId}
+            activeTeamMatchesRegulation={activeTeamMatchesRegulation}
+            selectedRegulationId={selectedRegulationId}
+            setSelectedRegulationId={setSelectedRegulationId}
+          />
+        )}
       </div>
 
       {isCreatingGroup && (

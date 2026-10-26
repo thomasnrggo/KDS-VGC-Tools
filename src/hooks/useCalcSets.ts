@@ -7,6 +7,7 @@ import { isAdminUid } from "@/lib/admin";
 import { generateId } from "@/lib/id";
 import { findSameNameSet } from "@/lib/calcSets";
 import { useAuth } from "./useAuth";
+import { sameRecords } from "@/lib/sameRecords";
 import type { CalcSet, ParsedPokemon } from "@/types";
 
 /** "custom" — the signed-in (or local) user's own sets; "public" — the admin's sets everyone sees. */
@@ -55,8 +56,10 @@ export function useCalcSets() {
       : getCalcSets;
     load().then((loaded) => {
       if (cancelled) return;
-      cachedCustom = sortByName(loaded);
-      setCustomSets(cachedCustom);
+      const sorted = sortByName(loaded);
+      // Only when the sync changed something, so an unchanged list doesn't re-render.
+      setCustomSets((current) => (sameRecords(current, sorted) ? current : sorted));
+      cachedCustom = sorted;
     });
     return () => {
       cancelled = true;

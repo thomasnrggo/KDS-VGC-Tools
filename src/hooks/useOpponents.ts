@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   deleteOpponent,
   deleteOpponents,
@@ -9,6 +9,7 @@ import {
   syncOpponentsWithCloud,
 } from "@/lib/storage/db";
 import { useAuth } from "./useAuth";
+import { sameRecords } from "@/lib/sameRecords";
 import { sortByListOrder, useOpponentActions, type OpponentStore } from "./useOpponentActions";
 import type { Opponent } from "@/types";
 
@@ -35,9 +36,29 @@ export function useOpponents() {
     if (!isLoading) cached = opponents;
   }, [opponents, isLoading]);
 
+  // Set once the sync (or, signed out, the local read) has landed, so a slow
+  // local read can't overwrite it.
+  const syncedRef = useRef(false);
+
   useEffect(() => {
-    // Wait until we know whether someone is signed in: loading the local copy
-    // first and the cloud sync after showed the list, then replaced it.
+    // This device's copy first, shown right away: no waiting for sign-in or
+    // the network. An empty one (a fresh device) keeps the spinner until the
+    // cloud's copy arrives.
+    let cancelled = false;
+    getOpponents().then((local) => {
+      if (cancelled || syncedRef.current || local.length === 0) return;
+      setOpponents((current) => (sameRecords(current, local) ? current : local));
+      setIsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Then the cloud sync once sign-in is known. Its result only replaces
+    // what's shown when it actually differs, so an unchanged list doesn't
+    // re-render or flicker.
     if (isAuthLoading) return;
     let cancelled = false;
     const load = user
@@ -48,10 +69,10 @@ export function useOpponents() {
           })
       : getOpponents;
     load().then((loaded) => {
-      if (!cancelled) {
-        setOpponents(loaded);
-        setIsLoading(false);
-      }
+      if (cancelled) return;
+      syncedRef.current = true;
+      setOpponents((current) => (sameRecords(current, loaded) ? current : loaded));
+      setIsLoading(false);
     });
     return () => {
       cancelled = true;

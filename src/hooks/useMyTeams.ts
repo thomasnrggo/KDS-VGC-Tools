@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import {
   deleteMyTeam,
   getActiveTeamId,
@@ -19,6 +19,7 @@ import {
 } from "@/lib/team";
 import { REGULATIONS } from "@/data/regulations";
 import { useAuth } from "./useAuth";
+import { sameRecords } from "@/lib/sameRecords";
 import type { Team } from "@/types";
 import { getMessages } from "@/lib/i18n/settings";
 
@@ -54,9 +55,46 @@ export function useMyTeams() {
     if (!isLoading) cached = { teams, activeTeamId };
   }, [teams, activeTeamId, isLoading]);
 
+  // Set once the sync (or, signed out, the local read) has landed, so a slow
+  // local read can't overwrite it.
+  const syncedRef = useRef(false);
+
+  // Shows a loaded list: the teams only when they differ from what's shown
+  // (so an unchanged list doesn't re-render), and the active team resolved
+  // against them.
+  const showLoaded = useCallback((loaded: { teams: Team[]; activeTeamId: string | null }) => {
+    const sorted = sortByCustomOrder(loaded.teams);
+    // An archived team can never be "the active team" — this both picks
+    // the initial one and recovers if the persisted id points at a team
+    // that's since been archived (e.g. archived from another device).
+    const resolvedActiveId =
+      loaded.activeTeamId &&
+      sorted.some((team) => team.id === loaded.activeTeamId && !isTeamArchived(team))
+        ? loaded.activeTeamId
+        : (sorted.find((team) => !isTeamArchived(team))?.id ?? null);
+    setTeams((current) => (sameRecords(current, sorted) ? current : sorted));
+    setActiveTeamIdState(resolvedActiveId);
+    setIsLoading(false);
+  }, []);
+
   useEffect(() => {
-    // Wait until we know whether someone is signed in: loading the local copy
-    // first and the cloud sync after showed the list, then replaced it.
+    // This device's copy first, shown right away: no waiting for sign-in or
+    // the network. An empty one (a fresh device) keeps the spinner until the
+    // cloud's copy arrives.
+    let cancelled = false;
+    loadLocalOnly().then((local) => {
+      if (cancelled || syncedRef.current || local.teams.length === 0) return;
+      showLoaded(local);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showLoaded]);
+
+  useEffect(() => {
+    // Then the cloud sync once sign-in is known. Its result only replaces
+    // what's shown when it actually differs, so an unchanged list doesn't
+    // re-render or flicker.
     if (isAuthLoading) return;
     let cancelled = false;
     const load = user
@@ -68,23 +106,13 @@ export function useMyTeams() {
       : loadLocalOnly;
     load().then((loaded) => {
       if (cancelled) return;
-      const sorted = sortByCustomOrder(loaded.teams);
-      // An archived team can never be "the active team" — this both picks
-      // the initial one and recovers if the persisted id points at a team
-      // that's since been archived (e.g. archived from another device).
-      const resolvedActiveId =
-        loaded.activeTeamId &&
-        sorted.some((team) => team.id === loaded.activeTeamId && !isTeamArchived(team))
-          ? loaded.activeTeamId
-          : (sorted.find((team) => !isTeamArchived(team))?.id ?? null);
-      setTeams(sorted);
-      setActiveTeamIdState(resolvedActiveId);
-      setIsLoading(false);
+      syncedRef.current = true;
+      showLoaded(loaded);
     });
     return () => {
       cancelled = true;
     };
-  }, [user, isAuthLoading]);
+  }, [user, isAuthLoading, showLoaded]);
 
   const setActiveTeamId = useCallback(
     (id: string | null) => {

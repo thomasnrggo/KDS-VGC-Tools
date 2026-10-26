@@ -92,10 +92,12 @@ starting with the experience on a phone.
 ### Fixed
 - Mega Floette written as "Floette-Eternal" (how Showdown exports it) got its base ability instead
   of Fairy Aura in the calculator and Speed Tiers.
-- Signed in, the Matchup Planner (and My Teams, Tournaments, the header's team and the calculator's
-  saved sets) no longer show your list and then replace it a moment later. They used to load the
-  copy saved on this device before sign-in finished, then the synced copy. They now wait for
-  sign-in and load once, with a spinner meanwhile.
+- Faster loading without lists swapping: My Teams, the Matchup Planner, Tournaments and the
+  header's team show the copy saved on this device right away and sync with the cloud in the
+  background, updating only if something changed (a spinner shows only on a device with nothing
+  saved yet). The Matchup Planner no longer shows your own opponents first and then switches to the
+  prep group it was left on. Firestore now keeps a local cache, so a prep group's list shows in
+  about 0.4s on a reload instead of 1–2s.
 - Damage Calculator on tablets and touch screens: tapping a move, item or ability field no longer
   opens the device's text menu (iPadOS's Cut/Copy/Look Up bar, or the right-click menu in Chrome's
   iPad emulation) along with the list. On touch the field empties for a fresh search, with the

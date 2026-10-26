@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   deleteTournament,
   getTournaments,
@@ -9,6 +9,7 @@ import {
 } from "@/lib/storage/db";
 import { createTournament } from "@/lib/tournament";
 import { useAuth } from "./useAuth";
+import { sameRecords } from "@/lib/sameRecords";
 import type { Tournament } from "@/types";
 import { getMessages } from "@/lib/i18n/settings";
 
@@ -33,9 +34,31 @@ export function useTournaments() {
     if (!isLoading) cached = tournaments;
   }, [tournaments, isLoading]);
 
+  // Set once the sync (or, signed out, the local read) has landed, so a slow
+  // local read can't overwrite it.
+  const syncedRef = useRef(false);
+
   useEffect(() => {
-    // Wait until we know whether someone is signed in: loading the local copy
-    // first and the cloud sync after showed the list, then replaced it.
+    // This device's copy first, shown right away: no waiting for sign-in or
+    // the network. An empty one (a fresh device) keeps the spinner until the
+    // cloud's copy arrives.
+    let cancelled = false;
+    getTournaments().then((local) => {
+      if (cancelled || syncedRef.current || local.length === 0) return;
+      setTournaments((current) =>
+        sameRecords(current, local) ? current : sortByUpdatedAtDesc(local),
+      );
+      setIsLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    // Then the cloud sync once sign-in is known. Its result only replaces
+    // what's shown when it actually differs, so an unchanged list doesn't
+    // re-render or flicker.
     if (isAuthLoading) return;
     let cancelled = false;
     const load = user
@@ -46,10 +69,12 @@ export function useTournaments() {
           })
       : getTournaments;
     load().then((loaded) => {
-      if (!cancelled) {
-        setTournaments(sortByUpdatedAtDesc(loaded));
-        setIsLoading(false);
-      }
+      if (cancelled) return;
+      syncedRef.current = true;
+      setTournaments((current) =>
+        sameRecords(current, loaded) ? current : sortByUpdatedAtDesc(loaded),
+      );
+      setIsLoading(false);
     });
     return () => {
       cancelled = true;
