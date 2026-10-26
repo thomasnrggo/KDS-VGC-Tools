@@ -12,6 +12,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "format": "prettier --write",
+    "format:check": "prettier --check",
     "generate:species": "node scripts/generate-species-data.mjs",
     "generate:moves": "node scripts/generate-move-data.mjs",
     "generate:items": "node scripts/generate-item-data.mjs",
@@ -47,6 +49,8 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "prettier": "^3.9.10",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"

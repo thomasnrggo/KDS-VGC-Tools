@@ -46,6 +46,31 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /*
+   * The app's own color roles (see the .dark note below for why zinc flips):
+   *
+   * chrome-*: the light-mode zinc scale, fixed — it does NOT flip in dark
+   * mode. For the parts that stay dark in both themes: the site header, the
+   * calculator's pinned bar and roster bar, primary buttons. bg-chrome-800
+   * replaces the old bg-zinc-800 dark:bg-zinc-200 pair (the same color in
+   * both themes, spelled twice).
+   *
+   * raised: a surface a step above the page — white in light mode, the
+   * zinc-100 step in dark (replaces bg-white … dark:bg-zinc-100).
+   */
+  --color-chrome-50: oklch(98.5% 0 none);
+  --color-chrome-100: oklch(96.7% 0.001 286.375);
+  --color-chrome-200: oklch(92% 0.004 286.32);
+  --color-chrome-300: oklch(87.1% 0.006 286.286);
+  --color-chrome-400: oklch(70.5% 0.015 286.067);
+  --color-chrome-500: oklch(55.2% 0.016 285.938);
+  --color-chrome-600: oklch(44.2% 0.017 285.786);
+  --color-chrome-700: oklch(37% 0.013 285.805);
+  --color-chrome-800: oklch(27.4% 0.006 286.033);
+  --color-chrome-900: oklch(21% 0.006 285.885);
+  --color-chrome-950: oklch(14.1% 0.005 285.823);
+  --color-raised: var(--raised);
 }
 
 :root {
@@ -73,6 +98,7 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  --raised: #fff;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -98,14 +124,11 @@
    * lightness direction flipped. 500 is left at its own original value
    * since it's already a true middle tone.
    *
-   * The one place this swap alone isn't enough: bg-zinc-600 + text-white
-   * (primary buttons, active tab pills) — swapped, zinc-600 becomes the
-   * *light* end of the scale (original 400's value, ~71% lightness), which
-   * white text can't read against. Rather than fight that here, those
-   * specific components get a targeted dark:bg-zinc-400 (which lands
-   * exactly on original zinc-600's own value — the same lightness this
-   * button already uses successfully in light mode) — see
-   * MyTeamHeader/MyTeamsSection/etc.'s "Add team"-style CTA buttons.
+   * The flip is wrong for anything meant to look the same in both themes —
+   * the dark header and bars, primary buttons and active pills with white
+   * text. Those use the fixed chrome-* scale (see @theme above) instead of
+   * a zinc class plus a dark: override; older code still has the
+   * dark:bg-zinc-400-style pairs (e.g. MyTeamHeader's CTA buttons).
    */
   --color-zinc-50: oklch(14.1% 0.005 285.823);
   --color-zinc-100: oklch(21% 0.006 285.885);
@@ -118,6 +141,8 @@
   --color-zinc-800: oklch(92% 0.004 286.32);
   --color-zinc-900: oklch(96.7% 0.001 286.375);
   --color-zinc-950: oklch(98.5% 0 none);
+
+  --raised: var(--color-zinc-100);
 
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

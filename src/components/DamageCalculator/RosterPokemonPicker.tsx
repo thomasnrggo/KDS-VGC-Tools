@@ -15,7 +15,10 @@ import { ACTIVATED_SPEED_DOUBLING_ABILITIES } from "@/constants";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { Icon } from "../Icon";
-import { Modal } from "../Modal";
+import { Modal, ModalActions, ModalDescription, ModalTitle } from "../Modal";
+import { Button, IconButton, TextAction, TogglePill } from "../Button";
+import { Textarea } from "../Textarea";
+import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { SearchableSelect } from "../SearchableSelect";
 import { useIsPhone } from "@/hooks/useIsPhone";
@@ -46,13 +49,7 @@ export const MAX_SIDEBAR_POKEMON = 6;
 
 /** The standard 7-value status list — only Burned (damage) and Paralyzed (Speed) currently change any computed number; the rest are tracked for reference only, same as the reference calculator's dropdown. */
 export type PokemonStatus =
-  | "Healthy"
-  | "Burned"
-  | "Poisoned"
-  | "Badly Poisoned"
-  | "Paralyzed"
-  | "Asleep"
-  | "Frozen";
+  "Healthy" | "Burned" | "Poisoned" | "Badly Poisoned" | "Paralyzed" | "Asleep" | "Frozen";
 
 const STATUS_OPTIONS: PokemonStatus[] = [
   "Healthy",
@@ -212,7 +209,9 @@ export function RosterPokemonPicker({
   const [importError, setImportError] = useState<string | null>(null);
   const [isExportTeamOpen, setIsExportTeamOpen] = useState(false);
   const [isLoadOpponentOpen, setIsLoadOpponentOpen] = useState(false);
-  const [saveSetDraft, setSaveSetDraft] = useState<{ name: string; isPublic: boolean } | null>(null);
+  const [saveSetDraft, setSaveSetDraft] = useState<{ name: string; isPublic: boolean } | null>(
+    null,
+  );
   const [saveSetError, setSaveSetError] = useState<string | null>(null);
   const [isSavingSet, setIsSavingSet] = useState(false);
   const selected = selectedIndex !== null ? sidebar[selectedIndex] : undefined;
@@ -385,7 +384,10 @@ export function RosterPokemonPicker({
     if (value === screenValue) return <span className="w-7" />;
     return (
       <span
-        className={`w-7 text-right font-medium tabular-nums ${value > screenValue ? "text-red-600" : "text-blue-600"}`}
+        className={cn(
+          "w-7 text-right font-medium tabular-nums",
+          value > screenValue ? "text-red-600" : "text-blue-600",
+        )}
         title={
           sources.length > 0
             ? t.calcPanel.battleStatHint(sources.map(describeSource).join(", "))
@@ -487,23 +489,21 @@ export function RosterPokemonPicker({
 
   return (
     // FLOW_ROOT: Enter in one field moves to the next (Pokémon, item, ability, Stat Points, nature, moves).
-    <div {...FLOW_ROOT} className={`flex flex-col gap-3 rounded-lg border border-zinc-200 p-3 sm:p-4 ${className}`}>
+    <div
+      {...FLOW_ROOT}
+      className={cn("flex flex-col gap-3 rounded-lg border border-zinc-200 p-3 sm:p-4", className)}
+    >
       {/* Only for screen readers: either side can attack, so the panel is
           known by its Pokémon (the side tabs, "X's moves"), not a role. */}
       <h3 className="sr-only">{title}</h3>
 
       {isPhone ? (
         <div className="flex justify-end border-b border-zinc-200 pb-3">
-          <button
-            type="button"
-            onClick={() => setIsActionsOpen(true)}
-            aria-haspopup="dialog"
-            className="flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700"
-          >
+          <TextAction onClick={() => setIsActionsOpen(true)} aria-haspopup="dialog">
             <Icon name={IconName.SwapVert} size={14} />
             {t.calcPanel.importExport}
             <Icon name={IconName.ExpandMore} size={14} />
-          </button>
+          </TextAction>
           <Drawer open={isActionsOpen} onOpenChange={setIsActionsOpen} showSwipeHandle>
             <DrawerContent>
               <DrawerHeader>
@@ -533,19 +533,16 @@ export function RosterPokemonPicker({
           {actions
             .filter((action) => action.placement)
             .map((action) => (
-              <button
+              <TextAction
                 key={action.key}
-                type="button"
                 onClick={action.onClick}
                 title={action.hint}
                 aria-label={action.label}
-                className={`flex items-center gap-1 text-xs font-medium text-zinc-500 hover:text-zinc-700 ${
-                  action.placement === "left" ? "mr-auto" : ""
-                }`}
+                className={cn(action.placement === "left" && "mr-auto")}
               >
                 <Icon name={action.icon} size={14} />
                 {action.shortLabel ?? action.label}
-              </button>
+              </TextAction>
             ))}
           <div ref={moreMenuRef} className="relative">
             <button
@@ -562,7 +559,7 @@ export function RosterPokemonPicker({
             {isMoreOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full z-20 mt-1 flex w-48 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+                className="absolute top-full right-0 z-20 mt-1 flex w-48 flex-col overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
               >
                 {actions
                   .filter((action) => !action.placement)
@@ -590,13 +587,15 @@ export function RosterPokemonPicker({
 
       {importMode && (
         <Modal onClose={closeImport} labelledBy={importModalTitleId} fullScreenOnPhone>
-          <h2 id={importModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
+          <ModalTitle id={importModalTitleId}>
             {importMode === "pokemon" ? t.calcPanel.importPokemon : t.calcPanel.importTeam}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-600">
-            {importMode === "pokemon" ? t.calcPanel.importPokemonIntro : t.calcPanel.importTeamIntro}
-          </p>
-          <textarea
+          </ModalTitle>
+          <ModalDescription>
+            {importMode === "pokemon"
+              ? t.calcPanel.importPokemonIntro
+              : t.calcPanel.importTeamIntro}
+          </ModalDescription>
+          <Textarea
             value={importText}
             onChange={(event) => {
               setImportText(event.target.value);
@@ -609,29 +608,19 @@ export function RosterPokemonPicker({
             // Not on phones: the keyboard would cover the sheet, and pasting doesn't need it.
             autoFocus={!isPhone}
             aria-label={t.calcPanel.importTextLabel(title)}
-            className="min-h-0 w-full flex-1 resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="min-h-0 flex-1"
           />
           {importError && (
             <p role="alert" className="mt-2 text-sm text-red-600">
               {importError}
             </p>
           )}
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={submitImport}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-            >
-              {t.calcPanel.import}
-            </button>
-            <button
-              type="button"
-              onClick={closeImport}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
-              Cancel
-            </button>
-          </div>
+          <ModalActions>
+            <Button onClick={submitImport}>{t.calcPanel.import}</Button>
+            <Button variant="outline" onClick={closeImport}>
+              {t.common.cancel}
+            </Button>
+          </ModalActions>
         </Modal>
       )}
 
@@ -646,10 +635,10 @@ export function RosterPokemonPicker({
 
       {saveSetDraft && pokemon && (
         <Modal onClose={closeSaveSet} labelledBy={saveSetModalTitleId}>
-          <h2 id={saveSetModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
+          <ModalTitle id={saveSetModalTitleId}>
             {t.calcPanel.saveSetTitle(text.species(pokemon.species))}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.saveSetIntro}</p>
+          </ModalTitle>
+          <ModalDescription>{t.calcPanel.saveSetIntro}</ModalDescription>
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -668,7 +657,7 @@ export function RosterPokemonPicker({
                 placeholder={t.calcPanel.setNamePlaceholder}
                 autoFocus
                 maxLength={60}
-                className="rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-normal text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                className="rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2 text-sm font-normal text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
               />
             </label>
             {calcSets.canEditPublic && (
@@ -695,56 +684,40 @@ export function RosterPokemonPicker({
                 {saveSetError}
               </p>
             )}
-            <div className="mt-4 flex gap-2">
-              <button
-                type="submit"
-                disabled={isSavingSet}
-                className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-60 dark:hover:bg-zinc-300"
-              >
+            <ModalActions>
+              <Button type="submit" disabled={isSavingSet}>
                 {isSavingSet ? t.common.saving : t.common.save}
-              </button>
-              <button
-                type="button"
-                onClick={closeSaveSet}
-                className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-              >
+              </Button>
+              <Button variant="outline" onClick={closeSaveSet}>
                 {t.common.cancel}
-              </button>
-            </div>
+              </Button>
+            </ModalActions>
           </form>
         </Modal>
       )}
 
       {isExportTeamOpen && (
-        <Modal onClose={() => setIsExportTeamOpen(false)} labelledBy={exportTeamModalTitleId} fullScreenOnPhone>
-          <h2 id={exportTeamModalTitleId} className="mb-1 text-lg font-semibold text-zinc-900">
-            {t.calcPanel.exportTeam}
-          </h2>
-          <p className="mb-4 text-sm text-zinc-600">{t.calcPanel.exportIntro(sidebar.length)}</p>
-          <textarea
+        <Modal
+          onClose={() => setIsExportTeamOpen(false)}
+          labelledBy={exportTeamModalTitleId}
+          fullScreenOnPhone
+        >
+          <ModalTitle id={exportTeamModalTitleId}>{t.calcPanel.exportTeam}</ModalTitle>
+          <ModalDescription>{t.calcPanel.exportIntro(sidebar.length)}</ModalDescription>
+          <Textarea
             readOnly
             value={teamExportText}
             rows={12}
             onFocus={(event) => event.target.select()}
             aria-label={t.calcPanel.exportTextLabel(title)}
-            className="min-h-0 w-full flex-1 resize-y rounded-lg border border-zinc-300 bg-zinc-50 p-3 font-mono text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+            className="min-h-0 flex-1"
           />
-          <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={copyTeamExportText}
-              className="rounded-full bg-zinc-600 dark:bg-zinc-400 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:hover:bg-zinc-300"
-            >
-              {t.calcPanel.copyToClipboard}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsExportTeamOpen(false)}
-              className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-            >
+          <ModalActions>
+            <Button onClick={copyTeamExportText}>{t.calcPanel.copyToClipboard}</Button>
+            <Button variant="outline" onClick={() => setIsExportTeamOpen(false)}>
               {t.common.close}
-            </button>
-          </div>
+            </Button>
+          </ModalActions>
         </Modal>
       )}
 
@@ -765,22 +738,17 @@ export function RosterPokemonPicker({
               }}
             />
             {hasMegaForm && (
-              <button
-                type="button"
+              <TogglePill
+                active={mega}
                 onClick={() => onMegaChange(!mega)}
-                aria-pressed={mega}
-                className={`shrink-0 rounded-full border px-2 py-2 text-xs font-semibold transition-colors ${
-                  mega
-                    ? "border-zinc-600 bg-zinc-600 dark:bg-zinc-400 text-white"
-                    : "border-zinc-300 text-zinc-500 hover:bg-zinc-100"
-                }`}
+                className={cn("shrink-0 px-2 py-2 font-semibold", !mega && "text-zinc-500")}
               >
                 {t.editor.mega}
-              </button>
+              </TogglePill>
             )}
             {pokemon && (
-              <button
-                type="button"
+              <IconButton
+                variant="ghost"
                 onClick={() => {
                   // Prefill the set this entry came from, so Save overwrites it. A
                   // public set only stays public for the admin; anyone else saves
@@ -793,24 +761,22 @@ export function RosterPokemonPicker({
                 }}
                 aria-label={t.calcPanel.saveSetLabel(text.species(pokemon.species))}
                 title={t.calcPanel.saveSet}
-                className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
               >
                 <Icon name={IconName.BookmarkAdd} size={14} />
-              </button>
+              </IconButton>
             )}
             {pokemon && sidebar.length < MAX_SIDEBAR_POKEMON && (
-              <button
-                type="button"
+              <IconButton
+                variant="ghost"
                 onClick={() => {
                   onSaveToSidebar();
                   toast.success(t.calcPanel.saved(text.species(pokemon.species), title));
                 }}
                 aria-label={t.calcPanel.saveLabel(title)}
                 title={t.calcPanel.saveHint}
-                className="flex shrink-0 h-6 w-6 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
               >
                 <Icon name={IconName.Add} size={14} />
-              </button>
+              </IconButton>
             )}
           </div>
 
@@ -859,7 +825,9 @@ export function RosterPokemonPicker({
             besideNature={
               isPhone && (
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-[11px] font-medium text-zinc-500">{t.calcPanel.status}</span>
+                  <span className="text-[11px] font-medium text-zinc-500">
+                    {t.calcPanel.status}
+                  </span>
                   {statusSelect}
                 </div>
               )
@@ -888,21 +856,19 @@ export function RosterPokemonPicker({
                     className="w-full accent-zinc-600"
                   />
                 </label>
-                {effectiveAbility && ACTIVATED_SPEED_DOUBLING_ABILITIES.includes(effectiveAbility) && (
-                  <button
-                    type="button"
-                    onClick={() => updateBattleState({ abilityActive: !battleState.abilityActive })}
-                    aria-pressed={!!battleState.abilityActive}
-                    title={t.calcPanel.abilityActiveHint(text.ability(effectiveAbility))}
-                    className={`shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                      battleState.abilityActive
-                        ? "border-zinc-600 bg-zinc-600 text-white dark:bg-zinc-400"
-                        : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
-                    }`}
-                  >
-                    {t.calcPanel.abilityActive(text.ability(effectiveAbility))}
-                  </button>
-                )}
+                {effectiveAbility &&
+                  ACTIVATED_SPEED_DOUBLING_ABILITIES.includes(effectiveAbility) && (
+                    <TogglePill
+                      active={!!battleState.abilityActive}
+                      onClick={() =>
+                        updateBattleState({ abilityActive: !battleState.abilityActive })
+                      }
+                      title={t.calcPanel.abilityActiveHint(text.ability(effectiveAbility))}
+                      className="shrink-0"
+                    >
+                      {t.calcPanel.abilityActive(text.ability(effectiveAbility))}
+                    </TogglePill>
+                  )}
                 {!isPhone && (
                   <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-zinc-600">
                     <span>{t.calcPanel.status}</span>
@@ -935,11 +901,10 @@ export function RosterPokemonPicker({
                         : text.species(entry.pokemon.species)
                     }
                     onClick={() => onSelectIndex(index)}
-                    className={`relative block h-12 w-12 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors ${
-                      isSelected
-                        ? "border-zinc-600"
-                        : "border-zinc-300 hover:border-zinc-400"
-                    }`}
+                    className={cn(
+                      "relative block h-12 w-12 overflow-hidden rounded-lg border-2 bg-zinc-50 transition-colors",
+                      isSelected ? "border-zinc-600" : "border-zinc-300 hover:border-zinc-400",
+                    )}
                   >
                     <span className="absolute inset-0.5">
                       {/* The open entry follows the Mega toggle (no item = base form), like the rest of the calc's sprites. */}
@@ -951,7 +916,7 @@ export function RosterPokemonPicker({
                     </span>
                   </button>
                   {entry.pokemon.item && (
-                    <span className="pointer-events-none absolute -bottom-1 -right-1">
+                    <span className="pointer-events-none absolute -right-1 -bottom-1">
                       <ItemIcon item={entry.pokemon.item} size={16} />
                     </span>
                   )}

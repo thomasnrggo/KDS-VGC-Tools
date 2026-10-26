@@ -19,6 +19,7 @@ import {
   type CalcSetsApi,
   type SavedSetRef,
 } from "@/hooks/useCalcSets";
+import { cn } from "@/lib/utils";
 
 /** Species groups rendered at once — the list is long, and typing narrows it. */
 const MAX_VISIBLE_GROUPS = 60;
@@ -153,19 +154,17 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
   // A species matches by either of its names, and then shows all its sets;
   // otherwise only the sets whose name matches show under it.
   const folded = foldForSearch(query.trim());
-  const filteredGroups = (
-    folded
-      ? groups.flatMap((group) => {
-          const speciesMatches =
-            foldForSearch(group.label).includes(folded) ||
-            foldForSearch(group.englishName).includes(folded);
-          const sets = speciesMatches
-            ? group.sets
-            : group.sets.filter((set) => foldForSearch(set.name).includes(folded));
-          return sets.length > 0 ? [{ ...group, sets }] : [];
-        })
-      : groups
-  );
+  const filteredGroups = folded
+    ? groups.flatMap((group) => {
+        const speciesMatches =
+          foldForSearch(group.label).includes(folded) ||
+          foldForSearch(group.englishName).includes(folded);
+        const sets = speciesMatches
+          ? group.sets
+          : group.sets.filter((set) => foldForSearch(set.name).includes(folded));
+        return sets.length > 0 ? [{ ...group, sets }] : [];
+      })
+    : groups;
   const visibleGroups = filteredGroups.slice(0, MAX_VISIBLE_GROUPS);
   const flatSets = visibleGroups.flatMap((group) => group.sets);
 
@@ -267,7 +266,11 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
       placeholder={t.editor.searchPokemon}
       aria-label={ariaLabel}
       aria-controls={listId}
-      className={isPhone ? pickerSheetSearchClassName : "w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"}
+      className={
+        isPhone
+          ? pickerSheetSearchClassName
+          : "w-full rounded border border-zinc-300 bg-white px-2 py-1 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none dark:bg-zinc-900"
+      }
     />
   );
 
@@ -285,7 +288,12 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
         visibleGroups.map((group) => {
           return (
             <div key={group.speciesKey} role="group" aria-label={group.label}>
-              <div className={`truncate px-2 font-semibold text-zinc-900 ${isPhone ? "pt-3 text-base" : "pt-1.5 text-sm"}`}>
+              <div
+                className={cn(
+                  "truncate px-2 font-semibold text-zinc-900",
+                  isPhone ? "pt-3 text-base" : "pt-1.5 text-sm",
+                )}
+              >
                 {group.label}
               </div>
               {group.sets.map((set) => {
@@ -303,11 +311,11 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
                       if (!isRenaming) pick(set);
                     }}
                     onMouseEnter={() => setActiveIndex(index)}
-                    className={`group flex w-full cursor-pointer items-center gap-2 rounded-md pl-5 pr-1 text-left text-sm text-zinc-700 ${
-                      isPhone ? "min-h-11 py-1.5" : "py-1"
-                    } ${
-                      isActive ? "bg-zinc-200 text-zinc-900" : ""
-                    }`}
+                    className={cn(
+                      "group flex w-full cursor-pointer items-center gap-2 rounded-md pr-1 pl-5 text-left text-sm text-zinc-700",
+                      isPhone ? "min-h-11 py-1.5" : "py-1",
+                      isActive && "bg-zinc-200 text-zinc-900",
+                    )}
                   >
                     {isRenaming ? (
                       <input
@@ -327,21 +335,24 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
                         onBlur={() => {
                           if (renaming?.optionId === set.id) void commitRename(set, false);
                         }}
-                        className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"
+                        className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-1.5 py-0.5 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none dark:bg-zinc-900"
                       />
                     ) : (
                       <span className="min-w-0 flex-1 truncate">{set.name}</span>
                     )}
                     {set.kind && !isRenaming && (
-                      <span className="shrink-0 rounded-full bg-zinc-100 px-1.5 text-[10px] font-medium uppercase tracking-wide text-zinc-500">
+                      <span className="shrink-0 rounded-full bg-zinc-100 px-1.5 text-[10px] font-medium tracking-wide text-zinc-500 uppercase">
                         {set.kind === "custom" ? t.calcPanel.mySetTag : t.calcPanel.publicSetTag}
                       </span>
                     )}
                     {canEdit(set) && !isRenaming && (
                       <span
-                        className={`flex shrink-0 items-center gap-0.5 ${
-                          isActive || isConfirmingDelete ? "" : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100"
-                        }`}
+                        className={cn(
+                          "flex shrink-0 items-center gap-0.5",
+                          isActive || isConfirmingDelete
+                            ? ""
+                            : "opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100",
+                        )}
                       >
                         <button
                           type="button"
@@ -352,7 +363,10 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
                           }}
                           aria-label={t.calcPanel.renameSet(set.name)}
                           title={t.calcPanel.renameSet(set.name)}
-                          className={`flex items-center justify-center rounded text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900 ${isPhone ? "h-9 w-9" : "h-6 w-6"}`}
+                          className={cn(
+                            "flex items-center justify-center rounded text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900",
+                            isPhone ? "h-9 w-9" : "h-6 w-6",
+                          )}
                         >
                           <Icon name={IconName.Edit} size={14} />
                         </button>
@@ -372,11 +386,13 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
                               ? t.calcPanel.confirmDeleteSet(set.name)
                               : t.calcPanel.deleteSet(set.name)
                           }
-                          className={`flex items-center justify-center rounded ${isPhone ? "h-9 w-9" : "h-6 w-6"} ${
+                          className={cn(
+                            "flex items-center justify-center rounded",
+                            isPhone ? "h-9 w-9" : "h-6 w-6",
                             isConfirmingDelete
                               ? "bg-red-600 text-white hover:bg-red-700"
-                              : "text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900"
-                          }`}
+                              : "text-zinc-500 hover:bg-zinc-300 hover:text-zinc-900",
+                          )}
                         >
                           <Icon
                             name={isConfirmingDelete ? IconName.Check : IconName.Delete}
@@ -393,7 +409,9 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
         })
       )}
       {filteredGroups.length > MAX_VISIBLE_GROUPS && (
-        <p className="p-2 text-[11px] text-zinc-500">{t.calcPanel.keepTyping(MAX_VISIBLE_GROUPS)}</p>
+        <p className="p-2 text-[11px] text-zinc-500">
+          {t.calcPanel.keepTyping(MAX_VISIBLE_GROUPS)}
+        </p>
       )}
     </div>
   );
@@ -408,9 +426,9 @@ export function PokemonSetPicker({ title, pokemon, onSelect, calcSets }: Pokemon
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-label={ariaLabel}
-        className="flex w-full items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+        className="flex w-full items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-2 text-left text-sm text-zinc-900 hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
       >
-        <span className={`min-w-0 flex-1 truncate ${pokemon ? "font-medium" : "text-zinc-500"}`}>
+        <span className={cn("min-w-0 flex-1 truncate", pokemon ? "font-medium" : "text-zinc-500")}>
           {pokemon ? text.species(pokemon.species) : t.calcPanel.choosePokemon}
         </span>
         <Icon name={isOpen ? IconName.ExpandLess : IconName.ExpandMore} size={16} />

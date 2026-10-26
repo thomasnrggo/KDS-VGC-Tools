@@ -7,6 +7,7 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MAX_SIDEBAR_POKEMON, type SidebarEntry } from "./RosterPokemonPicker";
+import { cn } from "@/lib/utils";
 
 interface MobileRosterBarProps {
   /** The open side's name ("Attacker"), for labels. */
@@ -68,23 +69,30 @@ export function MobileRosterBar({
       <nav
         ref={barRef}
         aria-label={t.calcPanel.sidebar(title)}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-700 bg-zinc-800 pb-[env(safe-area-inset-bottom)] dark:border-zinc-300 dark:bg-zinc-200 lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-chrome-700 bg-chrome-800 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        <div role="listbox" aria-label={t.calcPanel.sidebar(title)} className="flex items-center justify-center gap-2 px-3 py-3">
+        <div
+          role="listbox"
+          aria-label={t.calcPanel.sidebar(title)}
+          className="flex items-center justify-center gap-2 px-3 py-3"
+        >
           {sidebar.map((entry, index) => {
             const isSelected = selectedIndex === index;
             const name = text.species(entry.pokemon.species);
             return (
-              <div key={index} className="relative aspect-square min-w-0 max-w-16 flex-1">
+              <div key={index} className="relative aspect-square max-w-16 min-w-0 flex-1">
                 <button
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  aria-label={entry.pokemon.item ? `${name} @ ${text.item(entry.pokemon.item)}` : name}
+                  aria-label={
+                    entry.pokemon.item ? `${name} @ ${text.item(entry.pokemon.item)}` : name
+                  }
                   onClick={() => onSelectIndex(index)}
-                  className={`relative block h-full w-full overflow-hidden rounded-lg border-2 bg-zinc-100/50 transition-colors dark:bg-zinc-900/50 ${
-                    isSelected ? "border-zinc-100 dark:border-zinc-900" : "border-transparent"
-                  }`}
+                  className={cn(
+                    "relative block h-full w-full overflow-hidden rounded-lg border-2 bg-chrome-100/50 transition-colors",
+                    isSelected ? "border-chrome-100" : "border-transparent",
+                  )}
                 >
                   <span className="absolute inset-0.5">
                     <PokemonSprite
@@ -95,7 +103,7 @@ export function MobileRosterBar({
                   </span>
                 </button>
                 {entry.pokemon.item && (
-                  <span className="pointer-events-none absolute -bottom-1 -right-1">
+                  <span className="pointer-events-none absolute -right-1 -bottom-1">
                     <ItemIcon item={entry.pokemon.item} size={18} />
                   </span>
                 )}
@@ -105,7 +113,7 @@ export function MobileRosterBar({
                     onClick={() => onRemovePokemon(index)}
                     aria-label={t.calcPanel.remove(name)}
                     title={t.calcPanel.remove(name)}
-                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-100 text-zinc-700 shadow hover:text-red-600 dark:bg-zinc-900 dark:text-zinc-300"
+                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-chrome-100 text-chrome-700 shadow hover:text-red-600"
                   >
                     <Icon name={IconName.Close} size={12} />
                   </button>
@@ -118,7 +126,7 @@ export function MobileRosterBar({
               type="button"
               onClick={onAddBlank}
               aria-label={t.calcPanel.addBlank(title)}
-              className="flex aspect-square min-w-0 max-w-16 flex-1 items-center justify-center rounded-lg border-2 border-dashed border-zinc-500 text-zinc-400 transition-colors hover:border-zinc-300 hover:text-zinc-200 dark:border-zinc-500 dark:text-zinc-600 dark:hover:border-zinc-700 dark:hover:text-zinc-800"
+              className="flex aspect-square max-w-16 min-w-0 flex-1 items-center justify-center rounded-lg border-2 border-dashed border-chrome-500 text-chrome-400 transition-colors hover:border-chrome-300 hover:text-chrome-200"
             >
               <Icon name={IconName.Add} size={20} />
             </button>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Modal } from "../Modal";
+import { Modal, ModalActions, ModalDescription, ModalTitle } from "../Modal";
+import { Button } from "../Button";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { useGroups } from "@/hooks/useGroups";
@@ -13,6 +14,7 @@ import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/poke
 import { tagsMatchQuery } from "@/lib/opponentTags";
 import { hasStatPoints } from "@/lib/hasStatPoints";
 import type { Opponent } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface LoadTeamDialogProps {
   /** Your own opponents (the Matchup Planner's "My opponents"). */
@@ -63,10 +65,8 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
 
   return (
     <Modal onClose={onClose} labelledBy={labelledBy} fullScreenOnPhone>
-      <h2 id={labelledBy} className="mb-1 text-lg font-semibold text-zinc-900">
-        {t.calcPanel.loadTeam}
-      </h2>
-      <p className="mb-3 text-sm text-zinc-600">{t.calcPanel.loadIntro}</p>
+      <ModalTitle id={labelledBy}>{t.calcPanel.loadTeam}</ModalTitle>
+      <ModalDescription className="mb-3">{t.calcPanel.loadIntro}</ModalDescription>
 
       {sources.length > 1 && (
         <div
@@ -83,11 +83,12 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
                 role="radio"
                 aria-checked={isSelected}
                 onClick={() => setPickedSource(source.id)}
-                className={`shrink-0 rounded-full border px-3 py-1 text-sm whitespace-nowrap transition-colors ${
+                className={cn(
+                  "shrink-0 rounded-full border px-3 py-1 text-sm whitespace-nowrap transition-colors",
                   isSelected
-                    ? "border-zinc-600 bg-zinc-600 font-medium text-white dark:border-zinc-400 dark:bg-zinc-400"
-                    : "border-zinc-300 text-zinc-700 hover:bg-zinc-100"
-                }`}
+                    ? "border-chrome-600 bg-chrome-600 font-medium text-white"
+                    : "border-zinc-300 text-zinc-700 hover:bg-zinc-100",
+                )}
               >
                 {source.label}
               </button>
@@ -97,7 +98,9 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
       )}
 
       {list.length === 0 && !isLoadingGroup ? (
-        <p className="text-sm text-zinc-600">{group ? t.calcPanel.noGroupOpponents : t.calcPanel.noOpponents}</p>
+        <p className="text-sm text-zinc-600">
+          {group ? t.calcPanel.noGroupOpponents : t.calcPanel.noOpponents}
+        </p>
       ) : (
         <>
           <input
@@ -111,10 +114,12 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
             autoCorrect="off"
             autoCapitalize="off"
             spellCheck={false}
-            className="mb-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:bg-zinc-900"
+            className="mb-2 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none dark:bg-zinc-900"
           />
           <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto sm:max-h-96">
-            {isLoadingGroup && <p className="px-1 py-2 text-sm text-zinc-500">{t.common.loading}</p>}
+            {isLoadingGroup && (
+              <p className="px-1 py-2 text-sm text-zinc-500">{t.common.loading}</p>
+            )}
             {!isLoadingGroup && visible.length === 0 && (
               <p className="px-1 py-2 text-sm text-zinc-500">{t.calcPanel.loadNoMatches}</p>
             )}
@@ -134,12 +139,18 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
                   className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-left hover:bg-zinc-100"
                 >
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-sm font-medium text-zinc-900" title={opponent.label}>
+                    <span
+                      className="truncate text-sm font-medium text-zinc-900"
+                      title={opponent.label}
+                    >
                       {opponent.label}
                     </span>
                     {/* The calc would treat these as 0 in every stat, so the numbers would be off. */}
                     {spWarning && (
-                      <span className="truncate text-xs text-amber-700" title={t.calcPanel.statPointsHint}>
+                      <span
+                        className="truncate text-xs text-amber-700"
+                        title={t.calcPanel.statPointsHint}
+                      >
                         {spWarning}
                       </span>
                     )}
@@ -147,15 +158,20 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
                   {/* The team at a glance, on the same line as the name: each Pokémon with its item, a smaller take on the team bars' tiles. */}
                   <span
                     className="flex shrink-0 gap-1"
-                    aria-label={opponent.team.pokemon.map((mon) => text.species(mon.species)).join(", ")}
+                    aria-label={opponent.team.pokemon
+                      .map((mon) => text.species(mon.species))
+                      .join(", ")}
                   >
                     {opponent.team.pokemon.map((mon, index) => (
-                      <span key={index} className="relative h-8 w-8 shrink-0 rounded-md bg-zinc-200/60 sm:h-9 sm:w-9">
+                      <span
+                        key={index}
+                        className="relative h-8 w-8 shrink-0 rounded-md bg-zinc-200/60 sm:h-9 sm:w-9"
+                      >
                         <span className="absolute inset-0.5">
                           <PokemonSprite species={mon.species} item={mon.item} fill />
                         </span>
                         {mon.item && (
-                          <span className="absolute -bottom-1 -right-1">
+                          <span className="absolute -right-1 -bottom-1">
                             <ItemIcon item={mon.item} size={14} />
                           </span>
                         )}
@@ -168,15 +184,11 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
           </div>
         </>
       )}
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-full border border-zinc-300 px-5 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-        >
+      <ModalActions>
+        <Button variant="outline" onClick={onClose}>
           {t.common.cancel}
-        </button>
-      </div>
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

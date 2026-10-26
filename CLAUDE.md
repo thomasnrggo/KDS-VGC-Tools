@@ -36,4 +36,12 @@ Never bump the minor or major number (0.3, 1.0) unless the user explicitly says 
 - **Tailwind CSS v4** via `@tailwindcss/postcss` (no `tailwind.config.*` — v4 configures via CSS in `globals.css`).
 - **React Compiler is enabled** (`reactCompiler: true` in `next.config.ts`, `babel-plugin-react-compiler` installed) — avoid manual `useMemo`/`useCallback` optimization that the compiler already handles unless there's a specific reason.
 - Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
+
+## Styling conventions
+
+Tailwind stays, kept readable with these (applied to the Damage Calculator first; move other areas over as they're touched):
+- **Shared components before long class strings:** `Button` (`primary` / `outline` / `danger`), `IconButton` (`outlined` / `ghost`), `TextAction`, `TogglePill` from `@/components/Button`; `Textarea` from `@/components/Textarea`; `ModalTitle` / `ModalDescription` / `ModalActions` from `@/components/Modal`. Add a variant (with `cva`) rather than copying a class string.
+- **`cn()` from `@/lib/utils`** for conditional or merged classes — not template literals with `${cond ? "…" : ""}`.
+- **Color roles in `globals.css`:** zinc flips in dark mode, so anything that should look the same in both themes (the header, the calculator's pinned and roster bars, primary buttons, active pills) uses the fixed `chrome-*` scale (`bg-chrome-800`, not `bg-zinc-800 dark:bg-zinc-200`); `bg-raised` is the white-in-light surface. Only reach for `dark:` when a color genuinely differs between themes.
+- **`npm run format -- <files>`** (Prettier, 100 columns, `prettier-plugin-tailwindcss` sorts classes) on files you change. It isn't run repo-wide yet, to keep diffs reviewable.
 - Next.js version is deliberately ahead of most training data — the AGENTS.md directive above (read `node_modules/next/dist/docs/` before writing code) is load-bearing, not boilerplate, given how much has changed across recent major versions.
