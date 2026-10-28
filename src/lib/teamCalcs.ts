@@ -92,7 +92,9 @@ export function parseCalcLine(text: string): ParsedCalcLine {
   const percent = range ? `${range[1]} - ${range[2]}%` : undefined;
   const verdictIndex = result.indexOf(" -- ");
   const verdict =
-    verdictIndex === -1 ? undefined : result.slice(verdictIndex + " -- ".length).trim() || undefined;
+    verdictIndex === -1
+      ? undefined
+      : result.slice(verdictIndex + " -- ".length).trim() || undefined;
 
   return {
     attacker: findCalcSpecies(text.slice(0, vsIndex)) ?? undefined,
@@ -119,6 +121,123 @@ export function calcsAgainst(calcs: TeamCalc[], roster: ParsedPokemon[]): TeamCa
     const threat = calcThreat(calc);
     return !!threat && identities.has(threat.identity);
   });
+}
+
+/**
+ * A calc line cut around its "(x - y%)" range and the KO chance after " -- ",
+ * so they can be bold; the pieces join back into the exact line.
+ */
+export function calcLineParts(text: string) {
+  const colonIndex = text.indexOf(":", text.indexOf(" vs. "));
+  const range =
+    colonIndex === -1 ? null : /\([\d.]+%?\s*-\s*[\d.]+%\)/.exec(text.slice(colonIndex));
+  const percentStart = range ? colonIndex + range.index : -1;
+  const percentEnd = range ? percentStart + range[0].length : -1;
+  const dashIndex = text.indexOf(" -- ", Math.max(percentEnd, colonIndex));
+  const verdictStart = colonIndex === -1 || dashIndex === -1 ? -1 : dashIndex + " -- ".length;
+  const beforeEnd =
+    percentStart !== -1 ? percentStart : verdictStart !== -1 ? verdictStart : text.length;
+  return {
+    before: text.slice(0, beforeEnd),
+    percent: range ? range[0] : "",
+    between:
+      percentStart === -1
+        ? ""
+        : text.slice(percentEnd, verdictStart !== -1 ? verdictStart : text.length),
+    verdict: verdictStart === -1 ? "" : text.slice(verdictStart),
+  };
+}
+
+/** A calc's side — an unlabelled calc line counts as offensive when your Pokémon is the attacker. */
+export function calcSide(calc: TeamCalc): TeamCalcSide {
+  if (calc.side) return calc.side;
+  return parseCalcLine(calc.text).attacker?.identity === calc.species ? "offensive" : "defensive";
+}
+
+export interface CalcsBetween {
+  offensive: TeamCalc[];
+  defensive: TeamCalc[];
+}
+
+/** The top of a calc's % range ("89.1 - 105.9%" → 105.9), or -1 without one. */
+export function calcMaxPercent(calc: TeamCalc): number {
+  const max = parseCalcLine(calc.text).percent?.match(/([\d.]+)%$/)?.[1];
+  return max ? Number(max) : -1;
+}
+
+/** A Pokémon on one side of calcsBetween — `mega` picks its form; left out, either form counts. */
+export interface CalcSideMon {
+  species: string;
+  mega?: boolean;
+}
+
+export const isMegaForm = (species: CalcSpecies) => /-mega/.test(species.spriteKey);
+
+/** Your Pokémon as the calc line names it — the attacker of an offensive calc, the defender of a defensive one. */
+export function calcOwnSpecies(calc: TeamCalc): CalcSpecies | undefined {
+  const { attacker, defender } = parseCalcLine(calc.text);
+  return calcSide(calc) === "offensive" ? attacker : defender;
+}
+
+/**
+ * The calcs between two groups of Pokémon — `mine` (filed under them) and
+ * `theirs` (the other Pokémon in the line) — split into offensive (you hit
+ * them) and defensive (they hit you). A matchup plan's hover card passes one
+ * Pokémon on one side and the other side's picks. A Pokémon with `mega` set
+ * only matches calcs on that form ("Mega Garchomp Z" vs. plain "Garchomp").
+ * Sorted by the groups' order (so one Pokémon against several reads per
+ * opponent, in pick order), then highest damage first.
+ */
+export function calcsBetween(
+  calcs: TeamCalc[],
+  mine: CalcSideMon[],
+  theirs: CalcSideMon[],
+): CalcsBetween {
+  const byIdentity = (mons: CalcSideMon[]) =>
+    new Map(mons.map((mon) => [speciesIdentity(mon.species), mon.mega]));
+  const myForms = byIdentity(mine);
+  const theirForms = byIdentity(theirs);
+  const matches = (forms: Map<string, boolean | undefined>, species: CalcSpecies | undefined) => {
+    if (!species || !forms.has(species.identity)) return false;
+    const mega = forms.get(species.identity);
+    return mega === undefined || mega === isMegaForm(species);
+  };
+  const myOrder = [...myForms.keys()];
+  const theirOrder = [...theirForms.keys()];
+  const between = calcs
+    .filter((calc) => {
+      if (!calc.species || !myForms.has(calc.species) || !isCalcLine(calc.text)) return false;
+      const myMon = calcOwnSpecies(calc);
+      // A line that doesn't name your Pokémon (a bare note) can't say its form.
+      const myFormOk = !myMon || myMon.identity !== calc.species || matches(myForms, myMon);
+      return myFormOk && matches(theirForms, calcThreat(calc));
+    })
+    .map((calc) => {
+      const own = calcOwnSpecies(calc);
+      const threat = calcThreat(calc)!;
+      return {
+        calc,
+        mine: myOrder.indexOf(calc.species!),
+        // Base form before Mega, so each form's calcs stay together.
+        myForm: own && isMegaForm(own) ? 1 : 0,
+        theirs: theirOrder.indexOf(threat.identity),
+        theirForm: isMegaForm(threat) ? 1 : 0,
+        damage: calcMaxPercent(calc),
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.mine - b.mine ||
+        a.myForm - b.myForm ||
+        a.theirs - b.theirs ||
+        a.theirForm - b.theirForm ||
+        b.damage - a.damage,
+    )
+    .map(({ calc }) => calc);
+  return {
+    offensive: between.filter((calc) => calcSide(calc) === "offensive"),
+    defensive: between.filter((calc) => calcSide(calc) === "defensive"),
+  };
 }
 
 export interface CalcPasteResult {
@@ -205,6 +324,8 @@ export function calcMatchesSearch(
 ): boolean {
   const threat = calcThreat(calc);
   if (!threat) return false;
-  const names = [threat.identity, threat.spriteKey, translate?.(threat.identity) ?? ""].map(foldForSearch);
+  const names = [threat.identity, threat.spriteKey, translate?.(threat.identity) ?? ""].map(
+    foldForSearch,
+  );
   return terms.some((term) => names.some((name) => name && name.includes(term)));
 }

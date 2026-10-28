@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canRemoveGroupOpponent,
   copyOpponent,
+  copyOpponentsInto,
   groupPlanId,
   mergeGroupOpponent,
   planChanged,
@@ -29,7 +30,11 @@ describe("splitGroupOpponent / mergeGroupOpponent", () => {
     expect(shared).not.toHaveProperty("plansByTeamId");
     expect(shared).not.toHaveProperty("copiedPlanFrom");
     expect(JSON.stringify(shared)).not.toContain("lead fake out");
-    expect(plan).toMatchObject({ id: groupPlanId("g1", OPPONENT.id), groupId: "g1", opponentId: OPPONENT.id });
+    expect(plan).toMatchObject({
+      id: groupPlanId("g1", OPPONENT.id),
+      groupId: "g1",
+      opponentId: OPPONENT.id,
+    });
     expect(mergeGroupOpponent(shared, plan)).toEqual(OPPONENT);
   });
 
@@ -61,10 +66,37 @@ describe("canRemoveGroupOpponent", () => {
 
 describe("copyOpponent", () => {
   it("makes a standalone copy with your plans, credited when it's for a group", () => {
-    const copy = copyOpponent({ ...OPPONENT, variantOf: "main" }, "new-id", { uid: "me", name: "Me" });
-    expect(copy).toMatchObject({ id: "new-id", addedBy: "me", addedByName: "Me", plansByTeamId: OPPONENT.plansByTeamId });
+    const copy = copyOpponent({ ...OPPONENT, variantOf: "main" }, "new-id", {
+      uid: "me",
+      name: "Me",
+    });
+    expect(copy).toMatchObject({
+      id: "new-id",
+      addedBy: "me",
+      addedByName: "Me",
+      plansByTeamId: OPPONENT.plansByTeamId,
+    });
     expect(copy.variantOf).toBeUndefined();
     expect(copy.copiedPlanFrom).toBeUndefined();
     expect(copyOpponent(OPPONENT, "x").addedBy).toBeUndefined();
+  });
+});
+
+describe("copyOpponentsInto", () => {
+  it("keeps the order above the target list, plans, and variant links copied together", () => {
+    const main = { ...OPPONENT, id: "main", sortOrder: 9 };
+    const variant = { ...OPPONENT, id: "variant", variantOf: "main", sortOrder: 8 };
+    const loneVariant = { ...OPPONENT, id: "lone", variantOf: "elsewhere", sortOrder: 7 };
+    const target = [{ ...OPPONENT, id: "t", sortOrder: 3 }];
+    let next = 0;
+    const copies = copyOpponentsInto([main, variant, loneVariant], target, () => `new-${next++}`, {
+      uid: "uid-b",
+    });
+    expect(copies.map((copy) => copy.id)).toEqual(["new-0", "new-1", "new-2"]);
+    expect(copies.map((copy) => copy.sortOrder)).toEqual([7, 6, 5]);
+    expect(copies[1].variantOf).toBe("new-0");
+    expect(copies[2].variantOf).toBeUndefined();
+    expect(copies[0].plansByTeamId).toEqual(OPPONENT.plansByTeamId);
+    expect(copies.every((copy) => copy.addedBy === "uid-b")).toBe(true);
   });
 });

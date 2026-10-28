@@ -29,13 +29,30 @@ function contentExtensions() {
 
 const CONTENT_CLASSES = "[&_ul]:list-disc [&_ul]:pl-5 [&_p]:m-0";
 
+const EDITOR_HEIGHTS = {
+  default: "min-h-20 max-h-64",
+  medium: "min-h-32 max-h-80",
+  tall: "min-h-96 max-h-[48rem]",
+};
+
 interface RichTextEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder: string;
   ariaLabel: string;
-  /** "tall" for a page's main writing area (e.g. the Strategy tab's notes). */
-  size?: "default" | "tall";
+  /**
+   * "tall" for a page's main writing area (e.g. the Strategy tab's notes);
+   * "medium" to sit beside something about as tall (a game plan's picks).
+   */
+  size?: "default" | "medium" | "tall";
+  /**
+   * "bare" for a field that should blend into its card (the Matchup Planner's
+   * game plan): no box, and the toolbar only shows while the field has focus
+   * (Ctrl/Cmd+B still works without it).
+   */
+  variant?: "boxed" | "bare";
+  /** Read-only, dimmed (e.g. the planner card with no active team). */
+  disabled?: boolean;
 }
 
 /**
@@ -56,17 +73,24 @@ export function RichTextEditor({
   placeholder,
   ariaLabel,
   size = "default",
+  variant = "boxed",
+  disabled = false,
 }: RichTextEditorProps) {
   const t = useMessages();
   const editor = useEditor({
     extensions: [...contentExtensions(), Placeholder.configure({ placeholder })],
     content: value,
+    editable: !disabled,
     immediatelyRender: false,
     editorProps: {
       attributes: {
         role: "textbox",
         "aria-label": ariaLabel,
-        class: `${size === "tall" ? "min-h-96 max-h-[48rem]" : "min-h-20 max-h-64"} w-full overflow-y-auto rounded-b-lg border border-t-0 border-zinc-200 bg-zinc-100 p-2 text-sm text-zinc-800 focus:outline-none ${CONTENT_CLASSES} [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-zinc-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]`,
+        class: `${
+          variant === "bare"
+            ? "min-h-16 max-h-32 rounded-lg"
+            : `${EDITOR_HEIGHTS[size]} rounded-b-lg border border-t-0 border-zinc-200 bg-zinc-100`
+        } w-full overflow-y-auto p-2 text-sm text-zinc-800 focus:outline-none ${CONTENT_CLASSES} [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-zinc-400 [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]`,
       },
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -84,6 +108,12 @@ export function RichTextEditor({
     const same = html === value || (isEmptyHtml(html) && isEmptyHtml(value));
     if (!same) editor.commands.setContent(value, { emitUpdate: false });
   }
+
+  // Follows `disabled` after creation (e.g. once an active team is picked).
+  useEffect(() => {
+    if (editor && !editor.isDestroyed && editor.isEditable === disabled)
+      editor.setEditable(!disabled);
+  }, [editor, disabled]);
 
   // The editor is created once, so a changed placeholder (e.g. after
   // switching the app language) is pushed into its extension here.
@@ -107,8 +137,15 @@ export function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div>
-      <div className="flex items-center gap-0.5 rounded-t-lg border border-zinc-200 bg-zinc-50 p-1">
+    <div className={cn("group", disabled && "cursor-not-allowed opacity-60")}>
+      <div
+        className={cn(
+          "flex items-center gap-0.5 p-1",
+          variant === "bare"
+            ? "hidden rounded-lg group-focus-within:flex"
+            : "rounded-t-lg border border-zinc-200 bg-zinc-50",
+        )}
+      >
         <ToolbarButton
           label={t.richText.bold}
           icon={IconName.FormatBold}

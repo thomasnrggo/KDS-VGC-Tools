@@ -1,11 +1,20 @@
 # Team Report: calcs and matchups
 
-Status: **on hold** (2026-10-12). Steps 1–4 were built, then the entry points were hidden — opponent
-info (who they are, what they bring) and matchup prep (your picks and notes against them) may need to
-be separate things, and the design needs rethinking before this ships. `TEAM_REPORT_PREP_ENABLED` in
-`src/constants/teamReportPrep.ts` (currently `false`) hides the Calcs and Matchups tabs and the Matchup
-Planner's "Matchup report" menu item; the code, the matchup page route, and any saved data stay in
-place.
+Status: **back on** (2026-10-26). It was on hold from 2026-10-12 (opponent info vs matchup prep
+needed rethinking); the matchup page is now the place for matchup prep, opened from the Matchup
+Planner card (the opponent's name or its page icon) or the Team Report's Matchups tab. It works for
+prep-group opponents (`?groupId=`, your private plan) and returns to the planner when opened from it
+(`?from=planner`). Several plans per matchup (Plan A, B, …): each has the opponent's expected
+lead/back (`theirs`, slots into their roster), your lead/back and rich-text notes. Plan A stays in
+`MatchupPlan`'s own fields so existing readers keep working; Plans B+ are `morePlans`, and
+`src/lib/matchupPlans.ts` lists, adds, reorders and removes them. The Matchup Planner card shows Plan A;
+a "+N plans" pill opens Plans B+ as more rows of the card's own columns (your picks and notes only —
+the opponent's picks stay on the matchup page), and "Add plan" is in the card's ⋮ menu. On the matchup page,
+each picked Pokémon's hover card is its calcs against the other side's picks (`calcsBetween` in
+`src/lib/teamCalcs.ts`, `PickCalcsCard`) instead of its Pokémon card, grouped by the other Pokémon in pick
+order, highest damage first. Mouse hover only: on touch screens a tap opens the picker, and the
+Calcs tab has every calc. `TEAM_REPORT_PREP_ENABLED` in
+`src/constants/teamReportPrep.ts` still hides the entry points if needed.
 
 The Team Report (`/teams/[teamId]`) describes a team from its **owner's** perspective. Today that means
 the roster with notes, common combinations, and tournament stats. Tournament prep needs two more
@@ -85,15 +94,20 @@ re-ordered. Parsed fields aren't stored, so parser improvements apply to existin
 
 ### Matchups tab
 
-**Only opponents with a matchup report** — a report is optional extra prep, so the tab doesn't list
-every opponent you've planned against. A plan counts as a report once it has content only the matchup
-page writes: "What they do" or a note on one of their Pokémon (`hasMatchupReport`). Lead/back and the
-game plan don't count, since the Matchup Planner fills those in everyday use. Emptying those fields
-takes the opponent off the list again. A report is started from the Matchup Planner (⋮ → "Matchup
-report"); the empty state says so.
+**Every opponent you've prepped for this team**, from your own list and every prep group you're in
+(`useAllGroupOpponents`, read only), in the team's regulations. Prepped means any plan has a pick
+(yours or theirs) or game plan text, or there's "What they do" or a Pokémon note
+(`hasMatchupPrep`); an untouched opponent stays off the list. The empty state points to the
+Matchup Planner.
+
+**The same team in several lists is one row** (`buildMatchupRows`): teams copied between your
+list and groups get new ids, so they're matched on regulation plus each Pokémon's species and item
+(`sameTeamKey`). The row opens the copy you prepped (yours first when both are), says which list
+it's in. A group copy opens with
+`?groupId=` — your private plan for it.
 
 Rows follow Matchup Planner order, a variant right after its main and marked "Variant" (each is
-filtered on its own — a variant can have a report its main doesn't). Each row: label, roster, your
+filtered on its own — a variant can be prepped when its main isn't). Each row: label, roster, your
 lead/back if picked, tags, and how many of your calcs involve that team.
 Click → the matchup page. The report's tab is kept in the URL (`?tab=matchups`), so the matchup
 page's back link and a reload return to it.

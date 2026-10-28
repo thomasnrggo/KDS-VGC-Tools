@@ -1,3 +1,4 @@
+import { topSortOrder } from "./opponent";
 import type { GroupPlanDoc, Opponent, PrepGroup, SharedOpponent } from "@/types";
 
 /** The id of your plan doc for one group opponent. */
@@ -21,12 +22,16 @@ export function splitGroupOpponent(
     plansByTeamId,
     updatedAt: opponent.updatedAt,
   };
-  if (copiedPlanFrom && Object.keys(copiedPlanFrom).length > 0) plan.copiedPlanFrom = copiedPlanFrom;
+  if (copiedPlanFrom && Object.keys(copiedPlanFrom).length > 0)
+    plan.copiedPlanFrom = copiedPlanFrom;
   return { shared, plan };
 }
 
 /** The reverse: a shared opponent with your plans (if any) — the shape the planner works with. */
-export function mergeGroupOpponent(shared: SharedOpponent, plan: GroupPlanDoc | undefined): Opponent {
+export function mergeGroupOpponent(
+  shared: SharedOpponent,
+  plan: GroupPlanDoc | undefined,
+): Opponent {
   const merged: Opponent = { ...shared, plansByTeamId: plan?.plansByTeamId ?? {} };
   if (plan?.copiedPlanFrom) merged.copiedPlanFrom = plan.copiedPlanFrom;
   return merged;
@@ -42,7 +47,11 @@ export function planChanged(before: Opponent | undefined, after: Opponent): bool
 }
 
 /** Whether a shared field changed — editing your notes shouldn't rewrite the group's copy. */
-export function sharedChanged(before: Opponent | undefined, after: Opponent, groupId: string): boolean {
+export function sharedChanged(
+  before: Opponent | undefined,
+  after: Opponent,
+  groupId: string,
+): boolean {
   if (!before) return true;
   return (
     JSON.stringify(splitGroupOpponent({ ...before, updatedAt: "" }, groupId).shared) !==
@@ -75,7 +84,13 @@ export function copyOpponent(
   addedBy?: { uid: string; name?: string },
 ): Opponent {
   const now = new Date().toISOString();
-  const copy: Opponent = { ...opponent, id: newId, sortOrder: Date.now(), createdAt: now, updatedAt: now };
+  const copy: Opponent = {
+    ...opponent,
+    id: newId,
+    sortOrder: Date.now(),
+    createdAt: now,
+    updatedAt: now,
+  };
   delete copy.variantOf;
   delete copy.copiedPlanFrom;
   delete copy.addedBy;
@@ -85,4 +100,27 @@ export function copyOpponent(
     if (addedBy.name) copy.addedByName = addedBy.name;
   }
   return copy;
+}
+
+/**
+ * Copies of several opponents for another list (see copyOpponent), placed
+ * above everything already in `target` in the same order as `selected`. A
+ * variant copied along with its main stays its variant; one copied alone
+ * becomes a main of its own.
+ */
+export function copyOpponentsInto(
+  selected: Opponent[],
+  target: Opponent[],
+  newId: () => string,
+  addedBy?: { uid: string; name?: string },
+): Opponent[] {
+  const ids = new Map(selected.map((opponent) => [opponent.id, newId()]));
+  const top = topSortOrder(target);
+  return selected.map((opponent, index) => {
+    const copy = copyOpponent(opponent, ids.get(opponent.id)!, addedBy);
+    copy.sortOrder = top + selected.length - index;
+    const mainId = opponent.variantOf && ids.get(opponent.variantOf);
+    if (mainId) copy.variantOf = mainId;
+    return copy;
+  });
 }

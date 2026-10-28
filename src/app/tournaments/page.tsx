@@ -19,12 +19,14 @@ export default function TournamentsPage() {
     removeTeam,
     setActiveTeamId,
   } = useMyTeams();
-  const { tournaments, isLoading: isTournamentsLoading, addTournament, removeTournament } =
-    useTournaments();
+  const {
+    tournaments,
+    isLoading: isTournamentsLoading,
+    addTournament,
+    removeTournament,
+  } = useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
-  const [selectedRegulationId, setSelectedRegulationId] = useState(
-    REGULATIONS[0]?.id ?? "",
-  );
+  const [selectedRegulationId, setSelectedRegulationId] = useState(REGULATIONS[0]?.id ?? "");
 
   return (
     <div className="flex flex-1 flex-col">
@@ -43,7 +45,7 @@ export default function TournamentsPage() {
         onSignIn={signInWithGoogle}
         onSignOut={signOut}
       />
-      <div className="flex w-full flex-col gap-6 p-6">
+      <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
         <TournamentsSection
           tournaments={tournaments}
           teams={teams}

@@ -4,6 +4,8 @@ import {
   effectiveMegas,
   groupToLeadBack,
   leadBackToGroup,
+  normalizeBackAlt,
+  withBackAlt,
   pickIntoSlot,
   toggleSlotMega,
   usedInOtherSlots,
@@ -62,9 +64,9 @@ describe("pickIntoSlot", () => {
   });
 
   it("clears a slot", () => {
-    expect(pickIntoSlot(group([0, 1, null, null], [true, false, true, true]), 1, null, ROSTER)).toEqual(
-      group([0, null, null, null]),
-    );
+    expect(
+      pickIntoSlot(group([0, 1, null, null], [true, false, true, true]), 1, null, ROSTER),
+    ).toEqual(group([0, null, null, null]));
   });
 });
 
@@ -98,7 +100,11 @@ describe("duplicateSlots", () => {
 
 describe("leadBackToGroup / groupToLeadBack", () => {
   it("round-trips a plan", () => {
-    const plan = { ...EMPTY_PLAN, leadPair: [0, 1] as [number, number], backMega: [false, true] as [boolean, boolean] };
+    const plan = {
+      ...EMPTY_PLAN,
+      leadPair: [0, 1] as [number, number],
+      backMega: [false, true] as [boolean, boolean],
+    };
     expect(groupToLeadBack(plan, leadBackToGroup(plan))).toEqual(plan);
   });
 });
@@ -107,5 +113,40 @@ describe("usedInOtherSlots", () => {
   it("maps Pokémon in the other slots to those slots' tags", () => {
     const tags = ["L1", "L2", "B1", "B2"].map((tag) => ({ label: tag, tag }));
     expect(usedInOtherSlots([2, 3, null, 2], 1, tags)).toEqual({ 2: tags[0] });
+  });
+});
+
+describe("Back 2's alternative", () => {
+  const plan = (back2: number | null, backAlt?: number | null) => ({
+    ...EMPTY_PLAN,
+    leadPair: [0, 1] as [number, number],
+    backPair: [2, back2] as [number, number | null],
+    backAlt,
+  });
+
+  it("sets Back 2 and its alternative together", () => {
+    const next = withBackAlt(plan(null), 3, 4, ROSTER);
+    expect(next.backPair).toEqual([2, 3]);
+    expect(next.backAlt).toBe(4);
+  });
+
+  it("drops an alternative that's the same as Back 2", () => {
+    expect(withBackAlt(plan(3), 3, 3, ROSTER).backAlt).toBeNull();
+  });
+
+  it("promotes the alternative when Back 2 is emptied", () => {
+    const next = normalizeBackAlt(plan(null, 4));
+    expect(next.backPair).toEqual([2, 4]);
+    expect(next.backAlt).toBeNull();
+  });
+
+  it("drops the alternative once it's picked in another slot", () => {
+    const next = normalizeBackAlt({ ...plan(3, 4), leadPair: [4, 1] as [number, number] });
+    expect(next.backAlt).toBeNull();
+  });
+
+  it("leaves a valid alternative alone", () => {
+    const valid = plan(3, 4);
+    expect(normalizeBackAlt(valid)).toBe(valid);
   });
 });

@@ -11,6 +11,7 @@ import { setPlannerSource, usePlannerSource } from "@/hooks/usePlannerSource";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { OpponentsSection } from "@/components/OpponentsSection";
 import {
+  AddFromListDialog,
   CopyToGroupDialog,
   CreateGroupDialog,
   GroupBar,
@@ -19,7 +20,7 @@ import {
 import { toast } from "@/components/Toast";
 import { IconName } from "@/enums";
 import { saveGroupOpponent, saveGroupPlan } from "@/lib/firebase";
-import { copyOpponent, splitGroupOpponent } from "@/lib/groupOpponents";
+import { copyOpponent, copyOpponentsInto, splitGroupOpponent } from "@/lib/groupOpponents";
 import { generateId } from "@/lib/id";
 import { REGULATIONS } from "@/data/regulations";
 import type { Opponent, PrepGroup } from "@/types";
@@ -55,6 +56,7 @@ export default function MatchupPlanner() {
   const groupList = useGroupOpponents(group);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [copyingOpponent, setCopyingOpponent] = useState<Opponent | null>(null);
+  const [isAddingFromList, setIsAddingFromList] = useState(false);
 
   // A group belongs to one regulation, so it drives the filter while open.
   const selectedRegulationId = group ? group.regulationId : pickedRegulationId;
@@ -84,6 +86,24 @@ export default function MatchupPlanner() {
     if (Object.keys(plan.plansByTeamId).length > 0) await saveGroupPlan(user.uid, plan);
     toast.success(t.groups.copiedToGroup(opponent.label, target.name));
     setCopyingOpponent(null);
+  }
+
+  // Copies teams from another list (your own or a group's) into the open one.
+  function addFromList(opponents: Opponent[]) {
+    const target = group ? groupList : personal;
+    const inRegulation = target.opponents.filter((o) => o.regulationId === selectedRegulationId);
+    target.addOpponents(
+      copyOpponentsInto(
+        opponents,
+        inRegulation,
+        generateId,
+        group && user ? { uid: user.uid, name: user.displayName ?? undefined } : undefined,
+      ),
+    );
+    toast.success(
+      t.groups.addFrom.added(opponents.length, group ? group.name : t.groups.myOpponents),
+    );
+    setIsAddingFromList(false);
   }
 
   function copyToMine(opponent: Opponent) {
@@ -143,7 +163,7 @@ export default function MatchupPlanner() {
         onSignIn={signInWithGoogle}
         onSignOut={signOut}
       />
-      <div className="flex w-full flex-col gap-6 p-6">
+      <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
         {isResolvingSource ? (
           <LoadingState />
         ) : (
@@ -156,14 +176,13 @@ export default function MatchupPlanner() {
             banner={banner}
             regulationLocked={!!group}
             canClearAll={!group || group.ownerUid === user?.uid}
-            addedByLabel={
-              group
-                ? (opponent) =>
-                    opponent.addedBy === user?.uid
-                      ? t.groups.addedByYou
-                      : opponent.addedByName
-                        ? t.groups.addedBy(opponent.addedByName)
-                        : undefined
+            // Needs a prep group somewhere to copy from or to — so signed in.
+            onAddFromList={user ? () => setIsAddingFromList(true) : undefined}
+            // The matchup page, for your active team — back to the planner, and
+            // through ?groupId= for a prep group's opponent (like the calculator).
+            matchupHref={(opponent) =>
+              activeTeamId
+                ? `/teams/${activeTeamId}/matchups/${opponent.id}?from=planner${group ? `&groupId=${group.id}` : ""}`
                 : undefined
             }
             // The calculator finds a group's opponent through ?groupId=.
@@ -207,6 +226,21 @@ export default function MatchupPlanner() {
           defaultRegulationId={selectedRegulationId}
           onCreate={createGroup}
           onClose={() => setIsCreatingGroup(false)}
+        />
+      )}
+      {isAddingFromList && (
+        <AddFromListDialog
+          targetName={group ? group.name : t.groups.myOpponents}
+          regulationId={selectedRegulationId}
+          targetOpponents={(group ? groupList : personal).opponents.filter(
+            (o) => o.regulationId === selectedRegulationId,
+          )}
+          myOpponents={group ? personal.opponents : undefined}
+          groups={groupsApi.groups.filter(
+            (g) => g.id !== group?.id && g.regulationId === selectedRegulationId,
+          )}
+          onAdd={addFromList}
+          onClose={() => setIsAddingFromList(false)}
         />
       )}
       {copyingOpponent && (

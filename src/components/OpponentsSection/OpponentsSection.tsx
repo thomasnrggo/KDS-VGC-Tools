@@ -54,12 +54,14 @@ interface OpponentsSectionProps {
   regulationLocked?: boolean;
   /** False hides "Clear all data" (a prep group's members other than its owner). */
   canClearAll?: boolean;
+  /** Adds "Add from another list…" to the ⋮ menu and the empty state (copying teams in from your list or a group). */
+  onAddFromList?: () => void;
   /** Extra ⋮ menu items for a card — e.g. copying it between the personal list and a group. */
   cardActions?: (opponent: Opponent) => RowAction[];
   /** Link that opens a card's team in the Damage Calculator. */
   calcHref?: (opponent: Opponent) => string;
-  /** "Added by …" after a card's name, in a prep group. */
-  addedByLabel?: (opponent: Opponent) => string | undefined;
+  /** Link to the opponent's matchup page for the active team — the planner adds ?from=planner and, on a prep group, ?groupId=. */
+  matchupHref?: (opponent: Opponent) => string | undefined;
   myTeamPokemon: ParsedPokemon[];
   activeTeamId: string | null;
   /** False when there's an active team but it isn't tagged for selectedRegulationId — passed through to OpponentCard so it blocks Lead/Back picking with an explanatory message instead of letting you plan with an off-regulation team. */
@@ -86,6 +88,7 @@ function OpponentsMoreMenu({
   canClearAll,
   onLoadPreset,
   onBulkImport,
+  onAddFromList,
   onClearAll,
 }: {
   isLoading: boolean;
@@ -95,6 +98,7 @@ function OpponentsMoreMenu({
   canClearAll: boolean;
   onLoadPreset: (rawPaste: string, regulationId: string) => void;
   onBulkImport: () => void;
+  onAddFromList?: () => void;
   onClearAll: () => void;
 }) {
   const t = useMessages();
@@ -171,6 +175,19 @@ function OpponentsMoreMenu({
           >
             {t.opponents.massImport}
           </button>
+          {onAddFromList && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                onAddFromList();
+                setIsOpen(false);
+              }}
+              className={MENU_ITEM_CLASSES}
+            >
+              {t.groups.addFromMenu}
+            </button>
+          )}
           {canClearAll && (
             <button
               type="button"
@@ -198,8 +215,9 @@ export function OpponentsSection({
   regulationLocked = false,
   canClearAll = true,
   cardActions,
+  onAddFromList,
   calcHref,
-  addedByLabel,
+  matchupHref,
   myTeamPokemon,
   activeTeamId,
   activeTeamMatchesRegulation,
@@ -533,8 +551,8 @@ export function OpponentsSection({
         onRemove={
           !canRemove || canRemove(opponent) ? () => setConfirmRemoveId(opponent.id) : undefined
         }
-        addedByLabel={addedByLabel?.(opponent)}
         calcHref={calcHref?.(opponent)}
+        matchupHref={TEAM_REPORT_PREP_ENABLED ? matchupHref?.(opponent) : undefined}
         dragHandle={options.dragHandle}
         extraActions={[
           // The prep page for this opponent vs the selected team — see
@@ -544,7 +562,10 @@ export function OpponentsSection({
                 {
                   label: t.opponents.matchupReport,
                   icon: IconName.Description,
-                  onClick: () => router.push(`/teams/${activeTeamId}/matchups/${opponent.id}`),
+                  onClick: () =>
+                    router.push(
+                      matchupHref?.(opponent) ?? `/teams/${activeTeamId}/matchups/${opponent.id}`,
+                    ),
                 },
               ]
             : []),
@@ -702,6 +723,7 @@ export function OpponentsSection({
                 canClearAll={canClearAll}
                 onLoadPreset={loadPreset}
                 onBulkImport={startBulkImporting}
+                onAddFromList={onAddFromList}
                 onClearAll={requestClearAll}
               />
             </div>
@@ -727,6 +749,7 @@ export function OpponentsSection({
               canClearAll={canClearAll}
               onLoadPreset={loadPreset}
               onBulkImport={startBulkImporting}
+              onAddFromList={onAddFromList}
               onClearAll={requestClearAll}
             />
           </div>
@@ -913,6 +936,15 @@ export function OpponentsSection({
           >
             {t.opponents.bulkImportPrompt}
           </button>
+          {onAddFromList && (
+            <button
+              type="button"
+              onClick={onAddFromList}
+              className="text-sm font-medium text-zinc-600 hover:underline"
+            >
+              {t.groups.addFromMenu}
+            </button>
+          )}
         </div>
       ) : isSearching && displayedGroups.length === 0 ? (
         <p className="py-12 text-center text-sm text-zinc-500">

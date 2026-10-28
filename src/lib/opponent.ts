@@ -1,7 +1,6 @@
 import { createTeam } from "./team";
 import { generateId } from "./id";
 import { EMPTY_PLAN } from "@/constants";
-import { hasRichText } from "./richText";
 import { REGULATIONS } from "@/data/regulations";
 import type { MatchupPlan, Opponent, PokemonSlot } from "@/types";
 
@@ -37,19 +36,6 @@ export function getPlanForTeam(opponent: Opponent, teamId: string | null): Match
   const plan = opponent.plansByTeamId[teamId];
   if (!plan) return EMPTY_PLAN;
   return { ...EMPTY_PLAN, ...plan };
-}
-
-/**
- * Whether a plan has a matchup report — content only the matchup page
- * writes ("What they do", notes on their Pokémon). Lead/back and the game
- * plan don't count: the Matchup Planner fills those in everyday use, and
- * the Team Report's Matchups tab only lists reports you chose to write (see
- * docs/team-report.md).
- */
-export function hasMatchupReport(plan: MatchupPlan): boolean {
-  return (
-    hasRichText(plan.scoutingNotes) || Object.values(plan.pokemonNotes ?? {}).some((note) => hasRichText(note))
-  );
 }
 
 /**
@@ -89,9 +75,7 @@ export function normalizeOpponent(opponent: Opponent, legacyTeamId?: string | nu
  */
 export function compareOpponentOrder(a: Opponent, b: Opponent): number {
   return (
-    b.sortOrder - a.sortOrder ||
-    b.createdAt.localeCompare(a.createdAt) ||
-    a.id.localeCompare(b.id)
+    b.sortOrder - a.sortOrder || b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id)
   );
 }
 

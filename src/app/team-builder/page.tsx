@@ -46,7 +46,7 @@ export default function TeamBuilderPage() {
         onSignOut={signOut}
       />
 
-      <div className="flex w-full flex-col gap-6 p-6">
+      <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
         <div className="flex items-center justify-between gap-2">
           <div>
             <h2 className="text-xl font-semibold text-zinc-900">Team Builder</h2>

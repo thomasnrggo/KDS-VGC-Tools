@@ -3,11 +3,12 @@
 import { PokemonSprite } from "../PokemonSprite";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
-import { calcThreat, isCalcLine, parseCalcLine } from "@/lib/teamCalcs";
+import { calcLineParts, calcThreat, isCalcLine } from "@/lib/teamCalcs";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
 import { speciesIdentity } from "@/lib/teamIdentity";
 import type { ParsedPokemon, TeamCalc, TeamCalcSide } from "@/types";
 import { cn } from "@/lib/utils";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 
 interface TeamCalcsListProps {
   calcs: TeamCalc[];
@@ -17,74 +18,77 @@ interface TeamCalcsListProps {
   onRemove?: (id: string) => void;
 }
 
-const SIDES: { side: TeamCalcSide | null; label: string }[] = [
-  { side: "offensive", label: "Offensive" },
-  { side: "defensive", label: "Defensive" },
-  { side: null, label: "Notes" },
-];
+/** The groups under each of your Pokémon, in order — null is a plain note, not a calc. */
+const SIDES: (TeamCalcSide | null)[] = ["offensive", "defensive", null];
 
-/** One calc: the other Pokémon's sprite, the setup, and its % / KO verdict. `stacked` keeps the verdict under the setup at every width (a narrow card). */
+/**
+ * One calc: the other Pokémon's sprite and the whole Showdown line, written
+ * the way the Damage Calculator shows its result — the % range and the KO
+ * chance in bold (a dealt OHKO green, a taken one red), the rest plain.
+ */
 export function TeamCalcRow({
   calc,
   onRemove,
-  removeLabel = "Remove calc",
-  stacked = false,
+  removeLabel,
+  sprite,
 }: {
   calc: TeamCalc;
   onRemove?: () => void;
   removeLabel?: string;
-  stacked?: boolean;
+  /** The species to show instead of the other Pokémon's; null for none (the rows sit under its name). */
+  sprite?: string | null;
 }) {
+  const t = useMessages();
+  const removeText = removeLabel ?? t.pokemonCard.removeCalc;
   const isCalc = isCalcLine(calc.text);
-  const { percent, verdict } = isCalc ? parseCalcLine(calc.text) : {};
   const threat = isCalc ? calcThreat(calc) : undefined;
-  const colonIndex = calc.text.indexOf(":");
-  // The setup ("… vs. …") reads as the line; the result is pulled out as a
-  // badge so the % and KO verdict scan down the list.
-  const setup = isCalc && colonIndex !== -1 ? calc.text.slice(0, colonIndex) : calc.text;
-  const isOhko = !!verdict && /OHKO/i.test(verdict);
+  const parts = isCalc ? calcLineParts(calc.text) : null;
+  const isOhko = !!parts?.verdict && /OHKO/i.test(parts.verdict);
   const verdictTone = !isOhko
-    ? "text-zinc-700"
+    ? undefined
     : calc.side === "offensive"
       ? "text-green-700"
       : calc.side === "defensive"
         ? "text-red-600"
-        : "text-zinc-900";
+        : undefined;
 
   return (
     <li className="flex items-start gap-2 py-1.5">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center">
-        {threat && <PokemonSprite species={formatSpeciesDisplayName(threat.spriteKey)} size={28} />}
-      </span>
-      <div
-        className={cn(
-          "flex min-w-0 flex-1 flex-col gap-0.5",
-          stacked ? "" : "md:flex-row md:items-start md:justify-between md:gap-3",
-        )}
-      >
-        <span className={cn("min-w-0 text-xs", isCalc ? "text-zinc-700" : "text-zinc-500 italic")}>
-          {setup}
+      {sprite !== null && (
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+          {sprite ? (
+            <PokemonSprite species={sprite} size={28} />
+          ) : (
+            threat && (
+              <PokemonSprite species={formatSpeciesDisplayName(threat.spriteKey)} size={28} />
+            )
+          )}
         </span>
-        {(percent || verdict) && (
-          <span
-            className={cn(
-              "shrink-0 text-xs font-medium",
-              stacked ? "" : "md:text-right",
-              verdictTone,
+      )}
+      <p
+        className={cn("min-w-0 flex-1 text-xs", isCalc ? "text-zinc-900" : "text-zinc-500 italic")}
+      >
+        {parts ? (
+          <>
+            {parts.before}
+            {parts.percent && (
+              <span className="font-semibold whitespace-nowrap">{parts.percent}</span>
             )}
-          >
-            {percent}
-            {percent && verdict ? " · " : ""}
-            {verdict}
-          </span>
+            {parts.between}
+            {parts.verdict && (
+              <span className={cn("font-semibold", verdictTone)}>{parts.verdict}</span>
+            )}
+          </>
+        ) : (
+          calc.text
         )}
-      </div>
+      </p>
       {onRemove && (
         <button
           type="button"
           onClick={onRemove}
-          aria-label={removeLabel}
-          title={removeLabel}
+          aria-label={removeText}
+          title={removeText}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700"
         >
           <Icon name={IconName.Close} size={14} />
@@ -100,6 +104,14 @@ export function TeamCalcRow({
  * that isn't on the roster (or none) go in a trailing "Other" section.
  */
 export function TeamCalcsList({ calcs, teamPokemon, onRemove }: TeamCalcsListProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const sideLabel = (side: TeamCalcSide | null) =>
+    side === "offensive"
+      ? t.calc.offensive
+      : side === "defensive"
+        ? t.calc.defensive
+        : t.opponentCard.notes;
   const rosterIdentities = teamPokemon.map((mon) => speciesIdentity(mon.species));
   const sections = [
     ...teamPokemon.map((mon, index) => ({
@@ -130,9 +142,10 @@ export function TeamCalcsList({ calcs, teamPokemon, onRemove }: TeamCalcsListPro
             {section.mon && (
               <PokemonSprite species={section.mon.species} item={section.mon.item} size={36} />
             )}
-            {section.mon?.species ?? "Other"}
+            {section.mon ? text.species(section.mon.species) : t.pokemonCard.otherPokemon}
           </h3>
-          {SIDES.map(({ side, label }) => {
+          {SIDES.map((side) => {
+            const label = sideLabel(side);
             const entries = section.entries.filter((calc) => calc.side === side);
             if (entries.length === 0) return null;
             return (

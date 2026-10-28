@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  hasMatchupReport,
   compareOpponentOrder,
   createOpponent,
   getPlanForTeam,
@@ -9,7 +8,6 @@ import {
   topSortOrder,
 } from "./opponent";
 import { REGULATIONS } from "@/data/regulations";
-import { EMPTY_PLAN } from "@/constants";
 import type { Opponent } from "@/types";
 
 const REG_ID = REGULATIONS[0].id;
@@ -164,7 +162,9 @@ describe("normalizeOpponent sortOrder backfill", () => {
     const stale = { ...createOpponent("Legacy Team", "Ditto", REG_ID) } as Partial<Opponent>;
     delete stale.sortOrder;
     stale.createdAt = "2026-10-01T00:00:00.000Z";
-    expect(normalizeOpponent(stale as Opponent).sortOrder).toBe(Date.parse("2026-10-01T00:00:00.000Z"));
+    expect(normalizeOpponent(stale as Opponent).sortOrder).toBe(
+      Date.parse("2026-10-01T00:00:00.000Z"),
+    );
   });
 
   it("backfills tags to an empty list for an opponent saved before tags existed", () => {
@@ -179,7 +179,11 @@ describe("normalizeOpponent sortOrder backfill", () => {
   });
 });
 
-function opponentWith(id: string, sortOrder: number, createdAt = "2026-10-01T00:00:00.000Z"): Opponent {
+function opponentWith(
+  id: string,
+  sortOrder: number,
+  createdAt = "2026-10-01T00:00:00.000Z",
+): Opponent {
   return { ...createOpponent(id, "Ditto", REG_ID), id, sortOrder, createdAt };
 }
 
@@ -204,8 +208,18 @@ describe("compareOpponentOrder", () => {
     const newer = opponentWith("y", 5, "2026-10-02T00:00:00.000Z");
     const tiedA = opponentWith("a", 5, "2026-09-01T00:00:00.000Z");
     const tiedB = opponentWith("b", 5, "2026-09-01T00:00:00.000Z");
-    expect(ids([tiedB, older, tiedA, newer].sort(compareOpponentOrder))).toEqual(["y", "z", "a", "b"]);
-    expect(ids([newer, tiedA, older, tiedB].sort(compareOpponentOrder))).toEqual(["y", "z", "a", "b"]);
+    expect(ids([tiedB, older, tiedA, newer].sort(compareOpponentOrder))).toEqual([
+      "y",
+      "z",
+      "a",
+      "b",
+    ]);
+    expect(ids([newer, tiedA, older, tiedB].sort(compareOpponentOrder))).toEqual([
+      "y",
+      "z",
+      "a",
+      "b",
+    ]);
   });
 });
 
@@ -220,7 +234,12 @@ describe("topSortOrder", () => {
 });
 
 describe("moveOpponent", () => {
-  const list = () => [opponentWith("a", 40), opponentWith("b", 30), opponentWith("c", 20), opponentWith("d", 10)];
+  const list = () => [
+    opponentWith("a", 40),
+    opponentWith("b", 30),
+    opponentWith("c", 20),
+    opponentWith("d", 10),
+  ];
 
   it("only rewrites the moved opponent, using the midpoint of its new neighbors", () => {
     const changed = moveOpponent(list(), "d", 1);
@@ -238,7 +257,10 @@ describe("moveOpponent", () => {
   });
 
   it("bumps updatedAt on the moved opponent so cloud sync's last-write-wins picks it up", () => {
-    const stale = list().map((opponent) => ({ ...opponent, updatedAt: "2020-01-01T00:00:00.000Z" }));
+    const stale = list().map((opponent) => ({
+      ...opponent,
+      updatedAt: "2020-01-01T00:00:00.000Z",
+    }));
     const [changed] = moveOpponent(stale, "d", 0);
     expect(changed.updatedAt > "2020-01-01T00:00:00.000Z").toBe(true);
   });
@@ -256,15 +278,5 @@ describe("moveOpponent", () => {
       opponentWith("d", 5, "2026-10-01T00:00:00.000Z"),
     ];
     expect(applyMove(tied, "d", 1)).toEqual(["a", "d", "b", "c"]);
-  });
-});
-
-describe("hasMatchupReport", () => {
-  it("counts only report content, not the planner's lead/back or game plan", () => {
-    expect(hasMatchupReport({ ...EMPTY_PLAN, leadPair: [0, 1], notes: "lead fake out" })).toBe(false);
-    expect(hasMatchupReport({ ...EMPTY_PLAN, scoutingNotes: "<p></p>" })).toBe(false);
-    expect(hasMatchupReport({ ...EMPTY_PLAN, pokemonNotes: { 0: "  " } })).toBe(false);
-    expect(hasMatchupReport({ ...EMPTY_PLAN, scoutingNotes: "<p>leads Sneasler</p>" })).toBe(true);
-    expect(hasMatchupReport({ ...EMPTY_PLAN, pokemonNotes: { 2: "Scarf" } })).toBe(true);
   });
 });

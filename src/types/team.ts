@@ -37,6 +37,8 @@ export interface TeamCombination {
   backPair: [TeamPokemonSlot, TeamPokemonSlot];
   leadMega: [boolean, boolean];
   backMega: [boolean, boolean];
+  /** Back 2's alternative — "A or B": the last pick depends on the game. */
+  backAlt?: TeamPokemonSlot;
   notes: string;
 }
 

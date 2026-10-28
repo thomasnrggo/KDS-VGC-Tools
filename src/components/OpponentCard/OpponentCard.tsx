@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { Popover } from "@base-ui/react/popover";
+import { Fragment, useState, type ReactNode } from "react";
 import { getPlanForTeam } from "@/lib/opponent";
 import { suggestTags } from "@/lib/opponentTags";
 import type { MatchupPlan, Opponent, ParsedPokemon } from "@/types";
@@ -11,9 +13,21 @@ import { RowActionsMenu, type RowAction } from "../RowActionsMenu";
 import { Icon } from "../Icon";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
-import { useMessages } from "@/hooks/useLanguage";
+import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { PlanControls } from "@/components/GamePlanCard";
+import {
+  addPlan,
+  listPlans,
+  movePlan,
+  notesToHtml,
+  planLetter,
+  removePlan,
+  theirPicksSummary,
+  updatePlanAt,
+} from "@/lib/matchupPlans";
 
 export interface OpponentCardProps {
   opponent: Opponent;
@@ -24,10 +38,10 @@ export interface OpponentCardProps {
   onEdit: () => void;
   /** Omit to hide Remove — a prep-group opponent only its adder and the group owner may remove. */
   onRemove?: () => void;
-  /** In a prep group: who added this opponent, shown after its name. */
-  addedByLabel?: string;
   /** Opens this opponent's team in the Damage Calculator (a new tab) — an icon next to the name. */
   calcHref?: string;
+  /** The opponent's matchup page — makes its name a link, with an icon beside the calculator's. */
+  matchupHref?: string;
   /** Extra ⋮ menu items — Move up/down, Make variant of…, Set as main, etc. */
   extraActions?: RowAction[];
   /** On a main with variants: the show/hide toggle, shown where desktop's ⋮ menu would otherwise sit. */
@@ -75,52 +89,79 @@ function CopiedFromBadge({ label }: { label: string }) {
 function GamePlanNotes({
   notes,
   activeTeamId,
-  onUpdatePlan,
+  onNotesChange,
   titleAccessory,
   copiedFromLabel,
+  planLabel,
+  planToggle,
+  theirPicks,
 }: {
+  /** "Plan A", "Plan B"… — shown once the matchup has more than one plan. */
+  planLabel?: string;
+  /** Plan A's "+N plans" button, beside its badge. */
+  planToggle?: ReactNode;
+  /**
+   * The opponent's expected picks for this plan ("Garchomp - Farigiraf & …"),
+   * shown as "vs …" after the badge from md up, and on a tap of the badge.
+   */
+  theirPicks?: string;
   notes: string;
   activeTeamId: string | null;
-  onUpdatePlan: (updater: (plan: MatchupPlan) => MatchupPlan) => void;
+  onNotesChange: (html: string) => void;
   /** Right-aligned on the "Game plan" title row — desktop puts the opponent's tags here. */
   titleAccessory?: ReactNode;
   copiedFromLabel?: string;
 }) {
   const t = useMessages();
-  const notesRef = useRef<HTMLTextAreaElement>(null);
-
-  // Grow the notes textarea to fit its content, up to a cap — re-measured on
-  // every value change. `min-h-16`/`max-h-32` (below) bound it: starts at
-  // roughly two rows, grows with content, then scrolls internally past that
-  // instead of growing the whole card indefinitely.
-  useEffect(() => {
-    const el = notesRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [notes]);
+  const versus = theirPicks && `${t.matchupPage.vs} ${theirPicks}`;
+  const badgeClasses =
+    "shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-700 uppercase";
 
   return (
     <>
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <h3 className={cn(COLUMN_TITLE_CLASSES, "shrink-0")}>{t.opponentCard.gamePlan}</h3>
+          {planLabel &&
+            (versus ? (
+              // A tap on the badge shows who the plan is against — the
+              // only place it shows on phones, where the text is hidden.
+              <Popover.Root>
+                <Popover.Trigger className={cn(badgeClasses, "cursor-pointer hover:bg-zinc-400")}>
+                  {planLabel}
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Positioner side="top" sideOffset={6} className="isolate z-50">
+                    <Popover.Popup className="max-w-xs rounded-md bg-chrome-800 px-3 py-1.5 text-xs text-white shadow-md">
+                      {versus}
+                    </Popover.Popup>
+                  </Popover.Positioner>
+                </Popover.Portal>
+              </Popover.Root>
+            ) : (
+              <span className={badgeClasses}>{planLabel}</span>
+            ))}
+          {versus && (
+            <span
+              title={versus}
+              className="hidden min-w-0 truncate text-xs text-zinc-500 md:inline"
+            >
+              {versus}
+            </span>
+          )}
+          {planToggle}
           {copiedFromLabel && <CopiedFromBadge label={copiedFromLabel} />}
         </div>
         {titleAccessory}
       </div>
-      <textarea
-        ref={notesRef}
-        value={notes}
-        onChange={(event) => {
-          const value = event.target.value;
-          onUpdatePlan((p) => ({ ...p, notes: value }));
-        }}
+      {/* Rich text (bold, bullets) like the matchup page's plans — Plan A's notes are the same field. */}
+      <RichTextEditor
+        variant="bare"
+        value={notesToHtml(notes)}
+        onChange={onNotesChange}
         disabled={!activeTeamId}
-        rows={2}
         placeholder={activeTeamId ? t.opponentCard.notesPlaceholder : t.opponentCard.notesNeedTeam}
-        aria-label={t.opponentCard.notes}
-        className="max-h-32 min-h-16 w-full flex-1 resize-none overflow-y-auto rounded-lg bg-transparent p-2 text-sm text-zinc-800 focus:ring-2 focus:ring-transparent focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+        ariaLabel={planLabel ? `${planLabel} — ${t.opponentCard.notes}` : t.opponentCard.notes}
       />
     </>
   );
@@ -133,8 +174,8 @@ export function OpponentCard({
   activeTeamMatchesRegulation,
   onEdit,
   onRemove,
-  addedByLabel,
   calcHref,
+  matchupHref,
   extraActions,
   variantToggle,
   isVariant,
@@ -154,7 +195,32 @@ export function OpponentCard({
   // vertically (see PLANNING.md).
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const slotProps = leadBackSlotProps(plan, myTeamPokemon, onUpdatePlan, t);
+  const slotProps = leadBackSlotProps(plan, myTeamPokemon, onUpdatePlan, t, { flexBack: true });
+  // Plans B, C… under the row, behind a "+N plans" toggle — editable here
+  // too; the matchup page is the roomier place for them.
+  const plans = listPlans(plan);
+  const text = usePokemonText();
+  const picksSummary = (index: number) =>
+    theirPicksSummary(plans[index]?.theirs, opponent.team.pokemon, text.species);
+  const [isPlansOpen, setIsPlansOpen] = useState(false);
+  const planAName = t.matchupPage.plan(planLetter(0));
+  const planALabel = plans.length > 1 ? planAName : undefined;
+  const canPlan = !!activeTeamId && activeTeamMatchesRegulation;
+  // "+N plans" sits beside the variants toggle; Plans B, C… then show as more
+  // rows of the card's own columns (your picks, game plan) — the opponent's
+  // expected picks stay on the matchup page.
+  const plansToggle = canPlan && plans.length > 1 && (
+    <button
+      type="button"
+      onClick={() => setIsPlansOpen((open) => !open)}
+      aria-expanded={isPlansOpen}
+      title={isPlansOpen ? t.matchupPage.hidePlans : undefined}
+      className="flex h-5 shrink-0 items-center gap-0.5 rounded-full border border-zinc-400 pr-0.5 pl-1.5 text-[11px] font-medium text-zinc-600 hover:border-zinc-500 hover:bg-zinc-100"
+    >
+      {t.matchupPage.morePlans(plans.length - 1)}
+      <Icon name={isPlansOpen ? IconName.ExpandLess : IconName.ExpandMore} size={14} />
+    </button>
+  );
 
   async function copyRawPaste() {
     try {
@@ -175,7 +241,21 @@ export function OpponentCard({
         icon: IconName.ContentCopy,
         onClick: copyRawPaste,
       }}
-      extraActions={extraActions}
+      extraActions={[
+        ...(canPlan
+          ? [
+              {
+                label: t.matchupPage.addPlan,
+                icon: IconName.Add,
+                onClick: () => {
+                  onUpdatePlan(addPlan);
+                  setIsPlansOpen(true);
+                },
+              },
+            ]
+          : []),
+        ...(extraActions ?? []),
+      ]}
     />
   );
 
@@ -206,11 +286,7 @@ export function OpponentCard({
     />
   );
 
-  const leadBackContent = !activeTeamId ? (
-    <p className="max-w-48 text-sm text-amber-600">{t.opponentCard.needTeam}</p>
-  ) : !activeTeamMatchesRegulation ? (
-    <p className="max-w-48 text-sm text-amber-600">{t.opponentCard.teamNotInRegulation}</p>
-  ) : (
+  const pickers = (slots: typeof slotProps) => (
     // Stacked (Lead row, then Back row) ONLY in the medium/tablet range —
     // same idea as TeamRoster's md compression — since this column is
     // auto-sized to its content and doesn't gain width until lg gives the
@@ -227,19 +303,64 @@ export function OpponentCard({
           {t.opponentCard.leadsAndBacks}
         </h3>
         <div className="flex gap-2">
-          <PokemonSlotPicker {...slotProps(0)} />
-          <PokemonSlotPicker {...slotProps(1)} />
+          <PokemonSlotPicker {...slots(0)} />
+          <PokemonSlotPicker {...slots(1)} />
         </div>
       </div>
       <div className="flex flex-col gap-1">
         <h3 className={cn(COLUMN_TITLE_CLASSES, "md:hidden lg:flex")}>{t.opponentCard.back}</h3>
         <div className="flex gap-2">
-          <PokemonSlotPicker {...slotProps(2)} />
-          <PokemonSlotPicker {...slotProps(3)} />
+          <PokemonSlotPicker {...slots(2)} />
+          <PokemonSlotPicker {...slots(3)} />
         </div>
       </div>
     </div>
   );
+
+  const leadBackContent = !activeTeamId ? (
+    <p className="max-w-48 text-sm text-amber-600">{t.opponentCard.needTeam}</p>
+  ) : !activeTeamMatchesRegulation ? (
+    <p className="max-w-48 text-sm text-amber-600">{t.opponentCard.teamNotInRegulation}</p>
+  ) : (
+    pickers(slotProps)
+  );
+
+  const extraPlanRows = (isPlansOpen && canPlan ? plans.slice(1) : []).map((gamePlan, offset) => {
+    const index = offset + 1;
+    const name = t.matchupPage.plan(planLetter(index));
+    return {
+      key: gamePlan.id,
+      pickers: pickers(
+        leadBackSlotProps(
+          gamePlan,
+          myTeamPokemon,
+          (updater) => onUpdatePlan((p) => updatePlanAt(p, index, updater)),
+          t,
+          { flexBack: true },
+        ),
+      ),
+      notes: (
+        <GamePlanNotes
+          notes={gamePlan.notes}
+          activeTeamId={activeTeamId}
+          onNotesChange={(html) =>
+            onUpdatePlan((p) => updatePlanAt(p, index, (plan) => ({ ...plan, notes: html })))
+          }
+          planLabel={name}
+          theirPicks={picksSummary(index)}
+          titleAccessory={
+            <PlanControls
+              name={name}
+              index={index}
+              total={plans.length}
+              onMove={(direction) => onUpdatePlan((p) => movePlan(p, index, direction))}
+              onRemove={() => onUpdatePlan((p) => removePlan(p, index))}
+            />
+          }
+        />
+      ),
+    };
+  });
 
   return (
     <li>
@@ -252,20 +373,25 @@ export function OpponentCard({
             <div className="mb-1 flex h-7 items-center gap-1">
               <div className="flex min-w-0 flex-1 items-center gap-1">
                 {dragHandle}
-                <span
-                  title={opponent.label}
-                  className="max-w-48 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase"
-                >
-                  {opponent.label}
-                </span>
+                {matchupHref ? (
+                  <Link
+                    href={matchupHref}
+                    title={t.matchupPage.open}
+                    className="min-w-0 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase hover:text-zinc-900 hover:underline"
+                  >
+                    {opponent.label}
+                  </Link>
+                ) : (
+                  <span
+                    title={opponent.label}
+                    className="min-w-0 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase"
+                  >
+                    {opponent.label}
+                  </span>
+                )}
                 {isVariant && (
                   <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-600 uppercase">
                     {t.opponentCard.variant}
-                  </span>
-                )}
-                {addedByLabel && (
-                  <span className="shrink-0 truncate text-[11px] text-zinc-500">
-                    {addedByLabel}
                   </span>
                 )}
                 {opponent.pokepasteUrl && (
@@ -279,6 +405,16 @@ export function OpponentCard({
                   >
                     <Icon name={IconName.OpenInNew} size={16} />
                   </a>
+                )}
+                {matchupHref && (
+                  <Link
+                    href={matchupHref}
+                    aria-label={t.matchupPage.open}
+                    title={t.matchupPage.open}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                  >
+                    <Icon name={IconName.Description} size={16} />
+                  </Link>
                 )}
                 {calcHref && (
                   <a
@@ -316,10 +452,20 @@ export function OpponentCard({
               <GamePlanNotes
                 notes={plan.notes}
                 activeTeamId={activeTeamId}
-                onUpdatePlan={onUpdatePlan}
+                onNotesChange={(html) => onUpdatePlan((p) => ({ ...p, notes: html }))}
                 copiedFromLabel={copiedFromLabel}
+                // Phones hide the "vs …" text, so the badge shows whenever there are picks to tap for.
+                planLabel={planALabel ?? (canPlan && picksSummary(0) ? planAName : undefined)}
+                theirPicks={canPlan ? picksSummary(0) : undefined}
+                planToggle={plansToggle}
               />
             </div>
+            {extraPlanRows.map((row) => (
+              <div key={row.key}>
+                <div className="border-t border-zinc-300 p-4">{row.pickers}</div>
+                <div className="border-t border-zinc-300 p-4">{row.notes}</div>
+              </div>
+            ))}
           </CollapsibleContent>
         </Collapsible>
       </div>
@@ -328,23 +474,28 @@ export function OpponentCard({
       <div className="hidden md:grid md:grid-cols-[auto_auto_1fr] lg:grid-cols-[auto_auto_1fr]">
         <div className={COLUMN_CLASSES}>
           <div className="p-4">
-            <div className="mb-1 flex h-7 items-center gap-1">
+            <div className="mb-1 flex h-7 w-0 min-w-full items-center gap-1">
               <div className="flex min-w-0 flex-1 items-center gap-1">
                 {dragHandle}
-                <span
-                  title={opponent.label}
-                  className="max-w-48 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase md:max-w-36 lg:max-w-xs"
-                >
-                  {opponent.label}
-                </span>
+                {matchupHref ? (
+                  <Link
+                    href={matchupHref}
+                    title={t.matchupPage.open}
+                    className="min-w-0 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase hover:text-zinc-900 hover:underline"
+                  >
+                    {opponent.label}
+                  </Link>
+                ) : (
+                  <span
+                    title={opponent.label}
+                    className="min-w-0 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase"
+                  >
+                    {opponent.label}
+                  </span>
+                )}
                 {isVariant && (
                   <span className="shrink-0 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-600 uppercase">
                     {t.opponentCard.variant}
-                  </span>
-                )}
-                {addedByLabel && (
-                  <span className="shrink-0 truncate text-[11px] text-zinc-500">
-                    {addedByLabel}
                   </span>
                 )}
                 {opponent.pokepasteUrl && (
@@ -358,6 +509,16 @@ export function OpponentCard({
                   >
                     <Icon name={IconName.OpenInNew} size={16} />
                   </a>
+                )}
+                {matchupHref && (
+                  <Link
+                    href={matchupHref}
+                    aria-label={t.matchupPage.open}
+                    title={t.matchupPage.open}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
+                  >
+                    <Icon name={IconName.Description} size={16} />
+                  </Link>
                 )}
                 {calcHref && (
                   <a
@@ -391,7 +552,7 @@ export function OpponentCard({
             <GamePlanNotes
               notes={plan.notes}
               activeTeamId={activeTeamId}
-              onUpdatePlan={onUpdatePlan}
+              onNotesChange={(html) => onUpdatePlan((p) => ({ ...p, notes: html }))}
               titleAccessory={
                 <div className="flex min-w-0 items-center gap-2">
                   {tagsContent}
@@ -399,9 +560,24 @@ export function OpponentCard({
                 </div>
               }
               copiedFromLabel={copiedFromLabel}
+              planLabel={planALabel}
+              theirPicks={canPlan ? picksSummary(0) : undefined}
+              planToggle={plansToggle}
             />
           </div>
         </div>
+        {/* Plans B, C…: the first column stays empty — same opponent. */}
+        {extraPlanRows.map((row) => (
+          <Fragment key={row.key}>
+            <div className={cn(COLUMN_CLASSES, "border-t border-zinc-300")} />
+            <div className={cn(COLUMN_CLASSES, "border-t border-zinc-300")}>
+              <div className="p-4">{row.pickers}</div>
+            </div>
+            <div className={cn(COLUMN_CLASSES, "border-t border-zinc-300")}>
+              <div className="p-4">{row.notes}</div>
+            </div>
+          </Fragment>
+        ))}
       </div>
     </li>
   );

@@ -16,10 +16,55 @@ tagged `vX.Y.Z`. The minor or major number only changes when the project owner s
 starting with the experience on a phone.
 
 ### Added
+
+- Flexible last pick: your Back 2 can be "A or B" — turn on "A or B" in its picker and choose
+  two; the tile splits corner to corner with one in each half (on the Matchup Planner, the matchup page and the Team Report's
+  combinations and Matchups tab). An empty Back 2 with the other three picked shows "+1": any of
+  the rest fits. On the matchup page, hovering it shows both Pokémon's calcs.
+- "Add from another list…" in the Matchup Planner's ⋮ menu: copy several teams at once into the
+  open list, from your opponents or another prep group of the same regulation (and back), with
+  your picks and notes. Teams already in the list are marked "Already here"; a variant copied with
+  its main stays its variant.
+- Matchups can have several plans (Plan A, B, C…) on the matchup page. Each plan has what you
+  expect them to bring (their lead and back, picked from their roster), your lead and back against
+  it, and a game plan in rich text (bold, italic, bullets). Add plans, reorder them with the
+  arrows (the first is Plan A) or remove them. On the Matchup Planner, a "+N plans" pill (beside
+  the "Plan A" badge on the game plan) opens Plans B, C… as more rows of the card — your lead/back and game plan in the
+  same columns as Plan A, editable there too; the opponent's expected picks are set on the matchup
+  page and show on the card after each plan's badge ("vs Garchomp - Farigiraf & Charizard -
+  Venusaur": lead & back); on phones, tap the badge to see them. "Add plan" is in the card's ⋮ menu. The card's game plan is rich text as well (the toolbar
+  shows while you type; older notes carry over).
+- The matchup page is back: open an opponent's name (or the new page icon) on a Matchup Planner card
+  to see your plan, what they do, their team with notes per Pokémon, and your calcs against them.
+  It now works for prep-group opponents too (your private plan for them), returns to the planner
+  when opened from it, and is translated. On wide screens it splits in two: your plans on the left,
+  their team on the right in three tabs — Preview (a compact team sheet: a 2×3 grid with
+  item, ability, nature and moves, and a note per Pokémon under its moves), Notes (what they
+  do) and Calcs (your team's calcs against them). Each plan's game plan sits beside its picks
+  (below them on phones), and the tags sit at the right of the title. Hovering a picked Pokémon
+  shows its calcs against the other side's picks (or their whole team while there are none),
+  offensive and defensive side by side, grouped by the other Pokémon in pick order with the highest
+  damage first, matching each Pokémon's form (Mega Garchomp Z's calcs only when its Mega is on, and the other way around), plus the Mega toggle (desktop; on phones the Calcs tab has them). The Team Report's Matchups tab is back as well, and now lists every opponent you've prepped for
+  the team (picks, a game plan or notes), from your own list and your prep groups. The same team
+  in several lists is one row. Rows look like Matchup Planner
+  cards (their roster, your lead/back, the start of the game plan); on phones a compact card
+  instead: their roster, how many plans and calcs, a marker when there are scouting notes, and the
+  tags. A search box filters it by name, Pokémon, item or tag (matching Pokémon
+  are highlighted, as on the planner). The tab is translated.
 - Footer: "Enjoying this project?" with a Buy me a coffee button (buymeacoffee.com/thomasnrggo, opens
   in a new tab), on the same line as the credit (wrapping under it on phones).
 
 ### Changed
+
+- Team Report, Strategy tab: common combinations look like the matchup page's plans — a card each
+  ("Combination 1", 2…) with your leads and back beside rich-text notes (bold, italic, lists;
+  older notes carry over), arrows to reorder and an "Add combination" button under the list. The team's notes beside them
+  are now "Weaknesses & watch-outs", titled like the combinations instead of sitting in a card.
+- Saved calcs (the Team Report's Calcs tab, the matchup page and its hover cards) read like the
+  Damage Calculator's result: the whole Showdown line, with the % range and KO chance in bold.
+- Phones: pages use narrower side margins (12px, like the Damage Calculator) for more room; from
+  tablet width up nothing changes.
+- Prep-group opponents on the Matchup Planner no longer show "added by …" after their name.
 - Sliders (Stat Points and current HP, in the calculator and the Team Builder) are green: a light
   track filled in green up to the value, with a round green knob, the same in every browser and
   in both themes.
@@ -96,6 +141,9 @@ starting with the experience on a phone.
   browser's native dropdown (on phones, the same full-screen sheet).
 
 ### Fixed
+
+- Matchup Planner: a long opponent name (or the extra buttons beside it) no longer widens its card's
+  first column out of line with the others; the name is cut off with "…" (hover for the full name).
 - Damage Calculator field effects, checked against the games:
   - a critical hit now ignores Reflect, Light Screen and Aurora Veil (it used to be reduced by them);
   - Rising Voltage doubles against a grounded target in Electric Terrain; Misty Explosion (grounded
@@ -134,28 +182,33 @@ tiers, tournaments, groups and the team page's saved calcs.
 ### 2026-10-23
 
 #### Added
+
 - Damage Calculator: an "Unburden active" toggle next to Status for a Pokémon with Unburden; on, it
   doubles the Speed shown in the panel (for once its item is gone).
 
 #### Fixed
+
 - Female Indeedee is available in Regulation M-C (the Damage Calculator's Pokémon search and
   anywhere else the regulation's Pokémon are listed); only the male form was there.
 
 ### 2026-10-22
 
 #### Added
+
 - A "Clear all calcs" button on the team page's Calcs tab removes every saved calc from the team,
   after a confirmation.
 
 ### 2026-10-21
 
 #### Added
+
 - A search box on the team page's Calcs tab: type a Pokémon (e.g. "Gholdengo") to see, under each
   of your Pokémon, only its calcs against that one. Works with the Pokémon names in either language.
 - Damage Calculator: saving a calc that's already saved on that Pokémon does nothing; the save
   button shows a check ("Already saved on your team") instead.
 
 #### Fixed
+
 - Damage Calculator: against Focus Sash or Sturdy the damage rolls show the move's real damage
   (they were all capped at the target's HP minus 1); the verdict accounts for the save and says so
   ("guaranteed 2HKO (Focus Sash)").
@@ -165,6 +218,7 @@ tiers, tournaments, groups and the team page's saved calcs.
 ### 2026-10-19
 
 #### Changed
+
 - The Damage Calculator's calc line names what else changed the damage, like Showdown's: an ability
   that mattered ("Tough Claws Mega Metagross", "… Multiscale Dragonite"), "burned" when a burn
   halved the hit, and "Fairy Aura boosted" before a Fairy move.
@@ -172,6 +226,7 @@ tiers, tournaments, groups and the team page's saved calcs.
   lists have room.
 
 #### Fixed
+
 - The Damage Calculator's calc line now says "in Electric Terrain", "in Sun" (or "in Sun and
   Electric Terrain") when the field's weather or terrain changed the damage, like Showdown's. A
   Mega-evolved Pokémon is written as its form ("Mega Staraptor") instead of "Staraptite Staraptor".
@@ -179,6 +234,7 @@ tiers, tournaments, groups and the team page's saved calcs.
 ### 2026-10-15
 
 #### Added
+
 - **Save calcs to your team** from the Damage Calculator: one click on the button next to "Copy"
   saves the calc line (plain text, Showdown format) on your active team, under the left-side
   Pokémon — offensive when it's that Pokémon's move, defensive when it's the right side's.
@@ -206,6 +262,7 @@ tiers, tournaments, groups and the team page's saved calcs.
   Calculator" in an opponent's menu back.
 
 #### Changed
+
 - **The Damage Calculator is open to everyone**: its feature flag is gone, so its nav link always
   shows.
 - "Open in Damage Calculator" is back as a calculator icon next to each opponent's name in the
@@ -258,6 +315,7 @@ tiers, tournaments, groups and the team page's saved calcs.
   nature. Stat Points are now capped at 66 in total, as in the game.
 
 #### Fixed
+
 - The Damage Calculator's calc line now writes its % range the way Showdown does ("25.8 - 31%").
 - Damage Calculator: Protect no longer blocks contact moves from Unseen Fist (Mega Golurk) or
   Piercing Drill (Mega Excadrill); both hit through it at 1/4 damage, as in Pokémon Champions.
@@ -273,6 +331,7 @@ tiers, tournaments, groups and the team page's saved calcs.
 ### 2026-10-14
 
 #### Added
+
 - **Prep groups (collaborative Matchup Planner):** a shared opponent list for an event. Members add,
   edit, tag, group and order opponents together, live; each player's picks and notes stay private.
   Invite by link, several groups (one per event), archive, leave, owner removes members. Only the
@@ -282,6 +341,7 @@ tiers, tournaments, groups and the team page's saved calcs.
 ### 2026-10-13
 
 #### Added
+
 - **Localization: English and Spanish.** A language menu in the header with two separate settings:
   the app's own text (English / Español) and the official Pokémon names (English, Spain Spanish or
   Latin-American Spanish) for Pokémon, forms, moves, items, abilities, types and natures. Saved
@@ -290,6 +350,7 @@ tiers, tournaments, groups and the team page's saved calcs.
 - `npm run generate:names` to regenerate the localized name data from PokeAPI.
 
 #### Changed
+
 - **Pokémon picker** (Matchup Planner lead/back, Strategy combinations, tournament game picks): a
   Pokémon can only be in one slot of a group. Ones already used show dimmed with a tag ("L1",
   "B2", "#3"); picking one swaps it with the current slot. Older data with a repeat gets a warning
@@ -305,6 +366,7 @@ tiers, tournaments, groups and the team page's saved calcs.
   matching their height.
 
 #### Fixed
+
 - The Pokémon hover/click card and the tournament round's opponent cards show the Mega form's
   ability (Mega Raichu X: Electric Surge), not the pasted base ability.
 - Only one Pokémon card is open at a time: hovering a lead/back pick closes an opponent card opened
@@ -318,6 +380,7 @@ tiers, tournaments, groups and the team page's saved calcs.
 ### 2026-10-12
 
 #### Added
+
 - **Opponent organization:** manual ordering (drag or menu), tags with suggestions,
   duplicate-team detection on import, and variants (alternate versions of a team grouped under a
   main team, sharing its plan).
@@ -332,85 +395,103 @@ tiers, tournaments, groups and the team page's saved calcs.
   on hold.
 
 #### Changed
+
 - My Teams rows: the menu only has Archive and Remove. Name and paste are edited on the team's page.
 
 #### Fixed
+
 - Z Mega abilities: Mega Garchomp Z now has Levitate, Mega Absol Z Sharpness, Mega Lucario Z Aura
   Guard.
 
 ### 2026-10-11
 
 #### Fixed
+
 - Opponent team sort order.
 
 ### 2026-09-15
 
 #### Added
+
 - More admin functions and feature flags per section.
 
 #### Changed
+
 - Theme update.
 
 ### 2026-09-08
 
 #### Added
+
 - **My Teams** and **Tournaments** sections.
 - **Speed Tiers** page, with numeric speed search and a grouped view.
 
 ### 2026-09-01
 
 #### Fixed
+
 - Matchup Planner styles and layout on mobile and tablet.
 
 ### 2026-08-23
 
 #### Added
+
 - Support for multiple regulations.
 - My Team section.
 
 ### 2026-08-22
 
 #### Added
+
 - Firebase: Google sign-in, with teams and opponents synced across devices through Firestore.
 
 #### Changed
+
 - Damage calculator hidden from the nav while its known issues are worked out.
 
 ### 2026-08-20 – 2026-08-21
 
 #### Added
+
 - Damage calculator, reworked to match Game Freak's damage formula.
 
 #### Fixed
+
 - Importing into the damage calculator, and its layout.
 
 ### 2026-08-12
 
 #### Added
+
 - Opponent search.
 - Onboarding and missing sprites.
 
 #### Fixed
+
 - Team selection in the mobile header, the lead/back picker interaction, and sprite sizes.
 
 ### 2026-08-11
 
 #### Changed
+
 - Calculation updates, hover card design, and stats calculation.
 
 ### 2026-08-10
 
 #### Changed
+
 - Design and experience updates.
 - Smaller build: removed the Material Symbols library and serve Pokémon sprites unoptimized.
 
 ### 2026-08-09
 
 #### Added
+
 - The app's own Pokémon sprites, team display and selection in the header, and stats calculation.
 
 ### 2026-08-08
 
 #### Added
+
 - **First version: the Matchup Planner.** Paste your team, paste opponents, plan leads and backs.
 - Deployment setup.

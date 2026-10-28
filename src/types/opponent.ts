@@ -3,17 +3,47 @@ import type { Team } from "./team";
 /** An index into a My Team's pokemon, or null for "not picked yet" — each slot is independent. */
 export type PokemonSlot = number | null;
 
+/** Four picks from one roster: who leads and who's in the back, with each slot's Mega toggle. */
+export interface PlanPicks {
+  leadPair: [PokemonSlot, PokemonSlot];
+  backPair: [PokemonSlot, PokemonSlot];
+  leadMega: [boolean, boolean];
+  backMega: [boolean, boolean];
+  /** Back 2's alternative — "A or B": the last pick depends on the game. Only your own picks have one. */
+  backAlt?: PokemonSlot;
+}
+
+/**
+ * One way to play a matchup: what you expect them to bring (`theirs`, slots
+ * into the opponent's roster) and what you bring against it (slots into your
+ * team), with notes (rich text, HTML). Plan A lives in MatchupPlan's own
+ * fields; Plans B, C… are `morePlans` — see src/lib/matchupPlans.ts.
+ */
+export interface GamePlan extends PlanPicks {
+  id: string;
+  notes: string;
+  theirs?: PlanPicks;
+}
+
 export interface MatchupPlan {
   leadPair: [PokemonSlot, PokemonSlot];
   backPair: [PokemonSlot, PokemonSlot];
   /** Whether each Lead/Back slot's Mega-capable pick should render in its Mega form — defaults to true via EMPTY_PLAN, so plans saved before this field existed still show Mega by default (matching the old, always-Mega behavior). */
   leadMega: [boolean, boolean];
   backMega: [boolean, boolean];
+  /** Back 2's alternative — "A or B": the last pick depends on the game. Only your own picks have one. */
+  backAlt?: PokemonSlot;
   notes: string;
   /** Matchup page notes per opponent Pokémon, keyed by index into the opponent's roster (see docs/team-report.md). */
   pokemonNotes?: Record<number, string>;
   /** Matchup page "What they do" — rich text: their likely leads, common plays. */
   scoutingNotes?: string;
+  /** Plan A's id (stable across reordering; set once a matchup has more than one plan). */
+  planId?: string;
+  /** Plan A's expected opponent picks (slots into the opponent's roster). */
+  theirs?: PlanPicks;
+  /** Plans B, C…, in order. Plan A is this object's own fields — see src/lib/matchupPlans.ts. */
+  morePlans?: GamePlan[];
 }
 
 export interface Opponent {

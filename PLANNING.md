@@ -431,6 +431,8 @@ interface MatchupPlan {
   backPair: [PokemonSlot, PokemonSlot];
   leadMega: [boolean, boolean]; // per-slot Mega toggle, persisted; defaults to true via EMPTY_PLAN
   backMega: [boolean, boolean];
+  backAlt?: PokemonSlot;  // Back 2's alternative ("A or B"); your own picks and TeamCombination only —
+                          // kept valid by normalizeBackAlt/withBackAlt in src/lib/slotPicks.ts
   notes: string;
   pokemonNotes?: Record<number, string>; // matchup page: per opponent Pokémon — see docs/team-report.md
   scoutingNotes?: string;                // matchup page "What they do" (rich text)

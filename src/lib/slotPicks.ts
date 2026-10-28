@@ -126,6 +126,43 @@ export interface LeadBackPicks {
   backPair: [PokemonSlot, PokemonSlot];
   leadMega: [boolean, boolean];
   backMega: [boolean, boolean];
+  /** Back 2's alternative ("A or B") — see withBackAlt. */
+  backAlt?: PokemonSlot;
+}
+
+/** Back 2's slot in the 4-slot group. */
+export const BACK_2 = 3;
+
+/**
+ * Keeps Back 2's alternative valid after the picks change: it goes when
+ * Back 2 is empty (it's promoted to Back 2 instead) or when it's now picked
+ * in a slot of its own.
+ */
+export function normalizeBackAlt<T extends LeadBackPicks>(plan: T): T {
+  const alt = plan.backAlt ?? null;
+  if (alt === null) return plan;
+  const picks = [...plan.leadPair, ...plan.backPair];
+  if (picks.includes(alt)) return { ...plan, backAlt: null };
+  if (plan.backPair[1] === null) {
+    return { ...plan, backPair: [plan.backPair[0], alt], backAlt: null };
+  }
+  return plan;
+}
+
+/**
+ * Sets Back 2 and its alternative together (the flexible slot's picker
+ * edits both at once). The alternative is dropped when it's missing, the
+ * same as Back 2, or picked in another slot; an empty Back 2 takes it.
+ */
+export function withBackAlt<T extends LeadBackPicks>(
+  plan: T,
+  back2: PokemonSlot,
+  alt: PokemonSlot,
+  roster: ParsedPokemon[],
+): T {
+  const group = pickIntoSlot(leadBackToGroup(plan), BACK_2, back2, roster);
+  const next = groupToLeadBack(plan, group);
+  return normalizeBackAlt({ ...next, backAlt: alt === back2 ? null : alt });
 }
 
 export function leadBackToGroup(plan: LeadBackPicks): SlotPicks {

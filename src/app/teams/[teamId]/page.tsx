@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useTournaments } from "@/hooks/useTournaments";
 import { useOpponents } from "@/hooks/useOpponents";
+import { useGroups } from "@/hooks/useGroups";
+import { useAllGroupOpponents } from "@/hooks/useAllGroupOpponents";
 import { useAuth } from "@/hooks/useAuth";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
@@ -66,8 +68,21 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     unarchiveTeam,
   } = useMyTeams();
   const { tournaments } = useTournaments();
-  const { opponents } = useOpponents();
+  const personal = useOpponents();
+  // The Matchups tab lists your prep from your own opponents and every prep group's.
+  const groupsApi = useGroups();
+  const groupOpponents = useAllGroupOpponents(groupsApi.groups);
+  const matchupLists = [
+    { source: { kind: "mine" as const }, opponents: personal.opponents },
+    ...groupOpponents.lists.map(({ group, opponents }) => ({
+      source: { kind: "group" as const, id: group.id, name: group.name },
+      opponents,
+    })),
+  ];
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
+  // Until sign-in resolves, whether there are groups to read isn't known yet.
+  const isMatchupsLoading =
+    isAuthLoading || personal.isLoading || groupsApi.isLoading || groupOpponents.isLoading;
 
   const team = teams.find((t) => t.id === teamId) ?? null;
   // No regulation selector on this page (it's one specific team's own
@@ -120,6 +135,17 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     }));
   }
 
+  function moveCombination(combinationId: string, direction: -1 | 1) {
+    updateTeam(teamId, (t) => {
+      const combinations = [...(t.combinations ?? [])];
+      const from = combinations.findIndex((c) => c.id === combinationId);
+      const to = from + direction;
+      if (from === -1 || to < 0 || to >= combinations.length) return t;
+      [combinations[from], combinations[to]] = [combinations[to], combinations[from]];
+      return { ...t, combinations };
+    });
+  }
+
   function removeCombination(combinationId: string) {
     updateTeam(teamId, (t) => ({
       ...t,
@@ -156,7 +182,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           </Link>
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-6 p-6">
+        <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
           {/* Back to My Teams left, tabs right (they wrap below on narrow
               screens); the team's name is the title of its post below. */}
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -278,40 +304,44 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           )}
 
           {/* Two columns on desktop: the lead/back combinations, and one
-              general notes area. (Team.weaknesses is no longer shown — its
+              "Weaknesses & watch-outs" area. (Team.weaknesses is no longer shown — its
               text stays saved.) */}
           {activeTab === "strategy" && (
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-              <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-zinc-900">{t.teamPage.combinations}</h2>
-                  <button
-                    type="button"
-                    onClick={addCombination}
-                    aria-label={t.teamPage.addCombination}
-                    title={t.teamPage.addCombination}
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700"
-                  >
-                    <Icon name={IconName.Add} size={18} />
-                  </button>
-                </div>
+              {/* Laid out like the matchup page's plans: a card per combination, arrows to reorder. */}
+              <section className="flex flex-col gap-3">
+                <h2 className="flex h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                  {t.teamPage.combinations}
+                </h2>
                 {(team.combinations ?? []).length === 0 ? (
                   <p className="text-sm text-zinc-500">{t.teamPage.noCombinations}</p>
                 ) : (
-                  (team.combinations ?? []).map((combination) => (
+                  (team.combinations ?? []).map((combination, index, all) => (
                     <TeamCombinationCard
                       key={combination.id}
                       combination={combination}
+                      index={index}
+                      total={all.length}
                       teamPokemon={team.pokemon}
                       onUpdate={(updater) => updateCombination(combination.id, updater)}
+                      onMove={(direction) => moveCombination(combination.id, direction)}
                       onRemove={() => removeCombination(combination.id)}
                     />
                   ))
                 )}
+                <Button
+                  variant="outline"
+                  onClick={addCombination}
+                  className="flex items-center gap-1.5 self-start"
+                >
+                  <Icon name={IconName.Add} size={16} />
+                  {t.teamPage.addCombination}
+                </Button>
               </section>
 
-              <section className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 shadow-sm">
-                <h2 className="flex h-8 items-center text-sm font-semibold text-zinc-900">
+              {/* Titled like the combinations beside it — no card around the editor. */}
+              <section className="flex flex-col gap-3">
+                <h2 className="flex h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase">
                   {t.teamPage.notes}
                 </h2>
                 <RichTextEditor
@@ -399,7 +429,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             </div>
           )}
 
-          {activeTab === "matchups" && <TeamMatchupsList team={team} opponents={opponents} />}
+          {activeTab === "matchups" && (
+            <TeamMatchupsList team={team} lists={matchupLists} isLoading={isMatchupsLoading} />
+          )}
 
           {activeTab === "stats" && (
             <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">

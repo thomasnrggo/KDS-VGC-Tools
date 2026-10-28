@@ -41,8 +41,7 @@ export const es: Messages = {
     regulationMismatch: (name) =>
       `${name} no está marcado para la regulación seleccionada — elige otro equipo o añádelo a esta regulación para planificar leads/backs`,
     confirmRemoveTitle: (name) => `¿Eliminar ${name}?`,
-    confirmRemoveBody:
-      "No se puede deshacer — tendrás que volver a pegar el equipo para añadirlo.",
+    confirmRemoveBody: "No se puede deshacer — tendrás que volver a pegar el equipo para añadirlo.",
     removeTeam: "Eliminar equipo",
   },
   theme: {
@@ -77,7 +76,8 @@ export const es: Messages = {
     opponentNameRequired: "Ponle un nombre a este rival.",
     opponentPasteRequired: "Pega la exportación de Showdown del rival.",
     notPokepasteLink: "Eso no parece un enlace de Poképaste.",
-    pokepasteUnreachable: "No se pudo conectar con Poképaste — revisa tu conexión e inténtalo de nuevo.",
+    pokepasteUnreachable:
+      "No se pudo conectar con Poképaste — revisa tu conexión e inténtalo de nuevo.",
     pokepasteNotFound: "Ese enlace de Poképaste no existe — puede que lo hayan borrado.",
     pokepasteFailed: "No se pudo cargar ese Poképaste — inténtalo de nuevo.",
     pokepasteEmpty: "Ese Poképaste no contiene la exportación de un equipo.",
@@ -87,7 +87,8 @@ export const es: Messages = {
   teamPaste: {
     namePlaceholder: "Nombre del equipo (p. ej. Equipo Regionales)",
     nameLabel: "Nombre del equipo",
-    pastePlaceholder: "Pega aquí la exportación de tu equipo de Pokémon Showdown… (o un enlace de Poképaste)",
+    pastePlaceholder:
+      "Pega aquí la exportación de tu equipo de Pokémon Showdown… (o un enlace de Poképaste)",
     pasteLabel: "Exportación de Pokémon Showdown o enlace de Poképaste",
     saveTeam: "Guardar equipo",
   },
@@ -173,9 +174,12 @@ export const es: Messages = {
     searchCalcs: "Buscar cálculos por el otro Pokémon",
     searchCalcsPlaceholder: "Busca un Pokémon (p. ej. Gholdengo)",
     clearCalcs: "Borrar todos los cálculos",
-    confirmClearCalcsTitle: (count) => `¿Borrar ${count === 1 ? "el cálculo guardado" : `los ${count} cálculos guardados`}?`,
-    confirmClearCalcsBody: "Todos los Pokémon de este equipo pierden sus cálculos guardados. No se puede deshacer.",
+    confirmClearCalcsTitle: (count) =>
+      `¿Borrar ${count === 1 ? "el cálculo guardado" : `los ${count} cálculos guardados`}?`,
+    confirmClearCalcsBody:
+      "Todos los Pokémon de este equipo pierden sus cálculos guardados. No se puede deshacer.",
     noCalcsYet: "Ninguno guardado aún; guarda uno desde la calculadora de daño.",
+    otherPokemon: "Otros",
     removeCalc: "Quitar cálculo",
     ability: "Habilidad:",
     mega: "Mega",
@@ -209,9 +213,10 @@ export const es: Messages = {
     addCombination: "Añadir combinación",
     noCombinations:
       "Aún no hay combinaciones — añade una para guardar un lead/back que te guste usar con este equipo.",
-    notes: "Notas",
-    notesPlaceholder: "¿Cómo se juega este equipo? Plan de juego, amenazas, contra qué sufre…",
-    notesLabel: "Notas del equipo",
+    notes: "Debilidades y precauciones",
+    notesPlaceholder:
+      "¿Contra qué sufre este equipo? Amenazas, malos enfrentamientos, a qué prestar atención…",
+    notesLabel: "Debilidades y precauciones del equipo",
     noGames: {
       before:
         "Aún no hay partidas registradas con este equipo — el uso de cada Pokémon y las victorias/derrotas se acumulan aquí al registrar partidas de ",
@@ -235,7 +240,8 @@ export const es: Messages = {
     shareableHint: "Cualquiera con el enlace — no hace falta cuenta.",
     whatItShows: "Qué muestra",
     openSheet: "Hoja de equipo abierta",
-    openSheetHint: "Pokémon, objetos, habilidades y movimientos. Sin puntos de estadística, naturaleza ni estadísticas.",
+    openSheetHint:
+      "Pokémon, objetos, habilidades y movimientos. Sin puntos de estadística, naturaleza ni estadísticas.",
     closedSheet: "Hoja de equipo cerrada",
     closedSheetHint:
       "Todo lo del informe, incluidos los puntos de estadística, la naturaleza y el enlace de Poképaste.",
@@ -249,10 +255,12 @@ export const es: Messages = {
     makingPrivate: "Haciéndolo privado…",
     publishFailed:
       "No se pudo publicar el informe compartido. Revisa tu conexión — o, si sigue pasando, que estén desplegadas las últimas firestore.rules.",
-    unpublishFailed: "No se pudo quitar la copia compartida. Revisa tu conexión e inténtalo de nuevo.",
+    unpublishFailed:
+      "No se pudo quitar la copia compartida. Revisa tu conexión e inténtalo de nuevo.",
     done: "Listo",
   },
   combination: {
+    title: (n) => `Combinación ${n}`,
     leads: "Leads",
     back: "Back",
     lead: (n) => `Lead ${n}`,
@@ -271,6 +279,12 @@ export const es: Messages = {
     addTeamFirst: "Primero añade tu propio equipo.",
     usedIn: (species, slot) => `${species} — en ${slot}. Elígelo para intercambiarlos.`,
     duplicate: "También está elegido en otro hueco — elige otro Pokémon.",
+    pickedEither: (label, first, second) =>
+      `${label}: ${first} o ${second}. Haz clic para cambiarlo.`,
+    any: (label) => `${label}: cualquiera del resto. Haz clic para elegir.`,
+    either: "A o B",
+    eitherHint: "Elige dos: cuál sale depende de la partida.",
+    inSlot: (species, slot) => `${species} — en ${slot}.`,
   },
   richText: {
     bold: "Negrita",
@@ -296,7 +310,8 @@ export const es: Messages = {
   sharedPage: {
     notShared: "Este equipo no está compartido",
     loadFailed: "No se pudo cargar este equipo",
-    notSharedBody: "Puede que el enlace sea incorrecto o que su dueño haya hecho privado el informe.",
+    notSharedBody:
+      "Puede que el enlace sea incorrecto o que su dueño haya hecho privado el informe.",
     loadFailedBody: "Revisa tu conexión e inténtalo de nuevo.",
     goHome: "Ir a VGC Box",
   },
@@ -315,7 +330,8 @@ export const es: Messages = {
     massImport: "Importación masiva",
     clearAll: "Borrar todos los datos",
     dragToReorder: "Arrastra para reordenar",
-    importFailed: "No se pudo importar ningún equipo de ese paste — revisa el formato e inténtalo de nuevo.",
+    importFailed:
+      "No se pudo importar ningún equipo de ese paste — revisa el formato e inténtalo de nuevo.",
     imported: (count, variants) =>
       `${count === 1 ? "Se importó 1 equipo" : `Se importaron ${count} equipos`}${
         variants > 0 ? ` (${variants} como variante${variants === 1 ? "" : "s"})` : ""
@@ -349,8 +365,10 @@ export const es: Messages = {
     emptyTitle: "Prepárate contra tus rivales",
     emptyBody:
       "Pega la exportación de Pokémon Showdown de un equipo contra el que quieras prepararte; cargaremos su equipo, objetos y movimientos automáticamente para que planifiques tus leads y backs.",
-    bulkImportPrompt: "¿Te preparas para un torneo grande? Importa una carpeta entera de equipos de una vez →",
-    noMatches: (query) => `Ningún rival tiene un Pokémon, objeto o etiqueta que coincida con “${query}”.`,
+    bulkImportPrompt:
+      "¿Te preparas para un torneo grande? Importa una carpeta entera de equipos de una vez →",
+    noMatches: (query) =>
+      `Ningún rival tiene un Pokémon, objeto o etiqueta que coincida con “${query}”.`,
     makeVariantOf: "Hacer variante de…",
     setAsMain: "Hacer principal",
     removeFromGroup: "Quitar del grupo",
@@ -384,11 +402,63 @@ export const es: Messages = {
     collapse: "Contraer",
     expand: "Expandir",
   },
+  teamMatchups: {
+    noMatches: (query) => `Ningún enfrentamiento coincide con “${query}”.`,
+    searchPlaceholder: 'Busca por nombre, Pokémon, objeto o etiqueta… (p. ej. "lluvia pañuelo")',
+    searchLabel: "Buscar enfrentamientos por nombre, Pokémon, objeto o etiqueta",
+    planCount: (count) => `${count} plan${count === 1 ? "" : "es"}`,
+    hasNotes: "Tiene notas de scouting (qué hacen o notas sobre sus Pokémon)",
+    mine: "Mis rivales",
+    noGamePlan: "Aún no hay plan de juego.",
+    calcCount: (count) => `${count} cálculo${count === 1 ? "" : "s"}`,
+    emptyBefore: "Aún no hay enfrentamientos preparados. Elige este equipo en el ",
+    emptyAfter:
+      " y planea contra un rival (lead/back, un plan de juego o notas), de tu lista o de un grupo de preparación. Aparecerá aquí.",
+  },
+  matchupPage: {
+    morePlans: (count) => `+${count} plan${count === 1 ? "" : "es"}`,
+    hidePlans: "Ocultar planes",
+    plans: "Planes",
+    plan: (letter) => `Plan ${letter}`,
+    theirLead: "Su lead",
+    theirBack: "Su back",
+    yourLead: "Tu lead",
+    yourBack: "Tu back",
+    planNotesPlaceholder: "¿Cómo juegas este? Selecciona texto para ponerlo en negrita.",
+    addPlan: "Añadir plan",
+    moveUp: (plan) => `Subir ${plan}`,
+    moveDown: (plan) => `Bajar ${plan}`,
+    removePlan: (plan) => `Quitar ${plan}`,
+    clearPlan: (plan) => `Vaciar ${plan}`,
+    vs: "vs",
+    backToReport: "Volver al informe del equipo",
+    backToPlanner: "Volver al planificador",
+    yourPlan: "Tu plan",
+    whatTheyDo: "Qué hacen",
+    whatTheyDoPlaceholder: "Sus leads más probables, jugadas comunes, qué vigilar…",
+    theirTeam: "Su equipo",
+    preview: "Vista previa",
+    notesTab: "Notas",
+    calcsTab: "Cálculos",
+    pickCalcsTitle: (name) => `Cálculos de ${name}`,
+    pickCalcsOr: (name) => `O ${name}`,
+    pickCalcsNone: "Todavía no hay cálculos entre estas elecciones.",
+    pickCalcsWholeTeam: "El otro lado aún no tiene elecciones, así que incluye todo el equipo.",
+    manageCalcs: "Gestionar cálculos →",
+    noCalcs: (team) => `Ningún cálculo de ${team} involucra a los Pokémon de este equipo todavía.`,
+    variantOf: (label) => `Variante de ${label}`,
+    teamNotFound: "No se encontró el equipo",
+    opponentNotFound: "No se encontró el rival",
+    removedElsewhere: "Puede que se haya eliminado en otro dispositivo.",
+    backToMyTeams: "← Volver a Mis equipos",
+    open: "Abrir la página del enfrentamiento",
+  },
   opponentForm: {
     namePlaceholder: 'Nombre del rival (p. ej. "Toxapex arena - Wolfey")',
     nameLabel: "Nombre del rival",
     pokepastePlaceholder: "Enlace de Poképaste (opcional)",
-    pastePlaceholder: "Pega aquí la exportación de su equipo de Pokémon Showdown… (o un enlace de Poképaste)",
+    pastePlaceholder:
+      "Pega aquí la exportación de su equipo de Pokémon Showdown… (o un enlace de Poképaste)",
     pasteLabel: "Exportación de Pokémon Showdown del rival o enlace de Poképaste",
   },
   tags: {
@@ -403,7 +473,8 @@ export const es: Messages = {
     suggestedCount: (count) => `· ${count} sugerida${count === 1 ? "" : "s"}`,
   },
   bulkImport: {
-    introBefore: "Pega la exportación de una carpeta de equipos de Showdown — varios equipos, cada uno empezando con una línea ",
+    introBefore:
+      "Pega la exportación de una carpeta de equipos de Showdown — varios equipos, cada uno empezando con una línea ",
     introAfter: " — para añadirlos todos como rivales de una vez.",
     placeholder: "Pega aquí la exportación de una carpeta de equipos de Showdown…",
     label: "Exportación de carpeta de equipos de Showdown",
@@ -489,7 +560,8 @@ export const es: Messages = {
     team: "Equipo",
     create: "Crear torneo",
     removeTitle: (name) => `¿Eliminar ${name}?`,
-    removeBody: "Esto elimina todas las rondas y partidas registradas de este torneo — no se puede deshacer.",
+    removeBody:
+      "Esto elimina todas las rondas y partidas registradas de este torneo — no se puede deshacer.",
     remove: "Eliminar torneo",
     removeNamed: (name) => `Eliminar ${name}`,
     needTeam:
@@ -550,7 +622,8 @@ export const es: Messages = {
     noGames: (outcome) =>
       `No hay partidas que registrar — esta ronda se decidió por ${outcome === "bye" ? "bye" : "incomparecencia"}. Quita la opción de arriba para registrar partidas.`,
     game: (n) => `Partida ${n}`,
-    rosterPlaceholder: "Pega lo que haya revelado la hoja de equipo — los puntos de estadística son opcionales…",
+    rosterPlaceholder:
+      "Pega lo que haya revelado la hoja de equipo — los puntos de estadística son opcionales…",
   },
   game: {
     opponentPick: (n) => `Elección del rival ${n}`,
@@ -583,7 +656,8 @@ export const es: Messages = {
     signInForGroups: "Inicia sesión para crear o unirte a un grupo de preparación",
     members: (count) => `${count} miembro${count === 1 ? "" : "s"}`,
     invite: "Invitar",
-    inviteCopied: "Enlace de invitación copiado — cualquiera con sesión iniciada puede unirse con él.",
+    inviteCopied:
+      "Enlace de invitación copiado — cualquiera con sesión iniciada puede unirse con él.",
     copyFailed: "No se pudo copiar el enlace.",
     groupOptions: "Opciones del grupo",
     rename: "Renombrar",
@@ -597,8 +671,6 @@ export const es: Messages = {
       "Este grupo está archivado. Sus rivales siguen aquí; desarchívalo para verlo de nuevo con tus grupos activos.",
     owner: "Dueño",
     you: "tú",
-    addedBy: (name) => `· añadido por ${name}`,
-    addedByYou: "· añadido por ti",
     copyToGroup: "Copiar a un grupo…",
     copyToMine: "Copiar a mis rivales",
     copiedToMine: (label) => `${label} copiado a tus rivales.`,
@@ -606,7 +678,8 @@ export const es: Messages = {
     actionFailed: "Algo salió mal — revisa tu conexión e inténtalo de nuevo.",
     loadFailed:
       "No se pudo cargar este grupo. Puede que te hayan quitado de él o que no tengas conexión.",
-    privateHint: "Los rivales de aquí se comparten con el grupo. Tus elecciones y notas son privadas.",
+    privateHint:
+      "Los rivales de aquí se comparten con el grupo. Tus elecciones y notas son privadas.",
     create: {
       title: "Nuevo grupo de preparación",
       intro:
@@ -625,6 +698,22 @@ export const es: Messages = {
     copyTitle: (label) => `Copiar ${label} a un grupo`,
     copyIntro: "Crea una copia en el grupo, con tus elecciones y notas.",
     noGroupsForRegulation: "No tienes grupos activos para la regulación de este equipo.",
+    addFromMenu: "Añadir desde otra lista…",
+    addFrom: {
+      title: (target) => `Añadir equipos a ${target}`,
+      intro:
+        "Copia equipos de tus rivales o de otro grupo de preparación de esta regulación, con tus picks y notas.",
+      fromList: "Copiar desde",
+      noLists:
+        "Aún no hay otra lista para esta regulación: tus rivales u otro grupo de preparación.",
+      empty: "Esa lista no tiene equipos de esta regulación.",
+      selectAll: (count) => `Seleccionar todos los nuevos (${count})`,
+      alreadyHere: "Ya está aquí",
+      add: (count) =>
+        count === 0 ? "Añadir equipos" : `Añadir ${count} equipo${count === 1 ? "" : "s"}`,
+      added: (count, target) =>
+        `${count} equipo${count === 1 ? "" : "s"} añadido${count === 1 ? "" : "s"} a ${target}.`,
+    },
     join: {
       title: "Unirse a un grupo de preparación",
       invited: (name) => `Te han invitado a “${name}”.`,
@@ -662,13 +751,16 @@ export const es: Messages = {
     saveCalc: "Guardar cálculo en tu equipo",
     calcAlreadySaved: "Ya está guardado en tu equipo",
     saveCalcNoTeam: "Elige tu equipo activo en la cabecera para guardarle cálculos.",
-    saveCalcNotOnTeam: (team) => `El Pokémon de la izquierda no está en ${team}; los cálculos se guardan para los Pokémon de tu equipo.`,
+    saveCalcNotOnTeam: (team) =>
+      `El Pokémon de la izquierda no está en ${team}; los cálculos se guardan para los Pokémon de tu equipo.`,
     offensive: "Ofensivo",
     defensive: "Defensivo",
-    calcSaved: (side, pokemon, team) => `Cálculo ${side.toLowerCase()} guardado para ${pokemon} en ${team}`,
+    calcSaved: (side, pokemon, team) =>
+      `Cálculo ${side.toLowerCase()} guardado para ${pokemon} en ${team}`,
     resultLineHint:
       "Se muestra en el formato estándar de cálculos de Showdown (en inglés), para poder compararlo y compartirlo tal cual.",
-    noMoves: "No se leyó ningún movimiento de este Pokémon — puede que la exportación no los incluyera.",
+    noMoves:
+      "No se leyó ningún movimiento de este Pokémon — puede que la exportación no los incluyera.",
     immune: "inmune",
     protected: "protegido",
     recoil: (value) => `(${value}% de retroceso)`,
@@ -694,7 +786,8 @@ export const es: Messages = {
     importHint: "Importar desde texto de Showdown",
     importPokemon: "Importar Pokémon",
     importTeam: "Importar equipo",
-    importPokemonIntro: "Pega el texto de Showdown de un Pokémon. Se añade a los Pokémon de este lado.",
+    importPokemonIntro:
+      "Pega el texto de Showdown de un Pokémon. Se añade a los Pokémon de este lado.",
     importTeamIntro:
       "Pega el texto de Showdown de un equipo completo (con una línea en blanco entre cada Pokémon). Reemplaza todos los Pokémon de este lado.",
     importExport: "Importar y exportar",
@@ -709,7 +802,8 @@ export const es: Messages = {
     noGroupOpponents: "Este grupo de preparación aún no tiene rivales.",
     noStatPoints: "Sin puntos de estadística: se carga con 0 en todo",
     someWithoutStatPoints: (count) => `${count} sin puntos de estadística (0 en todo)`,
-    statPointsHint: "Su texto no tenía línea de EVs, así que el cálculo tomaría esos Pokémon con 0 puntos de estadística.",
+    statPointsHint:
+      "Su texto no tenía línea de EVs, así que el cálculo tomaría esos Pokémon con 0 puntos de estadística.",
     pokemonCount: (count) => `${count} Pokémon`,
     loaded: (label) => `${label} cargado`,
     copied: (name) => `${name} copiado al portapapeles`,
@@ -753,7 +847,8 @@ export const es: Messages = {
     addBlank: (side) => `Añadir un Pokémon nuevo a ${side}`,
     choosePokemon: "Elige un Pokémon",
     abilityActive: (ability) => `${ability} activa`,
-    abilityActiveHint: (ability) => `Actívalo cuando ${ability} se haya activado (ya no tiene objeto): Velocidad ×2`,
+    abilityActiveHint: (ability) =>
+      `Actívalo cuando ${ability} se haya activado (ya no tiene objeto): Velocidad ×2`,
     battleStatHint: (sources) => `En combate, con ${sources}`,
     blankSet: "Set en blanco",
     mySetTag: "Mío",

@@ -22,7 +22,7 @@ function CalcSection({
   const t = useMessages();
   return (
     <Collapsible defaultOpen>
-      <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-zinc-600 hover:bg-zinc-100">
+      <CollapsibleTrigger className="group flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs font-semibold tracking-wide text-zinc-600 uppercase hover:bg-zinc-100">
         <span>
           {title} <span className="font-normal text-zinc-500">· {calcs.length}</span>
         </span>
@@ -43,7 +43,6 @@ function CalcSection({
               <TeamCalcRow
                 key={calc.id}
                 calc={calc}
-                stacked
                 removeLabel={t.pokemonCard.removeCalc}
                 onRemove={onRemoveCalc ? () => onRemoveCalc(calc.id) : undefined}
               />

@@ -123,7 +123,7 @@ export default function TeamBuilderDetailPage({ params }: TeamBuilderDetailPageP
           </Link>
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-6 p-6">
+        <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
           <div className="flex items-center gap-2">
             <Link
               href="/team-builder"

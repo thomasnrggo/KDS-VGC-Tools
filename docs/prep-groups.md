@@ -71,8 +71,14 @@ users/{uid}/groupPlans/{groupId}_{id}  your plans for one group opponent:
 - **Group bar** (when a group is selected): its name, member avatars, "Invite" (copies the link),
   and a menu: rename, reset invite link, members (owner removes), archive/unarchive (owner), leave
   (member).
-- **Opponent cards in a group**: "Added by …"; Remove only shows for its adder and the owner.
-  "Copy to my opponents" (with your plans). Personal opponents get "Copy to group…".
+- **Opponent cards in a group**: Remove only shows for its adder and the owner (who added it is
+  still saved, no longer shown). "Copy to my opponents" (with your plans). Personal opponents get
+  "Copy to group…".
+- **Add from another list…** (the list's ⋮ menu, and its empty state; signed in): copies several
+  teams at once into the open list from your opponents or another group of the same regulation
+  (`AddFromListDialog`, `copyOpponentsInto`), with your plans. Teams the open list already has —
+  same Pokémon and items (`sameTeamKey`) — show as "Already here" and can't be picked. A variant
+  copied with its main stays its variant.
 - **Join page** `/groups/join/{code}`: the group's name and a Join button (sign in first).
 
 ## Future: personal invites (requested 2026-10-14)

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   calcMatchesSearch,
   calcsAgainst,
+  calcsBetween,
+  calcLineParts,
   calcThreat,
   hasSavedCalc,
   findCalcSpecies,
@@ -131,12 +133,16 @@ describe("hasSavedCalc", () => {
   };
 
   it("finds the same calc on the same Pokémon, ignoring extra whitespace", () => {
-    expect(hasSavedCalc([saved], "basculegion", `  ${saved.text.replace(" vs. ", "  vs.  ")} `)).toBe(true);
+    expect(
+      hasSavedCalc([saved], "basculegion", `  ${saved.text.replace(" vs. ", "  vs.  ")} `),
+    ).toBe(true);
   });
 
   it("doesn't match another Pokémon's calc or a different line", () => {
     expect(hasSavedCalc([saved], "pelipper", saved.text)).toBe(false);
-    expect(hasSavedCalc([saved], "basculegion", saved.text.replace("32 SpA", "31 SpA"))).toBe(false);
+    expect(hasSavedCalc([saved], "basculegion", saved.text.replace("32 SpA", "31 SpA"))).toBe(
+      false,
+    );
   });
 });
 
@@ -165,5 +171,97 @@ describe("calcMatchesSearch", () => {
     expect(calcMatchesSearch(offensive, ["ghold"])).toBe(true);
     expect(calcMatchesSearch(defensive, ["gholdengo", "raichu"])).toBe(true);
     expect(calcMatchesSearch(offensive, ["foo"], () => "Gholdengo FOO")).toBe(true);
+  });
+});
+
+describe("calcsBetween", () => {
+  const { calcs } = parseCalcPaste(PASTE, MY_TEAM);
+  const mon = (species: string) => ({ species });
+
+  it("keeps only calcs between the two groups, split by side", () => {
+    const result = calcsBetween(calcs, [mon("Garchomp")], [mon("Kingambit"), mon("Basculegion")]);
+    expect(result.offensive.map((calc) => calc.text)).toEqual([
+      expect.stringContaining("Earth Power vs. 32 HP / 2 SpD Kingambit"),
+    ]);
+    expect(result.defensive.map((calc) => calc.text)).toEqual([
+      expect.stringContaining("Basculegion Last Respects"),
+    ]);
+  });
+
+  it("works from their side: one of theirs against several of yours", () => {
+    const result = calcsBetween(calcs, [mon("Charizard"), mon("Garchomp")], [mon("Lycanroc-Dusk")]);
+    expect(result.offensive).toEqual([]);
+    expect(result.defensive).toHaveLength(1);
+  });
+
+  it("sorts by the other side's order, then highest damage first", () => {
+    const line = (attacker: string, target: string, max: number) => ({
+      id: `${attacker}-${target}-${max}`,
+      text: `${attacker} Move vs. ${target}: 1-2 (${max - 10} - ${max}%) -- possible 2HKO`,
+      species: "garchomp",
+      side: "offensive" as const,
+    });
+    const sorted = calcsBetween(
+      [
+        line("Garchomp", "Kingambit", 60),
+        line("Garchomp", "Rillaboom", 90),
+        line("Garchomp", "Kingambit", 80),
+      ],
+      [mon("Garchomp")],
+      [mon("Kingambit"), mon("Rillaboom")],
+    );
+    expect(sorted.offensive.map((calc) => calc.id)).toEqual([
+      "Garchomp-Kingambit-80",
+      "Garchomp-Kingambit-60",
+      "Garchomp-Rillaboom-90",
+    ]);
+  });
+
+  it("keeps a Mega and its base form apart when the form is given", () => {
+    const line = (id: string, target: string) => ({
+      id,
+      text: `Basculegion-F Ice Beam vs. 0 HP / 0 SpD ${target}: 1-2 (60 - 70%) -- guaranteed 2HKO`,
+      species: "basculegion-f",
+      side: "offensive" as const,
+    });
+    const lines = [line("scarf", "Choice Scarf Garchomp"), line("mega", "Mega Garchomp Z")];
+    const ids = (mega?: boolean) =>
+      calcsBetween(lines, [mon("Basculegion-F")], [{ species: "Garchomp", mega }]).offensive.map(
+        (calc) => calc.id,
+      );
+    expect(ids(true)).toEqual(["mega"]);
+    expect(ids(false)).toEqual(["scarf"]);
+    expect(ids(undefined)).toEqual(["scarf", "mega"]);
+  });
+
+  it("is empty when no calc connects them", () => {
+    expect(calcsBetween(calcs, [mon("Sylveon")], [mon("Kingambit")])).toEqual({
+      offensive: [],
+      defensive: [],
+    });
+  });
+});
+
+describe("calcLineParts", () => {
+  it("cuts out the % range and the KO chance, joining back to the line", () => {
+    const line =
+      "32 Atk Garchomp Earthquake vs. 4 HP / 0 Def Raichu: 160-190 (113.6 - 134.9%) -- guaranteed OHKO";
+    const parts = calcLineParts(line);
+    expect(parts).toEqual({
+      before: "32 Atk Garchomp Earthquake vs. 4 HP / 0 Def Raichu: 160-190 ",
+      percent: "(113.6 - 134.9%)",
+      between: " -- ",
+      verdict: "guaranteed OHKO",
+    });
+    expect(parts.before + parts.percent + parts.between + parts.verdict).toBe(line);
+  });
+
+  it("leaves a line without a result whole", () => {
+    expect(calcLineParts("Garchomp Earthquake vs. Raichu")).toEqual({
+      before: "Garchomp Earthquake vs. Raichu",
+      percent: "",
+      between: "",
+      verdict: "",
+    });
   });
 });

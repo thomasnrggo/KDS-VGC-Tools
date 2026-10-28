@@ -2,10 +2,14 @@ import {
   duplicateSlots,
   effectiveMegas,
   groupToLeadBack,
+  BACK_2,
+  canMegaEvolve,
   leadBackToGroup,
+  normalizeBackAlt,
   pickIntoSlot,
   toggleSlotMega,
   usedInOtherSlots,
+  withBackAlt,
   type LeadBackPicks,
   type SlotTag,
 } from "@/lib/slotPicks";
@@ -26,6 +30,8 @@ export function leadBackSlotProps<T extends LeadBackPicks>(
   roster: ParsedPokemon[],
   update: (updater: (plan: T) => T) => void,
   t: Messages,
+  /** Back 2 can be "A or B" (`backAlt`) — your own picks, not the opponent's. */
+  { flexBack = false }: { flexBack?: boolean } = {},
 ) {
   const group = leadBackToGroup(plan);
   const megas = effectiveMegas(group, roster);
@@ -37,12 +43,20 @@ export function leadBackSlotProps<T extends LeadBackPicks>(
     { label: t.combination.backSlot(2), tag: t.combination.backTag(2) },
   ];
 
+  const alt = flexBack ? (plan.backAlt ?? null) : null;
+  // Another slot's Mega already on: the alternative shows in its base form.
+  const otherMega = megas.some(
+    (mega, slot) => slot !== BACK_2 && mega && canMegaEvolve(roster[group.picks[slot] ?? -1]),
+  );
+
   return (slot: number) => ({
     label: tags[slot].label,
     myTeamPokemon: roster,
     value: group.picks[slot],
     onChange: (index: PokemonSlot) =>
-      update((p) => groupToLeadBack(p, pickIntoSlot(leadBackToGroup(p), slot, index, roster))),
+      update((p) =>
+        normalizeBackAlt(groupToLeadBack(p, pickIntoSlot(leadBackToGroup(p), slot, index, roster))),
+      ),
     megaEnabled: megas[slot],
     // Toggles from the flags as shown, so older data with two Megas on
     // settles to the one-Mega rule on the first toggle.
@@ -52,7 +66,22 @@ export function leadBackSlotProps<T extends LeadBackPicks>(
         const shown = { ...current, megas: effectiveMegas(current, roster) };
         return groupToLeadBack(p, toggleSlotMega(shown, slot));
       }),
-    usedIn: usedInOtherSlots(group.picks, slot, tags),
+    usedIn: {
+      ...(alt !== null && slot !== BACK_2 ? { [alt]: tags[BACK_2] } : {}),
+      ...usedInOtherSlots(group.picks, slot, tags),
+    },
     isDuplicate: duplicates.has(slot),
+    ...(flexBack && slot === BACK_2
+      ? {
+          flex: {
+            alternative: alt,
+            alternativeMega: !otherMega && megas[BACK_2],
+            onChange: (back2: PokemonSlot, alternative: PokemonSlot) =>
+              update((p) => withBackAlt(p, back2, alternative, roster)),
+          },
+          // The other three are set and this one isn't: any of the rest fits.
+          anyWhenEmpty: group.picks.slice(0, BACK_2).every((pick) => pick !== null),
+        }
+      : {}),
   });
 }

@@ -47,9 +47,11 @@ export function useViewportSafePosition(
 
         const fitsBelow =
           triggerRect.bottom + 4 + contentRect.height + SAFE_MARGIN <= window.innerHeight;
+        // Above when it doesn't fit below, but never past the top edge (a
+        // tall card on a short phone screen fits neither way).
         const top = fitsBelow
           ? triggerRect.bottom + 4
-          : triggerRect.top - contentRect.height - 4;
+          : Math.max(triggerRect.top - contentRect.height - 4, SAFE_MARGIN);
 
         setStyle((prev) =>
           prev.left === left && prev.top === top ? prev : { position: "fixed", left, top },

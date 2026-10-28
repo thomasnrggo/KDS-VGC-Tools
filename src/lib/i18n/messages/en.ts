@@ -40,8 +40,7 @@ export const en = {
     regulationMismatch: (name: string) =>
       `${name} isn't tagged for the currently selected regulation — pick a different team, or add this one to it, to plan leads/backs`,
     confirmRemoveTitle: (name: string) => `Remove ${name}?`,
-    confirmRemoveBody:
-      "This can't be undone — you'll need to paste the team again to add it back.",
+    confirmRemoveBody: "This can't be undone — you'll need to paste the team again to add it back.",
     removeTeam: "Remove team",
   },
   theme: {
@@ -66,7 +65,8 @@ export const en = {
     tooManyPokemon: (count: number) =>
       `Found ${count} Pokémon — a team can only have 6. Paste just one team.`,
     pasteTeamFirst: "Paste your team's Showdown export first.",
-    duplicateTeam: (name: string) => `"${name}" already has this exact roster under this regulation.`,
+    duplicateTeam: (name: string) =>
+      `"${name}" already has this exact roster under this regulation.`,
     defaultTeamName: (n: number) => `Team ${n}`,
     unnamedTeam: "Unnamed team",
     untitledTournament: "Untitled Tournament",
@@ -131,8 +131,7 @@ export const en = {
       "Every team under this regulation is archived — check the Archived tab, or add a new one.",
     noArchived:
       "No archived teams under this regulation — archiving a team (from its “⋯” menu on the Active tab) moves it here instead of deleting it.",
-    noMatches: (tab: "active" | "archived", query: string) =>
-      `No ${tab} teams match “${query}”.`,
+    noMatches: (tab: "active" | "archived", query: string) => `No ${tab} teams match “${query}”.`,
     teamOptions: (name: string) => `${name} options`,
     archive: "Archive",
     unarchive: "Unarchive",
@@ -173,9 +172,12 @@ export const en = {
     searchCalcs: "Search calcs by the other Pokémon",
     searchCalcsPlaceholder: "Search a Pokémon (e.g. Gholdengo)",
     clearCalcs: "Clear all calcs",
-    confirmClearCalcsTitle: (count: number) => `Clear all ${count} saved calc${count === 1 ? "" : "s"}?`,
-    confirmClearCalcsBody: "Every Pokémon on this team loses its saved calcs. This can't be undone.",
+    confirmClearCalcsTitle: (count: number) =>
+      `Clear all ${count} saved calc${count === 1 ? "" : "s"}?`,
+    confirmClearCalcsBody:
+      "Every Pokémon on this team loses its saved calcs. This can't be undone.",
     noCalcsYet: "None saved yet — save one from the Damage Calculator.",
+    otherPokemon: "Other",
     removeCalc: "Remove calc",
     ability: "Ability:",
     mega: "Mega",
@@ -210,9 +212,10 @@ export const en = {
     addCombination: "Add combination",
     noCombinations:
       "No combinations yet — add one to save a lead/back pairing you like using with this team.",
-    notes: "Notes",
-    notesPlaceholder: "How does this team play? Game plan, threats, what it struggles against…",
-    notesLabel: "Team notes",
+    notes: "Weaknesses & watch-outs",
+    notesPlaceholder:
+      "What does this team struggle against? Threats, bad matchups, things to watch for…",
+    notesLabel: "Team weaknesses and watch-outs",
     /** A sentence with a link in the middle — each part carries its own spacing. */
     noGames: {
       before:
@@ -239,7 +242,8 @@ export const en = {
     openSheet: "Open team sheet",
     openSheetHint: "Pokémon, items, abilities and moves. No Stat Points, nature or stats.",
     closedSheet: "Closed team sheet",
-    closedSheetHint: "Everything on the report, including Stat Points, nature and the Poképaste link.",
+    closedSheetHint:
+      "Everything on the report, including Stat Points, nature and the Poképaste link.",
     link: "Link",
     linkLabel: "Shared report link",
     copyLink: "Copy link",
@@ -264,6 +268,7 @@ export const en = {
     remove: "Remove combination",
     notesPlaceholder: "When would you use this combination?",
     notesLabel: "Combination notes",
+    title: (n: number) => `Combination ${n}`,
   },
   slotPicker: {
     picked: (label: string, species: string) => `${label}: ${species}. Click to change.`,
@@ -272,6 +277,12 @@ export const en = {
     addTeamFirst: "Add your own team first.",
     usedIn: (species: string, slot: string) => `${species} — in ${slot}. Pick to swap.`,
     duplicate: "Also picked in another slot — pick a different Pokémon.",
+    pickedEither: (label: string, first: string, second: string) =>
+      `${label}: ${first} or ${second}. Click to change.`,
+    any: (label: string) => `${label}: any of the rest. Click to choose.`,
+    either: "A or B",
+    eitherHint: "Pick two — which one comes depends on the game.",
+    inSlot: (species: string, slot: string) => `${species} — in ${slot}.`,
   },
   richText: {
     bold: "Bold",
@@ -385,6 +396,57 @@ export const en = {
     collapse: "Collapse",
     expand: "Expand",
   },
+  teamMatchups: {
+    noMatches: (query: string) => `No matchups match “${query}”.`,
+    searchPlaceholder: 'Search by name, Pokémon, item, or tag… (e.g. "rain scarf")',
+    searchLabel: "Search matchups by name, Pokémon, item, or tag",
+    planCount: (count: number) => `${count} plan${count === 1 ? "" : "s"}`,
+    hasNotes: "Has scouting notes (what they do, or notes on their Pokémon)",
+    mine: "My opponents",
+    noGamePlan: "No game plan yet.",
+    calcCount: (count: number) => `${count} calc${count === 1 ? "" : "s"}`,
+    emptyBefore: "No prepped matchups yet. Pick this team in the ",
+    emptyAfter:
+      " and plan against an opponent (lead/back, a game plan, or notes) — from your own list or a prep group. It shows up here.",
+  },
+  matchupPage: {
+    morePlans: (count: number) => `+${count} plan${count === 1 ? "" : "s"}`,
+    hidePlans: "Hide plans",
+    plans: "Plans",
+    plan: (letter: string) => `Plan ${letter}`,
+    theirLead: "Their lead",
+    theirBack: "Their back",
+    yourLead: "Your lead",
+    yourBack: "Your back",
+    planNotesPlaceholder: "How do you play this one? Select text to make it bold.",
+    addPlan: "Add plan",
+    moveUp: (plan: string) => `Move ${plan} up`,
+    moveDown: (plan: string) => `Move ${plan} down`,
+    removePlan: (plan: string) => `Remove ${plan}`,
+    clearPlan: (plan: string) => `Clear ${plan}`,
+    vs: "vs",
+    backToReport: "Back to the team report",
+    backToPlanner: "Back to the Matchup Planner",
+    yourPlan: "Your plan",
+    whatTheyDo: "What they do",
+    whatTheyDoPlaceholder: "Their likely leads, common plays, what to watch for…",
+    theirTeam: "Their team",
+    preview: "Preview",
+    notesTab: "Notes",
+    calcsTab: "Calcs",
+    pickCalcsTitle: (name: string) => `Calcs for ${name}`,
+    pickCalcsOr: (name: string) => `Or ${name}`,
+    pickCalcsNone: "No calcs between these picks yet.",
+    pickCalcsWholeTeam: "No picks on the other side yet, so this covers the whole team.",
+    manageCalcs: "Manage calcs →",
+    noCalcs: (team: string) => `None of ${team}'s calcs involve this team's Pokémon yet.`,
+    variantOf: (label: string) => `Variant of ${label}`,
+    teamNotFound: "Team not found",
+    opponentNotFound: "Opponent not found",
+    removedElsewhere: "It may have been removed on another device.",
+    backToMyTeams: "← Back to My Teams",
+    open: "Open matchup page",
+  },
   opponentForm: {
     namePlaceholder: 'Opponent name (e.g. "Sand toxapex - Wolfey")',
     nameLabel: "Opponent name",
@@ -409,7 +471,8 @@ export const en = {
     placeholder: "Paste a Showdown team folder export here…",
     label: "Showdown team folder export",
     noneDetected: "No teams detected yet.",
-    found: (count: number, names: string) => `Found ${count} team${count === 1 ? "" : "s"}: ${names}`,
+    found: (count: number, names: string) =>
+      `Found ${count} team${count === 1 ? "" : "s"}: ${names}`,
     importButton: (count: number) =>
       count === 0 ? "Import teams" : `Import ${count} team${count === 1 ? "" : "s"}`,
   },
@@ -490,7 +553,8 @@ export const en = {
     team: "Team",
     create: "Create tournament",
     removeTitle: (name: string) => `Remove ${name}?`,
-    removeBody: "This removes every round and game logged for this tournament — it can't be undone.",
+    removeBody:
+      "This removes every round and game logged for this tournament — it can't be undone.",
     remove: "Remove tournament",
     removeNamed: (name: string) => `Remove ${name}`,
     needTeam:
@@ -498,7 +562,8 @@ export const en = {
     needRegulationTeam:
       "No teams under this regulation — add one on the My Teams page first, or switch to a different regulation above.",
     empty: "No tournaments yet",
-    emptyBody: "Track your rounds, opponent picks, and Pokémon usage/win-loss stats across a real event.",
+    emptyBody:
+      "Track your rounds, opponent picks, and Pokémon usage/win-loss stats across a real event.",
     unknownTeam: "Unknown team",
     rounds: (count: number) => `${count} round${count === 1 ? "" : "s"}`,
     entrants: (count: number) => `${count} entrants`,
@@ -593,18 +658,16 @@ export const en = {
     archive: "Archive",
     unarchive: "Unarchive",
     leave: "Leave group",
-    archivedNotice: "This group is archived. Its opponents are still here; unarchive it to list it with your active groups again.",
+    archivedNotice:
+      "This group is archived. Its opponents are still here; unarchive it to list it with your active groups again.",
     owner: "Owner",
     you: "you",
-    addedBy: (name: string) => `· added by ${name}`,
-    addedByYou: "· added by you",
     copyToGroup: "Copy to group…",
     copyToMine: "Copy to my opponents",
     copiedToMine: (label: string) => `Copied ${label} to your opponents.`,
     copiedToGroup: (label: string, group: string) => `Copied ${label} to ${group}.`,
     actionFailed: "Something went wrong — check your connection and try again.",
-    loadFailed:
-      "Couldn't load this group. You may have been removed from it, or you're offline.",
+    loadFailed: "Couldn't load this group. You may have been removed from it, or you're offline.",
     privateHint: "Opponents here are shared with the group. Your picks and notes stay private.",
     create: {
       title: "New prep group",
@@ -624,6 +687,22 @@ export const en = {
     copyTitle: (label: string) => `Copy ${label} to a group`,
     copyIntro: "Makes a copy in the group, with your picks and notes for it.",
     noGroupsForRegulation: "You have no active groups for this team's regulation.",
+    addFromMenu: "Add from another list…",
+    addFrom: {
+      title: (target: string) => `Add teams to ${target}`,
+      intro:
+        "Copies teams from your opponents or another prep group for this regulation, with your picks and notes for them.",
+      fromList: "Copy from",
+      noLists:
+        "There's no other list for this regulation yet — your opponents or another prep group.",
+      empty: "No teams for this regulation in that list.",
+      selectAll: (count: number) => `Select all new (${count})`,
+      alreadyHere: "Already here",
+      add: (count: number) =>
+        count === 0 ? "Add teams" : `Add ${count} team${count === 1 ? "" : "s"}`,
+      added: (count: number, target: string) =>
+        `Added ${count} team${count === 1 ? "" : "s"} to ${target}.`,
+    },
     join: {
       title: "Join a prep group",
       invited: (name: string) => `You've been invited to “${name}”.`,
@@ -661,12 +740,14 @@ export const en = {
     saveCalc: "Save calc to your team",
     calcAlreadySaved: "Already saved on your team",
     saveCalcNoTeam: "Pick your active team in the header to save calcs to it.",
-    saveCalcNotOnTeam: (team: string) => `The left Pokémon isn't on ${team} — calcs are saved for your team's Pokémon.`,
+    saveCalcNotOnTeam: (team: string) =>
+      `The left Pokémon isn't on ${team} — calcs are saved for your team's Pokémon.`,
     offensive: "Offensive",
     defensive: "Defensive",
     calcSaved: (side: string, pokemon: string, team: string) =>
       `Saved ${side.toLowerCase()} calc for ${pokemon} on ${team}`,
-    resultLineHint: "Shown in Showdown's standard calc format, so it can be compared and shared as-is.",
+    resultLineHint:
+      "Shown in Showdown's standard calc format, so it can be compared and shared as-is.",
     noMoves: "No moves were parsed for this Pokémon — the pasted export may not have listed any.",
     immune: "immune",
     protected: "protected",
@@ -693,7 +774,8 @@ export const en = {
     importHint: "Import from Showdown export text",
     importPokemon: "Import Pokémon",
     importTeam: "Import Team",
-    importPokemonIntro: "Paste one Pokémon's Showdown export text. It's added to this side's roster.",
+    importPokemonIntro:
+      "Paste one Pokémon's Showdown export text. It's added to this side's roster.",
     importTeamIntro:
       "Paste a full team's Showdown export text (a blank line between each Pokémon). It replaces this side's whole roster.",
     importExport: "Import & export",
@@ -708,7 +790,8 @@ export const en = {
     noGroupOpponents: "This prep group has no opponents yet.",
     noStatPoints: "No Stat Points: loads as 0 in every stat",
     someWithoutStatPoints: (count: number) => `${count} without Stat Points (0 in every stat)`,
-    statPointsHint: "Its paste had no EVs line, so the calc would treat those Pokémon as having 0 Stat Points.",
+    statPointsHint:
+      "Its paste had no EVs line, so the calc would treat those Pokémon as having 0 Stat Points.",
     pokemonCount: (count: number) => `${count} Pokémon`,
     loaded: (label: string) => `Loaded ${label}`,
     copied: (name: string) => `Copied ${name} to clipboard`,
@@ -735,7 +818,8 @@ export const en = {
     effectCount: (count: number) => `Effect ${count}`,
     effectLabel: (move: string) => `${move} effect`,
     effectHints: {
-      attackerFaintedAllies: (move: string) => `${move} gains 50 power for each ally that has fainted`,
+      attackerFaintedAllies: (move: string) =>
+        `${move} gains 50 power for each ally that has fainted`,
       attackerTimesHit: (move: string) =>
         `${move} gains 50 power for each time the user has been hit (up to 6)`,
     },
@@ -753,7 +837,8 @@ export const en = {
     addBlank: (side: string) => `Add a new Pokémon to ${side}`,
     choosePokemon: "Choose a Pokémon",
     abilityActive: (ability: string) => `${ability} active`,
-    abilityActiveHint: (ability: string) => `Turn on once ${ability} has activated (its item is gone): Speed ×2`,
+    abilityActiveHint: (ability: string) =>
+      `Turn on once ${ability} has activated (its item is gone): Speed ×2`,
     battleStatHint: (sources: string) => `In battle, with ${sources}`,
     blankSet: "Blank Set",
     mySetTag: "Mine",
@@ -819,7 +904,8 @@ export const en = {
     pp: "PP",
     bst: "BST",
     remaining: "Remaining",
-    remainingLabel: (remaining: number, max: number) => `${remaining} of ${max} Stat Points remaining`,
+    remainingLabel: (remaining: number, max: number) =>
+      `${remaining} of ${max} Stat Points remaining`,
     categories: { Physical: "Physical", Special: "Special", Status: "Status" },
   },
 };

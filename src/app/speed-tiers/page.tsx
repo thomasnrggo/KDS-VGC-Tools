@@ -53,7 +53,7 @@ export default function SpeedTiersPage() {
         onSignIn={signInWithGoogle}
         onSignOut={signOut}
       />
-      <div className="flex w-full flex-col gap-4 p-6">
+      <div className="flex w-full flex-col gap-4 px-3 py-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-zinc-900">{t.speedTiers.title}</h2>
           {REGULATIONS.length > 1 ? (
