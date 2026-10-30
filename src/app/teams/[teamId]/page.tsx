@@ -13,6 +13,7 @@ import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
+import { TeamCoverage } from "@/components/TeamCoverage";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PokemonCalcsBox } from "@/components/TeamCalcs";
@@ -48,9 +49,9 @@ interface TeamReportPageProps {
   searchParams: Promise<{ tab?: string }>;
 }
 
-type ReportTab = "report" | "strategy" | "calcs" | "matchups" | "stats";
+type ReportTab = "report" | "strategy" | "coverage" | "calcs" | "matchups" | "stats";
 
-const ALL_TABS: ReportTab[] = ["report", "strategy", "calcs", "matchups", "stats"];
+const ALL_TABS: ReportTab[] = ["report", "strategy", "coverage", "calcs", "matchups", "stats"];
 // Matchups is on hold — see TEAM_REPORT_PREP_ENABLED.
 const TABS = TEAM_REPORT_PREP_ENABLED ? ALL_TABS : ALL_TABS.filter((tab) => tab !== "matchups");
 
@@ -475,6 +476,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </section>
             </div>
           )}
+
+          {/* What the team is weak to and what it can hit — see src/lib/teamCoverage.ts. */}
+          {activeTab === "coverage" && <TeamCoverage pokemon={team.pokemon} />}
 
           {/* Each Pokémon's card (collapsed to its sprite header until clicked)
               with its saved calcs underneath. Columns are independent, so

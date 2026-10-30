@@ -10,6 +10,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## Unreleased
+
+### Added
+
+- **Coverage tab** on the team page: what the team is weak to and what it can hit, answer first.
+  "Watch out" lists the weak spots (types more of the team is weak to than resists, or 3+ are weak)
+  with the sprites of who's hit and who covers it; "Can't hit super effectively" lists the gaps
+  and who has the best (neutral) hit. Then every type as a tile with a red/green tally — tap one for
+  its breakdown — for Defense or Offense, and the full type × member table, collapsed. Counts dual
+  types, abilities (Levitate, Water Absorb, Thick Fat, …), Mega forms and Air Balloon; Weather Ball
+  follows the team's weather setter, and Freeze-Dry, Flying Press and Scrappy are handled.
+
 ## 0.2.2 — 2026-10-30
 
 ### Added

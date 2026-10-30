@@ -2715,6 +2715,42 @@ leads/backs) is complete and working end to end.
       2026-10-12, then hidden behind `TEAM_REPORT_PREP_ENABLED = false` while the opponent-info vs
       matchup-prep split is rethought. Scope/decisions in [docs/team-report.md](./docs/team-report.md).
 
+- [x] **Team coverage** (planned and built 2026-10-30, 0.2.x per the owner — the one new feature in 0.2).
+      A **Coverage** tab on the team page: a quick view of what the team is weak to and what it can
+      hit. Design agreed in chat, from two reference screenshots (a type-defense/coverage tally and
+      a type × member effectiveness table):
+    - **Engine** — `src/lib/teamCoverage.ts`, pure and unit-tested, so threat detection (below) can
+      reuse it. Each member's types and ability resolve through `resolveTypes` /
+      `resolveEffectiveAbility`, so a held Mega Stone gives the Mega's typing and ability.
+    - **Defense**: per attacking type × member, the type chart multiplied across both types (exact
+      for dual types — 4×, ¼×, and cancellations like Steel/Dragon taking 1× from Dragon), then:
+      ability immunities (the calculator's `TYPE_IMMUNITY_ABILITIES` — Levitate, Water Absorb, Flash
+      Fire, …), type-scoped ability modifiers derived from `ABILITY_DAMAGE_MODIFIERS` (Thick Fat,
+      Heatproof, Water Bubble, Purifying Salt, Dry Skin's Fire, Fluffy's Fire), Wonder Guard, and Air
+      Balloon. A changed cell records why (shown as its tooltip). Per type: members **weak** (>1×),
+      **resist** (<1×, immunities included) and **net** (resist − weak).
+    - **Offense**: per type × member, the best multiplier among the member's damaging moves (Status
+      and fixed-damage moves — Seismic Toss, Super Fang, OHKO moves, … — don't count). A move's type
+      follows -ate abilities, Liquid Voice, and Weather Ball (the weather of any setter on the team —
+      Drizzle makes it Water); Freeze-Dry hits Water 2×, Flying Press adds Flying, Scrappy / Mind's
+      Eye hit Ghosts with Normal and Fighting, Thousand Arrows hits Flying. Per type: how many members
+      hit it super effectively.
+    - **Summary first**: "Weak spots" (more members weak than resisting, or 3+ weak) and "Coverage
+      gaps" (types nothing hits super effectively), above the tables.
+    - **Out of scope**: battle state — Gravity, Roost, Tar Shot, Delta Stream, Soak, Filter-style
+      damage reduction. The tab shows the team as built, and says so.
+    - **Layout — answer first** (revised the same day: the owner found two 18-row tables
+      overwhelming): "Watch out" rows name the Pokémon — the sprites of who's weak and who resists
+      or is immune (badges mark 4×, ¼× and 0) — then "Can't hit super effectively" rows with the
+      sprites of whoever has the best hit (the move in each one's tooltip). Then **every type** as
+      a tile with a tally (a red tick per weak member, green per resisting one — or, on Offense,
+      per member hitting it super effectively; weak spots and gaps outlined red), Defense/Offense
+      chips, and a tapped tile's breakdown (members grouped by multiplier, or each one's best move).
+      The full type × member table is last, collapsed under "Show full table".
+    - **Future — threat detection**: for a given threat (e.g. Kommo-o against a rain team), which
+      members it endangers (damage calc + speed) and which check it (resist its STABs and hit it
+      hard, or outspeed it), measured with sets from the user's own Matchup Planner opponents.
+
 ## 8. Attribution
 
 - Team paste format: [Pokémon Showdown](https://pokemonshowdown.com/) export format.
