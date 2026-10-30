@@ -10,7 +10,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
-## Unreleased
+## 0.2.3 — 2026-10-30
 
 ### Added
 
