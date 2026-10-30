@@ -2801,6 +2801,16 @@ leads/backs) is complete and working end to end.
       events it's based on, a searchable ranked list (usage with a bar, top-32 usage with ▲▼ at a
       5-point difference, win rate faded under 100 rounds), each row opening to its top 3 sets and
       its items, abilities, moves and teammates.
+    - **Recent vs whole regulation, and trends** (2026-10-30, the owner's point: pooling every
+      event lets a regulation's early, outdated weeks weigh on the numbers, and the biggest event
+      dominates). The job writes two slices — `official` (whole regulation) and `official.recent`
+      (the newest `RECENT_EVENTS` = 4 events; by count, not weeks, so a quiet month doesn't empty
+      it) — and a per-event `history` (usage, top usage) for each Pokémon, aligned with
+      `tournaments` (oldest first). `--rebuild` (workflow input "rebuild") recomputes summaries
+      from stored events without fetching. The page defaults to the recent slice, adds a Latest
+      column (newest event, ▲▼ vs the one before at a 2-point change), sorting (usage, top 32,
+      win rate, rising, falling) and a usage-by-event chart. Documents without `recent` still
+      work (no chips, no trend).
     - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
       Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
       picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder

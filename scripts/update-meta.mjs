@@ -20,6 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseOfficialEvent } from "../src/lib/meta/officialTournament.ts";
 import { aggregateOfficialMeta } from "../src/lib/meta/aggregateMeta.ts";
+import { RECENT_EVENTS } from "../src/lib/meta/metaDocument.ts";
 import {
   isFinished,
   isVgcEvent,
@@ -43,6 +44,9 @@ const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const useFixtures = args.includes("--fixtures");
 const maxEvents = Number(args[args.indexOf("--max-events") + 1]) || 4;
+// Recompute every regulation's summary from the events already stored, even
+// with nothing new to fetch — after a change to what the summary holds.
+const rebuild = args.includes("--rebuild");
 const today = new Date().toISOString().slice(0, 10);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -99,6 +103,9 @@ async function openStore() {
       async eventsFor(regulationId) {
         return [...written.values()].filter((event) => event.regulationId === regulationId);
       },
+      async regulationIds() {
+        return new Set([...written.values()].map((event) => event.regulationId).filter(Boolean));
+      },
       async saveMeta(regulationId, data) {
         written.set(`meta/${regulationId}`, data);
       },
@@ -126,6 +133,10 @@ async function openStore() {
         .where("regulationId", "==", regulationId)
         .get();
       return snap.docs.map((doc) => doc.data());
+    },
+    async regulationIds() {
+      const snap = await db.collection("metaEvents").select("regulationId").get();
+      return new Set(snap.docs.map((doc) => doc.get("regulationId")).filter(Boolean));
     },
     async saveMeta(regulationId, data) {
       await db.collection("meta").doc(regulationId).set(data);
@@ -217,7 +228,11 @@ async function main() {
     }
   }
 
+  if (rebuild)
+    for (const regulationId of await store.regulationIds()) changedRegulations.add(regulationId);
+
   for (const regulationId of changedRegulations) {
+    // Oldest first: each Pokémon's per-event history follows this order.
     const events = (await store.eventsFor(regulationId)).sort((a, b) =>
       a.startDate.localeCompare(b.startDate),
     );
@@ -226,6 +241,10 @@ async function main() {
       console.warn(`meta/${regulationId}: no teams — left as it was`);
       continue;
     }
+    // The newest few events: the metagame as it is now, not as it was at the
+    // start of the regulation.
+    const recentEvents = events.slice(-RECENT_EVENTS);
+    const recent = aggregateOfficialMeta(recentEvents);
     await store.saveMeta(regulationId, {
       regulationId,
       updatedAt: new Date().toISOString(),
@@ -244,14 +263,26 @@ async function main() {
         teams: summary.teams,
         topTeams: summary.topTeams,
         pokemon: summary.pokemon,
+        recent: {
+          tournamentIds: recentEvents.map((event) => event.id),
+          teams: recent.teams,
+          topTeams: recent.topTeams,
+          // Histories come from the whole regulation's list; leave them off here.
+          pokemon: recent.pokemon.map((mon) => {
+            const copy = { ...mon };
+            delete copy.history;
+            return copy;
+          }),
+        },
       },
     });
-    const top = summary.pokemon
+    const top = recent.pokemon
       .slice(0, 5)
       .map((mon) => `${mon.species} ${(mon.usage * 100).toFixed(1)}%`)
       .join(", ");
     console.log(
-      `meta/${regulationId}: ${summary.events} event(s), ${summary.teams} teams — ${top}`,
+      `meta/${regulationId}: ${summary.events} event(s), ${summary.teams} teams; ` +
+        `recent ${recent.events}: ${top}`,
     );
   }
 
@@ -262,7 +293,8 @@ async function main() {
       console.log(
         `(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB — ` +
           `${official.tournaments.length} tournament(s), ${official.teams} teams ` +
-          `(${official.topTeams} in the top 32), ${official.pokemon.length} Pokémon`,
+          `(${official.topTeams} in the top 32), ${official.pokemon.length} Pokémon; ` +
+          `recent: ${official.recent.tournamentIds.length} tournament(s), ${official.recent.teams} teams`,
       );
     }
   }

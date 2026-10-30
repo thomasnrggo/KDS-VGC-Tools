@@ -581,6 +581,23 @@ export const es: Messages = {
     teammates: "Compañeros",
     showDetails: (name) => `${name}: ver detalles`,
     hideDetails: (name) => `${name}: ocultar detalles`,
+    scopeRecent: (count) => `Últimos ${count} torneos`,
+    scopeAll: "Toda la regulación",
+    scopeHint:
+      "El metajuego cambia: los últimos torneos lo muestran como está ahora; toda la regulación incluye sus primeras semanas.",
+    latest: "Último",
+    latestHint: (event, usage, previous, before) =>
+      previous
+        ? `${event}: ${usage} de los equipos (${previous}: ${before})`
+        : `${event}: ${usage} de los equipos`,
+    sortBy: "Ordenar por",
+    sortUsage: "Uso",
+    sortTop: "Top 32",
+    sortWinRate: "% victorias",
+    sortRising: "Subiendo en el último torneo",
+    sortFalling: "Bajando en el último torneo",
+    history: "Uso por torneo",
+    historyHint: "Más oscuros: los torneos de la vista reciente.",
     noData: "Aún no hay datos de torneos oficiales para esta regulación.",
     noMatches: (query) => `Ningún Pokémon coincide con “${query}”.`,
   },

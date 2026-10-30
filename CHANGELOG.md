@@ -19,6 +19,11 @@ tagged `vX.Y.Z`. The minor or major number only changes when the project owner s
   and the win rate of teams that brought it; tap one for its common sets, items, abilities, moves
   and teammates. From official tournament team lists (pokedata.ovh, from RK9), with the events it
   covers listed. Behind a new `metagame` section switch in /admin/features (on by default).
+- Metagame page: **"Last 4 events"** (the default) or **"Whole regulation"** — the metagame moves,
+  so the early weeks of a regulation don't weigh on what's being played now; a **Latest** column
+  (usage at the newest event, ▲▼ against the one before); sorting by usage, top 32, win rate, or
+  what's rising or falling at the latest event; and each Pokémon's **usage by event** as a small
+  chart. (Needs the metagame job to rebuild its summary — older summaries show no trend.)
 - The app reads the metagame summary (official tournaments: usage, win rates, sets, teammates),
   cached on the device and refreshed once per session. The Coverage tab notes which data it has
   ("Metagame: 4 official tournaments, 1,740 teams · updated Oct 30 · via pokedata.ovh").

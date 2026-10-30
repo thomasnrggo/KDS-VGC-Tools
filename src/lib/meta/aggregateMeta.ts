@@ -34,6 +34,8 @@ export interface MetaPokemon {
   sets: MetaSet[];
   /** The Pokémon most often on the same team. */
   teammates: Share[];
+  /** Its usage and top usage at each event, in the order the events were given. */
+  history: { usage: number; topUsage: number }[];
 }
 
 export interface MetaSummary {
@@ -75,6 +77,8 @@ interface Accumulator {
   moves: Map<string, number>;
   sets: Map<string, number>;
   teammates: Map<string, number>;
+  /** Teams and top teams carrying it at each event. */
+  perEvent: { teams: number; topTeams: number }[];
 }
 
 /**
@@ -91,11 +95,18 @@ export function aggregateOfficialMeta(
   let teams = 0;
   let topTeams = 0;
 
-  for (const event of events) {
+  const eventTeams = events.map(() => 0);
+  const eventTopTeams = events.map(() => 0);
+
+  events.forEach((event, eventIndex) => {
     for (const player of event.players) {
       const isTop = player.placing <= top;
       teams += 1;
-      if (isTop) topTeams += 1;
+      eventTeams[eventIndex] += 1;
+      if (isTop) {
+        topTeams += 1;
+        eventTopTeams[eventIndex] += 1;
+      }
       const played = player.rounds.filter((round) => round.result !== "bye");
       const won = played.filter((round) => round.result === "win").length;
       const species = [...new Set(player.team.map((mon) => mon.species))];
@@ -114,11 +125,16 @@ export function aggregateOfficialMeta(
             moves: new Map(),
             sets: new Map(),
             teammates: new Map(),
+            perEvent: events.map(() => ({ teams: 0, topTeams: 0 })),
           };
           bySpecies.set(mon.species, entry);
         }
         entry.teams += 1;
-        if (isTop) entry.topTeams += 1;
+        entry.perEvent[eventIndex].teams += 1;
+        if (isTop) {
+          entry.topTeams += 1;
+          entry.perEvent[eventIndex].topTeams += 1;
+        }
         entry.won += won;
         entry.played += played.length;
         tally(entry.items, mon.item);
@@ -133,7 +149,7 @@ export function aggregateOfficialMeta(
         for (const other of species) if (other !== mon.species) tally(entry.teammates, other);
       }
     }
-  }
+  });
 
   const pokemon = [...bySpecies.entries()]
     .sort((a, b) => b[1].teams - a[1].teams || a[0].localeCompare(b[0]))
@@ -154,6 +170,10 @@ export function aggregateOfficialMeta(
         share,
       })),
       teammates: topShares(entry.teammates, entry.teams, listLength),
+      history: entry.perEvent.map((counts, index) => ({
+        usage: eventTeams[index] ? counts.teams / eventTeams[index] : 0,
+        topUsage: eventTopTeams[index] ? counts.topTeams / eventTopTeams[index] : 0,
+      })),
     }));
 
   return { events: events.length, teams, topTeams, pokemon };

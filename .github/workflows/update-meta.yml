@@ -16,6 +16,10 @@ on:
         description: "Most new events to fetch in this run"
         type: number
         default: 4
+      rebuild:
+        description: "Also recompute every summary from the events already saved"
+        type: boolean
+        default: false
 
 concurrency:
   group: update-meta
@@ -41,3 +45,4 @@ jobs:
           npm run update:meta --
           --max-events ${{ inputs.max_events || 4 }}
           ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+          ${{ (github.event_name == 'workflow_dispatch' && inputs.rebuild) && '--rebuild' || '' }}

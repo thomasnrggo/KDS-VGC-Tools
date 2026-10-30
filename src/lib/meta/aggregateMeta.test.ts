@@ -97,6 +97,21 @@ describe("aggregateOfficialMeta's maths", () => {
     expect(find(meta.pokemon, "Incineroar")).toMatchObject({ winRate: 0, rounds: 2 });
   });
 
+  it("keeps each Pokémon's usage at each event", () => {
+    const later: OfficialEvent = {
+      ...event,
+      title: "Later",
+      players: [player(1, ["Incineroar"], ["win"]), player(2, ["Pelipper"], ["loss"])],
+    };
+    const both = aggregateOfficialMeta([event, later], { top: 1 });
+    expect(find(both.pokemon, "Pelipper").history).toEqual([
+      { usage: 2 / 3, topUsage: 1 },
+      { usage: 1 / 2, topUsage: 0 },
+    ]);
+    // Absent from an event: zero there, not missing.
+    expect(find(both.pokemon, "Archaludon").history[1]).toEqual({ usage: 0, topUsage: 0 });
+  });
+
   it("counts top usage over the top placings only", () => {
     expect(find(meta.pokemon, "Archaludon").topUsage).toBe(1);
     expect(find(meta.pokemon, "Incineroar").topUsage).toBe(0);

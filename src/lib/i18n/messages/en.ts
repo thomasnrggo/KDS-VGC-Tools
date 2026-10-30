@@ -574,6 +574,23 @@ export const en = {
     teammates: "Teammates",
     showDetails: (name: string) => `${name}: show details`,
     hideDetails: (name: string) => `${name}: hide details`,
+    scopeRecent: (count: number) => `Last ${count} events`,
+    scopeAll: "Whole regulation",
+    scopeHint:
+      "The metagame moves: the last few events show it as it is now; the whole regulation includes its early weeks.",
+    latest: "Latest",
+    latestHint: (event: string, usage: string, previous: string | null, before: string | null) =>
+      previous
+        ? `${event}: ${usage} of teams (${previous}: ${before})`
+        : `${event}: ${usage} of teams`,
+    sortBy: "Sort by",
+    sortUsage: "Usage",
+    sortTop: "Top 32",
+    sortWinRate: "Win rate",
+    sortRising: "Rising at the latest event",
+    sortFalling: "Falling at the latest event",
+    history: "Usage by event",
+    historyHint: "Darker: the events the recent view uses.",
     noData: "No official tournament data for this regulation yet.",
     noMatches: (query: string) => `No Pokémon match “${query}”.`,
   },
