@@ -21,7 +21,7 @@
     "generate:names": "node scripts/generate-name-data.mjs",
     "generate:calc-data": "node scripts/generate-calc-data.mjs",
     "generate:learnsets": "node scripts/generate-learnsets.mjs",
-    "update:meta": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/update-meta.mjs"
+    "update:meta": "tsx scripts/update-meta.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -55,6 +55,7 @@
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.10"
   }

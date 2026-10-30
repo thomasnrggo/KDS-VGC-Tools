@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { megaDisplayName, speciesNamesMegaForm, stripMegaSuffix } from "./megaForm";
+import {
+  megaDisplayName,
+  megaFormSpecies,
+  speciesNamesMegaForm,
+  stripMegaSuffix,
+} from "./megaForm";
 
 describe("speciesNamesMegaForm", () => {
   it("is true for a species name that already ends in -Mega", () => {
@@ -65,5 +70,20 @@ describe("megaDisplayName", () => {
     expect(megaDisplayName("Staraptor")).toBeNull();
     expect(megaDisplayName("Staraptor", "Leftovers")).toBeNull();
     expect(megaDisplayName("Incineroar", "Staraptite")).toBeNull();
+  });
+});
+
+describe("megaFormSpecies", () => {
+  it("names the Mega form a species' own stone gives", () => {
+    expect(megaFormSpecies("Garchomp", "Garchompite Z")).toBe("Garchomp-Mega-Z");
+    expect(megaFormSpecies("Charizard", "Charizardite Y")).toBe("Charizard-Mega-Y");
+    expect(megaFormSpecies("Golisopod", "Golisopite")).toBe("Golisopod-Mega");
+    expect(megaFormSpecies("Golisopod-Mega")).toBe("Golisopod-Mega");
+  });
+
+  it("is null without the species' own stone", () => {
+    expect(megaFormSpecies("Garchomp", "Choice Scarf")).toBeNull();
+    expect(megaFormSpecies("Garchomp")).toBeNull();
+    expect(megaFormSpecies("Incineroar", "Charizardite Y")).toBeNull();
   });
 });

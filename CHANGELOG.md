@@ -24,6 +24,11 @@ tagged `vX.Y.Z`. The minor or major number only changes when the project owner s
   (usage at the newest event, ▲▼ against the one before); sorting by usage, top 32, win rate, or
   what's rising or falling at the latest event; and each Pokémon's **usage by event** as a small
   chart. (Needs the metagame job to rebuild its summary — older summaries show no trend.)
+- Metagame page: **Megas apart** — Mega Garchomp Z is its own entry next to Garchomp (a Pokémon
+  holding its own Mega Stone), named "Mega Garchomp Z"; tabs for **Pokémon**, **Megas** (only the
+  Mega forms), **Cores** (most common pairs, trios and quads on the same team) and **Teams** (the
+  most common full teams, with their best finish); and a chip for **each tournament**, to see one
+  event's data on its own.
 - The app reads the metagame summary (official tournaments: usage, win rates, sets, teammates),
   cached on the device and refreshed once per session. The Coverage tab notes which data it has
   ("Metagame: 4 official tournaments, 1,740 teams · updated Oct 30 · via pokedata.ovh").

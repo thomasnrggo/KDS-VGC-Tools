@@ -3,12 +3,14 @@
 import { useState } from "react";
 import movesData from "@/data/moves.json";
 import { REGULATIONS } from "@/data/regulations";
-import { useMeta } from "@/hooks/useMeta";
+import { useMeta, useMetaTournament } from "@/hooks/useMeta";
 import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { cn } from "@/lib/utils";
-import type { MetaPokemon, Share } from "@/lib/meta/aggregateMeta";
+import type { MetaCombo, MetaPokemon, MetaTeam, Share } from "@/lib/meta/aggregateMeta";
+import { megaDisplayName, speciesNamesMegaForm } from "@/lib/species/megaForm";
+import type { PokemonText } from "@/lib/i18n/pokemonNames";
 import { shortTournamentName, type MetaTournament } from "@/lib/meta/metaDocument";
 import type { MoveData } from "@/types/damage";
 import { IconName } from "@/enums";
@@ -23,6 +25,16 @@ import { TypeIcon } from "../TypeIcon";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
+/**
+ * A species as the page shows it: "Mega Charizard Y" for a Mega form (the
+ * Pokémon-name language's own when it has one), the translated name otherwise.
+ */
+function speciesLabel(text: PokemonText, species: string): string {
+  const translated = text.species(species);
+  if (!speciesNamesMegaForm(species) || translated !== species) return translated;
+  return megaDisplayName(species) ?? species;
+}
+
 function percent(share: number, digits = 0): string {
   return `${(share * 100).toFixed(digits)}%`;
 }
@@ -34,8 +46,11 @@ const MIN_ROUNDS = 100;
 /** A change of at least this much at the latest event gets an arrow. */
 const TREND_DIFFERENCE = 0.02;
 
-type Scope = "recent" | "all";
+/** The newest events, the whole regulation, or one tournament (its id). */
+type Scope = "recent" | "all" | (string & {});
+type Tab = "pokemon" | "megas" | "cores" | "teams";
 type Sort = "usage" | "top" | "winRate" | "rising" | "falling";
+type CoreSize = "pairs" | "trios" | "quads";
 
 /** Usage at the newest event, and at the one before it (null with only one event). */
 interface Trend {
@@ -43,11 +58,19 @@ interface Trend {
   previous: number | null;
 }
 
+const TAB_CLASS = (active: boolean) =>
+  cn(
+    "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+    active ? "bg-chrome-600 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+  );
+
 /**
  * The Metagame page: what official tournaments are bringing in a
- * regulation, from the metagame job's summary (useMeta). One row per
- * Pokémon — usage, usage in the top 32, win rate — opening to its common
- * sets, items, abilities, moves and teammates.
+ * regulation, from the metagame job's summaries (useMeta, and
+ * useMetaTournament for one event). Which events — the newest few, the whole
+ * regulation, or one tournament — then four views: every Pokémon (a Mega
+ * apart from its species), only the Megas, cores (pairs, trios, quads) and
+ * full teams.
  */
 export function MetagameSection() {
   const t = useMessages();
@@ -58,12 +81,23 @@ export function MetagameSection() {
   const [query, setQuery] = useState("");
   const [openSpecies, setOpenSpecies] = useState<string | null>(null);
   const [scope, setScope] = useState<Scope>("recent");
+  const [tab, setTab] = useState<Tab>("pokemon");
   const [sort, setSort] = useState<Sort>("usage");
+  const [coreSize, setCoreSize] = useState<CoreSize>("pairs");
 
   const official = meta?.official;
-  // The recent slice when the document has one (older documents don't).
-  const slice = scope === "recent" && official?.recent ? official.recent : official;
   const tournaments = official?.tournaments ?? [];
+  const tournamentScope = tournaments.find((event) => event.id === scope) ?? null;
+  const { tournamentMeta, isLoading: isTournamentLoading } = useMetaTournament(
+    regulationId,
+    tournamentScope?.id ?? null,
+  );
+  // The recent slice when the document has one (older documents don't).
+  const slice = tournamentScope
+    ? tournamentMeta
+    : scope === "recent" && official?.recent
+      ? official.recent
+      : official;
   const recentIds = new Set(
     official?.recent?.tournamentIds ?? tournaments.map((event) => event.id),
   );
@@ -84,37 +118,36 @@ export function MetagameSection() {
     return trend && trend.previous !== null ? trend.latest - trend.previous : null;
   };
 
-  const ranked = (slice?.pokemon ?? []).map((mon, index) => ({ mon, rank: index + 1 }));
+  const ranked = (slice?.pokemon ?? [])
+    .filter((mon) => tab !== "megas" || speciesNamesMegaForm(mon.species))
+    .map((mon, index) => ({ mon, rank: index + 1 }));
   const folded = foldForSearch(query.trim());
-  const matching = folded
-    ? ranked.filter(
-        ({ mon }) =>
-          foldForSearch(mon.species).includes(folded) ||
-          foldForSearch(text.species(mon.species)).includes(folded),
-      )
-    : ranked;
+  const matchesQuery = (species: string) =>
+    !folded ||
+    foldForSearch(species).includes(folded) ||
+    foldForSearch(speciesLabel(text, species)).includes(folded);
+  const matching = ranked.filter(({ mon }) => matchesQuery(mon.species));
   // Missing values (no previous event, too few rounds) sort last.
-  const sortValue = ({ mon }: { mon: MetaPokemon }): number | null =>
-    sort === "top"
-      ? mon.topUsage
-      : sort === "winRate"
-        ? mon.rounds >= MIN_ROUNDS
-          ? mon.winRate
-          : null
-        : sort === "rising"
-          ? change(mon.species)
-          : sort === "falling"
-            ? (() => {
-                const value = change(mon.species);
-                return value === null ? null : -value;
-              })()
-            : mon.usage;
+  const sortValue = ({ mon }: { mon: MetaPokemon }): number | null => {
+    if (sort === "top") return mon.topUsage;
+    if (sort === "winRate") return mon.rounds >= MIN_ROUNDS ? mon.winRate : null;
+    const delta = change(mon.species);
+    if (sort === "rising") return delta;
+    if (sort === "falling") return delta === null ? null : -delta;
+    return mon.usage;
+  };
   const visible =
     sort === "usage"
       ? matching
       : [...matching].sort((a, b) => (sortValue(b) ?? -Infinity) - (sortValue(a) ?? -Infinity));
   const latestEvent = tournaments.at(-1);
   const previousEvent = tournaments.at(-2);
+  const combos = slice?.combos;
+  const eventCount = tournamentScope
+    ? 1
+    : scope === "recent" && official?.recent
+      ? official.recent.tournamentIds.length
+      : tournaments.length;
 
   return (
     <section className="flex flex-col gap-4">
@@ -125,6 +158,7 @@ export function MetagameSection() {
             value={regulationId}
             onChange={(id) => {
               setRegulationId(id);
+              setScope("recent");
               setOpenSpecies(null);
             }}
           />
@@ -139,16 +173,51 @@ export function MetagameSection() {
         </p>
       ) : (
         <>
+          {/* Which events: the newest few, the whole regulation, or one tournament. */}
+          <div
+            role="group"
+            aria-label={t.metagame.scopeLabel}
+            title={t.metagame.scopeHint}
+            className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+          >
+            {official.recent && (
+              <TogglePill
+                active={scope === "recent"}
+                onClick={() => setScope("recent")}
+                className="shrink-0 px-3.5 py-1.5 text-sm"
+              >
+                {t.metagame.scopeRecent(official.recent.tournamentIds.length)}
+              </TogglePill>
+            )}
+            <TogglePill
+              active={scope === "all" || (scope === "recent" && !official.recent)}
+              onClick={() => setScope("all")}
+              className="shrink-0 px-3.5 py-1.5 text-sm"
+            >
+              {t.metagame.scopeAll}
+            </TogglePill>
+            <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-zinc-300" />
+            {[...tournaments].reverse().map((tournament) => (
+              <TogglePill
+                key={tournament.id}
+                active={scope === tournament.id}
+                onClick={() => setScope(tournament.id)}
+                title={`${tournament.title} · ${tournament.teams.toLocaleString(appLanguage)}`}
+                className="shrink-0 px-3 py-1.5 text-sm"
+              >
+                {shortTournamentName(tournament.title)}
+              </TogglePill>
+            ))}
+          </div>
+
           <div className="flex flex-col gap-1 text-sm text-zinc-600">
             <p>
               <span className="font-medium text-zinc-800">
-                {t.metagame.basedOn(
-                  scope === "recent" && official.recent
-                    ? official.recent.tournamentIds.length
-                    : tournaments.length,
-                  slice!.teams,
-                )}
+                {tournamentScope
+                  ? tournamentScope.title
+                  : t.metagame.basedOn(eventCount, slice?.teams ?? official.teams)}
               </span>
+              {tournamentScope && ` · ${t.metagame.teamsCount(tournamentScope.teams)}`}
               {" · "}
               {t.metagame.updated(
                 new Date(meta.updatedAt).toLocaleDateString(appLanguage, {
@@ -157,115 +226,244 @@ export function MetagameSection() {
                 }),
               )}
             </p>
-            <details className="group text-xs text-zinc-500">
-              <summary className="cursor-pointer list-none hover:text-zinc-700">
-                {t.metagame.source} <span className="underline">{t.metagame.tournaments}</span>
-              </summary>
-              <ul className="mt-1.5 flex flex-col gap-0.5">
-                {[...official.tournaments]
-                  .sort((a, b) => b.startDate.localeCompare(a.startDate))
-                  .map((tournament) => (
-                    <li key={tournament.id}>
-                      {tournament.title} · {tournament.teams.toLocaleString(appLanguage)}
-                    </li>
-                  ))}
-              </ul>
-            </details>
+            <p className="text-xs text-zinc-500">{t.metagame.source}</p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {official.recent && (
-              <div className="flex flex-wrap gap-1.5" title={t.metagame.scopeHint}>
-                {(["recent", "all"] as const).map((option) => (
-                  <TogglePill
-                    key={option}
-                    active={scope === option}
-                    onClick={() => setScope(option)}
-                    className="px-3.5 py-1.5 text-sm"
-                  >
-                    {option === "recent"
-                      ? t.metagame.scopeRecent(official.recent!.tournamentIds.length)
-                      : t.metagame.scopeAll}
-                  </TogglePill>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div role="tablist" aria-label={t.metagame.view} className="flex flex-wrap gap-1.5">
+              {(["pokemon", "megas", "cores", "teams"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === option}
+                  onClick={() => {
+                    setTab(option);
+                    setOpenSpecies(null);
+                  }}
+                  className={TAB_CLASS(tab === option)}
+                >
+                  {
+                    {
+                      pokemon: t.metagame.tabPokemon,
+                      megas: t.metagame.tabMegas,
+                      cores: t.metagame.tabCores,
+                      teams: t.metagame.tabTeams,
+                    }[option]
+                  }
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               <SearchField
                 query={query}
                 onQueryChange={setQuery}
                 placeholder={t.metagame.searchPlaceholder}
                 ariaLabel={t.metagame.searchLabel}
-                className="min-w-0 flex-1 sm:w-64 sm:flex-none"
+                className="min-w-0 flex-1 md:w-56 md:flex-none"
               />
-              <Select
-                value={sort}
-                onChange={(value) => setSort(value as Sort)}
-                ariaLabel={t.metagame.sortBy}
-                className="py-2 text-sm"
-                options={[
-                  { value: "usage", label: t.metagame.sortUsage },
-                  { value: "top", label: t.metagame.sortTop },
-                  { value: "winRate", label: t.metagame.sortWinRate },
-                  ...(previousEvent
-                    ? [
-                        { value: "rising", label: t.metagame.sortRising },
-                        { value: "falling", label: t.metagame.sortFalling },
-                      ]
-                    : []),
-                ]}
-              />
+              {(tab === "pokemon" || tab === "megas") && (
+                <Select
+                  value={sort}
+                  onChange={(value) => setSort(value as Sort)}
+                  ariaLabel={t.metagame.sortBy}
+                  className="py-2 text-sm"
+                  options={[
+                    { value: "usage", label: t.metagame.sortUsage },
+                    { value: "top", label: t.metagame.sortTop },
+                    { value: "winRate", label: t.metagame.sortWinRate },
+                    ...(previousEvent
+                      ? [
+                          { value: "rising", label: t.metagame.sortRising },
+                          { value: "falling", label: t.metagame.sortFalling },
+                        ]
+                      : []),
+                  ]}
+                />
+              )}
+              {tab === "cores" && (
+                <div role="group" aria-label={t.metagame.coreSize} className="flex gap-1.5">
+                  {(["pairs", "trios", "quads"] as const).map((size) => (
+                    <TogglePill
+                      key={size}
+                      active={coreSize === size}
+                      onClick={() => setCoreSize(size)}
+                      className="px-3 py-1.5 text-sm"
+                    >
+                      {t.metagame[size]}
+                    </TogglePill>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {visible.length === 0 ? (
+          {tournamentScope && !tournamentMeta ? (
+            isTournamentLoading ? (
+              <LoadingState />
+            ) : (
+              <p className="py-10 text-center text-sm text-zinc-500">{t.metagame.noTournament}</p>
+            )
+          ) : tab === "cores" || tab === "teams" ? (
+            !combos ? (
+              <p className="py-10 text-center text-sm text-zinc-500">{t.metagame.noCombos}</p>
+            ) : (
+              <ComboList
+                combos={
+                  tab === "teams"
+                    ? combos.teams
+                    : coreSize === "pairs"
+                      ? combos.pairs
+                      : coreSize === "trios"
+                        ? combos.trios
+                        : combos.quads
+                }
+                hint={tab === "teams" ? t.metagame.teamsHint : t.metagame.coresHint}
+                isTeams={tab === "teams"}
+                matches={(combo) => combo.species.some(matchesQuery)}
+                emptyLabel={t.metagame.noMatches(query.trim())}
+              />
+            )
+          ) : visible.length === 0 ? (
             <p className="py-10 text-center text-sm text-zinc-500">
               {t.metagame.noMatches(query.trim())}
             </p>
           ) : (
-            <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200">
-              <div
-                className={cn(
-                  ROW_GRID,
-                  "bg-zinc-100 py-2 text-[10px] font-semibold tracking-wide text-zinc-500 uppercase",
-                )}
-              >
-                <span className="text-right">#</span>
-                <span className="col-span-2">{t.metagame.pokemon}</span>
-                <span title={t.metagame.usageHint} className="text-right">
-                  {t.metagame.usage}
-                </span>
-                <span title={t.metagame.topHint} className="hidden text-right sm:block">
-                  {t.metagame.top}
-                </span>
-                <span className="text-right">{t.metagame.latest}</span>
-                <span className="text-right">{t.metagame.winRate}</span>
+            <div className="flex flex-col gap-2">
+              {tab === "megas" && <p className="text-xs text-zinc-500">{t.metagame.megasHint}</p>}
+              <div className="flex flex-col overflow-hidden rounded-lg border border-zinc-200">
+                <div
+                  className={cn(
+                    ROW_GRID,
+                    "bg-zinc-100 py-2 text-[10px] font-semibold tracking-wide text-zinc-500 uppercase",
+                  )}
+                >
+                  <span className="text-right">#</span>
+                  <span className="col-span-2">{t.metagame.pokemon}</span>
+                  <span title={t.metagame.usageHint} className="text-right">
+                    {t.metagame.usage}
+                  </span>
+                  <span title={t.metagame.topHint} className="hidden text-right sm:block">
+                    {t.metagame.top}
+                  </span>
+                  <span className="text-right">{t.metagame.latest}</span>
+                  <span className="text-right">{t.metagame.winRate}</span>
+                </div>
+                <ul className="flex flex-col divide-y divide-zinc-200">
+                  {visible.map(({ mon, rank }) => (
+                    <MetaRow
+                      key={mon.species}
+                      mon={mon}
+                      rank={rank}
+                      maxUsage={ranked[0]?.mon.usage ?? 1}
+                      trend={trendOf(mon.species)}
+                      latestEvent={latestEvent}
+                      previousEvent={previousEvent}
+                      history={historyBySpecies.get(mon.species) ?? []}
+                      tournaments={tournaments}
+                      recentIds={recentIds}
+                      isOpen={openSpecies === mon.species}
+                      onToggle={() =>
+                        setOpenSpecies((current) => (current === mon.species ? null : mon.species))
+                      }
+                    />
+                  ))}
+                </ul>
               </div>
-              <ul className="flex flex-col divide-y divide-zinc-200">
-                {visible.map(({ mon, rank }) => (
-                  <MetaRow
-                    key={mon.species}
-                    mon={mon}
-                    rank={rank}
-                    maxUsage={ranked[0]?.mon.usage ?? 1}
-                    trend={trendOf(mon.species)}
-                    latestEvent={latestEvent}
-                    previousEvent={previousEvent}
-                    history={historyBySpecies.get(mon.species) ?? []}
-                    tournaments={tournaments}
-                    recentIds={recentIds}
-                    isOpen={openSpecies === mon.species}
-                    onToggle={() =>
-                      setOpenSpecies((current) => (current === mon.species ? null : mon.species))
-                    }
-                  />
-                ))}
-              </ul>
             </div>
           )}
         </>
       )}
     </section>
+  );
+}
+
+/** Rank · sprites (and names) · usage · top 32 · win rate — cores, and full teams with their best finish. */
+function ComboList({
+  combos,
+  hint,
+  isTeams,
+  matches,
+  emptyLabel,
+}: {
+  combos: (MetaCombo | MetaTeam)[];
+  hint: string;
+  isTeams: boolean;
+  matches: (combo: MetaCombo) => boolean;
+  emptyLabel: string;
+}) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const visible = combos
+    .map((combo, index) => ({ combo, rank: index + 1 }))
+    .filter(({ combo }) => matches(combo));
+  if (visible.length === 0) {
+    return <p className="py-10 text-center text-sm text-zinc-500">{emptyLabel}</p>;
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-xs text-zinc-500">{hint}</p>
+      <ul className="flex flex-col divide-y divide-zinc-200 overflow-hidden rounded-lg border border-zinc-200">
+        {visible.map(({ combo, rank }) => {
+          const best = "best" in combo ? combo.best : undefined;
+          return (
+            <li
+              key={combo.species.join("|")}
+              className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-center sm:gap-4"
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <span className="w-5 shrink-0 text-right text-xs text-zinc-500 tabular-nums">
+                  {rank}
+                </span>
+                <span className="flex shrink-0 gap-0.5">
+                  {combo.species.map((species) => (
+                    <span
+                      key={species}
+                      title={text.species(species)}
+                      className="relative h-9 w-9 sm:h-10 sm:w-10"
+                    >
+                      <PokemonSprite species={species} fill />
+                    </span>
+                  ))}
+                </span>
+                {!isTeams && (
+                  <span className="min-w-0 truncate text-sm font-medium text-zinc-900">
+                    {combo.species.map((species) => text.species(species)).join(" + ")}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-7 text-sm tabular-nums sm:pl-0">
+                <span title={t.metagame.usageHint}>
+                  <span className="font-semibold text-zinc-900">{percent(combo.usage, 1)}</span>
+                  {isTeams && (
+                    <span className="ml-1 text-xs text-zinc-500">
+                      {t.metagame.teamsCount(combo.teams)}
+                    </span>
+                  )}
+                </span>
+                <span title={t.metagame.topHint} className="text-zinc-600">
+                  <span className="text-[10px] text-zinc-400 uppercase">{t.metagame.top}</span>{" "}
+                  {percent(combo.topUsage)}
+                </span>
+                <span title={t.metagame.winRateHint(combo.rounds)} className="text-zinc-600">
+                  <span className="text-[10px] text-zinc-400 uppercase">{t.metagame.winRate}</span>{" "}
+                  {combo.winRate === null ? "—" : percent(combo.winRate)}
+                </span>
+                {best && (
+                  <span className="text-zinc-600">
+                    <span className="text-[10px] text-zinc-400 uppercase">{t.metagame.best}</span>{" "}
+                    {t.metagame.bestFinish(
+                      t.metagame.placing(best.placing),
+                      shortTournamentName(best.tournament),
+                    )}
+                  </span>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -300,7 +498,7 @@ function MetaRow({
 }) {
   const t = useMessages();
   const text = usePokemonText();
-  const name = text.species(mon.species);
+  const name = speciesLabel(text, mon.species);
   const difference = mon.topUsage - mon.usage;
   const delta = trend && trend.previous !== null ? trend.latest - trend.previous : null;
 

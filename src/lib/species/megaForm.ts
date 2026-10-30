@@ -48,3 +48,17 @@ export function megaDisplayName(species: string, item?: string): string | null {
   const letter = suffix.match(/-([XYZ])$/i)?.[1];
   return `Mega ${species}${letter ? ` ${letter.toUpperCase()}` : ""}`;
 }
+
+/**
+ * The Mega form's species name in Showdown's spelling — "Garchomp-Mega-Z",
+ * "Charizard-Mega-Y", "Golisopod-Mega" — when `item` is this species' own
+ * Mega Stone; null otherwise (no stone, or another species' stone). The name
+ * the rest of the app resolves sprites, types and translations from.
+ */
+export function megaFormSpecies(species: string, item?: string): string | null {
+  if (speciesNamesMegaForm(species)) return species;
+  const suffix = item ? MEGA_STONE_SUFFIX_BY_ITEM[normalizeSpeciesKey(item)] : undefined;
+  if (!suffix) return null;
+  const formKey = `${normalizeSpeciesKey(species)}-${normalizeSpeciesKey(suffix)}`;
+  return formKey in speciesData ? `${species}-${suffix}` : null;
+}

@@ -2811,6 +2811,18 @@ leads/backs) is complete and working end to end.
       column (newest event, ▲▼ vs the one before at a 2-point change), sorting (usage, top 32,
       win rate, rising, falling) and a usage-by-event chart. Documents without `recent` still
       work (no chips, no trend).
+    - **Megas, cores, teams, one tournament** (2026-10-30, the owner's asks): entries are keyed by
+      **form** — a species holding its own Mega Stone is `megaFormSpecies` ("Garchomp-Mega-Z",
+      shown "Mega Garchomp Z"), its own entry (Puebla: Garchomp 67 teams, Mega Garchomp Z 75).
+      Most teams carry two stones and only one Mega Evolves per battle (the data doesn't say
+      which), so Mega usage = brought as an option. `aggregateCombinations`: top 20 pairs, trios,
+      quads and full teams (at least two players; with best finish), **by species** so a core
+      isn't split by which Mega was brought. Per-tournament summaries are separate documents,
+      `meta/{reg}/tournaments/{id}` (public read; ~116KB each — all in the main document would pass
+      1MB), loaded only when that chip is picked (`useMetaTournament`). The aggregation now
+      imports app code (`@/lib/species/megaForm`), so the job runs under `tsx` (dev dependency),
+      which resolves the `@/` paths and JSON imports. Page: scope chips (last 4 events / whole
+      regulation / each tournament), tabs Pokémon | Megas | Cores | Teams.
     - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
       Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
       picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder

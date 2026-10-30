@@ -591,6 +591,34 @@ export const en = {
     sortFalling: "Falling at the latest event",
     history: "Usage by event",
     historyHint: "Darker: the events the recent view uses.",
+    view: "View",
+    tabPokemon: "Pokémon",
+    tabMegas: "Megas",
+    tabCores: "Cores",
+    tabTeams: "Teams",
+    scopeLabel: "Which events",
+    megasHint:
+      "A Mega here is the Pokémon holding its own Mega Stone. Most teams bring two stones and can Mega Evolve only one per battle, so this is how often it's brought as an option.",
+    coreSize: "Size",
+    pairs: "Pairs",
+    trios: "Trios",
+    quads: "Quads",
+    coresHint: "Pokémon on the same team, Mega or not.",
+    teamsHint: "The same six Pokémon, brought by at least two players.",
+    teamsCount: (count: number) => `${count} teams`,
+    best: "Best",
+    bestFinish: (placing: string, event: string) => `${placing} · ${event}`,
+    placing: (placing: number) => {
+      const lastTwo = placing % 100;
+      const suffix =
+        lastTwo >= 11 && lastTwo <= 13
+          ? "th"
+          : (({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[placing % 10] ?? "th");
+      return `${placing}${suffix}`;
+    },
+    noCombos:
+      "No cores or teams in this data yet — they arrive with the metagame job's next rebuild.",
+    noTournament: "No summary for this tournament yet.",
     noData: "No official tournament data for this regulation yet.",
     noMatches: (query: string) => `No Pokémon match “${query}”.`,
   },

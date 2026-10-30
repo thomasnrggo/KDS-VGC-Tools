@@ -1,4 +1,4 @@
-import type { MetaPokemon } from "./aggregateMeta";
+import type { MetaCombos, MetaPokemon } from "./aggregateMeta";
 
 /** How many of the newest events make up the "recent" metagame. */
 export const RECENT_EVENTS = 4;
@@ -9,6 +9,8 @@ export interface MetaSlice {
   topTeams: number;
   /** Most-used first. */
   pokemon: MetaPokemon[];
+  /** Pairs, trios, quads and full teams — absent in documents written before they existed. */
+  combos?: MetaCombos;
 }
 
 /**
@@ -32,9 +34,17 @@ export interface MetaDocument {
     teams: number;
     topTeams: number;
     pokemon: MetaPokemon[];
+    combos?: MetaCombos;
     /** The newest RECENT_EVENTS events only — absent in documents written before it existed. */
     recent?: MetaSlice & { tournamentIds: string[] };
   };
+}
+
+/** `meta/{regulationId}/tournaments/{id}` — one event on its own, for the page's tournament chips. */
+export interface MetaTournamentDocument extends MetaSlice {
+  regulationId: string;
+  updatedAt: string;
+  tournament: MetaTournament;
 }
 
 export interface MetaTournament {

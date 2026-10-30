@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateOfficialMeta, type MetaPokemon } from "./aggregateMeta";
+import { aggregateCombinations, aggregateOfficialMeta, type MetaPokemon } from "./aggregateMeta";
 import {
   parseOfficialEvent,
   type OfficialEvent,
@@ -32,7 +32,7 @@ describe("aggregateOfficialMeta on the Puebla Regional", () => {
     // Counted straight from the roster file.
     expect(find(meta.pokemon, "Rillaboom").usage).toBeCloseTo(140 / 333, 3);
     expect(find(meta.pokemon, "Rillaboom").topUsage).toBeCloseTo(4 / 32, 3);
-    expect(find(meta.pokemon, "Charizard").topUsage).toBeCloseTo(15 / 32, 3);
+    expect(find(meta.pokemon, "Charizard-Mega-Y").topUsage).toBeCloseTo(15 / 32, 3);
     // Most-used first.
     const usages = meta.pokemon.map((mon) => mon.teams);
     expect(usages).toEqual([...usages].sort((a, b) => b - a));
@@ -50,6 +50,17 @@ describe("aggregateOfficialMeta on the Puebla Regional", () => {
     });
     for (const set of sneasler.sets) expect(set.moves).toEqual([...set.moves].sort());
     expect(sneasler.moves[0]).toMatchObject({ name: "Close Combat" });
+  });
+
+  it("counts a Mega apart from its species", () => {
+    // Counted straight from the roster file: Garchomp holding Garchompite Z, and not.
+    expect(find(meta.pokemon, "Garchomp-Mega-Z").teams).toBe(75);
+    expect(find(meta.pokemon, "Garchomp").teams).toBe(67);
+    expect(find(meta.pokemon, "Charizard-Mega-Y").teams).toBe(91);
+    expect(find(meta.pokemon, "Garchomp-Mega-Z").items[0]).toEqual({
+      name: "Garchompite Z",
+      share: 1,
+    });
   });
 
   it("finds cores", () => {
@@ -116,5 +127,30 @@ describe("aggregateOfficialMeta's maths", () => {
     expect(find(meta.pokemon, "Archaludon").topUsage).toBe(1);
     expect(find(meta.pokemon, "Incineroar").topUsage).toBe(0);
     expect(find(meta.pokemon, "Pelipper").usage).toBeCloseTo(2 / 3);
+  });
+});
+
+describe("aggregateCombinations on the Puebla Regional", () => {
+  const combos = aggregateCombinations([puebla]);
+
+  it("ranks pairs, trios and quads by species", () => {
+    expect(combos.pairs[0]).toMatchObject({ species: ["Garchomp", "Incineroar"], teams: 77 });
+    expect(combos.pairs[0].usage).toBeCloseTo(77 / 333, 3);
+    expect(combos.trios[0].species).toHaveLength(3);
+    expect(combos.quads[0].species).toHaveLength(4);
+    for (const list of [combos.pairs, combos.trios, combos.quads]) {
+      const counts = list.map((combo) => combo.teams);
+      expect(counts).toEqual([...counts].sort((a, b) => b - a));
+    }
+  });
+
+  it("finds the most common full team and its best finish", () => {
+    expect(combos.teams[0]).toMatchObject({
+      species: ["Archaludon", "Basculegion-F", "Golisopod", "Pelipper", "Raichu", "Sneasler"],
+      teams: 26,
+      best: { placing: 22, tournament: "2027 Puebla Pokémon VGC Regional Championships" },
+    });
+    // Only teams brought at least twice.
+    expect(combos.teams.every((team) => team.teams >= 2)).toBe(true);
   });
 });

@@ -4,7 +4,7 @@ export { auth, signInWithGoogle, signOutUser } from "./auth";
 export { db } from "./firestore";
 export { createCollectionSync, pushMetaDoc, pullMetaDoc, type SyncableRecord } from "./cloudSync";
 export { getSeasons, saveSeason, deleteSeason } from "./seasons";
-export { getMeta } from "./meta";
+export { getMeta, getMetaTournament } from "./meta";
 export { getPublicSets, savePublicSet, deletePublicSet } from "./publicSets";
 export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";
 export { getLearnsetOverrides, saveLearnsetOverride } from "./learnsetOverrides";

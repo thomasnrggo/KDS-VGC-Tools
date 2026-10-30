@@ -19,7 +19,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseOfficialEvent } from "../src/lib/meta/officialTournament.ts";
-import { aggregateOfficialMeta } from "../src/lib/meta/aggregateMeta.ts";
+import { aggregateCombinations, aggregateOfficialMeta } from "../src/lib/meta/aggregateMeta.ts";
 import { RECENT_EVENTS } from "../src/lib/meta/metaDocument.ts";
 import {
   isFinished,
@@ -109,6 +109,9 @@ async function openStore() {
       async saveMeta(regulationId, data) {
         written.set(`meta/${regulationId}`, data);
       },
+      async saveTournamentMeta(regulationId, id, data) {
+        written.set(`meta/${regulationId}/tournaments/${id}`, data);
+      },
       written,
     };
   }
@@ -140,6 +143,9 @@ async function openStore() {
     },
     async saveMeta(regulationId, data) {
       await db.collection("meta").doc(regulationId).set(data);
+    },
+    async saveTournamentMeta(regulationId, id, data) {
+      await db.collection("meta").doc(regulationId).collection("tournaments").doc(id).set(data);
     },
   };
 }
@@ -263,10 +269,12 @@ async function main() {
         teams: summary.teams,
         topTeams: summary.topTeams,
         pokemon: summary.pokemon,
+        combos: aggregateCombinations(events),
         recent: {
           tournamentIds: recentEvents.map((event) => event.id),
           teams: recent.teams,
           topTeams: recent.topTeams,
+          combos: aggregateCombinations(recentEvents),
           // Histories come from the whole regulation's list; leave them off here.
           pokemon: recent.pokemon.map((mon) => {
             const copy = { ...mon };
@@ -276,6 +284,30 @@ async function main() {
         },
       },
     });
+    // Each event on its own, for the page's tournament chips — separate documents,
+    // since all of them in the summary would outgrow Firestore's 1MB limit.
+    for (const event of events) {
+      const single = aggregateOfficialMeta([event], { limit: 60 });
+      await store.saveTournamentMeta(regulationId, event.id, {
+        regulationId,
+        updatedAt: new Date().toISOString(),
+        tournament: {
+          id: event.id,
+          title: event.title,
+          startDate: event.startDate,
+          endDate: event.endDate,
+          teams: event.players.length,
+        },
+        teams: single.teams,
+        topTeams: single.topTeams,
+        pokemon: single.pokemon.map((mon) => {
+          const copy = { ...mon };
+          delete copy.history;
+          return copy;
+        }),
+        combos: aggregateCombinations([event]),
+      });
+    }
     const top = recent.pokemon
       .slice(0, 5)
       .map((mon) => `${mon.species} ${(mon.usage * 100).toFixed(1)}%`)
@@ -289,12 +321,20 @@ async function main() {
   if (dryRun && store.written) {
     const meta = [...store.written.entries()].filter(([key]) => key.startsWith("meta/"));
     for (const [key, value] of meta) {
+      if (key.includes("/tournaments/")) {
+        console.log(
+          `(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB — ` +
+            `${value.teams} teams, ${value.pokemon.length} Pokémon`,
+        );
+        continue;
+      }
       const { official } = value;
       console.log(
         `(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB — ` +
           `${official.tournaments.length} tournament(s), ${official.teams} teams ` +
           `(${official.topTeams} in the top 32), ${official.pokemon.length} Pokémon; ` +
-          `recent: ${official.recent.tournamentIds.length} tournament(s), ${official.recent.teams} teams`,
+          `recent: ${official.recent.tournamentIds.length} tournament(s), ${official.recent.teams} teams; ` +
+          `top team: ${official.combos.teams[0]?.species.join("/")} (${official.combos.teams[0]?.teams})`,
       );
     }
   }

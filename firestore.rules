@@ -140,6 +140,12 @@ service cloud.firestore {
     match /meta/{regulationId} {
       allow read: if true;
       allow write: if false;
+
+      // Each tournament's own summary, for the Metagame page's tournament chips.
+      match /tournaments/{tournamentId} {
+        allow read: if true;
+        allow write: if false;
+      }
     }
 
     // The job's anonymized copy of each official event it has processed —

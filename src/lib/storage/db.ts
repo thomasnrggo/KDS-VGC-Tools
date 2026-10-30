@@ -12,7 +12,7 @@ import {
 import { toSharedTeam } from "@/lib/sharedTeam";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
 import type { CalcSet, Opponent, Team, Tournament } from "@/types";
-import type { MetaDocument } from "@/lib/meta/metaDocument";
+import type { MetaDocument, MetaTournamentDocument } from "@/lib/meta/metaDocument";
 
 const DB_NAME = "vgc-match-planner";
 const DB_VERSION = 6;
@@ -455,4 +455,21 @@ export async function getCachedMeta(regulationId: string): Promise<MetaDocument 
 export async function saveCachedMeta(meta: MetaDocument): Promise<void> {
   const db = await getDb();
   await db.put(METAGAME_STORE, meta, meta.regulationId);
+}
+
+/** This device's copy of one event's summary — keyed "{regulationId}/{tournamentId}" in the same store. */
+export async function getCachedMetaTournament(
+  regulationId: string,
+  tournamentId: string,
+): Promise<MetaTournamentDocument | null> {
+  const db = await getDb();
+  return (
+    ((await db.get(METAGAME_STORE, `${regulationId}/${tournamentId}`)) as
+      MetaTournamentDocument | undefined) ?? null
+  );
+}
+
+export async function saveCachedMetaTournament(meta: MetaTournamentDocument): Promise<void> {
+  const db = await getDb();
+  await db.put(METAGAME_STORE, meta, `${meta.regulationId}/${meta.tournament.id}`);
 }
