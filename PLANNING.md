@@ -2751,6 +2751,62 @@ leads/backs) is complete and working end to end.
       members it endangers (damage calc + speed) and which check it (resist its STABs and hit it
       hard, or outspeed it), measured with sets from the user's own Matchup Planner opponents.
 
+- [ ] **Metagame data** (planned 2026-10-30). What's being used and what wins, so the app can
+      rank threats by the real field instead of treating every type and Pokémon the same. Agreed in
+      chat after comparing sources:
+    - **Sources**, each labelled wherever its data shows, credited, and switchable off on its own:
+        1. **Official tournaments — the main source.** Regionals, Internationals and Worlds, from
+           [pokedata.ovh](https://www.pokedata.ovh/standings2/), which mirrors RK9's published team
+           lists: `standings2/RosterData/{id}.json` (every player's open team sheet — species, form,
+           item, ability, nature, 4 moves) and `standings2/standings/{id}_{division}.json` (final
+           order, W-L-T, points, every round's opponent and result, top-cut seed). The event list is
+           the HTML index (`standings2/`). Undocumented and run by one person: no published terms
+           (its `robots.txt` allows general access; its content signals say `use=reference`,
+           `ai-train=no`). The owner couldn't be reached first, so we use it **respectfully**: only
+           finished VGC events, each fetched once (a finished event never changes), weekly, seconds
+           apart, an honest user agent naming the app; **only our own aggregates leave the job —
+           never their files, never player names**; and we stop if the owner objects. Keep trying
+           to contact them.
+        2. **Online tournaments, 100+ players** — the Limitless public API
+           (`play.limitlesstcg.com/api`, no key): current regulation, 100+ players, team lists
+           required, Bo3. Fresher and larger, community-run. ~30 such events in Reg M-C's first 7
+           weeks (~4,200 players).
+        3. **Ladder** — Smogon's monthly usage files
+           (`smogon.com/stats/{month}/chaos/gen9championsvgc2026regmcbo3-1760.json`): the only source
+           with **Stat Point spreads** (team sheets don't show them), plus checks and counters.
+        Not used: Pikalytics (no public API, stale); Limitless VGC's site (official top teams, but
+        HTML only, and pokedata has every team); RK9 directly (no API).
+    - **Official data, raw → processed.** Raw: teams + results. Joined on the roster's `#`, which is
+      the final placing (= index + 1 in the standings list) — names aren't unique (two "Ricardo
+      Rodriguez, MX" at Puebla). Round entries are `[opponent id, result, …]`: 3 win, 0 loss,
+      opponent −1 a bye. Form names map to the app's species ("Basculegion [Female]" →
+      Basculegion-F, "Tauros [Paldean Form - Blaze Breed]" → Tauros-Paldea-Blaze, "Sinistcha
+      [Masterpiece Form]" → Sinistcha, …). Calculated in the job: **usage** (all players, and the
+      top N by placing — e.g. Puebla: Rillaboom 42% of teams but 12.5% of the top 32, Charizard
+      28% → 47%), **win rate** of teams carrying a Pokémon (with sample sizes), **common sets**
+      (item / ability / nature / moves), **cores** (Pokémon on the same team), and later
+      **head-to-head** results from the round pairings (threat detection). **Not in the data**:
+      Stat Points (→ Smogon), and leads / which 4 were brought — so "combinations" in the app's
+      lead/back sense can't come from tournaments, only cores.
+    - **Job**: a GitHub Actions workflow (daily for Limitless and Smogon, weekly for official
+      events, plus a manual "Run workflow") runs `scripts/update-meta` and writes one processed
+      document per regulation to Firestore (`meta/{regulationId}`, ~100–300KB: update time,
+      windows, sample sizes, top ~60 Pokémon with usage / win rate / sets / teammates), public read,
+      written only by the job's service account. Not committed to the repo: every push to main is a
+      release. Not a Vercel cron: no server-side Firebase in the app, and the Smogon file is 16MB.
+      Optional monthly snapshots for trends. The app reads the document once and caches it.
+    - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
+      Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
+      picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder
+      suggestions ordered by usage.
+    - **Steps**: (1) **done 2026-10-30** — the official-event parser
+      (`src/lib/meta/officialTournament.ts`: form names, the placing join, rounds/byes, no names
+      kept) and aggregation (`src/lib/meta/aggregateMeta.ts`: usage overall and in the top N, win
+      rate from round results with byes left out, sets, items, moves, teammates), tested offline
+      against an anonymized fixture of the Puebla Regional (2026-10-24, 333 Masters;
+      `src/lib/meta/__fixtures__/`); (2) the job script + Firestore document + rules; (3) Limitless
+      and Smogon sources; (4) meta-weighted Coverage; then threat detection.
+
 ## 8. Attribution
 
 - Team paste format: [Pokémon Showdown](https://pokemonshowdown.com/) export format.
