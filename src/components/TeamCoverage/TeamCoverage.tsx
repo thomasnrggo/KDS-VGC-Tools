@@ -3,7 +3,8 @@
 import { useState } from "react";
 import type { ParsedPokemon } from "@/types";
 import { analyzeTeamCoverage, coverageGaps, weakSpots, type DefenseCell } from "@/lib/teamCoverage";
-import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { useMeta } from "@/hooks/useMeta";
 import { cn } from "@/lib/utils";
 import { TogglePill } from "../Button";
 import { Icon } from "../Icon";
@@ -56,6 +57,8 @@ type Table = "defense" | "offense";
 
 interface TeamCoverageProps {
   pokemon: ParsedPokemon[];
+  /** The team's regulation, for its metagame data. */
+  regulationId: string | undefined;
 }
 
 /**
@@ -64,9 +67,11 @@ interface TeamCoverageProps {
  * tally grid — tap a type for its breakdown — and the full type × member
  * table, collapsed. See src/lib/teamCoverage.ts.
  */
-export function TeamCoverage({ pokemon }: TeamCoverageProps) {
+export function TeamCoverage({ pokemon, regulationId }: TeamCoverageProps) {
   const t = useMessages();
   const text = usePokemonText();
+  const { appLanguage } = useLanguageSettings();
+  const { meta } = useMeta(regulationId);
   const [table, setTable] = useState<Table>("defense");
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
@@ -419,7 +424,22 @@ export function TeamCoverage({ pokemon }: TeamCoverageProps) {
         </div>
       </details>
 
-      <p className="border-t border-zinc-200 pt-3 text-xs text-zinc-500">{t.coverage.scope}</p>
+      <div className="flex flex-col gap-1 border-t border-zinc-200 pt-3 text-xs text-zinc-500">
+        <p>{t.coverage.scope}</p>
+        {meta && (
+          <p>
+            {t.coverage.metaSource(
+              meta.official.tournaments.length,
+              meta.official.teams,
+              new Date(meta.updatedAt).toLocaleDateString(appLanguage, {
+                month: "short",
+                day: "numeric",
+              }),
+              meta.official.source,
+            )}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

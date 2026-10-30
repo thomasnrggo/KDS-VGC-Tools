@@ -542,6 +542,8 @@ export const en = {
       "Green: members that hit it super effectively. Tap a type for each one's best move.",
     showTable: "Show full table",
     hideTable: "Hide full table",
+    metaSource: (tournaments: number, teams: number, date: string, source: string) =>
+      `Metagame: ${tournaments} official tournament${tournaments === 1 ? "" : "s"}, ${teams.toLocaleString("en")} teams · updated ${date} · via ${source}`,
     empty: "Add Pokémon to the team to see its coverage.",
   },
   opponentPokemon: {

@@ -549,6 +549,8 @@ export const es: Messages = {
       "Verde: miembros que lo golpean de forma súper eficaz. Toca un tipo para ver el mejor movimiento de cada uno.",
     showTable: "Ver la tabla completa",
     hideTable: "Ocultar la tabla completa",
+    metaSource: (tournaments, teams, date, source) =>
+      `Metajuego: ${tournaments} torneo${tournaments === 1 ? "" : "s"} oficial${tournaments === 1 ? "" : "es"}, ${teams.toLocaleString("es")} equipos · actualizado el ${date} · vía ${source}`,
     empty: "Añade Pokémon al equipo para ver su cobertura.",
   },
   opponentPokemon: {

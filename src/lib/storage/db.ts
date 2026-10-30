@@ -12,9 +12,10 @@ import {
 import { toSharedTeam } from "@/lib/sharedTeam";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
 import type { CalcSet, Opponent, Team, Tournament } from "@/types";
+import type { MetaDocument } from "@/lib/meta/metaDocument";
 
 const DB_NAME = "vgc-match-planner";
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const LEGACY_MY_TEAM_STORE = "myTeam";
 const LEGACY_MY_TEAM_KEY = "current";
 const MY_TEAMS_STORE = "myTeams";
@@ -23,6 +24,9 @@ const ACTIVE_TEAM_ID_KEY = "activeTeamId";
 const OPPONENTS_STORE = "opponents";
 const TOURNAMENTS_STORE = "tournaments";
 const CALC_SETS_STORE = "calcSets";
+// The metagame summary per regulation (see useMeta) — a local copy of public
+// data, never synced to the user's account. Not META_STORE, which is app state.
+const METAGAME_STORE = "metagame";
 
 // IndexedDB stays the source of truth for every read/write below, signed in
 // or not — these two only get touched when a user is actually signed in
@@ -75,6 +79,9 @@ function getDb(): Promise<IDBPDatabase> {
         if (!db.objectStoreNames.contains(CALC_SETS_STORE)) {
           db.createObjectStore(CALC_SETS_STORE);
         }
+        if (!db.objectStoreNames.contains(METAGAME_STORE)) {
+          db.createObjectStore(METAGAME_STORE);
+        }
 
         // v3 introduced multiple "My Team"s: the old single-record `myTeam` store
         // becomes a `myTeams` store keyed by team id, plus a `meta` store tracking
@@ -84,8 +91,7 @@ function getDb(): Promise<IDBPDatabase> {
           const hadLegacyStore = db.objectStoreNames.contains(LEGACY_MY_TEAM_STORE);
           const legacyTeam = hadLegacyStore
             ? ((await transaction.objectStore(LEGACY_MY_TEAM_STORE).get(LEGACY_MY_TEAM_KEY)) as
-                | Team
-                | undefined)
+                Team | undefined)
             : undefined;
 
           if (!db.objectStoreNames.contains(MY_TEAMS_STORE)) {
@@ -242,7 +248,9 @@ export async function saveOpponent(opponent: Opponent): Promise<void> {
   const uid = currentUid();
   if (uid) {
     opponentCloudPushDebouncer.schedule(opponent.id, () => {
-      void opponentsSync.push(uid, opponent).catch((error) => logCloudSyncError("push opponent", error));
+      void opponentsSync
+        .push(uid, opponent)
+        .catch((error) => logCloudSyncError("push opponent", error));
     });
   }
 }
@@ -252,7 +260,9 @@ export async function deleteOpponent(id: string): Promise<void> {
   opponentCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) {
-    void opponentsSync.remove(uid, id).catch((error) => logCloudSyncError("remove opponent", error));
+    void opponentsSync
+      .remove(uid, id)
+      .catch((error) => logCloudSyncError("remove opponent", error));
   }
 }
 
@@ -368,7 +378,9 @@ export async function deleteTournament(id: string): Promise<void> {
   tournamentCloudPushDebouncer.cancel(id);
   const uid = currentUid();
   if (uid) {
-    void tournamentsSync.remove(uid, id).catch((error) => logCloudSyncError("remove tournament", error));
+    void tournamentsSync
+      .remove(uid, id)
+      .catch((error) => logCloudSyncError("remove tournament", error));
   }
 }
 
@@ -432,4 +444,15 @@ export async function syncCalcSetsWithCloud(uid: string): Promise<CalcSet[]> {
     ...removedIds.map((id) => deleteCalcSetLocal(id)),
   ]);
   return merged;
+}
+
+/** This device's last copy of a regulation's metagame summary, if any. */
+export async function getCachedMeta(regulationId: string): Promise<MetaDocument | null> {
+  const db = await getDb();
+  return ((await db.get(METAGAME_STORE, regulationId)) as MetaDocument | undefined) ?? null;
+}
+
+export async function saveCachedMeta(meta: MetaDocument): Promise<void> {
+  const db = await getDb();
+  await db.put(METAGAME_STORE, meta, meta.regulationId);
 }

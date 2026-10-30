@@ -478,7 +478,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           )}
 
           {/* What the team is weak to and what it can hit — see src/lib/teamCoverage.ts. */}
-          {activeTab === "coverage" && <TeamCoverage pokemon={team.pokemon} />}
+          {activeTab === "coverage" && (
+            <TeamCoverage pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
+          )}
 
           {/* Each Pokémon's card (collapsed to its sprite header until clicked)
               with its saved calcs underneath. Columns are independent, so

@@ -2824,7 +2824,13 @@ leads/backs) is complete and working end to end.
       join is by name and country (name alone as a fallback), `#` only choosing between players
       who share a name; an event counts as done only when ≥90% of the players match a sheet (else
       it's retried, with counts — never names — logged); an empty summary is never written.
-      Needs the `FIREBASE_SERVICE_ACCOUNT` secret and the rules deployed; (3) Limitless
+      First real run 2026-10-30: Brisbane, Recife, Nice and Puebla (1,740 Masters teams).
+      **The app side**: `MetaDocument` (`src/lib/meta/metaDocument.ts`, the shared shape),
+      `getMeta` (`src/lib/firebase/meta.ts`), a local copy in IndexedDB's new `metagame` store
+      (DB v6 — not the `meta` store, which is app state), and `useMeta(regulationId)`: the
+      device's copy at once, one Firestore read per regulation per session shared across pages,
+      `meta: null` whenever there's nothing, so every use must work without it. First use: the
+      Coverage tab's "Metagame: N official tournaments, N teams · updated … · via …" line; (3) Limitless
       and Smogon sources; (4) meta-weighted Coverage; then threat detection.
 
 ## 8. Attribution
