@@ -18,7 +18,6 @@ import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/Button";
-import { useFeatureEnabled } from "@/hooks/useFeatureFlags";
 import { LoadingState } from "@/components/LoadingState";
 
 interface MyTeamsSectionProps {
@@ -54,7 +53,6 @@ export function MyTeamsSection({
   const pokemonText = usePokemonText();
   const router = useRouter();
   // Building a team Pokémon by Pokémon, besides pasting one (see /team-builder).
-  const canBuild = useFeatureEnabled("teamBuilder");
   const [tab, setTab] = useState<Tab>("active");
   const [isAdding, setIsAdding] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -262,15 +260,13 @@ export function MyTeamsSection({
           {regulationControl}
         </div>
         <div className="flex items-center gap-2">
-          {canBuild && (
-            <Link
-              href="/team-builder"
-              title={t.teamBuilder.buildTeamHint}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              {t.teamBuilder.buildTeam}
-            </Link>
-          )}
+          <Link
+            href="/team-builder"
+            title={t.teamBuilder.buildTeamHint}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            {t.teamBuilder.buildTeam}
+          </Link>
           <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
         </div>
       </div>
@@ -294,13 +290,11 @@ export function MyTeamsSection({
             {t.myTeams.addTeamTitle}
           </ModalTitle>
           <TeamPasteForm onSubmit={handleAddSubmit} onCancel={() => setIsAdding(false)} />
-          {canBuild && (
-            <p className="mt-4 border-t border-zinc-200 pt-3 text-sm text-zinc-600">
-              <Link href="/team-builder" className="font-medium text-zinc-800 underline">
-                {t.teamBuilder.orBuild}
-              </Link>
-            </p>
-          )}
+          <p className="mt-4 border-t border-zinc-200 pt-3 text-sm text-zinc-600">
+            <Link href="/team-builder" className="font-medium text-zinc-800 underline">
+              {t.teamBuilder.orBuild}
+            </Link>
+          </p>
         </Modal>
       )}
 

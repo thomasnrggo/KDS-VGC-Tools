@@ -30,7 +30,8 @@ paste-only was the original design.
   in one screen, save as a real `Team`, export the full team paste — closest to the real Showdown
   teambuilder experience, not a phased-down version of it.
 - **Feature-flagged**, per this app's existing pattern (`src/types/featureFlags.ts` /
-  `FeatureGate`) — off by default for non-admins until it's ready to be trusted with real team data.
+  `FeatureGate`) — off by default for non-admins until it's ready to be trusted with real team data. _(Removed
+  2026-10-29: the builder is open to everyone; `/team-builder` follows the My Teams (`teams`) flag.)_
 
 ## 3. What already exists to build on
 

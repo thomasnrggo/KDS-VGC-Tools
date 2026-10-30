@@ -10,6 +10,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## Unreleased
+
+### Changed
+
+- **The Team Builder is open to everyone**: its `teamBuilder` feature flag is gone, so "Build a
+  team" (My Teams and the Add team dialog) and "Edit Pokémon" (the team page) always show. It's
+  part of My Teams now — `/team-builder` follows the My Teams switch in /admin/features.
+
 ## 0.2.0 — 2026-10-29
 
 0.2 is about making the existing features better and more stable rather than adding new ones —

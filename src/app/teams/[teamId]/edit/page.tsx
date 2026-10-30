@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { useMessages } from "@/hooks/useLanguage";
-import { FeatureGate } from "@/components/FeatureGate";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { LoadingState } from "@/components/LoadingState";
 import { TeamBuilder } from "@/components/TeamBuilder";
@@ -46,46 +45,44 @@ export default function EditTeamPage({ params }: EditTeamPageProps) {
   }
 
   return (
-    <FeatureGate flagKey="teamBuilder">
-      <div className="flex flex-1 flex-col">
-        <MyTeamHeader
-          teams={activeTeams}
-          activeTeamId={activeTeamId}
-          isLoading={isLoading}
-          addTeam={addTeam}
-          editTeam={editTeam}
-          removeTeam={removeTeam}
-          setActiveTeamId={setActiveTeamId}
-          currentPage="teams"
-          selectedRegulationId={team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? ""}
-          authUser={user}
-          isAuthLoading={isAuthLoading}
-          onSignIn={signInWithGoogle}
-          onSignOut={signOut}
-        />
+    <div className="flex flex-1 flex-col">
+      <MyTeamHeader
+        teams={activeTeams}
+        activeTeamId={activeTeamId}
+        isLoading={isLoading}
+        addTeam={addTeam}
+        editTeam={editTeam}
+        removeTeam={removeTeam}
+        setActiveTeamId={setActiveTeamId}
+        currentPage="teams"
+        selectedRegulationId={team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? ""}
+        authUser={user}
+        isAuthLoading={isAuthLoading}
+        onSignIn={signInWithGoogle}
+        onSignOut={signOut}
+      />
 
-        {isLoading ? (
-          <LoadingState />
-        ) : !team ? (
-          <div className="flex flex-col items-center gap-3 p-14 text-center">
-            <p className="text-lg font-semibold text-zinc-900">{t.teamPage.notFound}</p>
-            <p className="text-sm text-zinc-600">{t.teamBuilder.notFoundBody}</p>
-            <Link href="/teams" className="text-sm font-medium text-zinc-600 hover:underline">
-              {t.teamPage.backToMyTeams}
-            </Link>
-          </div>
-        ) : (
-          <div className="flex w-full flex-col gap-4 px-3 py-4 sm:p-6">
-            <TeamBuilder
-              team={team}
-              heading={`${team.name} — ${t.teamBuilder.editPokemon}`}
-              onChange={(updater) => updateTeam(teamId, updater)}
-              onRemovePokemon={removePokemon}
-              teamHref={`/teams/${teamId}`}
-            />
-          </div>
-        )}
-      </div>
-    </FeatureGate>
+      {isLoading ? (
+        <LoadingState />
+      ) : !team ? (
+        <div className="flex flex-col items-center gap-3 p-14 text-center">
+          <p className="text-lg font-semibold text-zinc-900">{t.teamPage.notFound}</p>
+          <p className="text-sm text-zinc-600">{t.teamBuilder.notFoundBody}</p>
+          <Link href="/teams" className="text-sm font-medium text-zinc-600 hover:underline">
+            {t.teamPage.backToMyTeams}
+          </Link>
+        </div>
+      ) : (
+        <div className="flex w-full flex-col gap-4 px-3 py-4 sm:p-6">
+          <TeamBuilder
+            team={team}
+            heading={`${team.name} — ${t.teamBuilder.editPokemon}`}
+            onChange={(updater) => updateTeam(teamId, updater)}
+            onRemovePokemon={removePokemon}
+            teamHref={`/teams/${teamId}`}
+          />
+        </div>
+      )}
+    </div>
   );
 }

@@ -8,7 +8,6 @@ import { useOpponents } from "@/hooks/useOpponents";
 import { useGroups } from "@/hooks/useGroups";
 import { useAllGroupOpponents } from "@/hooks/useAllGroupOpponents";
 import { useAuth } from "@/hooks/useAuth";
-import { useFeatureEnabled } from "@/hooks/useFeatureFlags";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
@@ -82,7 +81,6 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   ];
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   // The roster's "Edit Pokémon" link into the Team Builder.
-  const canBuild = useFeatureEnabled("teamBuilder");
   // Until sign-in resolves, whether there are groups to read isn't known yet.
   const isMatchupsLoading =
     isAuthLoading || personal.isLoading || groupsApi.isLoading || groupOpponents.isLoading;
@@ -298,16 +296,14 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               {isPreviewing ? (
                 <p className="text-xs font-medium text-zinc-500">{t.teamPage.previewNotSaved}</p>
               ) : (
-                canBuild && (
-                  <Link
-                    href={`/teams/${teamId}/edit`}
-                    title={t.teamBuilder.editPokemonHint}
-                    className="flex items-center gap-1 self-end text-xs font-medium text-zinc-500 hover:text-zinc-800"
-                  >
-                    <Icon name={IconName.Edit} size={14} />
-                    {t.teamBuilder.editPokemon}
-                  </Link>
-                )
+                <Link
+                  href={`/teams/${teamId}/edit`}
+                  title={t.teamBuilder.editPokemonHint}
+                  className="flex items-center gap-1 self-end text-xs font-medium text-zinc-500 hover:text-zinc-800"
+                >
+                  <Icon name={IconName.Edit} size={14} />
+                  {t.teamBuilder.editPokemon}
+                </Link>
               )}
               <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
                 {rosterShown.map((mon, index) => (
