@@ -1,6 +1,6 @@
 {
   "name": "vgc-match-planner",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "description": "A personal tool for planning Pokémon VGC matchups — paste your team and opponent teams, then plan lead/back picks with notes.",
   "author": "thomasnrggo",
