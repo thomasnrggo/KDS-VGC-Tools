@@ -232,14 +232,18 @@ async function main() {
       official: {
         source: "pokedata.ovh (RK9 team lists)",
         division: DIVISION,
-        events: events.map(({ id, title, startDate, endDate, players }) => ({
+        // Named apart from the summary's own fields: an `events` list here would
+        // be overwritten by the summary's `events` count.
+        tournaments: events.map(({ id, title, startDate, endDate, players }) => ({
           id,
           title,
           startDate,
           endDate,
           teams: players.length,
         })),
-        ...summary,
+        teams: summary.teams,
+        topTeams: summary.topTeams,
+        pokemon: summary.pokemon,
       },
     });
     const top = summary.pokemon
@@ -254,7 +258,12 @@ async function main() {
   if (dryRun && store.written) {
     const meta = [...store.written.entries()].filter(([key]) => key.startsWith("meta/"));
     for (const [key, value] of meta) {
-      console.log(`(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB`);
+      const { official } = value;
+      console.log(
+        `(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB — ` +
+          `${official.tournaments.length} tournament(s), ${official.teams} teams ` +
+          `(${official.topTeams} in the top 32), ${official.pokemon.length} Pokémon`,
+      );
     }
   }
 }
