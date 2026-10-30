@@ -1,1 +1,1 @@
-export { TeamRegulationTags } from "./TeamRegulationTags";
+export { shortRegulationLabel, TeamRegulationTags } from "./TeamRegulationTags";

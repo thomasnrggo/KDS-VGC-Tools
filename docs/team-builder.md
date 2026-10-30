@@ -436,6 +436,14 @@ running` — worth actually reading the dev server's own log output when a chang
       item → moves → stats, the order they're shown in); Enter on an untouched field keeps its value (never re-picks the
       species, which would start a blank set); clicking a row also moves on. The stats area is
       `PokemonEditor layout="stats"` (just the table + nature) inside a `FLOW_ROOT`.
+    - Phones: the fields are tap targets that open the active field's options in the shared
+      full-screen `PickerSheet` (the Damage Calculator's phone picker) — search on top, the same
+      list (sort bar, filter chips, "Show all moves", Mega rows, wrapped descriptions) below.
+      Each pick moves the sheet on to the next field (Pokémon → ability → item → moves); after the
+      last move, or ✕, it closes. The keyboard stays up for long lists and drops for abilities.
+      Under the form the Stat Points table is always shown (no bar summary). The header fits one
+      row (short "M-C" regulation, Import / Export as an icon) and the "6/6" count is hidden so
+      six tiles fit; Pokémon and Ability sit stacked beside the sprite (types on it), Item below.
     - Option lists reuse `localizedOptions` (now exported, per regulation) and
       `computePokemonBuild` (now also returning `megaStones` and `hiddenAbility` for the
       headings). `layout="columns"` is gone; the calc's dropdowns are name-only again.

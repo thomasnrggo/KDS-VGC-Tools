@@ -23,6 +23,12 @@ export interface SearchableSelectOption {
   sprite?: string;
   /** Custom rendering for this option's row in the dropdown (e.g. a Showdown-style move/species/item card with type/stats/description) — defaults to a plain `label` (with optional `sprite` thumbnail) when omitted. Built by the caller, since only it knows the shape of whatever data (MoveData, base stats, item/ability descriptions, ...) the row needs. */
   content?: ReactNode;
+  /**
+   * An action row instead of a value (e.g. "Show all moves"): listed last
+   * whatever's typed, and picking it keeps the list open (the caller changes
+   * `options`) rather than closing or moving on.
+   */
+  action?: boolean;
 }
 
 interface SearchableSelectProps {
@@ -156,22 +162,25 @@ export function SearchableSelect({
   const trimmed = query === value ? "" : foldForSearch(query.trim());
   const isCurrent = (option: SearchableSelectOption) =>
     selectedId !== undefined ? option.id === selectedId : option.label === value;
+  const choices = options.filter((option) => !option.action);
+  const actions = options.filter((option) => option.action);
   const matching = (
     trimmed
-      ? options.filter(
+      ? choices.filter(
           (o) =>
             foldForSearch(o.label).includes(trimmed) ||
             (!!o.searchText && foldForSearch(o.searchText).includes(trimmed)),
         )
-      : options
+      : choices
   ).slice(0, MAX_VISIBLE_RESULTS);
   // Unfiltered, the current pick stays listed even past the first results,
   // so it's the highlighted row and Enter keeps it.
-  const current = !trimmed && value ? options.find(isCurrent) : undefined;
-  const filtered =
+  const current = !trimmed && value ? choices.find(isCurrent) : undefined;
+  const shown =
     current && !matching.includes(current)
       ? [current, ...matching.slice(0, MAX_VISIBLE_RESULTS - 1)]
       : matching;
+  const filtered = [...shown, ...actions];
 
   // Keeps the highlighted row in view while arrowing through.
   useEffect(() => {
@@ -184,6 +193,11 @@ export function SearchableSelect({
   /** `fromKeyboard`: an Enter pick, which moves on to the next field in the flow. */
   function pick(option: SearchableSelectOption, fromKeyboard = false) {
     onSelect(option);
+    // An action row changes the list; it stays open, the search as typed.
+    if (option.action) {
+      setActiveIndex(0);
+      return;
+    }
     if (fromKeyboard && !skipFlow) focusNextFlowField(inputRef.current);
     // A field showing a value shows the pick (re-picking the same one doesn't
     // change `value`, so the sync above wouldn't refill it); a plain search
@@ -262,6 +276,7 @@ export function SearchableSelect({
               !event.shiftKey &&
               isOpen &&
               filtered[activeIndex] &&
+              !filtered[activeIndex].action &&
               !isCurrent(filtered[activeIndex]) &&
               !skipFlow &&
               isInFlow(inputRef.current)
@@ -339,42 +354,42 @@ export function SearchableSelect({
           style={{ ...style, width: dropdownWidth }}
           className="z-20 max-h-96 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-lg"
         >
-          {filtered.length === 0 ? (
+          {/* Only action rows left ("Show all moves"): say so above them. */}
+          {filtered.every((option) => option.action) && (
             <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
-          ) : (
-            filtered.map((option, index) => (
-              <button
-                key={option.id}
-                id={`${listId}-${index}`}
-                data-option-index={index}
-                type="button"
-                role="option"
-                aria-selected={index === activeIndex}
-                // Not a tab stop: the input keeps the focus, the arrow keys move the highlight.
-                tabIndex={-1}
-                // Keeps the focus in the input, so the click doesn't blur it first.
-                onMouseDown={(event) => event.preventDefault()}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => pick(option)}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-md text-left text-zinc-900 focus:outline-none",
-                  compact ? "p-1 text-xs" : "p-1.5 text-sm",
-                  index === activeIndex && "bg-zinc-200/70",
-                )}
-              >
-                {option.content ?? (
-                  <>
-                    {option.sprite && (
-                      <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
-                        <PokemonSprite species={option.sprite} fill />
-                      </span>
-                    )}
-                    <span className="truncate">{option.label}</span>
-                  </>
-                )}
-              </button>
-            ))
           )}
+          {filtered.map((option, index) => (
+            <button
+              key={option.id}
+              id={`${listId}-${index}`}
+              data-option-index={index}
+              type="button"
+              role="option"
+              aria-selected={index === activeIndex}
+              // Not a tab stop: the input keeps the focus, the arrow keys move the highlight.
+              tabIndex={-1}
+              // Keeps the focus in the input, so the click doesn't blur it first.
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setActiveIndex(index)}
+              onClick={() => pick(option)}
+              className={cn(
+                "flex w-full items-center gap-2 rounded-md text-left text-zinc-900 focus:outline-none",
+                compact ? "p-1 text-xs" : "p-1.5 text-sm",
+                index === activeIndex && "bg-zinc-200/70",
+              )}
+            >
+              {option.content ?? (
+                <>
+                  {option.sprite && (
+                    <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
+                      <PokemonSprite species={option.sprite} fill />
+                    </span>
+                  )}
+                  <span className="truncate">{option.label}</span>
+                </>
+              )}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -507,38 +522,38 @@ function PhoneSelect({
                 {t.editor.removeValue(value)}
               </button>
             )}
-            {filtered.length === 0 ? (
+            {/* Only action rows left ("Show all moves"): say so above them. */}
+            {filtered.every((option) => option.action) && (
               <p className="p-3 text-sm text-zinc-500">{t.editor.noMatches}</p>
-            ) : (
-              filtered.map((option) => {
-                const isCurrent = !!value && option.label === value;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="option"
-                    aria-selected={isCurrent}
-                    onClick={() => onPick(option)}
-                    className={cn(
-                      "flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-zinc-900 active:bg-zinc-200",
-                      isCurrent && "bg-zinc-100 font-semibold",
-                    )}
-                  >
-                    {option.content ?? (
-                      <>
-                        {option.sprite && (
-                          <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
-                            <PokemonSprite species={option.sprite} fill />
-                          </span>
-                        )}
-                        <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                      </>
-                    )}
-                    {isCurrent && <Icon name={IconName.Check} size={16} />}
-                  </button>
-                );
-              })
             )}
+            {filtered.map((option) => {
+              const isCurrent = !!value && option.label === value;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="option"
+                  aria-selected={isCurrent}
+                  onClick={() => onPick(option)}
+                  className={cn(
+                    "flex min-h-11 w-full items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-zinc-900 active:bg-zinc-200",
+                    isCurrent && "bg-zinc-100 font-semibold",
+                  )}
+                >
+                  {option.content ?? (
+                    <>
+                      {option.sprite && (
+                        <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded bg-zinc-50">
+                          <PokemonSprite species={option.sprite} fill />
+                        </span>
+                      )}
+                      <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                    </>
+                  )}
+                  {isCurrent && <Icon name={IconName.Check} size={16} />}
+                </button>
+              );
+            })}
           </div>
         </PickerSheet>
       )}

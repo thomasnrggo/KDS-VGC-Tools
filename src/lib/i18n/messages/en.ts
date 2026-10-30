@@ -765,6 +765,7 @@ export const en = {
   teamBuilder: {
     title: "Team Builder",
     newTeam: "New team",
+    sheetTitle: (name: string, field: string) => `${name} · ${field}`,
     backToMyTeams: "Back to My Teams",
     teamName: "Team name",
     pokemonCount: (count: number) => `${count}/6 Pokémon`,

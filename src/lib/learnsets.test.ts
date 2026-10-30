@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { learnableMoves, withMove, type LearnsetData } from "./learnsets";
+import { learnableMoves, speciesLearnableMoves, withMove, type LearnsetData } from "./learnsets";
 
 const DATA: LearnsetData = {
   moves: ["fake-out", "protect", "thunderbolt", "attract"],
-  learnsets: { raichu: [0, 1, 2, 3] },
+  learnsets: { raichu: [0, 1, 2, 3], "basculegion-female": [1] },
 };
 
 describe("learnableMoves", () => {
@@ -31,6 +31,18 @@ describe("learnableMoves", () => {
     expect(learnableMoves(DATA, { minior: { add: ["protect"] } }, "minior")).toEqual(
       new Set(["protect"]),
     );
+  });
+});
+
+describe("speciesLearnableMoves", () => {
+  it("finds a set's species by its Showdown name, aliases included", () => {
+    expect(speciesLearnableMoves(DATA, {}, "Raichu")?.has("thunderbolt")).toBe(true);
+    // Showdown's "Basculegion-F" is species.json's "basculegion-female".
+    expect(speciesLearnableMoves(DATA, {}, "Basculegion-F")).toEqual(new Set(["protect"]));
+  });
+
+  it("is null for a species nothing covers", () => {
+    expect(speciesLearnableMoves(DATA, {}, "Minior-Blue-Meteor")).toBeNull();
   });
 });
 

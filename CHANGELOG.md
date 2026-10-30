@@ -99,6 +99,10 @@ starting with the experience on a phone.
 
 ### Changed
 
+- Damage Calculator: the move menus list only the moves that Pokémon learns, like the Team
+  Builder (the move already in the slot stays), with a last "Show all moves" row to see every
+  move and switch back. Pokémon the move data doesn't cover still list every move.
+
 - Team Report, Strategy tab: common combinations look like the matchup page's plans — a card each
   ("Combination 1", 2…) with your leads and back beside rich-text notes (bold, italic, lists;
   older notes carry over), arrows to reorder and an "Add combination" button under the list. The team's notes beside them
@@ -184,6 +188,13 @@ starting with the experience on a phone.
   browser's native dropdown (on phones, the same full-screen sheet).
 
 ### Fixed
+
+- Team Builder: gendered and Paldean forms (Basculegion-F, Indeedee-F, Meowstic-F,
+  Oinkologne-F, Tauros-Paldea-Combat/-Blaze/-Aqua) listed every move instead of the ones they
+  learn — their Showdown names now resolve to the move data (and Paldean Tauros' sprite and stats
+  resolve too).
+- Basculegion-F (and the other Showdown-named forms) showed no types and no ability choices in the
+  Team Builder and the Damage Calculator — they now resolve like the sprite and stats do.
 
 - Dark mode: the Damage Calculator's Pokémon search and the phone picker sheets' search boxes
   were near-white with light text, so what you typed couldn't be read.

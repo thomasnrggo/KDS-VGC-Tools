@@ -8,6 +8,8 @@ export {
   buildCustomPokemon,
   natureLabel,
   localizedOptions,
+  speciesOptionContent,
+  type OptionLabels,
   type PokemonEditorProps,
 } from "./PokemonEditor";
 export { computePokemonBuild, type PokemonBuild } from "./computePokemonBuild";

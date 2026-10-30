@@ -777,6 +777,7 @@ export const es: Messages = {
   teamBuilder: {
     title: "Constructor de equipos",
     newTeam: "Nuevo equipo",
+    sheetTitle: (name, field) => `${name} · ${field}`,
     backToMyTeams: "Volver a Mis equipos",
     teamName: "Nombre del equipo",
     pokemonCount: (count) => `${count}/6 Pokémon`,

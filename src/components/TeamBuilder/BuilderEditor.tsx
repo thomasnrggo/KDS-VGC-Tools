@@ -16,8 +16,11 @@ import {
   computePokemonBuild,
   localizedOptions,
   PokemonEditor,
+  speciesOptionContent,
   STAT_ORDER,
+  type OptionLabels,
 } from "../PokemonEditor";
+import { PickerSheet, pickerSheetSearchClassName } from "../PickerSheet";
 import { PokemonSprite } from "../PokemonSprite";
 import type { SearchableSelectOption } from "../SearchableSelect";
 import { TypeIcon } from "../TypeIcon";
@@ -29,13 +32,11 @@ import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { FLOW_ROOT } from "@/lib/fieldFlow";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
-import { learnableMoves, loadLearnsets, type LearnsetData } from "@/lib/learnsets";
-import { useLearnsetOverrides } from "@/hooks/useLearnsetOverrides";
+import { useLearnableMoves } from "@/hooks/useLearnableMoves";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
-import type { PokemonText } from "@/lib/i18n/pokemonNames";
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { MAX_TOTAL_STAT_POINTS } from "@/lib/stats/calculateFinalStats";
 import { cn } from "@/lib/utils";
@@ -123,8 +124,9 @@ const MOVE_KEY_BY_NAME = new Map(
 function megaRows(
   baseKey: string,
   regulation: Regulation,
-  text: PokemonText,
+  labels: OptionLabels,
 ): SearchableSelectOption[] {
+  const { text } = labels;
   const baseName = formatSpeciesDisplayName(baseKey);
   return regulation.megaStoneItemsForSpecies(baseKey).flatMap((stone) => {
     const megaKey = candidateFormKeys(baseName, stone)[0];
@@ -135,7 +137,16 @@ function megaRows(
       ability: resolveEffectiveAbility(baseName, stone, ABILITIES[baseKey]?.[0]?.name),
     });
     const megaName = formatSpeciesDisplayName(megaKey);
-    return [{ id: megaKey, label: text.species(megaName), searchText: megaName, sprite: megaName }];
+    return [
+      {
+        id: megaKey,
+        label: text.species(megaName),
+        searchText: megaName,
+        sprite: megaName,
+        // The phone's stacked row, like the other Pokémon's.
+        content: speciesOptionContent(megaKey, megaName, labels),
+      },
+    ];
   });
 }
 
@@ -339,27 +350,9 @@ export function BuilderEditor({
     abilitySelectOptions.length > 0 &&
     !abilitySelectOptions.some((option) => option.id === pokemon.ability);
   const { types, breakdown } = isMegaShown ? megaForm : base;
-  const [learnsetData, setLearnsetData] = useState<LearnsetData | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    loadLearnsets().then((data) => {
-      if (!cancelled) setLearnsetData(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  const { overrides: learnsetOverrides } = useLearnsetOverrides();
   // The moves this Pokémon learns (keys), the admin's corrections included —
   // null while loading, or for a form nothing covers; then every move is listed.
-  const learnable = (() => {
-    if (!pokemon || !learnsetData) return null;
-    for (const key of candidateFormKeys(pokemon.species)) {
-      const moves = learnableMoves(learnsetData, learnsetOverrides, key);
-      if (moves) return moves;
-    }
-    return null;
-  })();
+  const learnable = useLearnableMoves(pokemon?.species);
   // The move list shows only those, unless "Show all moves" is on.
   const [learnableOnly, setLearnableOnly] = useState(true);
   /** A saved move this Pokémon can't learn — flagged like an illegal ability. */
@@ -377,9 +370,22 @@ export function BuilderEditor({
   const [filters, setFilters] = useState<Filter[]>([]);
   // The Pokémon list's and the move list's sorts — kept while moving between fields.
   const [sorts, setSorts] = useState<{ species?: Sort; move?: Sort }>({});
+  // Phones: the active field's options open in a full-screen sheet (like the
+  // Damage Calculator's pickers) instead of the area under the form.
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const fieldRefs = useRef(new Map<string, HTMLInputElement | HTMLButtonElement>());
   const areaRef = useRef<HTMLDivElement>(null);
+  const sheetSearchRef = useRef<HTMLInputElement>(null);
   const moves = pokemon?.moves ?? [];
+
+  // Phones: the sheet's search gets the keyboard for long lists (Pokémon,
+  // items, moves) but not for the few abilities, which are quicker to tap.
+  useEffect(() => {
+    if (!isSheetOpen) return;
+    const search = sheetSearchRef.current;
+    if (active.kind === "ability") search?.blur();
+    else search?.focus();
+  }, [isSheetOpen, active]);
 
   // Keeps the keyboard-highlighted row in view while arrowing through —
   // scrolling only the area (scrollIntoView would scroll the page too),
@@ -426,7 +432,7 @@ export function BuilderEditor({
         {
           options: options.species.flatMap((option) => [
             option,
-            ...megaRows(option.id, regulation, text),
+            ...megaRows(option.id, regulation, { text, t }),
           ]),
         },
       ];
@@ -576,6 +582,17 @@ export function BuilderEditor({
     setFilters([]);
   }
 
+  /** Phones: a field's tap opens its options in the sheet. */
+  function openSheet(field: Field) {
+    activate(field);
+    setIsSheetOpen(true);
+  }
+
+  function closeSheet() {
+    setIsSheetOpen(false);
+    activate({ kind: "stats" });
+  }
+
   function filterName(filter: Filter): string {
     if (filter.kind === "type") return text.type(filter.value);
     if (filter.kind === "ability") return text.ability(filter.value);
@@ -587,7 +604,9 @@ export function BuilderEditor({
     const names = new Set(
       options.species.flatMap((option) => [
         ...speciesAbilities(option.id),
-        ...megaRows(option.id, regulation, text).flatMap((mega) => speciesAbilities(mega.id)),
+        ...megaRows(option.id, regulation, { text, t }).flatMap((mega) =>
+          speciesAbilities(mega.id),
+        ),
       ]),
     );
     return [...names]
@@ -678,6 +697,17 @@ export function BuilderEditor({
 
   function focusField(field: Field | undefined) {
     if (!field) return;
+    if (isPhone) {
+      // The sheet moves on to the next field; after the last move it closes
+      // on the Stat Points, always shown under the form.
+      if (field.kind === "stats") {
+        activate(field);
+        setIsSheetOpen(false);
+      } else {
+        activate(field);
+      }
+      return;
+    }
     // Moving on from the last move goes straight into the Stat Points.
     if (field.kind === "stats") return enterStats();
     // After the pick re-renders (a new Pokémon enables the fields after it).
@@ -736,7 +766,7 @@ export function BuilderEditor({
     if (!pokemon) return;
     if (field.kind === "item") onChange({ ...pokemon, item: undefined });
     if (field.kind === "move") onChange({ ...pokemon, moves: setMoveSlot(moves, field.slot, "") });
-    focusField(field);
+    if (!isPhone) focusField(field);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>, field: Field) {
@@ -765,6 +795,13 @@ export function BuilderEditor({
       setQuery(null);
       setActiveIndex(0);
     }
+  }
+
+  function fieldPlaceholder(field: Field): string {
+    if (field.kind === "species") return t.editor.searchPokemon;
+    if (field.kind === "item") return t.editor.addItem;
+    if (field.kind === "ability") return t.editor.selectAbility;
+    return t.editor.addMove;
   }
 
   function fieldLabel(field: Field): string {
@@ -808,13 +845,15 @@ export function BuilderEditor({
           autoComplete="off"
           spellCheck={false}
           disabled={field.kind !== "species" && !pokemon}
-          value={isActive && query !== null ? query : display}
+          // Phones: a tap opens the field's options in a full-screen sheet (typing happens there).
+          readOnly={isPhone}
+          onClick={isPhone ? () => openSheet(field) : undefined}
+          value={isActive && query !== null && !isPhone ? query : display}
           placeholder={placeholder}
           onFocus={(event) => {
+            if (isPhone) return;
             if (!isActive) activate(field);
             event.target.select();
-            // Phones: bring the field to the top, so the list under the form shows below it.
-            if (isPhone) event.target.scrollIntoView({ block: "start", behavior: "smooth" });
           }}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -823,10 +862,11 @@ export function BuilderEditor({
           onKeyDown={(event) => handleKeyDown(event, field)}
           className={cn(
             "h-8 w-full rounded-md border bg-field px-2 text-sm text-zinc-900 focus:outline-none disabled:opacity-50",
+            isPhone && "h-10 cursor-pointer",
             clearable && display && "pr-7",
             leading && "pl-8",
             capType && "pl-12",
-            isActive ? "border-zinc-600 ring-2 ring-zinc-400" : "border-zinc-300",
+            isActive && !isPhone ? "border-zinc-600 ring-2 ring-zinc-400" : "border-zinc-300",
             ((field.kind === "ability" && isAbilityIllegal) ||
               (field.kind === "move" && isMoveIllegal(moves[field.slot]))) &&
               "border-red-600 text-red-600",
@@ -977,6 +1017,8 @@ export function BuilderEditor({
             : "flex items-center gap-2 py-1.5",
           isHighlighted && "bg-zinc-200",
           isCurrent && "ring-1 ring-zinc-400",
+          // Phones have the sheet's full height: descriptions wrap instead of cutting off.
+          isPhone && "py-2 [&_.truncate]:whitespace-normal",
         )}
       >
         {cells ?? option.content ?? (
@@ -997,70 +1039,234 @@ export function BuilderEditor({
   const sectionTitle = "text-xs font-semibold tracking-wide text-zinc-500 uppercase";
   const fieldTitle = "text-[11px] font-medium text-zinc-500";
   const statsActive = active.kind === "stats";
+  const spriteBox = (
+    <div className={cn("relative shrink-0", isPhone ? "h-28 w-28" : "h-24 w-24")}>
+      <div className="h-full w-full overflow-hidden rounded-xl bg-zinc-500/20">
+        {pokemon && (
+          <PokemonSprite
+            species={pokemon.species}
+            // No Mega Stone, no Mega sprite.
+            item={hasMegaForm && !mega ? undefined : pokemon.item}
+            fill
+          />
+        )}
+      </div>
+      {/* Phones: the types sit on the sprite's upper corner, leaving its side to the fields. */}
+      {isPhone && (
+        <div className="absolute top-1 left-1 flex gap-1">
+          {types.map((type) => (
+            <TypeIcon key={type} type={type} size={18} />
+          ))}
+        </div>
+      )}
+      {/* The Mega toggle sits on the sprite's lower corner — it changes the sprite. */}
+      {hasMegaForm && (
+        <TogglePill
+          active={mega}
+          onClick={() => setMega(!mega)}
+          title={t.teamBuilder.megaHint}
+          className={cn(
+            "absolute right-1 bottom-1 px-2 py-0 text-[11px] font-semibold shadow-sm",
+            !mega && "bg-raised",
+          )}
+        >
+          {t.editor.mega}
+        </TogglePill>
+      )}
+    </div>
+  );
+  const pokemonField = (
+    <label className="flex min-w-0 flex-col gap-0.5">
+      <span className={fieldTitle}>{t.editor.pokemon}</span>
+      {input({ kind: "species" }, t.editor.searchPokemon)}
+    </label>
+  );
+  const abilityField = (
+    <label className="flex min-w-0 flex-col gap-0.5">
+      <span className={fieldTitle}>{t.editor.ability}</span>
+      {input({ kind: "ability" }, t.editor.selectAbility)}
+    </label>
+  );
+  const itemField = (
+    <label className="flex min-w-0 flex-col gap-0.5">
+      <span className={fieldTitle}>{t.editor.item}</span>
+      {input(
+        { kind: "item" },
+        t.editor.addItem,
+        true,
+        pokemon?.item && <ItemIcon item={pokemon.item} size={20} />,
+      )}
+    </label>
+  );
+  // The active field's options — under the form on desktop, in the sheet on phones.
+  const results = (
+    <>
+      {/* Only the moves it learns — or every move, for one the list leaves out. */}
+      {active.kind === "move" && learnable && pokemon && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-zinc-200 px-3 py-1.5 text-xs text-zinc-600">
+          <span>
+            {learnableOnly
+              ? t.teamBuilder.learnableMoves(text.species(pokemon.species), learnable.size)
+              : t.teamBuilder.allMovesShown}
+          </span>
+          <button
+            type="button"
+            tabIndex={-1}
+            // Keeps the focus in the field.
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => {
+              setLearnableOnly(!learnableOnly);
+              setActiveIndex(0);
+            }}
+            className="font-medium text-zinc-800 underline hover:text-zinc-950"
+          >
+            {learnableOnly
+              ? t.teamBuilder.showAllMoves
+              : t.teamBuilder.showLearnable(text.species(pokemon.species))}
+          </button>
+        </div>
+      )}
+      {columns ? (
+        <div
+          data-column-header
+          className={cn(
+            sortKind === "move" ? MOVE_GRID : SPECIES_GRID,
+            "sticky top-0 z-20 h-7 border-b border-zinc-200 bg-zinc-100 px-3.5 text-xs text-zinc-600",
+          )}
+        >
+          {(sortKind === "move" ? MOVE_COLUMNS : SPECIES_COLUMNS).map((column, index) =>
+            column === null ? (
+              <span key={index} />
+            ) : column === "abilities" ? (
+              <span key={column}>{t.teamBuilder.abilities}</span>
+            ) : (
+              <span key={column} className={cn(!isTextSort(column) && "flex justify-end")}>
+                {sortButton(column)}
+              </span>
+            ),
+          )}
+        </div>
+      ) : (
+        sortKind && (
+          <div className="flex flex-wrap items-center gap-1 border-b border-zinc-200 bg-zinc-100 px-3 py-1 text-xs text-zinc-600">
+            <span className="mr-1 font-semibold">{t.teamBuilder.sortBy}</span>
+            {(sortKind === "move" ? MOVE_SORTS : SPECIES_SORTS).map(sortButton)}
+          </div>
+        )
+      )}
+      {filters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-zinc-200 bg-raised px-3 py-1.5 text-xs text-zinc-600">
+          <span className="font-semibold">{t.teamBuilder.filtersGroup}:</span>
+          {filters.map((filter, index) => (
+            <span
+              key={filterId(filter)}
+              className="flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-100 py-0.5 pr-1 pl-2 font-medium text-zinc-800"
+            >
+              {filter.kind === "type" && <TypeIcon type={filter.value} size={12} />}
+              {filterName(filter)}
+              <button
+                type="button"
+                tabIndex={-1}
+                // Keeps the focus in the field.
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => removeFilter(index)}
+                aria-label={t.teamBuilder.removeFilter(filterName(filter))}
+                title={t.teamBuilder.removeFilter(filterName(filter))}
+                className="rounded-full p-0.5 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800"
+              >
+                <Icon name={IconName.Close} size={11} />
+              </button>
+            </span>
+          ))}
+          <span className="text-zinc-500">{t.teamBuilder.filterBackspaceHint}</span>
+        </div>
+      )}
+      <div id={listId} role="listbox" aria-label={t.teamBuilder.resultsLabel(fieldLabel(active))}>
+        {/* Like Showdown: the ability to pick is the base form's; the Mega's comes with it. */}
+        {active.kind === "ability" && megaAbility && (
+          <p className="border-b border-zinc-200 px-3 py-2 text-sm text-zinc-700">
+            {t.teamBuilder.afterMega.before}
+            <strong className="font-semibold text-zinc-900">{text.ability(megaAbility)}</strong>
+            {t.teamBuilder.afterMega.after}
+          </p>
+        )}
+        {rows.length === 0 ? (
+          <p className="p-3 text-sm text-zinc-500">{t.editor.noMatches}</p>
+        ) : (
+          <>
+            {pinned && <div className="border-b border-zinc-200 p-1.5">{row(pinned, 0, true)}</div>}
+            {groups.map((group, groupIndex) => {
+              const offset =
+                (pinned ? 1 : 0) +
+                groups.slice(0, groupIndex).reduce((sum, g) => sum + g.options.length, 0);
+              return (
+                <div key={group.title ?? groupIndex} role="group" aria-label={group.title}>
+                  {/* A lone group under the column header needs no heading of its own. */}
+                  {group.title && !(columns && groups.length === 1) && (
+                    <h4
+                      className={cn(
+                        "sticky z-10 border-b border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700",
+                        columns ? "top-7" : "top-0",
+                      )}
+                    >
+                      {group.title}
+                    </h4>
+                  )}
+                  <div className="flex flex-col p-1.5">
+                    {group.options.map((option, index) => row(option, offset + index, false))}
+                  </div>
+                </div>
+              );
+            })}
+            {isCut && (
+              <p className="px-3 pb-2 text-[11px] text-zinc-500">
+                {t.calcPanel.keepTyping(MAX_ROWS)}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="flex flex-col gap-3">
       {/* The form: the Pokémon, its moves, its stats. */}
       <div className="grid grid-cols-1 gap-x-5 gap-y-4 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
-        {/* No heading: the sprite says which Pokémon it is. Its types (and the Mega toggle)
-            beside it; Pokémon, Ability and Item in one row underneath. */}
-        {/* Its fields sit at the bottom, in line with the last move. */}
+        {/* No heading: the sprite says which Pokémon it is. Desktop: its types beside it, then
+            Pokémon, Ability and Item in one row at the bottom (in line with the last move).
+            Phones: Pokémon and Ability stacked beside the sprite (types on it), Item below. */}
         <section
           aria-label={t.editor.pokemon}
           className="flex min-w-0 flex-col gap-2 md:justify-between"
         >
-          <div className="flex items-end gap-3">
-            <div className="relative h-24 w-24 shrink-0">
-              <div className="h-full w-full overflow-hidden rounded-xl bg-zinc-500/20">
-                {pokemon && (
-                  <PokemonSprite
-                    species={pokemon.species}
-                    // No Mega Stone, no Mega sprite.
-                    item={hasMegaForm && !mega ? undefined : pokemon.item}
-                    fill
-                  />
-                )}
+          {isPhone ? (
+            <div className="flex items-end gap-3">
+              {spriteBox}
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                {pokemonField}
+                {abilityField}
               </div>
-              {/* The Mega toggle sits on the sprite's lower corner — it changes the sprite. */}
-              {hasMegaForm && (
-                <TogglePill
-                  active={mega}
-                  onClick={() => setMega(!mega)}
-                  title={t.teamBuilder.megaHint}
-                  className={cn(
-                    "absolute right-1 bottom-1 px-2 py-0 text-[11px] font-semibold shadow-sm",
-                    !mega && "bg-raised",
-                  )}
-                >
-                  {t.editor.mega}
-                </TogglePill>
-              )}
             </div>
-            <div className="flex items-center gap-1.5 pb-1">
-              {types.map((type) => (
-                <TypeIcon key={type} type={type} size={24} />
-              ))}
+          ) : (
+            <div className="flex items-end gap-3">
+              {spriteBox}
+              <div className="flex items-center gap-1.5 pb-1">
+                {types.map((type) => (
+                  <TypeIcon key={type} type={type} size={24} />
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-            <label className="flex min-w-0 flex-col gap-0.5">
-              <span className={fieldTitle}>{t.editor.pokemon}</span>
-              {input({ kind: "species" }, t.editor.searchPokemon)}
-            </label>
-            <label className="flex min-w-0 flex-col gap-0.5">
-              <span className={fieldTitle}>{t.editor.ability}</span>
-              {input({ kind: "ability" }, t.editor.selectAbility)}
-            </label>
-            <label className="flex min-w-0 flex-col gap-0.5">
-              <span className={fieldTitle}>{t.editor.item}</span>
-              {input(
-                { kind: "item" },
-                t.editor.addItem,
-                true,
-                pokemon?.item && <ItemIcon item={pokemon.item} size={20} />,
-              )}
-            </label>
-          </div>
+          )}
+          {isPhone ? (
+            itemField
+          ) : (
+            <div className="grid grid-cols-3 gap-1.5">
+              {pokemonField}
+              {abilityField}
+              {itemField}
+            </div>
+          )}
         </section>
 
         <section aria-label={t.editor.moves} className="flex min-w-0 flex-col gap-1.5">
@@ -1079,238 +1285,150 @@ export function BuilderEditor({
             <h3 className={sectionTitle}>{t.editor.stats}</h3>
             {actions}
           </div>
-          <button
-            ref={(element) => {
-              if (element) fieldRefs.current.set("stats", element);
-              else fieldRefs.current.delete("stats");
-            }}
-            type="button"
-            disabled={!breakdown}
-            aria-expanded={statsActive}
-            aria-controls={listId}
-            onFocus={(event) => {
-              // Tab from the last move goes straight into the Stat Points too.
-              const from = event.relatedTarget;
-              if (from instanceof HTMLElement && from === fieldRefs.current.get("move-3")) {
-                enterStats();
-              } else if (!statsActive) {
-                activate({ kind: "stats" });
-              }
-            }}
-            onClick={() => activate({ kind: "stats" })}
-            onKeyDown={(event) => {
-              // Enter (or Tab) goes into the Stat Points table, like a pick moves on.
-              if (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey)) {
-                event.preventDefault();
-                enterStats();
-              }
-            }}
-            title={t.teamBuilder.editStats}
-            className={cn(
-              // Beside the moves, as tall as them (the bars spread out to fill it).
-              "flex flex-col gap-1 rounded-md border bg-field p-2 text-left focus:outline-none disabled:opacity-50 md:flex-1 md:justify-between",
-              statsActive
-                ? "border-zinc-600 ring-2 ring-zinc-400"
-                : "border-zinc-300 hover:border-zinc-400",
-            )}
-          >
-            {STAT_ORDER.map((stat) => {
-              const isUp = breakdown?.final.increasedStat === stat;
-              const isDown = breakdown?.final.decreasedStat === stat;
-              const points = breakdown?.statPoints[stat] ?? 0;
-              return (
-                <span key={stat} className="flex items-center gap-2 text-[11px] text-zinc-600">
-                  <span
-                    className={cn(
-                      "w-7 shrink-0",
-                      isUp && "font-semibold text-red-600",
-                      isDown && "font-semibold text-blue-600",
-                    )}
-                  >
-                    {t.stats.short[stat]}
-                  </span>
-                  <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-200">
+          {/* Phones show the Stat Points table itself under the form instead. */}
+          {!isPhone && (
+            <button
+              ref={(element) => {
+                if (element) fieldRefs.current.set("stats", element);
+                else fieldRefs.current.delete("stats");
+              }}
+              type="button"
+              disabled={!breakdown}
+              aria-expanded={statsActive}
+              aria-controls={listId}
+              onFocus={(event) => {
+                // Tab from the last move goes straight into the Stat Points too.
+                const from = event.relatedTarget;
+                if (from instanceof HTMLElement && from === fieldRefs.current.get("move-3")) {
+                  enterStats();
+                } else if (!statsActive) {
+                  activate({ kind: "stats" });
+                }
+              }}
+              onClick={() => activate({ kind: "stats" })}
+              onKeyDown={(event) => {
+                // Enter (or Tab) goes into the Stat Points table, like a pick moves on.
+                if (event.key === "Enter" || (event.key === "Tab" && !event.shiftKey)) {
+                  event.preventDefault();
+                  enterStats();
+                }
+              }}
+              title={t.teamBuilder.editStats}
+              className={cn(
+                // Beside the moves, as tall as them (the bars spread out to fill it).
+                "flex flex-col gap-1 rounded-md border bg-field p-2 text-left focus:outline-none disabled:opacity-50 md:flex-1 md:justify-between",
+                statsActive
+                  ? "border-zinc-600 ring-2 ring-zinc-400"
+                  : "border-zinc-300 hover:border-zinc-400",
+              )}
+            >
+              {STAT_ORDER.map((stat) => {
+                const isUp = breakdown?.final.increasedStat === stat;
+                const isDown = breakdown?.final.decreasedStat === stat;
+                const points = breakdown?.statPoints[stat] ?? 0;
+                return (
+                  <span key={stat} className="flex items-center gap-2 text-[11px] text-zinc-600">
                     <span
-                      className="block h-full rounded-full"
-                      style={{
-                        // The base stat's quality, like the Stat Points table's bars
-                        // (the Stat Points are the number beside it).
-                        width: `${breakdown ? statBarWidth(breakdown.base[stat]) : 0}%`,
-                        backgroundColor: statBarColor(breakdown?.base[stat] ?? 0),
-                      }}
-                    />
+                      className={cn(
+                        "w-7 shrink-0",
+                        isUp && "font-semibold text-red-600",
+                        isDown && "font-semibold text-blue-600",
+                      )}
+                    >
+                      {t.stats.short[stat]}
+                    </span>
+                    <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-200">
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          // The base stat's quality, like the Stat Points table's bars
+                          // (the Stat Points are the number beside it).
+                          width: `${breakdown ? statBarWidth(breakdown.base[stat]) : 0}%`,
+                          backgroundColor: statBarColor(breakdown?.base[stat] ?? 0),
+                        }}
+                      />
+                    </span>
+                    <span className="w-6 shrink-0 text-right font-medium tabular-nums">
+                      {points > 0 ? points : "–"}
+                    </span>
                   </span>
-                  <span className="w-6 shrink-0 text-right font-medium tabular-nums">
-                    {points > 0 ? points : "–"}
-                  </span>
-                </span>
-              );
-            })}
-          </button>
+                );
+              })}
+            </button>
+          )}
         </section>
       </div>
 
       {/* The results area: the active field's options, or the Stat Points table. */}
       <div
         ref={areaRef}
-        className="relative flex max-h-[60vh] min-h-48 flex-col overflow-y-auto rounded-lg border border-zinc-200 bg-raised"
-      >
-        {statsActive ? (
-          pokemon && (
-            // FLOW_ROOT: Enter in a Stat Points box moves to the next, then the nature.
-            <div {...FLOW_ROOT} className="p-3">
-              <PokemonEditor
-                title={title}
-                pokemon={pokemon}
-                statOverrides={NO_STAT_OVERRIDES}
-                onStatOverridesChange={(overrides) =>
-                  onChange(applyStatOverrides(pokemon, overrides))
-                }
-                maxTotalStatPoints={MAX_TOTAL_STAT_POINTS}
-                regulationId={regulation.id}
-                mega={mega}
-                layout="stats"
-              />
-            </div>
-          )
-        ) : (
-          <>
-            {/* Only the moves it learns — or every move, for one the list leaves out. */}
-            {active.kind === "move" && learnable && pokemon && (
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-zinc-200 px-3 py-1.5 text-xs text-zinc-600">
-                <span>
-                  {learnableOnly
-                    ? t.teamBuilder.learnableMoves(text.species(pokemon.species), learnable.size)
-                    : t.teamBuilder.allMovesShown}
-                </span>
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  // Keeps the focus in the field.
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    setLearnableOnly(!learnableOnly);
-                    setActiveIndex(0);
-                  }}
-                  className="font-medium text-zinc-800 underline hover:text-zinc-950"
-                >
-                  {learnableOnly
-                    ? t.teamBuilder.showAllMoves
-                    : t.teamBuilder.showLearnable(text.species(pokemon.species))}
-                </button>
-              </div>
-            )}
-            {columns ? (
-              <div
-                data-column-header
-                className={cn(
-                  sortKind === "move" ? MOVE_GRID : SPECIES_GRID,
-                  "sticky top-0 z-20 h-7 border-b border-zinc-200 bg-zinc-100 px-3.5 text-xs text-zinc-600",
-                )}
-              >
-                {(sortKind === "move" ? MOVE_COLUMNS : SPECIES_COLUMNS).map((column, index) =>
-                  column === null ? (
-                    <span key={index} />
-                  ) : column === "abilities" ? (
-                    <span key={column}>{t.teamBuilder.abilities}</span>
-                  ) : (
-                    <span key={column} className={cn(!isTextSort(column) && "flex justify-end")}>
-                      {sortButton(column)}
-                    </span>
-                  ),
-                )}
-              </div>
-            ) : (
-              sortKind && (
-                <div className="flex flex-wrap items-center gap-1 border-b border-zinc-200 bg-zinc-100 px-3 py-1 text-xs text-zinc-600">
-                  <span className="mr-1 font-semibold">{t.teamBuilder.sortBy}</span>
-                  {(sortKind === "move" ? MOVE_SORTS : SPECIES_SORTS).map(sortButton)}
-                </div>
-              )
-            )}
-            {filters.length > 0 && (
-              <div className="flex flex-wrap items-center gap-1.5 border-b border-zinc-200 bg-raised px-3 py-1.5 text-xs text-zinc-600">
-                <span className="font-semibold">{t.teamBuilder.filtersGroup}:</span>
-                {filters.map((filter, index) => (
-                  <span
-                    key={filterId(filter)}
-                    className="flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-100 py-0.5 pr-1 pl-2 font-medium text-zinc-800"
-                  >
-                    {filter.kind === "type" && <TypeIcon type={filter.value} size={12} />}
-                    {filterName(filter)}
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      // Keeps the focus in the field.
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => removeFilter(index)}
-                      aria-label={t.teamBuilder.removeFilter(filterName(filter))}
-                      title={t.teamBuilder.removeFilter(filterName(filter))}
-                      className="rounded-full p-0.5 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800"
-                    >
-                      <Icon name={IconName.Close} size={11} />
-                    </button>
-                  </span>
-                ))}
-                <span className="text-zinc-500">{t.teamBuilder.filterBackspaceHint}</span>
-              </div>
-            )}
-            <div
-              id={listId}
-              role="listbox"
-              aria-label={t.teamBuilder.resultsLabel(fieldLabel(active))}
-            >
-              {/* Like Showdown: the ability to pick is the base form's; the Mega's comes with it. */}
-              {active.kind === "ability" && megaAbility && (
-                <p className="border-b border-zinc-200 px-3 py-2 text-sm text-zinc-700">
-                  {t.teamBuilder.afterMega.before}
-                  <strong className="font-semibold text-zinc-900">
-                    {text.ability(megaAbility)}
-                  </strong>
-                  {t.teamBuilder.afterMega.after}
-                </p>
-              )}
-              {rows.length === 0 ? (
-                <p className="p-3 text-sm text-zinc-500">{t.editor.noMatches}</p>
-              ) : (
-                <>
-                  {pinned && (
-                    <div className="border-b border-zinc-200 p-1.5">{row(pinned, 0, true)}</div>
-                  )}
-                  {groups.map((group, groupIndex) => {
-                    const offset =
-                      (pinned ? 1 : 0) +
-                      groups.slice(0, groupIndex).reduce((sum, g) => sum + g.options.length, 0);
-                    return (
-                      <div key={group.title ?? groupIndex} role="group" aria-label={group.title}>
-                        {/* A lone group under the column header needs no heading of its own. */}
-                        {group.title && !(columns && groups.length === 1) && (
-                          <h4
-                            className={cn(
-                              "sticky z-10 border-b border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700",
-                              columns ? "top-7" : "top-0",
-                            )}
-                          >
-                            {group.title}
-                          </h4>
-                        )}
-                        <div className="flex flex-col p-1.5">
-                          {group.options.map((option, index) => row(option, offset + index, false))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {isCut && (
-                    <p className="px-3 pb-2 text-[11px] text-zinc-500">
-                      {t.calcPanel.keepTyping(MAX_ROWS)}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-          </>
+        className={cn(
+          "relative flex flex-col rounded-lg border border-zinc-200 bg-raised",
+          !isPhone && "max-h-[60vh] min-h-48 overflow-y-auto",
         )}
+      >
+        {statsActive || isPhone
+          ? pokemon && (
+              // FLOW_ROOT: Enter in a Stat Points box moves to the next, then the nature.
+              <div {...FLOW_ROOT} className="p-3">
+                <PokemonEditor
+                  title={title}
+                  pokemon={pokemon}
+                  statOverrides={NO_STAT_OVERRIDES}
+                  onStatOverridesChange={(overrides) =>
+                    onChange(applyStatOverrides(pokemon, overrides))
+                  }
+                  maxTotalStatPoints={MAX_TOTAL_STAT_POINTS}
+                  regulationId={regulation.id}
+                  mega={mega}
+                  layout="stats"
+                />
+              </div>
+            )
+          : results}
       </div>
+
+      {isPhone && isSheetOpen && !statsActive && (
+        <PickerSheet
+          title={
+            // A move's label already names the Pokémon ("Gengar move 2").
+            active.kind === "move"
+              ? fieldLabel(active)
+              : t.teamBuilder.sheetTitle(title, fieldLabel(active))
+          }
+          onClose={closeSheet}
+          search={
+            <input
+              ref={sheetSearchRef}
+              type="search"
+              value={query ?? ""}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(0);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  if (rows[highlighted]) pick(rows[highlighted]);
+                } else if (event.key === "Backspace" && !query && filters.length > 0) {
+                  event.preventDefault();
+                  removeFilter(filters.length - 1);
+                }
+              }}
+              placeholder={fieldPlaceholder(active)}
+              aria-label={t.editor.fieldLabel(title, fieldLabel(active))}
+              enterKeyHint="next"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              className={pickerSheetSearchClassName}
+            />
+          }
+        >
+          {results}
+        </PickerSheet>
+      )}
     </div>
   );
 }

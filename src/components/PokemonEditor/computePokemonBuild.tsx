@@ -3,6 +3,7 @@ import { calculateStatBreakdown, type StatBreakdown } from "@/lib/stats/calculat
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
+import { SPECIES_ALIASES } from "@/constants";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import { REGULATIONS, type Regulation } from "@/data/regulations";
 import abilitiesData from "@/data/abilities.json";
@@ -124,9 +125,11 @@ export function computePokemonBuild(
 
   // Ability options for the current FORM (mega-aware — Charizard-Mega-X only
   // has Tough Claws, not Blaze/Solar Power).
-  const abilityFormKey = effectivePokemon
+  // Through SPECIES_ALIASES like sprites and stats ("Basculegion-F" → "basculegion-female").
+  const formKey = effectivePokemon
     ? candidateFormKeys(effectivePokemon.species, effectivePokemon.item)[0]
     : undefined;
+  const abilityFormKey = formKey && (SPECIES_ALIASES[formKey] ?? formKey);
   const abilityOptions = abilityFormKey ? (ABILITIES[abilityFormKey] ?? []) : [];
   const types = abilityFormKey ? (SPECIES_TYPES[abilityFormKey] ?? []) : [];
   const abilitySelectOptions: SearchableSelectOption[] = abilityOptions.map((ability) => {

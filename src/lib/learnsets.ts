@@ -6,6 +6,9 @@
  * /admin/learnsets). Moves are moves.json keys, species species.json keys.
  */
 
+import { SPECIES_ALIASES } from "@/constants";
+import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
+
 export interface LearnsetData {
   /** Every move key, once — each species lists indexes into it. */
   moves: string[];
@@ -55,6 +58,26 @@ export function learnableMoves(
   for (const move of override?.add ?? []) moves.add(move);
   for (const move of override?.remove ?? []) moves.delete(move);
   return moves;
+}
+
+/**
+ * A saved Pokémon's moves, looked up by its species name as a set stores it
+ * ("Basculegion-F", "Raichu-Alola") — normalized, then through
+ * SPECIES_ALIASES ("basculegion-f" → "basculegion-female"), the same way
+ * sprites and stats resolve. Null when nothing covers it.
+ */
+export function speciesLearnableMoves(
+  data: LearnsetData,
+  overrides: LearnsetOverrides,
+  species: string,
+): Set<string> | null {
+  for (const key of candidateFormKeys(species)) {
+    for (const candidate of [key, SPECIES_ALIASES[key]]) {
+      const moves = candidate && learnableMoves(data, overrides, candidate);
+      if (moves) return moves;
+    }
+  }
+  return null;
 }
 
 /**

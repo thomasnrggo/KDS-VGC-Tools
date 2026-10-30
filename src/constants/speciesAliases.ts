@@ -21,6 +21,10 @@ export const SPECIES_ALIASES: Record<string, string> = {
   "meowstic-f-mega": "meowstic-female-mega",
   "oinkologne-f": "oinkologne-female",
   "basculegion-f": "basculegion-female",
+  // Showdown drops the "-Breed" species.json keeps.
+  "tauros-paldea-combat": "tauros-paldea-combat-breed",
+  "tauros-paldea-blaze": "tauros-paldea-blaze-breed",
+  "tauros-paldea-aqua": "tauros-paldea-aqua-breed",
   "necrozma-dusk-mane": "necrozma-dusk",
   "necrozma-dawn-wings": "necrozma-dawn",
   "calyrex-ice-rider": "calyrex-ice",

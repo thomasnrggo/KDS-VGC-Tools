@@ -17,7 +17,7 @@ interface TeamRegulationTagsProps {
 }
 
 /** Strips the "Regulation " prefix a Regulation's own label always carries (e.g. "Regulation M-C" -> "M-C") — these badges are small, so the short form reads better than repeating "Regulation" once per tag. */
-function shortLabel(label: string): string {
+export function shortRegulationLabel(label: string): string {
   return label.replace(/^Regulation\s+/, "");
 }
 
@@ -50,7 +50,7 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
             key={regulationId}
             className="flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-50 py-0.5 pr-1 pl-2 text-[11px] font-medium text-zinc-700"
           >
-            {shortLabel(regulation.label)}
+            {shortRegulationLabel(regulation.label)}
             {canUntag && (
               <button
                 type="button"

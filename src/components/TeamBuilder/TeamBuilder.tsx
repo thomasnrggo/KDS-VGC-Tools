@@ -8,6 +8,7 @@ import { ItemIcon } from "../ItemIcon";
 import { Modal, ModalActions, ModalDescription, ModalTitle } from "../Modal";
 import { BuilderEditor } from "./BuilderEditor";
 import { PokemonSprite } from "../PokemonSprite";
+import { shortRegulationLabel } from "../TeamRegulationTags";
 import { Textarea } from "../Textarea";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
@@ -115,6 +116,11 @@ export function TeamBuilder({
     setSelectedIndex(Math.max(0, Math.min(removed, pokemon.length - 2)));
     setConfirmRemoveIndex(null);
     toast.success(t.teamBuilder.removed(name));
+  }
+
+  /** Opens Import / Export with the team's text, ready to copy or to paste over. */
+  function openImportExport() {
+    setImportDraft({ text: formatTeamPaste(pokemon), error: null });
   }
 
   /** Removes the selected Pokémon — asking first once the team is saved (it touches plans). */
@@ -281,11 +287,18 @@ export function TeamBuilder({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* One compact row (instead of a breadcrumb): back (to the team's page, or My Teams), name and regulation on
-          the left, team-wide actions on the right (their own row on phones). */}
+      {/* One compact row (instead of a breadcrumb): back (to the team's page, or My Teams), name
+          and regulation on the left, Import / Export on the right (an icon in the same row on phones). */}
       <h1 className="sr-only">{heading}</h1>
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 md:grid-cols-[auto_minmax(0,20rem)_auto]">
+        <div
+          className={cn(
+            "grid min-w-0 items-center gap-2",
+            isPhone
+              ? "grid-cols-[auto_minmax(0,1fr)_auto_auto]"
+              : "grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,20rem)_auto]",
+          )}
+        >
           <Link
             href={teamHref ?? "/teams"}
             aria-label={teamHref ? t.teamBuilder.backToTeam : t.teamBuilder.backToMyTeams}
@@ -317,7 +330,10 @@ export function TeamBuilder({
             >
               {REGULATIONS.map((option) => (
                 <option key={option.id} value={option.id}>
-                  {t.common.regulationLabel(option.label)}
+                  {/* Phones: just "M-C", leaving the team name room. */}
+                  {isPhone
+                    ? shortRegulationLabel(option.label)
+                    : t.common.regulationLabel(option.label)}
                 </option>
               ))}
             </select>
@@ -327,12 +343,21 @@ export function TeamBuilder({
               className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-zinc-500"
             />
           </span>
+          {isPhone && (
+            <IconButton
+              onClick={openImportExport}
+              aria-label={t.teamBuilder.importExport}
+              title={t.teamBuilder.importExportHint}
+            >
+              <Icon name={IconName.ContentPaste} size={16} />
+            </IconButton>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className={cn("flex flex-wrap items-center gap-1.5", isPhone && "hidden")}>
           {/* One dialog for both, like Showdown: the team's text to copy, or paste one over it. */}
           <Button
             variant="outline"
-            onClick={() => setImportDraft({ text: formatTeamPaste(pokemon), error: null })}
+            onClick={openImportExport}
             title={t.teamBuilder.importExportHint}
             className="flex items-center gap-1.5 px-3 py-1"
           >
@@ -405,9 +430,12 @@ export function TeamBuilder({
               </button>
             )}
           </div>
-          <span className="ml-auto shrink-0 text-xs text-zinc-500">
-            {t.teamBuilder.pokemonCount(pokemon.length)}
-          </span>
+          {/* Phones leave it out, so all six tiles fit on one row. */}
+          {!isPhone && (
+            <span className="ml-auto shrink-0 text-xs text-zinc-500">
+              {t.teamBuilder.pokemonCount(pokemon.length)}
+            </span>
+          )}
         </div>
         {issues.length > 0 && (
           <p className="flex items-start gap-1.5 text-xs text-amber-700">

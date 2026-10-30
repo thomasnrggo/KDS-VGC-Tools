@@ -42,6 +42,9 @@ const SHOWDOWN_NAME_OVERRIDES = {
   "meowstic-male": "Meowstic",
   "oinkologne-female": "Oinkologne-F",
   "oinkologne-male": "Oinkologne",
+  "tauros-paldea-combat-breed": "Tauros-Paldea-Combat",
+  "tauros-paldea-blaze-breed": "Tauros-Paldea-Blaze",
+  "tauros-paldea-aqua-breed": "Tauros-Paldea-Aqua",
 };
 
 async function readJson(file) {

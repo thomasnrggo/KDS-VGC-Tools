@@ -19,6 +19,7 @@ import { IconName } from "@/enums";
 import { computePokemonBuild } from "./computePokemonBuild";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import { useLearnableMoves } from "@/hooks/useLearnableMoves";
 import { ENGLISH_POKEMON_TEXT, type PokemonText } from "@/lib/i18n/pokemonNames";
 import { MESSAGES, type Messages } from "@/lib/i18n/messages";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
@@ -32,9 +33,11 @@ const MOVES = movesData as unknown as Record<string, MoveData>;
 const SPECIES_TYPES = speciesTypesData as unknown as Record<string, string[]>;
 const BASE_STATS = baseStatsData as unknown as Record<string, BaseStats>;
 const NATURE_NAMES = Object.keys(NATURE_MODIFIERS);
+/** The move lists' "Show all moves" action row (see SearchableSelectOption.action). */
+const SHOW_ALL_MOVES_ID = "__show-all-moves__";
 
 /** How option rows are worded: translated game terms plus the app-language labels (Pow/Acc/BST, …). */
-interface OptionLabels {
+export interface OptionLabels {
   text: PokemonText;
   t: Messages;
 }
@@ -45,7 +48,7 @@ const ENGLISH_OPTION_LABELS: OptionLabels = {
 };
 
 /** A Showdown-style sprite/name/types row on top, abilities/stat-line below — the species search's shared-panel row (see moveOptionContent for the move-picker equivalent). */
-function speciesOptionContent(
+export function speciesOptionContent(
   key: string,
   englishName: string,
   { text, t }: OptionLabels = ENGLISH_OPTION_LABELS,
@@ -381,6 +384,16 @@ export function PokemonEditor({
   );
 
   const [activeField, setActiveField] = useState<ActiveField>(null);
+  // The moves this Pokémon learns (null: every move) — the move lists show
+  // only those unless "Show all moves" is picked.
+  const learnable = useLearnableMoves(pokemon?.species);
+  const [showAllMoves, setShowAllMoves] = useState(false);
+  // A different Pokémon starts on its own moves again.
+  const [movesFor, setMovesFor] = useState(pokemon?.species);
+  if (pokemon?.species !== movesFor) {
+    setMovesFor(pokemon?.species);
+    setShowAllMoves(false);
+  }
   const [query, setQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   // What the fields show — translated; what they save stays English.
@@ -510,7 +523,9 @@ export function PokemonEditor({
     // still shows its own current move as a valid option).
     const usedElsewhere = moves.filter((_, i) => i !== activeField.slot);
     activeOptions = options.moves.filter(
-      (option) => !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id),
+      (option) =>
+        !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id) &&
+        (!learnable || showAllMoves || learnable.has(option.id)),
     );
     activeAriaLabel = t.editor.moveSlot(title, activeField.slot + 1);
   }
@@ -852,6 +867,24 @@ export function PokemonEditor({
     </div>
   );
 
+  // Like the Team Builder: only the moves it learns (plus the one already in
+  // the slot), with a last row to show every move, or go back.
+  const speciesName = pokemon ? text.species(pokemon.species) : "";
+  const learnsToggle: SearchableSelectOption | null = learnable
+    ? {
+        id: SHOW_ALL_MOVES_ID,
+        label: showAllMoves ? t.teamBuilder.showLearnable(speciesName) : t.teamBuilder.showAllMoves,
+        action: true,
+        content: (
+          <span className="text-xs font-medium text-zinc-600 underline">
+            {showAllMoves
+              ? t.teamBuilder.showLearnable(speciesName)
+              : `${t.teamBuilder.learnableMoves(speciesName, learnable.size)} · ${t.teamBuilder.showAllMoves}`}
+          </span>
+        ),
+      }
+    : null;
+
   // One full-width row per move — a name-only searchable dropdown — instead
   // of the shared results panel's detailed rows.
   const simpleMoveFields =
@@ -863,11 +896,25 @@ export function PokemonEditor({
       return (
         <div key={slot}>
           <SearchableSelect
-            options={options.moves
-              .filter((option) => !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id))
-              .map(optionRow)}
+            options={[
+              ...options.moves
+                .filter((option) => !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id))
+                .filter(
+                  (option) =>
+                    !learnable ||
+                    showAllMoves ||
+                    learnable.has(option.id) ||
+                    MOVES[option.id]?.name === move,
+                )
+                .map(optionRow),
+              ...(learnsToggle ? [learnsToggle] : []),
+            ]}
             value={move ? text.move(move) : ""}
             onSelect={(option) => {
+              if (option.id === SHOW_ALL_MOVES_ID) {
+                setShowAllMoves(!showAllMoves);
+                return;
+              }
               // Saved by its English name — the label may be translated.
               const moveName = MOVES[option.id]?.name ?? option.searchText ?? option.label;
               onMovesChange(setMoveSlot(moves, slot, moveName));
