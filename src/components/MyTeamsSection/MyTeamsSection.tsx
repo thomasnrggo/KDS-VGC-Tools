@@ -1,5 +1,6 @@
 "use client";
 
+import { RegulationSelect } from "@/components/Select";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,19 +12,19 @@ import { TeamRoster } from "../TeamRoster";
 import { Modal, ModalDescription, ModalTitle } from "../Modal";
 import { TeamPasteForm } from "../TeamPasteForm";
 import { SearchField } from "../SearchField";
-import { RowActionsMenu } from "../RowActionsMenu";
 import { TeamRegulationTags } from "../TeamRegulationTags";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/Button";
+import { Button, IconButton, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
 
 interface MyTeamsSectionProps {
   teams: Team[];
   isLoading: boolean;
   addTeam: (rawPaste: string, name: string, regulationId: string) => string | null;
+  duplicateTeam: (id: string) => void;
   updateTeam: (id: string, updater: (team: Team) => Team) => void;
   removeTeam: (id: string) => void;
   archiveTeam: (id: string) => void;
@@ -36,11 +37,19 @@ interface MyTeamsSectionProps {
 
 type Tab = "active" | "archived";
 
+/**
+ * The team rows' stacked icon actions. Phones show just Edit and Duplicate, at a
+ * tappable size — Archive and Remove live in the team page's ⋯ menu there.
+ */
+const rowActionClass = "h-10 w-10 text-zinc-500 hover:bg-zinc-50 md:h-6 md:w-6";
+const desktopRowActionClass = "hidden text-zinc-500 hover:bg-zinc-50 md:flex";
+
 /** "My Teams" list page's content — search, regulation switcher, active/archived tabs, add/edit/archive/delete, each row navigating to /teams/[id] on click. Mirrors OpponentsSection's structure, simplified (no bulk import/mass-clear — these are your own handful of teams, not a big opponent list). */
 export function MyTeamsSection({
   teams,
   isLoading,
   addTeam,
+  duplicateTeam,
   updateTeam,
   removeTeam,
   archiveTeam,
@@ -52,7 +61,6 @@ export function MyTeamsSection({
   const t = useMessages();
   const pokemonText = usePokemonText();
   const router = useRouter();
-  // Building a team Pokémon by Pokémon, besides pasting one (see /team-builder).
   const [tab, setTab] = useState<Tab>("active");
   const [isAdding, setIsAdding] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -144,25 +152,7 @@ export function MyTeamsSection({
 
   const regulationControl =
     REGULATIONS.length > 1 ? (
-      <div className="relative shrink-0">
-        <select
-          value={selectedRegulationId}
-          onChange={(event) => setSelectedRegulationId(event.target.value)}
-          aria-label={t.common.regulation}
-          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
-        >
-          {REGULATIONS.map((regulation) => (
-            <option key={regulation.id} value={regulation.id}>
-              {t.common.regulationLabel(regulation.label)}
-            </option>
-          ))}
-        </select>
-        <Icon
-          name={IconName.ExpandMore}
-          size={14}
-          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
-        />
-      </div>
+      <RegulationSelect value={selectedRegulationId} onChange={setSelectedRegulationId} />
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
         {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
@@ -244,8 +234,8 @@ export function MyTeamsSection({
           <button
             type="button"
             onClick={() => setIsAdding(true)}
-            aria-label={t.myTeams.addTeam}
-            title={t.myTeams.addTeam}
+            aria-label={t.myTeams.createTeam}
+            title={t.myTeams.createTeam}
             className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-chrome-600 text-white hover:bg-chrome-700"
           >
             <Icon name={IconName.Add} size={20} />
@@ -253,41 +243,35 @@ export function MyTeamsSection({
         </div>
       </div>
 
-      {/* Desktop: unchanged single-row layout. */}
-      <div className="hidden items-center justify-between md:flex">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-zinc-900">{t.myTeams.title}</h2>
-          {regulationControl}
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/team-builder"
-            title={t.teamBuilder.buildTeamHint}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            {t.teamBuilder.buildTeam}
-          </Link>
-          <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
-        </div>
+      {/* Desktop: title + regulation, then one toolbar row below. */}
+      <div className="hidden items-center gap-3 md:flex">
+        <h2 className="text-xl font-semibold text-zinc-900">{t.myTeams.title}</h2>
+        {regulationControl}
       </div>
 
-      {tabsControl}
-
-      {/* Desktop only — mobile shows this inline in the row above instead. */}
-      {canSearch && (
-        <SearchField
-          query={searchQuery}
-          onQueryChange={setSearchQuery}
-          placeholder={t.myTeams.searchPlaceholder}
-          ariaLabel={t.myTeams.searchLabel}
-          className="hidden md:block"
-        />
-      )}
+      <div className="flex items-center justify-between gap-4">
+        {tabsControl}
+        {/* Desktop only — mobile has search and add in its header row above. */}
+        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 md:flex">
+          {canSearch && (
+            <SearchField
+              query={searchQuery}
+              onQueryChange={setSearchQuery}
+              placeholder={t.myTeams.searchPlaceholder}
+              ariaLabel={t.myTeams.searchLabel}
+              className="w-full max-w-xl"
+            />
+          )}
+          <Button onClick={() => setIsAdding(true)} className="shrink-0">
+            {t.myTeams.createTeam}
+          </Button>
+        </div>
+      </div>
 
       {isAdding && (
         <Modal onClose={() => setIsAdding(false)} labelledBy="add-team-modal-title">
           <ModalTitle id="add-team-modal-title" className="mb-4">
-            {t.myTeams.addTeamTitle}
+            {t.myTeams.createTeamTitle}
           </ModalTitle>
           <TeamPasteForm onSubmit={handleAddSubmit} onCancel={() => setIsAdding(false)} />
           <p className="mt-4 border-t border-zinc-200 pt-3 text-sm text-zinc-600">
@@ -326,7 +310,7 @@ export function MyTeamsSection({
             <p className="max-w-md text-sm text-zinc-600">
               {regulationTeams.length === 0 ? t.myTeams.noTeamsBody : t.myTeams.allArchivedBody}
             </p>
-            <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
+            <Button onClick={() => setIsAdding(true)}>{t.myTeams.createTeam}</Button>
           </div>
         ) : (
           <p className="py-12 text-center text-sm text-zinc-500">{t.myTeams.noArchived}</p>
@@ -375,7 +359,7 @@ export function MyTeamsSection({
                 handleDrop(team.id);
               }}
               className={cn(
-                "flex flex-col gap-2 p-4",
+                "flex gap-3 p-4",
                 !isSearching ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
                 index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100",
                 draggedId === team.id && "opacity-40",
@@ -384,12 +368,7 @@ export function MyTeamsSection({
                   "outline outline-2 -outline-offset-2 outline-zinc-500",
               )}
             >
-              {/* Its own full-width row (rather than living inside the
-                  roster wrapper below) so RowActionsMenu can sit flush
-                  against the row's right edge via justify-between, instead
-                  of only ever being pushed as far right as the name/chips
-                  happen to reach. */}
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   {!isSearching && (
                     <Icon
@@ -414,38 +393,10 @@ export function MyTeamsSection({
                     }
                   />
                 </div>
-                <RowActionsMenu
-                  label={t.myTeams.teamOptions(team.name)}
-                  // No Edit here — name, paste and details are edited on
-                  // the team's own page (the row opens it).
-                  onRemove={() => setConfirmRemoveId(team.id)}
-                  middleAction={
-                    tab === "active"
-                      ? {
-                          label: t.myTeams.archive,
-                          icon: IconName.Archive,
-                          onClick: () => archiveTeam(team.id),
-                        }
-                      : {
-                          label: t.myTeams.unarchive,
-                          icon: IconName.Unarchive,
-                          onClick: () => unarchiveTeam(team.id),
-                        }
-                  }
-                />
-              </div>
-              <div className="flex items-center gap-4 md:justify-between">
-                {/* flex-1 (mobile only): TeamRoster's fluid aspect-square
-                    tiles need to be stretched to fill the row's width to size
-                    themselves sensibly. At md+ TeamRoster switches to
-                    fixed-px tiles instead, sized for its OTHER context
-                    (OpponentCard's auto-width grid column) — stretching
-                    this wrapper there would stretch TeamRoster's grid
-                    tracks along with it, spacing the fixed-size tiles apart
-                    instead of keeping them snug, so it reverts to natural
-                    (unstretched) width and md:justify-between (above) keeps
-                    the chevron pinned right. */}
-                <div className="min-w-0 flex-1 md:flex-none">
+                {/* Natural width at md+: TeamRoster switches to fixed-px
+                    tiles there, and stretching this wrapper would space them
+                    apart. On phones its fluid tiles need the full width. */}
+                <div className="min-w-0 md:w-fit">
                   <TeamRoster
                     pokemon={team.pokemon}
                     isMatch={
@@ -456,11 +407,67 @@ export function MyTeamsSection({
                     }
                   />
                 </div>
-                <Icon
-                  name={IconName.ExpandMore}
-                  size={20}
-                  className="shrink-0 -rotate-90 text-zinc-400"
-                />
+              </div>
+              {/* The row's actions, stacked down its right edge. Clicks and
+                  Enter/Space stop here so they don't also open the team. */}
+              <div
+                role="group"
+                aria-label={t.myTeams.teamOptions(team.name)}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => event.stopPropagation()}
+                className="flex shrink-0 flex-col justify-center gap-0.5"
+              >
+                <Link
+                  href={`/teams/${team.id}/edit`}
+                  draggable={false}
+                  aria-label={t.myTeams.editTeam}
+                  title={t.myTeams.editTeam}
+                  className={cn(iconButtonVariants({ variant: "ghost" }), rowActionClass)}
+                >
+                  <Icon name={IconName.Edit} size={18} />
+                </Link>
+                <IconButton
+                  variant="ghost"
+                  onClick={() => duplicateTeam(team.id)}
+                  aria-label={t.myTeams.duplicate}
+                  title={t.myTeams.duplicate}
+                  className={rowActionClass}
+                >
+                  <Icon name={IconName.ContentCopy} size={18} />
+                </IconButton>
+                {tab === "active" ? (
+                  <IconButton
+                    variant="ghost"
+                    onClick={() => archiveTeam(team.id)}
+                    aria-label={t.myTeams.archive}
+                    title={t.myTeams.archive}
+                    className={desktopRowActionClass}
+                  >
+                    <Icon name={IconName.Archive} size={16} />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    variant="ghost"
+                    onClick={() => unarchiveTeam(team.id)}
+                    aria-label={t.myTeams.unarchive}
+                    title={t.myTeams.unarchive}
+                    className={desktopRowActionClass}
+                  >
+                    <Icon name={IconName.Unarchive} size={16} />
+                  </IconButton>
+                )}
+                <IconButton
+                  variant="ghost"
+                  onClick={() => setConfirmRemoveId(team.id)}
+                  aria-label={t.myTeams.removeTeam}
+                  title={t.myTeams.removeTeam}
+                  className={cn(
+                    desktopRowActionClass,
+                    "hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950",
+                  )}
+                >
+                  <Icon name={IconName.Delete} size={16} />
+                </IconButton>
               </div>
             </li>
           ))}

@@ -1,5 +1,6 @@
 "use client";
 
+import { RegulationSelect } from "@/components/Select";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -614,25 +615,7 @@ export function OpponentsSection({
 
   const regulationControl =
     REGULATIONS.length > 1 && !regulationLocked ? (
-      <div className="relative shrink-0">
-        <select
-          value={selectedRegulationId}
-          onChange={(event) => setSelectedRegulationId(event.target.value)}
-          aria-label={t.common.regulation}
-          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
-        >
-          {REGULATIONS.map((regulation) => (
-            <option key={regulation.id} value={regulation.id}>
-              {t.common.regulationLabel(regulation.label)}
-            </option>
-          ))}
-        </select>
-        <Icon
-          name={IconName.ExpandMore}
-          size={14}
-          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
-        />
-      </div>
+      <RegulationSelect value={selectedRegulationId} onChange={setSelectedRegulationId} />
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
         {t.common.regulationLabel(

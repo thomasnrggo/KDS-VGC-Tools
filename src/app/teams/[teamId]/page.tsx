@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useTournaments } from "@/hooks/useTournaments";
 import { useOpponents } from "@/hooks/useOpponents";
@@ -17,6 +18,7 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { PokemonCalcsBox } from "@/components/TeamCalcs";
 import { TeamMatchupsList } from "@/components/TeamMatchups";
 import { ShareDialog } from "@/components/TeamPost";
+import { RowActionsMenu } from "@/components/RowActionsMenu";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { createEmptyCombination, TEAM_REPORT_PREP_ENABLED } from "@/constants";
@@ -30,7 +32,7 @@ import { Modal, ModalDescription, ModalTitle } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
-import { Button, iconButtonVariants } from "@/components/Button";
+import { Button, TogglePill, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
 import {
   Drawer,
@@ -71,8 +73,10 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     removeTeam,
     setActiveTeamId,
     updateTeam,
+    archiveTeam,
     unarchiveTeam,
   } = useMyTeams();
+  const router = useRouter();
   const { tournaments } = useTournaments();
   const personal = useOpponents();
   // The Matchups tab lists your prep from your own opponents and every prep group's.
@@ -98,6 +102,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const selectedRegulationId = team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? "";
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
+  const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
+  // Strategy tab below lg: which of its two sections the chips show.
+  const [strategySection, setStrategySection] = useState<"combinations" | "notes">("combinations");
   // Phones: the sections' bottom sheet.
   const [isSectionsOpen, setIsSectionsOpen] = useState(false);
   const shareLabel = team?.share ? t.teamPage.sharedLabel(team.share.sheet) : t.teamPage.share;
@@ -298,8 +305,58 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               >
                 <Icon name={IconName.Edit} size={16} />
               </Link>
+              {/* Phones: My Teams rows only show Edit and Duplicate, so Archive and
+                  Remove are here instead. */}
+              <div className="md:hidden">
+                <RowActionsMenu
+                  label={t.myTeams.teamOptions(team.name)}
+                  triggerClassName={iconButtonVariants({ variant: "round" })}
+                  onRemove={() => setIsConfirmingRemove(true)}
+                  removeLabel={t.myTeams.removeTeam}
+                  middleAction={
+                    isTeamArchived(team)
+                      ? {
+                          label: t.myTeams.unarchive,
+                          icon: IconName.Unarchive,
+                          onClick: () => unarchiveTeam(team.id),
+                        }
+                      : {
+                          label: t.myTeams.archive,
+                          icon: IconName.Archive,
+                          onClick: () => archiveTeam(team.id),
+                        }
+                  }
+                />
+              </div>
             </div>
           </div>
+
+          {isConfirmingRemove && (
+            <Modal
+              onClose={() => setIsConfirmingRemove(false)}
+              labelledBy="confirm-remove-team-title"
+            >
+              <ModalTitle id="confirm-remove-team-title" className="mb-2">
+                {t.myTeams.confirmRemoveTitle(team.name)}
+              </ModalTitle>
+              <ModalDescription>{t.myTeams.confirmRemoveBody}</ModalDescription>
+              <div className="flex gap-2">
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    // Leave first, so this page never flashes "team not found".
+                    router.replace("/teams");
+                    removeTeam(team.id);
+                  }}
+                >
+                  {t.myTeams.removeTeam}
+                </Button>
+                <Button variant="outline" onClick={() => setIsConfirmingRemove(false)}>
+                  {t.common.cancel}
+                </Button>
+              </div>
+            </Modal>
+          )}
 
           {isSharing && (
             <ShareDialog
@@ -339,13 +396,36 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           )}
 
           {/* Two columns on desktop: the lead/back combinations, and one
-              "Weaknesses & watch-outs" area. (Team.weaknesses is no longer shown — its
-              text stays saved.) */}
+              "Weaknesses & watch-outs" area. Narrower, where they'd stack, chips switch
+              between them instead. (Team.weaknesses is no longer shown — its text stays
+              saved.) */}
           {activeTab === "strategy" && (
             <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+              <div className="flex flex-wrap gap-1.5 lg:hidden">
+                <TogglePill
+                  active={strategySection === "combinations"}
+                  onClick={() => setStrategySection("combinations")}
+                  className="px-3.5 py-1.5 text-sm"
+                >
+                  {t.teamPage.combinations}
+                </TogglePill>
+                <TogglePill
+                  active={strategySection === "notes"}
+                  onClick={() => setStrategySection("notes")}
+                  className="px-3.5 py-1.5 text-sm"
+                >
+                  {t.teamPage.notes}
+                </TogglePill>
+              </div>
               {/* Laid out like the matchup page's plans: a card per combination, arrows to reorder. */}
-              <section className="flex flex-col gap-3">
-                <h2 className="flex h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <section
+                aria-label={t.teamPage.combinations}
+                className={cn(
+                  "flex-col gap-3 lg:flex",
+                  strategySection === "combinations" ? "flex" : "hidden",
+                )}
+              >
+                <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
                   {t.teamPage.combinations}
                 </h2>
                 {(team.combinations ?? []).length === 0 ? (
@@ -375,8 +455,14 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </section>
 
               {/* Titled like the combinations beside it — no card around the editor. */}
-              <section className="flex flex-col gap-3">
-                <h2 className="flex h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+              <section
+                aria-label={t.teamPage.notes}
+                className={cn(
+                  "flex-col gap-3 lg:flex",
+                  strategySection === "notes" ? "flex" : "hidden",
+                )}
+              >
+                <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
                   {t.teamPage.notes}
                 </h2>
                 <RichTextEditor

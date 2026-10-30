@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { Button, IconButton, iconButtonVariants, TextAction } from "../Button";
@@ -321,28 +322,21 @@ export function TeamBuilder({
             placeholder={t.teamBuilder.teamName}
             className="h-8 min-w-0 rounded-md border border-zinc-300 bg-field px-2.5 text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
           />
-          <span className="relative" title={t.teamBuilder.regulationHint}>
-            <select
-              value={regulation.id}
-              onChange={(event) => setRegulation(event.target.value)}
-              aria-label={t.common.regulation}
-              className="h-8 w-full appearance-none rounded-md border border-zinc-300 bg-field pr-7 pl-2.5 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
-            >
-              {REGULATIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {/* Phones: just "M-C", leaving the team name room. */}
-                  {isPhone
-                    ? shortRegulationLabel(option.label)
-                    : t.common.regulationLabel(option.label)}
-                </option>
-              ))}
-            </select>
-            <Icon
-              name={IconName.ExpandMore}
-              size={16}
-              className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-zinc-500"
-            />
-          </span>
+          <Select
+            variant="field"
+            value={regulation.id}
+            onChange={setRegulation}
+            ariaLabel={t.common.regulation}
+            title={t.teamBuilder.regulationHint}
+            options={REGULATIONS.map((option) => ({
+              value: option.id,
+              // Phones: just "M-C", leaving the team name room.
+              label: isPhone
+                ? shortRegulationLabel(option.label)
+                : t.common.regulationLabel(option.label),
+            }))}
+            className="h-8 w-auto shrink-0 rounded-md bg-field px-2.5"
+          />
           {isPhone && (
             <IconButton
               onClick={openImportExport}

@@ -82,7 +82,69 @@ export function PokemonReportCard({
           and its tooltip identify the Pokémon; screen readers still get it. */}
       <h3 className="sr-only">{text.species(pokemon.species)}</h3>
 
-      <div className="relative h-32 bg-zinc-100">
+      {/* Collapsible on phones: a slim row instead of the tall sprite header, so a
+          column of them (the Calcs tab) leaves room for the calcs themselves. */}
+      {collapsible && (
+        <div className="relative flex h-14 items-center gap-2 bg-zinc-100 pr-2 pl-1 sm:hidden">
+          <button
+            type="button"
+            onClick={() => setIsExpanded((value) => !value)}
+            aria-expanded={isExpanded}
+            aria-label={`${text.species(pokemon.species)}: ${
+              isExpanded ? t.pokemonCard.hideDetails : t.pokemonCard.showDetails
+            }`}
+            className="absolute inset-0 z-0 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none focus-visible:ring-inset active:bg-zinc-200/60"
+          />
+          <span className="pointer-events-none relative h-12 w-12 shrink-0">
+            <PokemonSprite species={formPokemon.species} item={formPokemon.item} fill />
+          </span>
+          <span className="pointer-events-none min-w-0 truncate text-sm font-semibold text-zinc-900">
+            {text.species(formPokemon.species)}
+          </span>
+          {types.length > 0 && (
+            <span className="pointer-events-none flex shrink-0 gap-1">
+              {types.map((type) => (
+                <span key={type} className="overflow-hidden rounded">
+                  <TypeIcon type={type} size={18} />
+                </span>
+              ))}
+            </span>
+          )}
+          <span className="ml-auto flex shrink-0 items-center gap-1.5">
+            {pokemon.item && (
+              <span
+                title={text.item(pokemon.item)}
+                className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50"
+              >
+                <ItemIcon item={pokemon.item} size={20} />
+              </span>
+            )}
+            {hasMegaForm && (
+              <button
+                type="button"
+                onClick={() => setShowMega((value) => !value)}
+                aria-pressed={showMega}
+                title={showMega ? t.pokemonCard.showingMega : t.pokemonCard.showMega}
+                className={cn(
+                  "relative z-10 rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors",
+                  showMega
+                    ? "border-zinc-600 bg-chrome-600 text-white"
+                    : "border-zinc-300 bg-zinc-50 text-zinc-500",
+                )}
+              >
+                {t.pokemonCard.mega}
+              </button>
+            )}
+            <Icon
+              name={isExpanded ? IconName.ExpandLess : IconName.ExpandMore}
+              size={20}
+              className="pointer-events-none text-zinc-500"
+            />
+          </span>
+        </div>
+      )}
+
+      <div className={cn("relative h-32 bg-zinc-100", collapsible && "hidden sm:block")}>
         {/* Collapsible: the whole header toggles the details, behind the
             item and Mega controls (which keep their own clicks). */}
         {collapsible && (

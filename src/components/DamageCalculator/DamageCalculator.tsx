@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { useMyTeams } from "@/hooks/useMyTeams";
@@ -1843,39 +1844,31 @@ function MoveList({
                       </button>
                     )}
                     {effect && (
-                      <select
-                        value={battleState.moveCounts[move] ?? 0}
-                        onChange={(event) => setCount(Number(event.target.value))}
-                        aria-label={t.calcPanel.effectLabel(text.move(move))}
+                      <Select
+                        variant="compact"
+                        value={String(battleState.moveCounts[move] ?? 0)}
+                        onChange={(value) => setCount(Number(value))}
+                        ariaLabel={t.calcPanel.effectLabel(text.move(move))}
                         title={t.calcPanel.effectHints[effect.option](text.move(move))}
-                        className={cn(
-                          "rounded-full border bg-transparent px-1.5 py-0.5 text-xs",
-                          controlClassName,
-                        )}
-                      >
-                        {countRange(0, effect.max).map((count) => (
-                          <option key={count} value={count}>
-                            {t.calcPanel.effectCount(count)}
-                          </option>
-                        ))}
-                      </select>
+                        options={countRange(0, effect.max).map((count) => ({
+                          value: String(count),
+                          label: t.calcPanel.effectCount(count),
+                        }))}
+                        className={controlClassName}
+                      />
                     )}
                     {hitRange && (
-                      <select
-                        value={battleState.moveCounts[move] ?? hitRange.default}
-                        onChange={(event) => setCount(Number(event.target.value))}
-                        aria-label={t.calcPanel.hitsLabel(text.move(move))}
-                        className={cn(
-                          "rounded-full border bg-transparent px-1.5 py-0.5 text-xs",
-                          controlClassName,
-                        )}
-                      >
-                        {countRange(hitRange.min, hitRange.max).map((count) => (
-                          <option key={count} value={count}>
-                            {t.calcPanel.hitsCount(count)}
-                          </option>
-                        ))}
-                      </select>
+                      <Select
+                        variant="compact"
+                        value={String(battleState.moveCounts[move] ?? hitRange.default)}
+                        onChange={(value) => setCount(Number(value))}
+                        ariaLabel={t.calcPanel.hitsLabel(text.move(move))}
+                        options={countRange(hitRange.min, hitRange.max).map((count) => ({
+                          value: String(count),
+                          label: t.calcPanel.hitsCount(count),
+                        }))}
+                        className={controlClassName}
+                      />
                     )}
                   </div>
                 )}

@@ -14,6 +14,7 @@ export default function TeamsPage() {
     activeTeamId,
     isLoading,
     addTeam,
+    duplicateTeam,
     editTeam,
     updateTeam,
     removeTeam,
@@ -47,6 +48,7 @@ export default function TeamsPage() {
           teams={teams}
           isLoading={isLoading}
           addTeam={addTeam}
+          duplicateTeam={duplicateTeam}
           updateTeam={updateTeam}
           removeTeam={removeTeam}
           archiveTeam={archiveTeam}

@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
@@ -206,17 +207,16 @@ export default function AdminSeasonsPage() {
 
           <label className="flex flex-col gap-1 text-sm text-zinc-700">
             Regulation
-            <select
+            <Select
+              variant="field"
               value={form.regulationId}
-              onChange={(event) => setForm((f) => ({ ...f, regulationId: event.target.value }))}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
-            >
-              {REGULATIONS.map((regulation) => (
-                <option key={regulation.id} value={regulation.id}>
-                  {regulation.label}
-                </option>
-              ))}
-            </select>
+              onChange={(regulationId) => setForm((f) => ({ ...f, regulationId }))}
+              options={REGULATIONS.map((regulation) => ({
+                value: regulation.id,
+                label: regulation.label,
+              }))}
+              className="bg-transparent px-3"
+            />
           </label>
 
           <label className="flex flex-col gap-1 text-sm text-zinc-700">

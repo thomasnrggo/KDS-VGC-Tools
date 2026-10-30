@@ -28,7 +28,7 @@ export const en = {
   },
   header: {
     addYourTeam: "Add your team",
-    addTeam: "Add a team",
+    addTeam: "Create team",
     editTeam: "Edit team",
     selectTeam: "Select team",
     switchTeam: "Switch team",
@@ -110,8 +110,8 @@ export const en = {
   },
   myTeams: {
     title: "My Teams",
-    addTeam: "Add team",
-    addTeamTitle: "Add a team",
+    createTeam: "Create team",
+    createTeamTitle: "Create a team",
     searchTeams: "Search teams",
     searchHint: "Search by team name, Pokémon, or item",
     searchPlaceholder: 'Search by team name, Pokémon, or item… (e.g. "charizard scarf")',
@@ -130,11 +130,14 @@ export const en = {
     allArchivedBody:
       "Every team under this regulation is archived — check the Archived tab, or add a new one.",
     noArchived:
-      "No archived teams under this regulation — archiving a team (from its “⋯” menu on the Active tab) moves it here instead of deleting it.",
+      "No archived teams under this regulation — archiving a team (its archive button on the Active tab) moves it here instead of deleting it.",
     noMatches: (tab: "active" | "archived", query: string) => `No ${tab} teams match “${query}”.`,
     teamOptions: (name: string) => `${name} options`,
     archive: "Archive",
     unarchive: "Unarchive",
+    editTeam: "Edit team",
+    duplicate: "Duplicate",
+    copyName: (name: string) => `${name} (copy)`,
   },
   regulationTags: {
     untag: (label: string) => `Untag ${label}`,
@@ -513,6 +516,7 @@ export const en = {
     notes: "Notes",
     notesPlaceholder: "Anything you notice about this Pokémon…",
     notesLabel: (species: string) => `${species} notes`,
+    addNote: "Add a note",
   },
   speedTiers: {
     title: "Speed Tiers",
@@ -838,8 +842,6 @@ export const en = {
     illegalSlot: (name: string) => `${name} isn't legal under this regulation`,
     editPokemon: "Edit Pokémon",
     editPokemonHint: "Edit this team's Pokémon in the Team Builder",
-    buildTeam: "Build a team",
-    buildTeamHint: "Build a team Pokémon by Pokémon instead of pasting it",
     orBuild: "No export to paste? Build the team Pokémon by Pokémon in the Team Builder.",
     notFoundBody: "It may have been removed on another device.",
   },

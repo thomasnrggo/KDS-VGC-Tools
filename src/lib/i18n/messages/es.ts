@@ -29,7 +29,7 @@ export const es: Messages = {
   },
   header: {
     addYourTeam: "Añade tu equipo",
-    addTeam: "Añadir equipo",
+    addTeam: "Crear equipo",
     editTeam: "Editar equipo",
     selectTeam: "Seleccionar equipo",
     switchTeam: "Cambiar de equipo",
@@ -113,8 +113,8 @@ export const es: Messages = {
   },
   myTeams: {
     title: "Mis equipos",
-    addTeam: "Añadir equipo",
-    addTeamTitle: "Añadir un equipo",
+    createTeam: "Crear equipo",
+    createTeamTitle: "Crear un equipo",
     searchTeams: "Buscar equipos",
     searchHint: "Busca por nombre de equipo, Pokémon u objeto",
     searchPlaceholder: 'Busca por nombre de equipo, Pokémon u objeto… (p. ej. "charizard pañuelo")',
@@ -133,12 +133,15 @@ export const es: Messages = {
     allArchivedBody:
       "Todos los equipos de esta regulación están archivados — revisa la pestaña Archivados o añade uno nuevo.",
     noArchived:
-      "No hay equipos archivados en esta regulación — al archivar un equipo (desde su menú “⋯” en la pestaña Activos) se mueve aquí en lugar de borrarse.",
+      "No hay equipos archivados en esta regulación — al archivar un equipo (con su botón de archivar en la pestaña Activos) se mueve aquí en lugar de borrarse.",
     noMatches: (tab, query) =>
       `Ningún equipo ${tab === "active" ? "activo" : "archivado"} coincide con “${query}”.`,
     teamOptions: (name) => `Opciones de ${name}`,
     archive: "Archivar",
     unarchive: "Desarchivar",
+    editTeam: "Editar equipo",
+    duplicate: "Duplicar",
+    copyName: (name) => `${name} (copia)`,
   },
   regulationTags: {
     untag: (label) => `Quitar ${label}`,
@@ -520,6 +523,7 @@ export const es: Messages = {
     notes: "Notas",
     notesPlaceholder: "Cualquier cosa que notes de este Pokémon…",
     notesLabel: (species) => `Notas de ${species}`,
+    addNote: "Añadir una nota",
   },
   speedTiers: {
     title: "Velocidades",
@@ -850,8 +854,6 @@ export const es: Messages = {
     illegalSlot: (name) => `${name} no es legal en esta regulación`,
     editPokemon: "Editar Pokémon",
     editPokemonHint: "Editar los Pokémon de este equipo en el constructor de equipos",
-    buildTeam: "Construir un equipo",
-    buildTeamHint: "Construir un equipo Pokémon a Pokémon en vez de pegarlo",
     orBuild:
       "¿No tienes una exportación que pegar? Construye el equipo Pokémon a Pokémon en el constructor de equipos.",
     notFoundBody: "Puede que se haya eliminado en otro dispositivo.",

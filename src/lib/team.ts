@@ -74,6 +74,25 @@ export function unarchiveTeam(team: Team): Team {
   return updated;
 }
 
+/**
+ * A copy of `team` under `name` — same roster, notes, combinations and calcs,
+ * but a new id, active (even when copying an archived team), unshared (the
+ * share link stays with the original) and at the top of the list.
+ */
+export function duplicateTeam(team: Team, name: string): Team {
+  // `delete`, not `undefined` — see unarchiveTeam.
+  const copy: Team = {
+    ...team,
+    id: generateId(),
+    name,
+    sortOrder: Date.now(),
+    updatedAt: new Date().toISOString(),
+  };
+  delete copy.share;
+  delete copy.archivedAt;
+  return copy;
+}
+
 export function isTeamArchived(team: Team): boolean {
   return !!team.archivedAt;
 }

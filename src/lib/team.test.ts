@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addRegulationTag,
   createTeam,
+  duplicateTeam,
   normalizeTeam,
   reorderTeams,
   removeRegulationTag,
@@ -21,9 +22,7 @@ describe("createTeam", () => {
     expect(team.name).toBe("Team 1");
     expect(team.rawPaste).toBe("Ditto @ Choice Scarf\nAbility: Imposter");
     expect(team.regulationIds).toEqual([REG_ID]);
-    expect(team.pokemon).toEqual([
-      { species: "Ditto", item: "Choice Scarf", ability: "Imposter" },
-    ]);
+    expect(team.pokemon).toEqual([{ species: "Ditto", item: "Choice Scarf", ability: "Imposter" }]);
     expect(() => new Date(team.updatedAt).toISOString()).not.toThrow();
   });
 
@@ -31,6 +30,29 @@ describe("createTeam", () => {
     const older = createTeam("Ditto", "Older", REG_ID);
     const newer = createTeam("Ditto", "Newer", REG_ID);
     expect(newer.sortOrder).toBeGreaterThanOrEqual(older.sortOrder);
+  });
+});
+
+describe("duplicateTeam", () => {
+  it("copies the roster and notes under a new id and name, active and unshared", () => {
+    const original: Team = {
+      ...createTeam("Ditto @ Choice Scarf", "Rain", REG_ID),
+      notes: "<p>Lead Pelipper</p>",
+      archivedAt: "2026-01-01T00:00:00.000Z",
+      share: { id: "share-1" } as unknown as Team["share"],
+    };
+    const copy = duplicateTeam(original, "Rain (copy)");
+
+    expect(copy.id).not.toBe(original.id);
+    expect(copy.name).toBe("Rain (copy)");
+    expect(copy.pokemon).toEqual(original.pokemon);
+    expect(copy.rawPaste).toBe(original.rawPaste);
+    expect(copy.regulationIds).toEqual(original.regulationIds);
+    expect(copy.notes).toBe(original.notes);
+    expect(copy.sortOrder).toBeGreaterThanOrEqual(original.sortOrder);
+    expect("archivedAt" in copy).toBe(false);
+    expect("share" in copy).toBe(false);
+    expect(original.share).toBeDefined();
   });
 });
 

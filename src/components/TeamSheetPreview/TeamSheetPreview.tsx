@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
 import { TypeIcon } from "../TypeIcon";
+import { Icon } from "../Icon";
+import { TextAction } from "../Button";
+import { IconName } from "@/enums";
 import { NATURE_MODIFIERS } from "@/constants/natures";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
@@ -104,40 +107,77 @@ function TeamSheetEntry({
           onChange={onNoteChange}
           label={t.opponentPokemon.notesLabel(name)}
           placeholder={t.opponentPokemon.notesPlaceholder}
+          addLabel={t.opponentPokemon.addNote}
         />
       )}
     </div>
   );
 }
 
-/** Three lines to start, growing with the text. */
+/**
+ * A Pokémon's note: collapsed to an "Add a note" link while empty, then three
+ * lines to start, growing with the text. Clearing it and leaving the field
+ * collapses it again.
+ */
 function PokemonNote({
   note,
   onChange,
   label,
   placeholder,
+  addLabel,
 }: {
   note: string;
   onChange: (note: string) => void;
   label: string;
   placeholder: string;
+  addLabel: string;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const isShown = isOpen || note.trim() !== "";
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  }, [note]);
+    function fit() {
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }
+    fit();
+    // Rendered while hidden (the matchup page's "Their team" chip not picked
+    // yet), it measures 0 tall — refit once it's laid out.
+    // Width only, so fit's own height change doesn't retrigger it.
+    let width = el.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      fit();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [note, isShown]);
+
+  if (!isShown) {
+    return (
+      <TextAction onClick={() => setIsOpen(true)} className="mt-auto self-start py-1">
+        <Icon name={IconName.Add} size={14} />
+        {addLabel}
+      </TextAction>
+    );
+  }
+
   return (
     <textarea
       ref={ref}
       value={note}
       onChange={(event) => onChange(event.target.value)}
+      onBlur={() => setIsOpen(false)}
+      autoFocus={isOpen && note === ""}
       rows={3}
       placeholder={placeholder}
       aria-label={label}
-      className="mt-auto max-h-48 w-full resize-none overflow-y-auto rounded-md border border-transparent bg-zinc-100 px-2 py-1.5 text-xs leading-relaxed text-zinc-800 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-300 focus:bg-raised focus:outline-none"
+      className="mt-auto max-h-80 w-full resize-none overflow-y-auto rounded-md border border-transparent bg-zinc-100 px-2 py-1.5 text-xs leading-relaxed text-zinc-800 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-300 focus:bg-raised focus:outline-none"
     />
   );
 }

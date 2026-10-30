@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useEffect, useRef, useState } from "react";
 import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOverrides";
 import { parseTeam } from "@/lib/parseTeam";
@@ -800,22 +801,17 @@ export function RosterPokemonPicker({
                   const stageKey = STAGE_KEY_BY_STAT[stat];
                   if (!stageKey) return null;
                   return (
-                    <select
-                      value={battleState[stageKey]}
-                      onChange={(event) =>
-                        updateBattleState({
-                          [stageKey]: Number(event.target.value),
-                        })
-                      }
-                      aria-label={t.calcPanel.stageLabel(title, t.stats.short[stat])}
-                      className="rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-xs text-zinc-900"
-                    >
-                      {STAGE_OPTIONS.map((stage) => (
-                        <option key={stage} value={stage}>
-                          {stage > 0 ? `+${stage}` : stage === 0 ? "--" : stage}
-                        </option>
-                      ))}
-                    </select>
+                    <Select
+                      variant="compact"
+                      value={String(battleState[stageKey])}
+                      onChange={(value) => updateBattleState({ [stageKey]: Number(value) })}
+                      ariaLabel={t.calcPanel.stageLabel(title, t.stats.short[stat])}
+                      options={STAGE_OPTIONS.map((stage) => ({
+                        value: String(stage),
+                        label: stage > 0 ? `+${stage}` : stage === 0 ? "--" : String(stage),
+                      }))}
+                      className="rounded border-zinc-300 bg-zinc-50 px-1 text-zinc-900"
+                    />
                   );
                 },
               },

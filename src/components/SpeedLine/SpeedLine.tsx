@@ -1,12 +1,11 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useMemo, useState } from "react";
 import { useOpponents } from "@/hooks/useOpponents";
 import { calculateFinalStats } from "@/lib/stats/calculateFinalStats";
 import { PokemonSprite } from "../PokemonSprite";
 import { ItemIcon } from "../ItemIcon";
-import { Icon } from "../Icon";
-import { IconName } from "@/enums";
 import type { ParsedPokemon, Team } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -916,44 +915,23 @@ export function SpeedLine({ myTeams, defaultTeamId, regulationId }: SpeedLinePro
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative shrink-0">
-          <select
-            value={effectiveTeamId}
-            onChange={(event) => setSelectedTeamId(event.target.value)}
-            aria-label="Your team"
-            className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-2 pr-8 pl-3 text-sm font-medium text-zinc-700"
-          >
-            {regulationTeams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-          <Icon
-            name={IconName.ExpandMore}
-            size={16}
-            className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
-          />
-        </div>
-        <div className="relative shrink-0">
-          <select
-            value={effectiveOpponentId}
-            onChange={(event) => setSelectedOpponentId(event.target.value)}
-            aria-label="Opponent team"
-            className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-2 pr-8 pl-3 text-sm font-medium text-zinc-700"
-          >
-            {regulationOpponents.map((opponent) => (
-              <option key={opponent.id} value={opponent.id}>
-                {opponent.label}
-              </option>
-            ))}
-          </select>
-          <Icon
-            name={IconName.ExpandMore}
-            size={16}
-            className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
-          />
-        </div>
+        <Select
+          value={effectiveTeamId}
+          onChange={setSelectedTeamId}
+          ariaLabel="Your team"
+          options={regulationTeams.map((team) => ({ value: team.id, label: team.name }))}
+          className="py-2 text-sm"
+        />
+        <Select
+          value={effectiveOpponentId}
+          onChange={setSelectedOpponentId}
+          ariaLabel="Opponent team"
+          options={regulationOpponents.map((opponent) => ({
+            value: opponent.id,
+            label: opponent.label,
+          }))}
+          className="py-2 text-sm"
+        />
 
         <div className="ml-auto flex flex-wrap items-center gap-1.5">
           <ModifierToggle

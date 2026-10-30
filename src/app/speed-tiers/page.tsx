@@ -1,5 +1,6 @@
 "use client";
 
+import { RegulationSelect } from "@/components/Select";
 import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,8 +11,6 @@ import { SpeedTiersTable } from "@/components/SpeedTiersTable";
 import { SpeedTiersList } from "@/components/SpeedTiersList";
 import { SpeedLine } from "@/components/SpeedLine";
 import { REGULATIONS } from "@/data/regulations";
-import { Icon } from "@/components/Icon";
-import { IconName } from "@/enums";
 import { cn } from "@/lib/utils";
 
 type View = "table" | "list" | "speedline";
@@ -57,25 +56,7 @@ export default function SpeedTiersPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-zinc-900">{t.speedTiers.title}</h2>
           {REGULATIONS.length > 1 ? (
-            <div className="relative shrink-0">
-              <select
-                value={selectedRegulationId}
-                onChange={(event) => setSelectedRegulationId(event.target.value)}
-                aria-label={t.common.regulation}
-                className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
-              >
-                {REGULATIONS.map((regulation) => (
-                  <option key={regulation.id} value={regulation.id}>
-                    {t.common.regulationLabel(regulation.label)}
-                  </option>
-                ))}
-              </select>
-              <Icon
-                name={IconName.ExpandMore}
-                size={14}
-                className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
-              />
-            </div>
+            <RegulationSelect value={selectedRegulationId} onChange={setSelectedRegulationId} />
           ) : (
             <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
               {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}

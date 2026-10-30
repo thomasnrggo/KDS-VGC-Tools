@@ -12,6 +12,7 @@ import {
 import {
   archiveTeam as toArchived,
   createTeam,
+  duplicateTeam as toDuplicate,
   isTeamArchived,
   reorderTeams as reorderTeamsList,
   unarchiveTeam as toActive,
@@ -181,6 +182,18 @@ export function useMyTeams() {
     [setActiveTeamId],
   );
 
+  /** Saves a copy of the team with `id`, named "<name> (copy)" — see duplicateTeam. Leaves the active team as it is. */
+  const duplicateTeam = useCallback(
+    (id: string) => {
+      const existing = teams.find((team) => team.id === id);
+      if (!existing) return;
+      const copy = toDuplicate(existing, getMessages().myTeams.copyName(existing.name));
+      setTeams((prev) => [...prev, copy]);
+      void saveMyTeam(copy);
+    },
+    [teams],
+  );
+
   /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id and regulationIds — editing a team's paste doesn't touch which regulations it's tagged with (see addRegulationTag/removeRegulationTag for that). Returns an error message, or null on success. */
   const editTeam = useCallback(
     (id: string, rawPaste: string, name: string): string | null => {
@@ -306,6 +319,7 @@ export function useMyTeams() {
     isLoading,
     addTeam,
     addBuiltTeam,
+    duplicateTeam,
     editTeam,
     updateTeam,
     removeTeam,

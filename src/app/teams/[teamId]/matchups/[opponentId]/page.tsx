@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { TeamSheetPreview } from "@/components/TeamSheetPreview";
 import { GamePlanCard } from "@/components/GamePlanCard";
-import { Button } from "@/components/Button";
+import { Button, TogglePill } from "@/components/Button";
 import { addPlan, listPlans, movePlan, removePlan, updatePlanAt } from "@/lib/matchupPlans";
 import { useMessages } from "@/hooks/useLanguage";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -92,6 +92,8 @@ export default function MatchupPage({ params }: MatchupPageProps) {
   }
 
   const [teamTab, setTeamTab] = useState<"preview" | "notes" | "calcs">("preview");
+  // Below xl, where the two would stack: which one the chips show.
+  const [section, setSection] = useState<"plans" | "theirTeam">("plans");
   const TAB_LABELS = {
     preview: t.matchupPage.preview,
     notes: t.matchupPage.notesTab,
@@ -188,13 +190,38 @@ export default function MatchupPage({ params }: MatchupPageProps) {
 
           {/* Wide screens split the page: your plans on the left, their
               team (sheet / notes / calcs) on the right, both in the page's
-              normal flow. Narrower screens stack them, plans first. */}
-          <div className="flex flex-col gap-6 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start">
-            <div className="flex min-w-0 flex-col gap-6">
+              normal flow. Narrower screens show one at a time, switched by
+              chips — plans first. */}
+          <div className="flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start xl:gap-6">
+            <div className="flex flex-wrap gap-1.5 xl:hidden">
+              {(["plans", "theirTeam"] as const).map((option) => (
+                <TogglePill
+                  key={option}
+                  active={section === option}
+                  onClick={() => setSection(option)}
+                  className="px-3.5 py-1.5 text-sm"
+                >
+                  {t.matchupPage[option]}
+                </TogglePill>
+              ))}
+            </div>
+            <div
+              className={cn(
+                "min-w-0 flex-col gap-6 xl:flex",
+                section === "plans" ? "flex" : "hidden",
+              )}
+            >
               {/* Each plan: what they bring, what you bring against it, how you play it. */}
-              <section className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className={SECTION_TITLE_CLASSES}>{t.matchupPage.plans}</h2>
+              <section aria-label={t.matchupPage.plans} className="flex flex-col gap-2">
+                <div
+                  className={cn(
+                    "flex-wrap items-center gap-2 xl:flex",
+                    copiedFromLabel ? "flex" : "hidden",
+                  )}
+                >
+                  <h2 className={cn(SECTION_TITLE_CLASSES, "hidden xl:block")}>
+                    {t.matchupPage.plans}
+                  </h2>
                   {copiedFromLabel && (
                     <span
                       title={t.opponentCard.copiedFromTitle(copiedFromLabel)}
@@ -229,9 +256,17 @@ export default function MatchupPage({ params }: MatchupPageProps) {
               </section>
             </div>
 
-            <section className="flex min-w-0 flex-col gap-2">
+            <section
+              aria-label={t.matchupPage.theirTeam}
+              className={cn(
+                "min-w-0 flex-col gap-2 xl:flex",
+                section === "theirTeam" ? "flex" : "hidden",
+              )}
+            >
               <div className="flex items-center justify-between gap-3">
-                <h2 className={SECTION_TITLE_CLASSES}>{t.matchupPage.theirTeam}</h2>
+                <h2 className={cn(SECTION_TITLE_CLASSES, "hidden xl:block")}>
+                  {t.matchupPage.theirTeam}
+                </h2>
                 <div role="tablist" aria-label={t.matchupPage.theirTeam} className="flex gap-1">
                   {(["preview", "notes", "calcs"] as const).map((tab) => (
                     <button

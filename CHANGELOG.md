@@ -10,6 +10,42 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.2.2 — 2026-10-30
+
+### Added
+
+- My Teams: **Duplicate** on a team row saves a copy named "<team> (copy)" — same roster,
+  notes, combinations and calcs, at the top of the Active tab (unshared, even if the original is).
+
+### Changed
+
+- My Teams has one **Create team** button instead of "Build a team" and "Add team" — it opens the
+  paste dialog, which links to the Team Builder for building Pokémon by Pokémon.
+- My Teams on desktop: one toolbar under the title — the Active/Archived tabs on the left, the
+  search bar and Create team on the right — instead of Create team beside the title and the
+  search bar on a full-width row of its own.
+- My Teams rows show their actions — Edit (opens the Team Builder), Duplicate, Archive (or
+  Unarchive), Remove — as icon buttons stacked down the right edge, instead of behind a ⋯ menu;
+  the row's › arrow is gone. On phones the rows keep just Edit and Duplicate, as bigger tap
+  targets; Archive and Remove move to a ⋯ menu beside Share and Edit on the team's page.
+- The header's team switcher says "Create team" too (was "Add a team").
+- Team page's Strategy tab on phones: each combination's Leads and Back sit side by side instead of
+  one above the other.
+- Matchup page (your team vs. an opponent), below wide-desktop width: chips switch between "Plans"
+  and "Their team" instead of both stacked on one long page.
+- Matchup page, Their team: a Pokémon's note is an "Add a note" link until it has text, then a box
+  that grows with it (up to about twice as tall as before) — instead of an empty box on every
+  Pokémon.
+- Team page's Calcs tab on phones: each Pokémon's header is a slim row (small sprite, name, types,
+  item, Mega) instead of a tall sprite block, leaving more of the screen for its calcs.
+- Team page's Strategy tab, below desktop width: chips switch between "Common combinations" and
+  "Weaknesses & watch-outs" instead of one long page with both stacked.
+- Every dropdown opens the app's own list instead of the browser's native one — on iPhones that
+  was a tiny menu floating at the top of the screen. Covers the regulation pickers (My Teams,
+  Matchup Planner, Tournaments, Speed Tiers, Team Builder, new prep group), the calculator's stat
+  stages and move hit/effect counts, Speed Tiers' team pickers, the import review's choices and
+  the new-tournament team. Options are full-height tap targets on phones.
+
 ## 0.2.1 — 2026-10-29
 
 ### Changed

@@ -1,5 +1,6 @@
 "use client";
 
+import { RegulationSelect, Select } from "@/components/Select";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Team, Tournament } from "@/types";
@@ -77,25 +78,7 @@ export function TournamentsSection({
 
   const regulationControl =
     REGULATIONS.length > 1 ? (
-      <div className="relative shrink-0">
-        <select
-          value={selectedRegulationId}
-          onChange={(event) => setSelectedRegulationId(event.target.value)}
-          aria-label={t.common.regulation}
-          className="appearance-none rounded-full border border-zinc-300 bg-zinc-50 py-1 pr-8 pl-3 text-xs font-medium text-zinc-700"
-        >
-          {REGULATIONS.map((regulation) => (
-            <option key={regulation.id} value={regulation.id}>
-              {t.common.regulationLabel(regulation.label)}
-            </option>
-          ))}
-        </select>
-        <Icon
-          name={IconName.ExpandMore}
-          size={14}
-          className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-zinc-500"
-        />
-      </div>
+      <RegulationSelect value={selectedRegulationId} onChange={setSelectedRegulationId} />
     ) : (
       <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
         {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
@@ -134,17 +117,15 @@ export function TournamentsSection({
             />
             <label className="flex flex-col gap-1 text-sm text-zinc-700">
               {t.tournaments.team}
-              <select
+              <Select
+                variant="field"
                 value={teamId}
-                onChange={(event) => setTeamId(event.target.value)}
-                className="rounded-lg border border-zinc-300 bg-zinc-50 p-2 text-sm text-zinc-900"
-              >
-                {regulationActiveTeams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setTeamId}
+                options={regulationActiveTeams.map((team) => ({
+                  value: team.id,
+                  label: team.name,
+                }))}
+              />
             </label>
             <div className="flex gap-2">
               <Button

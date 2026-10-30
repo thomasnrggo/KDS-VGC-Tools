@@ -23,7 +23,7 @@ interface TeamCombinationCardProps {
 /**
  * One "common combination" on the Team Report's Strategy tab, laid out like
  * a matchup page plan (GamePlanCard) without the opponent's side: your
- * leads above your back (picked from this team's roster; Back 2 can be
+ * leads above your back (beside it on phones; picked from this team's roster; Back 2 can be
  * "A or B"), the notes as rich text beside them, and arrows to reorder.
  * Notes saved as plain text before still load (see notesToHtml).
  */
@@ -58,7 +58,9 @@ export function TeamCombinationCard({
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="flex flex-col gap-3">
+        {/* Phones: leads and back side by side above the notes (wrapping if there's no
+            room); md+: stacked, with the notes beside them. */}
+        <div className="flex flex-wrap gap-x-4 gap-y-3 md:flex-col md:flex-nowrap">
           {(
             [
               [t.combination.leads, [0, 1]],

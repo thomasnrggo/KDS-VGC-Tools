@@ -22,6 +22,8 @@ interface RowActionsMenuProps {
   };
   /** Further items after the middle one (before Remove), e.g. an opponent's Move up/down. A disabled item stays visible but greyed out. */
   extraActions?: RowAction[];
+  /** Replaces the trigger's default small outlined circle — e.g. the team page's round header buttons. */
+  triggerClassName?: string;
 }
 
 export interface RowAction {
@@ -40,6 +42,7 @@ export function RowActionsMenu({
   removeLabel,
   middleAction,
   extraActions = [],
+  triggerClassName,
 }: RowActionsMenuProps) {
   const t = useMessages();
   const [isOpen, setIsOpen] = useState(false);
@@ -81,7 +84,10 @@ export function RowActionsMenu({
         aria-expanded={isOpen}
         aria-label={label}
         title={t.rowActions.moreOptions}
-        className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-400 text-zinc-400 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-500"
+        className={
+          triggerClassName ??
+          "flex h-7 w-7 items-center justify-center rounded-full border border-zinc-400 text-zinc-400 hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-500"
+        }
       >
         <Icon name={IconName.MoreVert} size={16} />
       </button>
@@ -91,7 +97,7 @@ export function RowActionsMenu({
           role="menu"
           aria-label={label}
           onClick={(event) => event.stopPropagation()}
-          className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+          className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           {onEdit && (
             <button

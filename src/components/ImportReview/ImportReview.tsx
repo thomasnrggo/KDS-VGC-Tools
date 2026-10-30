@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useState } from "react";
 import { defaultDecision, type ImportDecision, type ImportRow } from "@/lib/opponentImport";
 import { Modal, ModalDescription, ModalTitle } from "../Modal";
@@ -80,26 +81,27 @@ export function ImportReview({ rows, onConfirm, onCancel }: ImportReviewProps) {
                 </span>
               ) : (
                 <div className="flex w-full shrink-0 flex-col gap-1 sm:w-64">
-                  <select
+                  <Select
+                    variant="field"
                     value={decisionValue(decision)}
-                    onChange={(event) => {
+                    onChange={(value) => {
                       const next = [...decisions];
-                      next[index] = decisionFromValue(event.target.value);
+                      next[index] = decisionFromValue(value);
                       setDecisions(next);
                     }}
-                    aria-label={t.importReview.whatToDo(row.label)}
-                    className="w-full rounded-lg border border-zinc-300 bg-zinc-50 px-2 py-1.5 text-sm text-zinc-700"
-                  >
-                    {row.candidates.map((candidate, candidateIndex) => (
-                      <option key={candidateIndex} value={String(candidateIndex)}>
-                        {t.importReview.variantOf(candidate.label)}
-                      </option>
-                    ))}
-                    <option value={NEW}>{t.importReview.addAsNew}</option>
-                    <option value={SKIP}>{t.importReview.dontImport}</option>
-                  </select>
+                    ariaLabel={t.importReview.whatToDo(row.label)}
+                    options={[
+                      ...row.candidates.map((candidate, candidateIndex) => ({
+                        value: String(candidateIndex),
+                        label: t.importReview.variantOf(candidate.label),
+                      })),
+                      { value: NEW, label: t.importReview.addAsNew },
+                      { value: SKIP, label: t.importReview.dontImport },
+                    ]}
+                    className="px-2 py-1.5 text-zinc-700"
+                  />
                   {/* The match detail sits under the picker rather than in
-                      the option text, which a native select truncates. */}
+                      the option text, which the picker truncates. */}
                   {chosenCandidate && (
                     <span className="px-1 text-xs text-zinc-500">
                       {t.importReview.inCommon(

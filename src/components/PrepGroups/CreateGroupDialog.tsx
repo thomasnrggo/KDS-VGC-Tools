@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/components/Select";
 import { useState, type FormEvent } from "react";
 import { Modal } from "../Modal";
 import { useMessages } from "@/hooks/useLanguage";
@@ -61,17 +62,15 @@ export function CreateGroupDialog({
         </label>
         <label className="flex flex-col gap-1 text-sm text-zinc-700">
           {t.groups.create.regulation}
-          <select
+          <Select
+            variant="field"
             value={regulationId}
-            onChange={(event) => setRegulationId(event.target.value)}
-            className={INPUT_CLASSES}
-          >
-            {REGULATIONS.map((regulation) => (
-              <option key={regulation.id} value={regulation.id}>
-                {t.common.regulationLabel(regulation.label)}
-              </option>
-            ))}
-          </select>
+            onChange={setRegulationId}
+            options={REGULATIONS.map((regulation) => ({
+              value: regulation.id,
+              label: t.common.regulationLabel(regulation.label),
+            }))}
+          />
         </label>
         {error && (
           <p role="alert" className="text-sm text-red-600">
