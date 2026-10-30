@@ -2796,6 +2796,11 @@ leads/backs) is complete and working end to end.
       written only by the job's service account. Not committed to the repo: every push to main is a
       release. Not a Vercel cron: no server-side Firebase in the app, and the Smogon file is 16MB.
       Optional monthly snapshots for trends. The app reads the document once and caches it.
+    - **Metagame page** (built 2026-10-30, the owner's pick for the first visible use):
+      `/metagame` (`MetagameSection`, `metagame` feature flag, nav link) — regulation picker, the
+      events it's based on, a searchable ranked list (usage with a bar, top-32 usage with ▲▼ at a
+      5-point difference, win rate faded under 100 rounds), each row opening to its top 3 sets and
+      its items, abilities, moves and teammates.
     - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
       Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
       picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder

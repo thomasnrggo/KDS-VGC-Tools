@@ -11,6 +11,7 @@ export interface FeatureFlags {
   teams: boolean;
   tournaments: boolean;
   speedTiers: boolean;
+  metagame: boolean;
 }
 
 /**
@@ -22,4 +23,5 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   teams: true,
   tournaments: true,
   speedTiers: true,
+  metagame: true,
 };
