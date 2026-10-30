@@ -127,9 +127,22 @@ async function openStore() {
 async function main() {
   const store = await openStore();
 
-  const listed = parseEventIndex(await source.index());
-  // Nothing parsed means the page changed shape: stop rather than publish nothing.
-  if (listed.length === 0) throw new Error("No events found in the pokedata.ovh index");
+  const indexHtml = await source.index();
+  const listed = parseEventIndex(indexHtml);
+  // Nothing parsed means the page changed shape: stop rather than publish nothing,
+  // and say enough about what came back to fix the parser.
+  if (listed.length === 0) {
+    const text = indexHtml
+      .replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    console.error(
+      `Index page: ${indexHtml.length} characters, ` +
+        `${(indexHtml.match(/name="id"/g) ?? []).length} id fields. Starts: ${text.slice(0, 300)}`,
+    );
+    throw new Error("No events found in the pokedata.ovh index");
+  }
   const processed = await store.processedIds();
   const pending = listed
     .filter((event) => isVgcEvent(event) && isFinished(event, today))
@@ -149,6 +162,13 @@ async function main() {
       const standings = await source.standings(event.id);
       if (!roster || !standings) {
         console.warn(`  ${event.title}: no data, skipped`);
+        continue;
+      }
+      // The index pairs titles and ids by position: make sure this is the event we meant.
+      if (standings.tournament?.title?.trim() !== event.title) {
+        console.warn(
+          `  ${event.title}: the standings say "${standings.tournament?.title}", skipped`,
+        );
         continue;
       }
       const parsed = parseOfficialEvent(roster, standings);

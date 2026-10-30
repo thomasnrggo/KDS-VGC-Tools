@@ -2812,9 +2812,12 @@ leads/backs) is complete and working end to end.
       backfill; `metaEvents/{id}` (anonymized parsed events, private — the job's record of what
       it has fetched) and `meta/{regulationId}` (public, ~100KB) with rules; the workflow
       (`.github/workflows/update-meta.yml`, Mondays 06:00 UTC + manual run, dry run by
-      default when manual). The index parser was written against the markup of an event page,
-      not a saved index page — **the first live run must be a dry run** to confirm it. Needs the
-      `FIREBASE_SERVICE_ACCOUNT` secret and the rules deployed; (3) Limitless
+      default when manual). The first live dry run (2026-10-30) found no events: the index parser
+      had been guessed from an event page's markup (`class="date"`); the index uses `"dates"`
+      and wraps each event in `<div class="tournament vg|tcg">`, now parsed block by block (VGC
+      = the "vg" block) and tested against an excerpt of the real page. The job also logs what
+      came back when nothing parses, and skips an event whose standings title doesn't match the
+      index's. Needs the `FIREBASE_SERVICE_ACCOUNT` secret and the rules deployed; (3) Limitless
       and Smogon sources; (4) meta-weighted Coverage; then threat detection.
 
 ## 8. Attribution

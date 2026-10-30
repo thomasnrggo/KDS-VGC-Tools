@@ -36,26 +36,42 @@ describe("parseEventDates", () => {
 describe("parseEventIndex", () => {
   const events = parseEventIndex(indexHtml);
 
-  it("pairs each id with the title and date before it, skipping unparseable dates", () => {
+  it("reads every event block on the real page", () => {
     expect(events.map((event) => event.id)).toEqual([
       "1000079",
       "1000080",
       "1000077",
       "1000078",
-      "1000030",
+      "1000034",
+      "1000035",
+      "1000036",
+      "1000049",
+      "1000059",
     ]);
     expect(events[3]).toEqual({
       id: "1000078",
       title: "2027 Puebla Pokémon VGC Regional Championships",
+      kind: "vg",
       startDate: "2026-10-24",
       endDate: "2026-10-25",
     });
+    // Month-spanning dates and accented names.
+    expect(events[7]).toMatchObject({ startDate: "2026-02-27", endDate: "2026-03-01" });
+    expect(events[8].title).toBe("2026 Gdańsk Pokémon VGC Regional Championships");
   });
 
-  it("keeps VGC events that are over", () => {
-    const ready = events.filter((event) => isVgcEvent(event) && isFinished(event, "2026-10-30"));
-    // Not the TCG ones, and not Gdansk, which ends on November 1.
-    expect(ready.map((event) => event.id)).toEqual(["1000078", "1000030"]);
+  it("keeps finished VGC events in a known regulation", () => {
+    const ready = events.filter(
+      (event) =>
+        isVgcEvent(event) && isFinished(event, "2026-10-30") && regulationForDate(event.startDate),
+    );
+    // Not the TCG ones, not Gdansk (ends November 1), not events before Champions.
+    expect(ready.map((event) => [event.id, regulationForDate(event.startDate)])).toEqual([
+      ["1000078", "regulation-m-c"],
+      ["1000034", "regulation-m-c"],
+      ["1000035", "regulation-m-b"],
+      ["1000036", "regulation-m-a"],
+    ]);
   });
 
   it("waits a day after an event ends", () => {

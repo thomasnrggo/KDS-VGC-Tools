@@ -10,6 +10,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.2.5 — 2026-10-30
+
+### Fixed
+
+- Behind the scenes: the metagame job now reads the official tournament list correctly (its first
+  dry run found no events), and double-checks each event before using it.
+
 ## 0.2.4 — 2026-10-30
 
 ### Added

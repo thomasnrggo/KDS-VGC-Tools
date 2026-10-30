@@ -1,14 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><title>Tournaments</title></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="/standings2/">
+<title>Tournaments</title>
+<link rel="stylesheet" href="/standings2/main.css?v=1791376048">
+</head>
 <body>
-<!-- Hand-written in the markup of pokedata.ovh's event pages (title, date, a form with the id);
-     the first live run is a dry run that checks the real index parses the same way. -->
-<div class="event"><div class="title">2027 Gdansk Pokémon TCG Regional Championships</div><div class="date">October 31-November 1, 2026</div><form method="POST" action=""><input type="hidden" name="id" value="1000079"></form></div>
-<div class="event"><div class="title">2027 Gdansk Pokémon VGC Regional Championships</div><div class="date">October 31-November 1, 2026</div><form method="POST" action=""><input type="hidden" name="id" value="1000080"></form></div>
-<div class="event"><div class="title">2027 Puebla Pokémon TCG Regional Championships</div><div class="date">October 24-25, 2026</div><form method="POST" action=""><input type="hidden" name="id" value="1000077"></form></div>
-<div class="event"><div class="title">2027 Puebla Pokémon VGC Regional Championships</div><div class="date">October 24-25, 2026</div><form method="POST" action=""><input type="hidden" name="id" value="1000078"><input type="hidden" name="division" value="Masters"></form></div>
-<div class="event"><div class="title">2026 Pokémon VGC North America International Championships</div><div class="date">June 12-14, 2026</div><form method="POST" action=""><input type="hidden" name="id" value="1000030"></form></div>
-<div class="event"><div class="title">Broken entry</div><div class="date">sometime soon</div><form method="POST" action=""><input type="hidden" name="id" value="1000001"></form></div>
+<!-- An excerpt of pokedata.ovh/standings2/ as of 2026-10-30, unchanged markup. -->
+<div class="tournament tcg" onclick="this.querySelector('form').submit()"><div class="title">2027 Gdansk Pokémon TCG Regional Championships</div><div class="dates">October 31-November 1, 2026</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000079"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2027 Gdansk Pokémon VGC Regional Championships</div><div class="dates">October 31-November 1, 2026</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000080"></form></div>
+<div class="tournament tcg" onclick="this.querySelector('form').submit()"><div class="title">2027 Puebla Pokémon TCG Regional Championships</div><div class="dates">October 24-25, 2026</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000077"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2027 Puebla Pokémon VGC Regional Championships</div><div class="dates">October 24-25, 2026</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000078"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2027 Baltimore Pokémon VGC Regional Championships</div><div class="dates">September 18-20, 2026</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000034"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2026 Pokémon VGC World Championship</div><div class="dates">August 28-30, 2026</div><div class="logo"><img src="/standings2/worlds-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000035"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2026 North America Pokémon VGC International Championships</div><div class="dates">June 12-14, 2026</div><div class="logo"><img src="/standings2/internationals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000036"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2026 Seattle Pokémon VGC Regional Championships</div><div class="dates">February 27-March 1, 2026</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000049"></form></div>
+<div class="tournament vg" onclick="this.querySelector('form').submit()"><div class="title">2026 Gdańsk Pokémon VGC Regional Championships</div><div class="dates">November 1-2, 2025</div><div class="logo"><img src="/standings2/regionals-logo.png" alt=""></div><form method="POST" action="" style="display:none"><input type="hidden" name="id" value="1000059"></form></div>
+
+<footer class="site-footer">
+    <span>This website is not affiliated with, sponsored or endorsed by, or in any way associated with The Pokemon Company International Inc/Nintendo/Creatures Inc./GAME FREAK Inc./RK9.gg</span>
+</footer>
 </body>
 </html>

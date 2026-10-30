@@ -1,13 +1,15 @@
 /**
  * pokedata.ovh's event list (`standings2/`, HTML — it has no JSON index):
- * each event is a title, a date line ("October 24-25, 2026") and a form
- * carrying its id. Self-contained (no imports) so the meta job can run it
+ * each event is a block with a title, a dates line ("October 24-25, 2026")
+ * and a form carrying its id. Self-contained (no imports) so the meta job can run it
  * with Node's own TypeScript support — see scripts/update-meta.mjs.
  */
 
 export interface IndexedEvent {
   id: string;
   title: string;
+  /** The block's class: "vg" for VGC, "tcg" for the card game. */
+  kind: string;
   /** ISO dates (YYYY-MM-DD). */
   startDate: string;
   endDate: string;
@@ -59,34 +61,32 @@ function decodeEntities(text: string): string {
 }
 
 /**
- * Every event in the index, in page order: each id takes the title and date
- * that came before it. Events whose date doesn't parse are left out.
+ * Every event in the index, in page order. Each is its own block —
+ * `<div class="tournament vg|tcg">` with a title, a dates line and a form
+ * carrying the id — so fields never pair across events. Blocks whose dates
+ * don't parse are left out.
  */
 export function parseEventIndex(html: string): IndexedEvent[] {
-  const tokens = html.matchAll(
-    /class="title">([^<]*)<|class="date">([^<]*)<|name="id" value="(\d+)"/g,
-  );
+  const blocks = html.split(/<div class="tournament\b/).slice(1);
   const events: IndexedEvent[] = [];
   const seen = new Set<string>();
-  let title: string | null = null;
-  let date: string | null = null;
-  for (const [, titleText, dateText, id] of tokens) {
-    if (titleText !== undefined) title = decodeEntities(titleText);
-    else if (dateText !== undefined) date = decodeEntities(dateText);
-    else if (id && title && date && !seen.has(id)) {
-      const dates = parseEventDates(date);
-      if (dates) {
-        events.push({ id, title, ...dates });
-        seen.add(id);
-      }
-    }
+  for (const block of blocks) {
+    const kind = /^\s*([a-z]+)"/.exec(block)?.[1];
+    const title = /class="title">([^<]*)</.exec(block)?.[1];
+    const dates = /class="dates?">([^<]*)</.exec(block)?.[1];
+    const id = /name="id" value="(\d+)"/.exec(block)?.[1];
+    if (!title || !dates || !id || seen.has(id)) continue;
+    const parsed = parseEventDates(decodeEntities(dates));
+    if (!parsed) continue;
+    events.push({ id, title: decodeEntities(title), kind: kind ?? "", ...parsed });
+    seen.add(id);
   }
   return events;
 }
 
-/** A VGC event (the index lists the TCG's too). */
+/** A VGC event (the index lists the TCG's too): its block is marked "vg". */
 export function isVgcEvent(event: IndexedEvent): boolean {
-  return /\bVGC\b/.test(event.title);
+  return event.kind === "vg";
 }
 
 /** Over, with a day's margin for results still being finalized. */
