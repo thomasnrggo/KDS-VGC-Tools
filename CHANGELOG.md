@@ -10,6 +10,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.2.4 — 2026-10-30
+
+### Added
+
+- Behind the scenes: a weekly job that gathers official tournament results (Regionals and other
+  official events, every Masters team) into a metagame summary per regulation, for the features
+  that will use it next. Nothing in the app changes yet.
+
 ## 0.2.3 — 2026-10-30
 
 ### Added
