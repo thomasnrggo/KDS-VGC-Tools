@@ -2804,7 +2804,17 @@ leads/backs) is complete and working end to end.
       kept) and aggregation (`src/lib/meta/aggregateMeta.ts`: usage overall and in the top N, win
       rate from round results with byes left out, sets, items, moves, teammates), tested offline
       against an anonymized fixture of the Puebla Regional (2026-10-24, 333 Masters;
-      `src/lib/meta/__fixtures__/`); (2) the job script + Firestore document + rules; (3) Limitless
+      `src/lib/meta/__fixtures__/`); (2) **built 2026-10-30, not yet run live** — the job
+      (`scripts/update-meta.mjs`, `npm run update:meta`; `--dry-run`, `--fixtures` for offline,
+      `--max-events N`), the event index parser (`src/lib/meta/pokedataIndex.ts` — HTML, VGC
+      only, finished a day ago, regulation by start date via `REGULATION_PERIODS`, since the
+      registry has no dates), newest events first so the current regulation fills before
+      backfill; `metaEvents/{id}` (anonymized parsed events, private — the job's record of what
+      it has fetched) and `meta/{regulationId}` (public, ~100KB) with rules; the workflow
+      (`.github/workflows/update-meta.yml`, Mondays 06:00 UTC + manual run, dry run by
+      default when manual). The index parser was written against the markup of an event page,
+      not a saved index page — **the first live run must be a dry run** to confirm it. Needs the
+      `FIREBASE_SERVICE_ACCOUNT` secret and the rules deployed; (3) Limitless
       and Smogon sources; (4) meta-weighted Coverage; then threat detection.
 
 ## 8. Attribution

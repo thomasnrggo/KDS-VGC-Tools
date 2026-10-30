@@ -1,0 +1,43 @@
+# The metagame job — see scripts/update-meta.mjs and PLANNING.md's "Metagame data".
+# Weekly, plus a manual "Run workflow" button (with a dry-run option) in the Actions tab.
+name: Update metagame data
+
+on:
+  schedule:
+    # Mondays 06:00 UTC: after the weekend's events have finished.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Fetch and report only — write nothing to Firestore"
+        type: boolean
+        default: true
+      max_events:
+        description: "Most new events to fetch in this run"
+        type: number
+        default: 4
+
+concurrency:
+  group: update-meta
+  cancel-in-progress: false
+
+jobs:
+  update-meta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Update meta
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: >
+          npm run update:meta --
+          --max-events ${{ inputs.max_events || 4 }}
+          ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}

@@ -1,0 +1,215 @@
+// The metagame job (see PLANNING.md's "Metagame data"): fetches finished
+// official VGC events from pokedata.ovh, keeps an anonymized copy of each in
+// Firestore (metaEvents/{id}, private), and rewrites meta/{regulationId} — the
+// public summary the app reads — for every regulation that got a new event.
+// Run by .github/workflows/update-meta.yml weekly, or by hand:
+//
+//   npm run update:meta -- --dry-run            fetch and report, write nothing
+//   npm run update:meta -- --fixtures --dry-run  offline, from src/lib/meta/__fixtures__
+//   npm run update:meta                          for real (needs FIREBASE_SERVICE_ACCOUNT)
+//
+// Options: --max-events N (default 4) caps how many new events one run fetches.
+//
+// pokedata.ovh is one person's site with no API terms, so this is deliberately
+// gentle: finished events only, each fetched once (a finished event never
+// changes), seconds apart, with a user agent saying who's asking. Only our own
+// aggregates are published, never their files or any player's name.
+
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseOfficialEvent } from "../src/lib/meta/officialTournament.ts";
+import { aggregateOfficialMeta } from "../src/lib/meta/aggregateMeta.ts";
+import {
+  isFinished,
+  isVgcEvent,
+  parseEventIndex,
+  regulationForDate,
+} from "../src/lib/meta/pokedataIndex.ts";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES = path.join(__dirname, "../src/lib/meta/__fixtures__");
+
+const BASE_URL = "https://www.pokedata.ovh/standings2";
+const USER_AGENT =
+  "VGCBox-meta-job/1.0 (weekly, finished events only; https://github.com/thomasnrggo/KDS-VGC-Tools)";
+const DELAY_MS = 4000;
+const DIVISION = "Masters";
+
+const args = process.argv.slice(2);
+const dryRun = args.includes("--dry-run");
+const useFixtures = args.includes("--fixtures");
+const maxEvents = Number(args[args.indexOf("--max-events") + 1]) || 4;
+const today = new Date().toISOString().slice(0, 10);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+let lastRequest = 0;
+/** One request at a time, DELAY_MS apart. */
+async function fetchText(url) {
+  const wait = lastRequest + DELAY_MS - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastRequest = Date.now();
+  const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+  if (!response.ok) throw new Error(`${response.status} for ${url}`);
+  return response.text();
+}
+
+const source = useFixtures
+  ? {
+      index: () => readFile(path.join(FIXTURES, "pokedata-index.html"), "utf8"),
+      roster: async (id) =>
+        id === "1000078"
+          ? JSON.parse(await readFile(path.join(FIXTURES, "puebla-2026-roster.json"), "utf8"))
+          : null,
+      standings: async (id) =>
+        id === "1000078"
+          ? JSON.parse(
+              await readFile(path.join(FIXTURES, "puebla-2026-masters-standings.json"), "utf8"),
+            )
+          : null,
+    }
+  : {
+      index: () => fetchText(`${BASE_URL}/`),
+      roster: async (id) => JSON.parse(await fetchText(`${BASE_URL}/RosterData/${id}.json`)),
+      standings: async (id) =>
+        JSON.parse(await fetchText(`${BASE_URL}/standings/${id}_${DIVISION}.json`)),
+    };
+
+/** Firestore through the job's service account, or an in-memory stand-in for a dry run. */
+async function openStore() {
+  if (dryRun) {
+    const written = new Map();
+    return {
+      async processedIds() {
+        return new Set();
+      },
+      async saveEvent(id, data) {
+        written.set(`metaEvents/${id}`, data);
+      },
+      async eventsFor(regulationId) {
+        return [...written.values()].filter((event) => event.regulationId === regulationId);
+      },
+      async saveMeta(regulationId, data) {
+        written.set(`meta/${regulationId}`, data);
+      },
+      written,
+    };
+  }
+  const credentials = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!credentials) throw new Error("FIREBASE_SERVICE_ACCOUNT is not set");
+  const { initializeApp, cert } = await import("firebase-admin/app");
+  const { getFirestore } = await import("firebase-admin/firestore");
+  initializeApp({ credential: cert(JSON.parse(credentials)) });
+  const db = getFirestore();
+  db.settings({ ignoreUndefinedProperties: true });
+  return {
+    async processedIds() {
+      const snap = await db.collection("metaEvents").select().get();
+      return new Set(snap.docs.map((doc) => doc.id));
+    },
+    async saveEvent(id, data) {
+      await db.collection("metaEvents").doc(id).set(data);
+    },
+    async eventsFor(regulationId) {
+      const snap = await db
+        .collection("metaEvents")
+        .where("regulationId", "==", regulationId)
+        .get();
+      return snap.docs.map((doc) => doc.data());
+    },
+    async saveMeta(regulationId, data) {
+      await db.collection("meta").doc(regulationId).set(data);
+    },
+  };
+}
+
+async function main() {
+  const store = await openStore();
+
+  const listed = parseEventIndex(await source.index());
+  // Nothing parsed means the page changed shape: stop rather than publish nothing.
+  if (listed.length === 0) throw new Error("No events found in the pokedata.ovh index");
+  const processed = await store.processedIds();
+  const pending = listed
+    .filter((event) => isVgcEvent(event) && isFinished(event, today))
+    .filter((event) => regulationForDate(event.startDate) && !processed.has(event.id))
+    // Newest first, so the current regulation fills in before older ones backfill.
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))
+    .slice(0, maxEvents);
+  console.log(
+    `Index: ${listed.length} events, ${pending.length} new finished VGC event(s) to fetch` +
+      (pending.length ? `: ${pending.map((event) => event.title).join("; ")}` : ""),
+  );
+
+  const changedRegulations = new Set();
+  for (const event of pending) {
+    try {
+      const roster = await source.roster(event.id);
+      const standings = await source.standings(event.id);
+      if (!roster || !standings) {
+        console.warn(`  ${event.title}: no data, skipped`);
+        continue;
+      }
+      const parsed = parseOfficialEvent(roster, standings);
+      const regulationId = regulationForDate(event.startDate);
+      await store.saveEvent(event.id, {
+        id: event.id,
+        title: event.title,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        regulationId,
+        division: parsed.division,
+        players: parsed.players,
+        fetchedAt: new Date().toISOString(),
+      });
+      changedRegulations.add(regulationId);
+      console.log(`  ${event.title}: ${parsed.players.length} ${parsed.division} teams`);
+    } catch (error) {
+      // Left unprocessed, so the next run tries it again.
+      console.error(`  ${event.title}: failed — ${error.message}`);
+    }
+  }
+
+  for (const regulationId of changedRegulations) {
+    const events = (await store.eventsFor(regulationId)).sort((a, b) =>
+      a.startDate.localeCompare(b.startDate),
+    );
+    const summary = aggregateOfficialMeta(events);
+    await store.saveMeta(regulationId, {
+      regulationId,
+      updatedAt: new Date().toISOString(),
+      official: {
+        source: "pokedata.ovh (RK9 team lists)",
+        division: DIVISION,
+        events: events.map(({ id, title, startDate, endDate, players }) => ({
+          id,
+          title,
+          startDate,
+          endDate,
+          teams: players.length,
+        })),
+        ...summary,
+      },
+    });
+    const top = summary.pokemon
+      .slice(0, 5)
+      .map((mon) => `${mon.species} ${(mon.usage * 100).toFixed(1)}%`)
+      .join(", ");
+    console.log(
+      `meta/${regulationId}: ${summary.events} event(s), ${summary.teams} teams — ${top}`,
+    );
+  }
+
+  if (dryRun && store.written) {
+    const meta = [...store.written.entries()].filter(([key]) => key.startsWith("meta/"));
+    for (const [key, value] of meta) {
+      console.log(`(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB`);
+    }
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
