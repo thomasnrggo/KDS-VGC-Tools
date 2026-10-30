@@ -16,13 +16,12 @@ import { PokemonSprite } from "@/components/PokemonSprite";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PokemonCalcsBox } from "@/components/TeamCalcs";
 import { TeamMatchupsList } from "@/components/TeamMatchups";
-import { ShareDialog, TeamPost } from "@/components/TeamPost";
+import { ShareDialog } from "@/components/TeamPost";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { createEmptyCombination, TEAM_REPORT_PREP_ENABLED } from "@/constants";
 import { computeTeamUsageStats } from "@/lib/tournament";
 import { isTeamArchived } from "@/lib/team";
-import { parseTeam } from "@/lib/parseTeam";
 import { speciesIdentity } from "@/lib/teamIdentity";
 import { calcMatchesSearch } from "@/lib/teamCalcs";
 import { parseSearchTerms } from "@/lib/pokemonMatchesQuery";
@@ -31,8 +30,15 @@ import { Modal, ModalDescription, ModalTitle } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/Button";
+import { Button, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 interface TeamReportPageProps {
   params: Promise<{ teamId: string }>;
@@ -92,25 +98,19 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const selectedRegulationId = team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? "";
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
+  // Phones: the sections' bottom sheet.
+  const [isSectionsOpen, setIsSectionsOpen] = useState(false);
+  const shareLabel = team?.share ? t.teamPage.sharedLabel(team.share.sheet) : t.teamPage.share;
   // Calcs tab: narrows every Pokémon's calcs to the ones against the searched Pokémon.
   const [calcQuery, setCalcQuery] = useState("");
   const [isConfirmingClearCalcs, setIsConfirmingClearCalcs] = useState(false);
   const calcSearchTerms = parseSearchTerms(calcQuery);
-  // The paste in the post's edit form, while editing — the Pokémon cards
-  // preview it live instead of showing the saved roster.
-  const [draftPaste, setDraftPaste] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ReportTab>(
     isReportTab(initialTab) ? initialTab : "report",
   );
 
-  const isPreviewing = draftPaste !== null && draftPaste.trim() !== team?.rawPaste.trim();
-  const rosterShown = isPreviewing ? parseTeam(draftPaste) : (team?.pokemon ?? []);
-
   function selectTab(tab: ReportTab) {
     setActiveTab(tab);
-    // Leaving the report tab unmounts the post, dropping any unsaved edit —
-    // drop its paste preview with it.
-    setDraftPaste(null);
     // Keep the tab in the URL so Back from a matchup page (or a reload)
     // returns to it. The native History API is synced with Next's router.
     const url = new URL(window.location.href);
@@ -184,14 +184,13 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
         </div>
       ) : (
         <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
-          {/* Back to My Teams left, tabs right (they wrap below on narrow
-              screens); the team's name is the title of its post below. */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* On the Team report tab the post titles the page; elsewhere the
-                team's name joins the breadcrumb (as the page's h1). */}
+          {/* "< My Teams / team" left (the team's name is the page's h1), the tabs then
+              Share and Edit right. Narrower screens: Share and Edit stay on the breadcrumb's
+              line and the tabs wrap below it. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <nav
               aria-label={t.teamPage.breadcrumb}
-              className="flex min-w-0 items-center gap-1 text-sm"
+              className="mr-auto flex min-w-0 items-center gap-1 text-sm"
             >
               <Link
                 href="/teams"
@@ -200,18 +199,61 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                 <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
                 {t.nav.myTeams}
               </Link>
-              {activeTab !== "report" && (
-                <>
-                  <span aria-hidden="true" className="text-zinc-400">
-                    /
-                  </span>
-                  <h1 aria-current="page" className="truncate font-semibold text-zinc-900">
-                    {team.name}
-                  </h1>
-                </>
-              )}
+              <span aria-hidden="true" className="text-zinc-400">
+                /
+              </span>
+              <h1 aria-current="page" className="truncate font-semibold text-zinc-900">
+                {team.name}
+              </h1>
             </nav>
-            <div role="tablist" aria-label={t.teamPage.sections} className="flex flex-wrap gap-1.5">
+            {/* Phones: one button showing the current section, opening a bottom sheet with
+                all of them — instead of pill tabs wrapping onto two rows. */}
+            <Drawer open={isSectionsOpen} onOpenChange={setIsSectionsOpen} showSwipeHandle>
+              <DrawerTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label={`${t.teamPage.sections}: ${t.teamPage.tabs[activeTab]}`}
+                    className="order-last flex basis-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-raised px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 sm:hidden"
+                  />
+                }
+              >
+                {t.teamPage.tabs[activeTab]}
+                <Icon name={IconName.ExpandMore} size={18} className="text-zinc-500" />
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>{t.teamPage.sections}</DrawerTitle>
+                </DrawerHeader>
+                <div className="flex flex-col gap-1 p-3 pt-1 pb-6">
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      aria-current={activeTab === tab ? "page" : undefined}
+                      onClick={() => {
+                        selectTab(tab);
+                        setIsSectionsOpen(false);
+                      }}
+                      className={cn(
+                        "flex min-h-12 items-center justify-between rounded-lg px-3 text-left text-base font-medium",
+                        activeTab === tab
+                          ? "bg-chrome-600 text-white"
+                          : "text-zinc-800 active:bg-zinc-200",
+                      )}
+                    >
+                      {t.teamPage.tabs[tab]}
+                      {activeTab === tab && <Icon name={IconName.Check} size={18} />}
+                    </button>
+                  ))}
+                </div>
+              </DrawerContent>
+            </Drawer>
+            <div
+              role="tablist"
+              aria-label={t.teamPage.sections}
+              className="order-last hidden basis-full flex-wrap gap-1.5 sm:flex lg:order-none lg:basis-auto"
+            >
               {TABS.map((tab) => (
                 <button
                   key={tab}
@@ -230,38 +272,35 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                 </button>
               ))}
             </div>
+            <div className="flex items-center gap-1.5">
+              {/* A dot marks a shared report — the owner's only sign of it. */}
+              <button
+                type="button"
+                onClick={() => setIsSharing(true)}
+                aria-label={shareLabel}
+                title={shareLabel}
+                className={cn(iconButtonVariants({ variant: "round" }), "relative")}
+              >
+                <Icon name={IconName.Share} size={16} />
+                {team.share && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-50 bg-green-600"
+                  />
+                )}
+              </button>
+              {/* Editing the team happens in the Team Builder. */}
+              <Link
+                href={`/teams/${teamId}/edit`}
+                aria-label={t.teamBuilder.editPokemon}
+                title={t.teamBuilder.editPokemonHint}
+                className={iconButtonVariants({ variant: "round" })}
+              >
+                <Icon name={IconName.Edit} size={16} />
+              </Link>
+            </div>
           </div>
 
-          {/* The team's post (and its edit mode) lives on the Team report
-              tab; the other tabs name the team in the breadcrumb above. */}
-          {activeTab === "report" ? (
-            <TeamPost
-              name={team.name}
-              rawPaste={team.rawPaste}
-              creator={team.creator}
-              pokepasteUrl={team.pokepasteUrl}
-              replicaCode={team.replicaCode}
-              overview={team.overview}
-              owner={{
-                onSave: ({ rawPaste, ...content }) => {
-                  // A changed paste is reparsed (and validated) the same way
-                  // the old Edit team dialog did; the rest is plain fields.
-                  if (rawPaste !== undefined) {
-                    const error = editTeam(teamId, rawPaste, content.name);
-                    if (error) return error;
-                  }
-                  updateTeam(teamId, (t) => ({ ...t, ...content }));
-                  return null;
-                },
-                onShare: () => setIsSharing(true),
-                shareLabel: team.share
-                  ? t.teamPage.sharedLabel(team.share.sheet)
-                  : t.teamPage.share,
-                isShared: !!team.share,
-                onDraftPasteChange: setDraftPaste,
-              }}
-            />
-          ) : null}
           {isSharing && (
             <ShareDialog
               team={team}
@@ -289,27 +328,13 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           )}
 
           {/* Six compact cards in a row on desktop. Per-Pokémon notes
-              (Team.pokemonNotes) are no longer shown here, but stay saved.
-              While the paste is being edited they preview the draft. */}
+              (Team.pokemonNotes) are no longer shown here, but stay saved. So do the
+              old post's creator, links and overview, no longer shown either. */}
           {activeTab === "report" && (
-            <div className="flex flex-col gap-2">
-              {isPreviewing ? (
-                <p className="text-xs font-medium text-zinc-500">{t.teamPage.previewNotSaved}</p>
-              ) : (
-                <Link
-                  href={`/teams/${teamId}/edit`}
-                  title={t.teamBuilder.editPokemonHint}
-                  className="flex items-center gap-1 self-end text-xs font-medium text-zinc-500 hover:text-zinc-800"
-                >
-                  <Icon name={IconName.Edit} size={14} />
-                  {t.teamBuilder.editPokemon}
-                </Link>
-              )}
-              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-                {rosterShown.map((mon, index) => (
-                  <PokemonReportCard key={`${mon.species}-${index}`} pokemon={mon} />
-                ))}
-              </div>
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+              {team.pokemon.map((mon, index) => (
+                <PokemonReportCard key={`${mon.species}-${index}`} pokemon={mon} />
+              ))}
             </div>
           )}
 

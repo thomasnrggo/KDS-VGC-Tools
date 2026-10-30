@@ -17,6 +17,12 @@ tagged `vX.Y.Z`. The minor or major number only changes when the project owner s
 - **The Team Builder is open to everyone**: its `teamBuilder` feature flag is gone, so "Build a
   team" (My Teams and the Add team dialog) and "Edit Pokémon" (the team page) always show. It's
   part of My Teams now — `/team-builder` follows the My Teams switch in /admin/features.
+- Team page: the title card is gone — the header reads "‹ My Teams / team name", with Share and
+  Edit after the tabs (on phones, beside the breadcrumb). Edit opens the Team Builder instead of
+  the old edit form; the report's creator, links and overview are no longer shown but stay saved.
+- Team page on phones: the section tabs are one button showing the current section ("Team
+  report ⌄"), opening a bottom sheet to switch between them, instead of pills wrapping onto two
+  rows.
 
 ## 0.2.0 — 2026-10-29
 

@@ -32,6 +32,9 @@ export const iconButtonVariants = cva(
         /** A bordered square (the calc's copy/save buttons). */
         outlined:
           "h-8 w-8 rounded-md border border-zinc-200 bg-raised text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-zinc-200",
+        /** A bordered circle beside pill tabs (the team page's Share / Edit). */
+        round:
+          "h-8 w-8 rounded-full border border-zinc-300 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-800",
         /** A small borderless circle (save set, add to roster). */
         ghost: "h-6 w-6 rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700",
       },
