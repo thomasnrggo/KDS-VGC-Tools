@@ -34,6 +34,7 @@ const BASE_URL = "https://www.pokedata.ovh/standings2";
 const USER_AGENT =
   "VGCBox-meta-job/1.0 (weekly, finished events only; https://github.com/thomasnrggo/KDS-VGC-Tools)";
 const DELAY_MS = 4000;
+const REQUEST_TIMEOUT_MS = 60_000;
 const DIVISION = "Masters";
 /** The share of players that must match a team sheet for an event to count. */
 const MIN_JOIN = 0.9;
@@ -52,7 +53,13 @@ async function fetchText(url) {
   const wait = lastRequest + DELAY_MS - Date.now();
   if (wait > 0) await sleep(wait);
   lastRequest = Date.now();
-  const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+  // A hung request fails after REQUEST_TIMEOUT_MS (body included) instead of
+  // stalling the run until the workflow's own timeout; that event is retried
+  // next run.
+  const response = await fetch(url, {
+    headers: { "User-Agent": USER_AGENT },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
   if (!response.ok) throw new Error(`${response.status} for ${url}`);
   return response.text();
 }
@@ -252,7 +259,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+// Exit explicitly, so nothing left open (sockets, the Firestore client) keeps the run alive.
+main().then(
+  () => process.exit(0),
+  (error) => {
+    console.error(error);
+    process.exit(1);
+  },
+);

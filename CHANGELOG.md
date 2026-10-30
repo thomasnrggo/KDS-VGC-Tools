@@ -10,6 +10,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.2.7 — 2026-10-30
+
+### Fixed
+
+- Behind the scenes: the metagame job gives up on a download after a minute (that event is retried
+  next run) and exits as soon as it's done; its time limit is 30 minutes instead of 15.
+
 ## 0.2.6 — 2026-10-30
 
 ### Fixed
