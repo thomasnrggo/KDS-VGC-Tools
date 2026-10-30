@@ -167,27 +167,18 @@ export function useMyTeams() {
   );
 
   /**
-   * Creates a brand-new, empty (0-Pokémon) team under `regulationId` and
-   * makes it active — the Team Builder's "New team" entry point, which fills
-   * in the roster via the builder itself rather than a paste. Skips
-   * addTeam's paste-required validation and duplicate check, both
-   * meaningless for an intentionally blank roster; returns the created team
-   * directly (not an error message) so the caller can navigate straight to
-   * it.
+   * Saves a team put together in the Team Builder (see /team-builder) as a
+   * new team and makes it active — the builder keeps it as an unsaved draft
+   * until its first Pokémon, so leaving an empty one behind never creates a
+   * team. Skips addTeam's paste validation and duplicate check.
    */
-  const addBlankTeam = useCallback(
-    (name: string, regulationId: string): Team => {
-      const newTeam = createTeam(
-        "",
-        name.trim() || getMessages().errors.defaultTeamName(teams.length + 1),
-        regulationId,
-      );
-      setTeams((prev) => [...prev, newTeam]);
-      void saveMyTeam(newTeam);
-      setActiveTeamId(newTeam.id);
-      return newTeam;
+  const addBuiltTeam = useCallback(
+    (team: Team) => {
+      setTeams((prev) => [...prev, team]);
+      void saveMyTeam(team);
+      setActiveTeamId(team.id);
     },
-    [teams, setActiveTeamId],
+    [setActiveTeamId],
   );
 
   /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id and regulationIds — editing a team's paste doesn't touch which regulations it's tagged with (see addRegulationTag/removeRegulationTag for that). Returns an error message, or null on success. */
@@ -314,7 +305,7 @@ export function useMyTeams() {
     activeTeamId,
     isLoading,
     addTeam,
-    addBlankTeam,
+    addBuiltTeam,
     editTeam,
     updateTeam,
     removeTeam,

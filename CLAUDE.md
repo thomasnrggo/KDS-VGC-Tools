@@ -11,6 +11,7 @@ This is a Next.js 16.2.12 / React 19.2.4 app for planning Pokémon VGC matchups.
 **[CHANGELOG.md](./CHANGELOG.md)** records what shipped and when (newest first, grouped by version). Add an entry under "Unreleased" with each user-facing change.
 
 **Versioning:** every push to main (or merge request) is the next patch version: 0.2.0 first, then 0.2.1, 0.2.2, and so on. On each one:
+
 - rename CHANGELOG's "Unreleased" to `## X.Y.Z — YYYY-MM-DD`
 - bump `package.json`'s `version` (and `package-lock.json`'s, e.g. `npm version X.Y.Z --no-git-tag-version`)
 - tag the commit `vX.Y.Z` and push the tag
@@ -29,6 +30,7 @@ Never bump the minor or major number (0.3, 1.0) unless the user explicitly says 
 - `npm run generate:type-chart` — regenerate `src/data/typeChart.json` from PokeAPI (one-off; static data, rarely needs re-running)
 - `npm run generate:names` — regenerate `src/data/names/<language>.json` (localized Pokémon/move/item/ability/type/nature names) from PokeAPI; re-run after the other generators (see docs/localization.md)
 - `npm run generate:calc-data` — regenerate `src/data/moveFlags.json`/`speciesWeights.json` (move flags and species weights for the damage calculator) from Showdown's data (`@pkmn/dex`); re-run after adding moves or species
+- `npm run generate:learnsets` — regenerate `src/data/learnsets.json` (which moves each species learns, for the Team Builder's move list) from Showdown's data (`@pkmn/dex`); re-run after adding species or moves
 
 ## Stack notes
 
@@ -40,6 +42,7 @@ Never bump the minor or major number (0.3, 1.0) unless the user explicitly says 
 ## Styling conventions
 
 Tailwind stays, kept readable with these (applied across the app):
+
 - **Shared components before long class strings:** `Button` (`primary` / `outline` / `danger`), `IconButton` (`outlined` / `ghost`), `TextAction`, `TogglePill` from `@/components/Button`; `Textarea` from `@/components/Textarea`; `ModalTitle` / `ModalDescription` / `ModalActions` from `@/components/Modal`. Add a variant (with `cva`) rather than copying a class string.
 - **`cn()` from `@/lib/utils`** for conditional or merged classes — not template literals with `${cond ? "…" : ""}`. It merges conflicts (`gap-3` + `gap-2` keeps the last), unlike plain CSS where Tailwind's stylesheet order decides — don't list two values for the same property and rely on which one wins.
 - **Color roles in `globals.css`:** zinc flips in dark mode, so anything that should look the same in both themes (the header, the calculator's pinned and roster bars, primary buttons, active pills) uses the fixed `chrome-*` scale (`bg-chrome-800`, not `bg-zinc-800 dark:bg-zinc-200`); `bg-raised` is the white-in-light surface and `bg-field` the input background. Only reach for `dark:` when a color genuinely differs between themes.

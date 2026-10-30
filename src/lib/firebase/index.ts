@@ -6,6 +6,7 @@ export { createCollectionSync, pushMetaDoc, pullMetaDoc, type SyncableRecord } f
 export { getSeasons, saveSeason, deleteSeason } from "./seasons";
 export { getPublicSets, savePublicSet, deletePublicSet } from "./publicSets";
 export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";
+export { getLearnsetOverrides, saveLearnsetOverride } from "./learnsetOverrides";
 export { publishSharedTeam, unpublishSharedTeam, getSharedTeam } from "./sharedTeams";
 export {
   createGroup,

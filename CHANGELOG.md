@@ -17,6 +17,49 @@ starting with the experience on a phone.
 
 ### Added
 
+- Showdown's colored base-stat bars in the Team Builder: red for the lowest stats through yellow
+  to green and teal for the highest, beside each base stat in the stats area and in the stats
+  summary. Both are drawn on a 20–200 scale (98% of base stats fall in 20–160), so they read as
+  the stat's quality; the Stat Points are the number beside them.
+- Nature in the Stat Points boxes, as in Showdown: the raised stat shows `+20` (red) and the
+  lowered one `-0` (blue), and typing `+` or `-` in a box sets the nature (Adamant, then `+` on
+  Speed → Jolly; raising the lowered stat swaps them; from a neutral nature the weaker attacking
+  stat is the one lowered). Deleting the sign makes it neutral; typing a new number keeps it.
+  Works in the Team Builder's stats and the damage calculator; the builder shows a tip under them.
+- Tab in the Stat Points goes straight from box to box, skipping the sliders (↑/↓ in a box
+  still nudges it a point).
+- Tab moves through the keyboard flow exactly like Enter, in the Team Builder and the damage
+  calculator: with something typed it picks the highlighted result and moves on, untouched it
+  keeps the value and moves on, and the last move goes straight into the first Stat Points box.
+  Shift+Tab still goes back as usual.
+- Team Builder: ← / → switch Pokémon from anywhere outside a text field, not only on the
+  Pokémon row.
+- Team Builder (still behind its feature flag): "Build a team" on My Teams opens `/team-builder`
+  to put a team together Pokémon by Pokémon, laid out like Pokémon Showdown's: a compact form
+  (the Pokémon, its moves, its stats) over one results area that lists whatever field you're in —
+  its current pick on top, then Mega Stones/Items or Abilities/Hidden Ability — or the Stat Points
+  table. Type to filter, ↑ / ↓ and Enter to pick and go on to the next field; ← / → switch
+  Pokémon. Holding a Mega Stone, you still pick the base form's ability (the one that's exported)
+  and the list says which ability it gets after Mega Evolving; a "Mega" toggle shows the sprite,
+  types and stats either way, and an ability the base form can't have is marked Illegal. Typing a
+  type's name ("electric") offers it as a filter for Pokémon and moves (a category, like
+  "special", for moves); filters stack, and Backspace in the empty field removes the last one.
+  A "Sort:" bar sorts moves by name, type, category, power, accuracy or PP, and Pokémon by name,
+  type, any base stat or BST — click again to reverse. From tablet width up the two lists are
+  columns under that bar, like Showdown's: sprite, name, types, abilities, base stats and BST; or
+  name, type, category, power, accuracy, PP and effect. Mega forms have rows of their own in the
+  Pokémon list (picking one gives the Pokémon its Mega Stone, keeping the rest of the set when it's
+  the same Pokémon), and a Pokémon is found by its abilities too — typing one also offers it as a
+  filter. The move list shows only the moves the Pokémon learns (from Showdown's learnsets, any
+  generation, pre-evolutions included — Pokémon Champions' own movepools aren't available), with
+  "Show all moves" to see the rest; a saved move it can't learn is marked Illegal. The admin can
+  correct any Pokémon's moves at `/admin/learnsets` (add the ones it misses, remove the ones it
+  doesn't learn in Champions); the corrections apply for everyone right away. Pick the regulation
+  (its Pokémon and items are offered, and anything not legal there is flagged), name the team,
+  import or export the whole team, copy or paste one Pokémon (also Ctrl/⌘+C and Ctrl/⌘+V), and
+  remove one: plans, combinations and logged games keep pointing at the same Pokémon. The team
+  is saved with its first Pokémon; a saved team's "Edit Pokémon" link (on its Team Report)
+  opens it again. In English and Spanish.
 - Flexible last pick: your Back 2 can be "A or B" — turn on "A or B" in its picker and choose
   two; the tile splits corner to corner with one in each half (on the Matchup Planner, the matchup page and the Team Report's
   combinations and Matchups tab). An empty Back 2 with the other three picked shows "+1": any of
@@ -142,6 +185,10 @@ starting with the experience on a phone.
 
 ### Fixed
 
+- Dark mode: the Damage Calculator's Pokémon search and the phone picker sheets' search boxes
+  were near-white with light text, so what you typed couldn't be read.
+- Damage Calculator: pressing Enter on a hidden ability or a Mega Stone without typing picked the
+  list's first option instead of keeping the current one.
 - Matchup Planner: a long opponent name (or the extra buttons beside it) no longer widens its card's
   first column out of line with the others; the name is cut off with "…" (hover for the full name).
 - Damage Calculator field effects, checked against the games:

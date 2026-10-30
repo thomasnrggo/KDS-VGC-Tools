@@ -1,31 +1,55 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
+import { useMessages } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
-import { TeamRoster } from "@/components/TeamRoster";
+import { TeamBuilder } from "@/components/TeamBuilder";
 import { REGULATIONS } from "@/data/regulations";
-import { Button } from "@/components/Button";
+import { createTeam } from "@/lib/team";
+import type { Team } from "@/types";
 
-export default function TeamBuilderPage() {
-  const router = useRouter();
+/**
+ * Creating a team in the Team Builder. It's a draft until its first Pokémon
+ * (an empty one left behind never becomes a team); then it's saved, and the
+ * address becomes its edit page — /teams/[id]/edit, where My Teams links to
+ * — without leaving this page, so the keyboard flow isn't interrupted.
+ */
+export default function NewTeamBuilderPage() {
+  const t = useMessages();
   const {
+    teams,
     activeTeams,
     activeTeamId,
     isLoading,
     addTeam,
+    addBuiltTeam,
     editTeam,
     removeTeam,
     setActiveTeamId,
-    addBlankTeam,
+    updateTeam,
   } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
+  const [draft, setDraft] = useState<Team>(() =>
+    createTeam("", t.teamBuilder.newTeam, REGULATIONS[0].id),
+  );
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const team = (savedId && teams.find((saved) => saved.id === savedId)) || draft;
 
-  function createTeamAndOpen() {
-    const newTeam = addBlankTeam(`Team ${activeTeams.length + 1}`, REGULATIONS[0].id);
-    router.push(`/team-builder/${newTeam.id}`);
+  function handleChange(updater: (team: Team) => Team) {
+    if (savedId) {
+      updateTeam(savedId, updater);
+      return;
+    }
+    const next = updater(draft);
+    setDraft(next);
+    if (next.pokemon.length === 0) return;
+    const saved = { ...next, updatedAt: new Date().toISOString() };
+    addBuiltTeam(saved);
+    setSavedId(saved.id);
+    // The native History API is synced with Next's router.
+    window.history.replaceState(null, "", `/teams/${saved.id}/edit`);
   }
 
   return (
@@ -38,63 +62,21 @@ export default function TeamBuilderPage() {
         editTeam={editTeam}
         removeTeam={removeTeam}
         setActiveTeamId={setActiveTeamId}
-        currentPage="team-builder"
-        selectedRegulationId={REGULATIONS[0]?.id ?? ""}
+        currentPage="teams"
+        selectedRegulationId={team.regulationIds[0] ?? REGULATIONS[0]?.id ?? ""}
         authUser={user}
         isAuthLoading={isAuthLoading}
         onSignIn={signInWithGoogle}
         onSignOut={signOut}
       />
 
-      <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h2 className="text-xl font-semibold text-zinc-900">Team Builder</h2>
-            <p className="text-sm text-zinc-600">
-              Build a team from scratch, or open any existing team here to edit its species, items,
-              abilities, moves, and Stat Points directly.
-            </p>
-          </div>
-          <Button onClick={createTeamAndOpen} className="shrink-0">
-            New team
-          </Button>
-        </div>
-
-        {isLoading ? (
-          <p className="text-sm text-zinc-500">Loading…</p>
-        ) : activeTeams.length === 0 ? (
-          <p className="text-sm text-zinc-500">
-            No teams yet — start one with &quot;New team&quot; above, or paste one in{" "}
-            <Link href="/teams" className="font-medium text-zinc-600 hover:underline">
-              My Teams
-            </Link>{" "}
-            first.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {activeTeams.map((team) => (
-              <Link
-                key={team.id}
-                href={`/team-builder/${team.id}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-zinc-200 p-4 hover:border-zinc-300 hover:bg-zinc-50"
-              >
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <span className="truncate text-sm font-semibold text-zinc-900">{team.name}</span>
-                  {team.pokemon.length > 0 ? (
-                    <TeamRoster pokemon={team.pokemon} />
-                  ) : (
-                    <span className="text-xs text-zinc-500">
-                      Empty roster — click to add Pokémon.
-                    </span>
-                  )}
-                </div>
-                <span className="shrink-0 text-sm font-medium text-zinc-500">
-                  Edit in builder →
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
+      <div className="flex w-full flex-col gap-4 px-3 py-4 sm:p-6">
+        <TeamBuilder
+          team={team}
+          heading={t.teamBuilder.title}
+          onChange={handleChange}
+          teamHref={savedId ? `/teams/${savedId}` : undefined}
+        />
       </div>
     </div>
   );

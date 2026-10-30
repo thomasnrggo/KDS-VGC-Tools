@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getFeatureFlags, saveFeatureFlags } from "@/lib/firebase";
 import { DEFAULT_FEATURE_FLAGS } from "@/types";
 import type { FeatureFlags } from "@/types";
+import { useIsAdmin } from "./useIsAdmin";
 
 // Module-level cache — each of the 4 gated sections has its own layout.tsx
 // (see FeatureGate), and MyTeamHeader calls this hook too, so it remounts
@@ -64,4 +65,11 @@ export function useFeatureFlags() {
   }, []);
 
   return { flags, isLoading, updateFlags };
+}
+
+/** Whether a section is usable here — its flag is on, or the visitor is the admin (same rule as FeatureGate) — for links into a gated section from elsewhere. */
+export function useFeatureEnabled(flagKey: keyof FeatureFlags): boolean {
+  const { flags } = useFeatureFlags();
+  const { isAdmin } = useIsAdmin();
+  return flags[flagKey] || isAdmin;
 }

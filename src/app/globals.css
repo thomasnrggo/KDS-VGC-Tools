@@ -60,7 +60,8 @@
    * zinc-100 step in dark (replaces bg-white … dark:bg-zinc-100).
    *
    * field: the background of text inputs and search boxes — white in light
-   * mode, the zinc-900 step in dark (replaces bg-white … dark:bg-zinc-900).
+   * mode, the darkest zinc step in dark (the same as bg-zinc-50 there, like
+   * the app's other inputs).
    */
   --color-chrome-50: oklch(98.5% 0 none);
   --color-chrome-100: oklch(96.7% 0.001 286.375);
@@ -147,7 +148,8 @@
   --color-zinc-950: oklch(98.5% 0 none);
 
   --raised: var(--color-zinc-100);
-  --field: var(--color-zinc-900);
+  /* zinc-50 is the darkest step once flipped — zinc-900 would be near-white under light text. */
+  --field: var(--color-zinc-50);
 
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

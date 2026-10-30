@@ -12,7 +12,7 @@ A Pokémon Showdown-style team builder, in-app: pick a species, then set its ite
 nature, and EV spread (Stat Points, per this app's Pokémon Champions ruleset — see PLANNING.md §3),
 across a full 6-slot team, with Showdown-paste import/export at both the single-Pokémon and full-team
 level. This supersedes PLANNING.md §2's "no manual team builder UI" / "paste-in is the only way to
-change a team" decisions — those are superseded by this doc, not deleted, since they explain *why*
+change a team" decisions — those are superseded by this doc, not deleted, since they explain _why_
 paste-only was the original design.
 
 ## 2. Scope decisions (2026-09-16)
@@ -20,7 +20,8 @@ paste-only was the original design.
 - **Ships as a separate, standalone flow for now** — not wired into `/teams`'s UI. It reads and writes
   the same `Team` records via the same storage/sync layer, but isn't linked from `/teams` yet.
   Integrating it as `/teams`'s "New Team" / "Edit" path is explicit future work, not part of this
-  phase.
+  phase. _(Superseded 2026-10-28 — it's now My Teams' "Build a team" and each team's "Edit
+  Pokémon"; see step 16.)_
 - **Becomes the general editor for any team**, not just newly-built ones. Once shipped, opening any
   existing team (however it was created — paste, folder import, or built) in the builder lets you edit
   species/item/ability/moves/nature/Stat Points per slot. This finally reverses PLANNING.md §2's
@@ -38,34 +39,34 @@ Nothing here needs to be invented — the Damage Calculator's "Add Any Pokémon"
 already. This feature generalizes its editing UX into a persisted, multi-slot `Team` editor rather than
 a session-only side-panel:
 
-| Concern | Existing module |
-|---|---|
-| Species/ability/item/nature/move search UI | `SearchableSelect` (`src/components/DamageCalculator/SearchableSelect.tsx`) |
-| Fresh custom Pokémon defaults | `buildCustomPokemon(speciesKey)` (`RosterPokemonPicker.tsx`) |
-| Stat Points → final stats | `calculateStatBreakdown`, `applyStatOverrides` (`src/lib/stats/`) |
-| Ability resolution (Mega-aware) | `resolveEffectiveAbility` (`src/lib/species/`) |
-| Species display name / normalization | `formatSpeciesDisplayName`, `normalizeSpeciesKey`, `candidateFormKeys` (`src/lib/species/`) |
-| Regulation-legal species/items | `REGULATIONS`, `megaStoneItemsForSpecies` (`src/data/regulations/`) |
-| Ability/move/base-stat/type data | `abilities.json`, `moves.json`, `baseStats.json`, `speciesTypes.json`, `species.json` (`src/data/`) |
-| Showdown paste parsing (import) | `parseTeam`, `parsePokemonBlock` (`src/lib/parseTeam.ts`) |
-| Showdown paste serialization (export) | `formatPokemonPaste`, `formatTeamPaste` (`src/lib/formatPokemonPaste.ts`) |
-| Team creation / regulation tagging | `createTeam`, `normalizeTeam`, `addRegulationTag` (`src/lib/team.ts`) |
-| Persistence (local + cloud) | `db.ts` (`myTeams` store), `createCollectionSync<Team>` (`src/lib/firebase/cloudSync.ts`) |
-| Feature gating | `FeatureFlags`, `useFeatureFlags`, `FeatureGate`, `SECTION_FLAGS` in `admin/features/page.tsx` |
-| Sprite/item icon rendering | `PokemonSprite`, `ItemIcon` |
+| Concern                                    | Existing module                                                                                     |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Species/ability/item/nature/move search UI | `SearchableSelect` (`src/components/DamageCalculator/SearchableSelect.tsx`)                         |
+| Fresh custom Pokémon defaults              | `buildCustomPokemon(speciesKey)` (`RosterPokemonPicker.tsx`)                                        |
+| Stat Points → final stats                  | `calculateStatBreakdown`, `applyStatOverrides` (`src/lib/stats/`)                                   |
+| Ability resolution (Mega-aware)            | `resolveEffectiveAbility` (`src/lib/species/`)                                                      |
+| Species display name / normalization       | `formatSpeciesDisplayName`, `normalizeSpeciesKey`, `candidateFormKeys` (`src/lib/species/`)         |
+| Regulation-legal species/items             | `REGULATIONS`, `megaStoneItemsForSpecies` (`src/data/regulations/`)                                 |
+| Ability/move/base-stat/type data           | `abilities.json`, `moves.json`, `baseStats.json`, `speciesTypes.json`, `species.json` (`src/data/`) |
+| Showdown paste parsing (import)            | `parseTeam`, `parsePokemonBlock` (`src/lib/parseTeam.ts`)                                           |
+| Showdown paste serialization (export)      | `formatPokemonPaste`, `formatTeamPaste` (`src/lib/formatPokemonPaste.ts`)                           |
+| Team creation / regulation tagging         | `createTeam`, `normalizeTeam`, `addRegulationTag` (`src/lib/team.ts`)                               |
+| Persistence (local + cloud)                | `db.ts` (`myTeams` store), `createCollectionSync<Team>` (`src/lib/firebase/cloudSync.ts`)           |
+| Feature gating                             | `FeatureFlags`, `useFeatureFlags`, `FeatureGate`, `SECTION_FLAGS` in `admin/features/page.tsx`      |
+| Sprite/item icon rendering                 | `PokemonSprite`, `ItemIcon`                                                                         |
 
 ## 3a. Data audit (2026-09-16) — what the picker panels need vs. what exists
 
 Checked against four Showdown-teambuilder-style picker panels (species list, item list, ability list,
 move list) plus the stat/nature editor:
 
-| Panel | Needs | Have | Gap |
-|---|---|---|---|
-| Species list (filter/sort by name & type) | name, types, abilities (regular + hidden, split), 6 base stats, BST | `species.json`, `baseStats.json`, `speciesTypes.json` all present; BST is a trivial sum, not stored | `abilities.json` stores ability names as a flat `string[]` ordered "regular first, hidden last" but **discards the actual hidden flag** — ambiguous for any species with exactly 2 abilities (could be 2 regular, or 1 regular + 1 hidden) |
-| Item list (name + description) | name, description | Only item *names*, scattered across `REGULATION_*_HELD_ITEMS`/`_BERRIES` and `megaStones.ts` | No item dataset with descriptions exists at all |
-| Ability list (name + description, hidden split) | name, description, hidden flag | Names only, in `abilities.json` | No ability descriptions exist anywhere; same hidden-flag gap as the species list |
-| Move list (name, type, category, power, accuracy, PP, effect text) | all seven fields | `moves.json` has name/type/category/power | `accuracy`/`pp` are already columns in the PokeAPI `moves.csv` our generator (`generate-move-data.mjs`) fetches, just not extracted; effect/description text is entirely missing |
-| Stat/nature editor | — | `RosterPokemonPicker`'s Stat Points UI (`calculateStatBreakdown`/`applyStatOverrides`) | **Not a gap** — this app intentionally uses Pokémon Champions' Stat Points (0–32/stat, 66 total, no IVs, Level 50 fixed), not vanilla Showdown's 0–252 EV / 0–31 IV / moveset-guessed-spread system. Do not build the vanilla version. |
+| Panel                                                              | Needs                                                               | Have                                                                                                | Gap                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Species list (filter/sort by name & type)                          | name, types, abilities (regular + hidden, split), 6 base stats, BST | `species.json`, `baseStats.json`, `speciesTypes.json` all present; BST is a trivial sum, not stored | `abilities.json` stores ability names as a flat `string[]` ordered "regular first, hidden last" but **discards the actual hidden flag** — ambiguous for any species with exactly 2 abilities (could be 2 regular, or 1 regular + 1 hidden) |
+| Item list (name + description)                                     | name, description                                                   | Only item _names_, scattered across `REGULATION_*_HELD_ITEMS`/`_BERRIES` and `megaStones.ts`        | No item dataset with descriptions exists at all                                                                                                                                                                                            |
+| Ability list (name + description, hidden split)                    | name, description, hidden flag                                      | Names only, in `abilities.json`                                                                     | No ability descriptions exist anywhere; same hidden-flag gap as the species list                                                                                                                                                           |
+| Move list (name, type, category, power, accuracy, PP, effect text) | all seven fields                                                    | `moves.json` has name/type/category/power                                                           | `accuracy`/`pp` are already columns in the PokeAPI `moves.csv` our generator (`generate-move-data.mjs`) fetches, just not extracted; effect/description text is entirely missing                                                           |
+| Stat/nature editor                                                 | —                                                                   | `RosterPokemonPicker`'s Stat Points UI (`calculateStatBreakdown`/`applyStatOverrides`)              | **Not a gap** — this app intentionally uses Pokémon Champions' Stat Points (0–32/stat, 66 total, no IVs, Level 50 fixed), not vanilla Showdown's 0–252 EV / 0–31 IV / moveset-guessed-spread system. Do not build the vanilla version.     |
 
 **Decision (2026-09-16): source the three missing description datasets (items, abilities, move
 effects) from [`@pkmn/dex`](https://www.npmjs.com/package/@pkmn/dex)** (MIT, Smogon/Showdown-sourced
@@ -79,7 +80,7 @@ Dex.items.get('choiceband').shortDesc → "Holder's Attack is 1.5x, but it can o
 ```
 
 `@pkmn/dex`'s `Species.abilities` shape (`{"0": "Healer", "1": "Hydration", "H": "Regenerator"}`) also
-solves the hidden-flag gap directly — the `H` key *is* the hidden ability, no ambiguity. It exposes
+solves the hidden-flag gap directly — the `H` key _is_ the hidden ability, no ambiguity. It exposes
 matching base stats/types too, but **species/stats/types generation stays on the existing PokeAPI CSV
 pipeline** (`generate-species-data.mjs`) — it already works, so only the genuinely missing pieces move
 to the new source, keeping blast radius small:
@@ -125,7 +126,7 @@ Reuse `Team` and `ParsedPokemon` as-is (`src/types/team.ts`) — no new fields r
 ## 5. UI structure
 
 - New route: `/team-builder` (own route-group `layout.tsx` wrapping `<FeatureGate
-  flagKey="teamBuilder">`), separate from `/teams` per §2's scope decision.
+flagKey="teamBuilder">`), separate from `/teams` per §2's scope decision.
 - Landing view: list of existing teams (reusing whatever team-list data/hook `/teams` already uses)
   each with an "Edit in builder" action, plus a "New team" action that starts from an empty 6-slot
   roster.
@@ -148,7 +149,7 @@ Per the existing pattern (`src/types/featureFlags.ts`, `src/app/admin/features/p
 2. Add `{ flagKey: "teamBuilder", label: "Team Builder" }` to `SECTION_FLAGS` in
    `admin/features/page.tsx` so it can be toggled on for testing without a deploy.
 3. Create `src/app/team-builder/layout.tsx` wrapping children in `<FeatureGate
-   flagKey="teamBuilder">`.
+flagKey="teamBuilder">`.
 4. No `firestore.rules` change needed — it writes/reads the same per-user `users/{uid}/teams`
    collection as everything else; the flags doc itself already accepts arbitrary boolean fields.
 
@@ -174,7 +175,7 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
    generator itself so it survives future regenerations. New/changed types:
    `SpeciesAbility`/`AbilityData` (`src/types/abilities.ts`), `ItemData` (`src/types/items.ts`),
    `MoveData.accuracy`/`.pp`/`.shortDesc` (`src/types/damage.ts`). Verified: `tsc --noEmit`, `npm run
-   lint`, `npm test` (279 passed), plus a manual browser check of `/damage-calc` and `/speed-tiers`.
+lint`, `npm test` (279 passed), plus a manual browser check of `/damage-calc` and `/speed-tiers`.
 2. ✅ **Extract the per-Pokémon editor (done 2026-09-16)**: new `src/components/PokemonEditor/`
    (`PokemonEditor.tsx` + `computePokemonBuild.ts`, barrel `index.ts`) — owns species search + Mega
    toggle, ability/nature/item pickers, the Base/SP/Final stat table, and the 4-move grid, with no
@@ -208,7 +209,7 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
      via `useMyTeams().activeTeams`, reusing `TeamRoster` for each row's preview; "New team" button),
      `[teamId]/page.tsx` (the slot editor, `params: Promise<{teamId}>` unwrapped via `use()`, mirroring
      `/teams/[teamId]/page.tsx`'s established pattern exactly).
-   - `useMyTeams` gained `addBlankTeam(name, regulationId): Team` — creates a real 0-Pokémon `Team`
+   - `useMyTeams` gained `addBlankTeam(name, regulationId): Team` (since replaced by `addBuiltTeam`, step 16) — creates a real 0-Pokémon `Team`
      (`createTeam("", ...)`, `parseTeam("")` is safely `[]`) without touching `addTeam`'s
      paste-required validation, so existing paste flows are untouched.
    - **Slot semantics, and why**: the detail page renders exactly one "+ Add Pokémon" tile (the slot
@@ -236,14 +237,14 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
      Pokémon into an empty slot. No console errors. (Verification required temporarily flipping the
      flag's default to `true` locally, since there's no way to sign in as the admin account in this
      environment — reverted to `false` before finishing.)
-5. Load an existing team into the builder for editing — **done as part of step 3/4 above** (opening
+4. Load an existing team into the builder for editing — **done as part of step 3/4 above** (opening
    any existing team from the landing list already goes through the same edit-in-place path a
    from-scratch team uses).
-6. Team-level Import (paste → 6 slots) and Export (slots → paste), reusing `parseTeam`/
+5. Team-level Import (paste → 6 slots) and Export (slots → paste), reusing `parseTeam`/
    `formatTeamPaste` verbatim.
-7. Update PLANNING.md §2 to mark the "paste-only" decisions as superseded by this doc; add a §7
+6. Update PLANNING.md §2 to mark the "paste-only" decisions as superseded by this doc; add a §7
    roadmap entry once shipped.
-8. ✅ **Rich, Showdown-style picker content (done 2026-09-16)** — user feedback after trying step 3/4
+7. ✅ **Rich, Showdown-style picker content (done 2026-09-16)** — user feedback after trying step 3/4
    live: the species/ability/item/move pickers only showed a bare name, not the type/stats/description
    data step 1 already generated, and a real bug meant Mega Stones M-C added on top of M-B (e.g.
    Salamencite) never appeared in the item list at all.
@@ -253,11 +254,11 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
      instead. Fixed to `REGULATIONS[0].megaStoneItemsForSpecies(...)`. Pre-existing bug, not something
      step 2's extraction introduced — just carried over verbatim from `RosterPokemonPicker.tsx`.
    - **`SearchableSelectOption` gained an optional `content?: ReactNode`** (`src/components/
-     SearchableSelect/SearchableSelect.tsx`) — rendered in place of the plain label/sprite fallback
+SearchableSelect/SearchableSelect.tsx`) — rendered in place of the plain label/sprite fallback
      when set, so each picker can build whatever row shape its own data supports without
-     `SearchableSelect` itself knowing about moves/species/items/abilities at all. *(A `wide` prop was
+     `SearchableSelect` itself knowing about moves/species/items/abilities at all. _(A `wide` prop was
      also added here for a floating dropdown wide enough for these rows — removed again in the very
-     next entry below, once the layout moved to a shared panel that doesn't float per-field at all.)*
+     next entry below, once the layout moved to a shared panel that doesn't float per-field at all.)_
    - **Row builders**, all in `PokemonEditor.tsx`/`computePokemonBuild.tsx`: species (sprite + name +
      type icons, abilities incl. Hidden, HP/Atk/Def/SpA/SpD/Spe + BST), moves (name + type icon +
      category + Pow/Acc/PP, `shortDesc` underneath), items and abilities (name + `shortDesc`, item rows
@@ -266,7 +267,7 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
    - Verified: `tsc --noEmit`, `npm run lint`, `npm test` (279 passed), plus a manual browser pass on
      both `/team-builder` and `/damage-calc` confirming Salamencite now appears for Salamence, and that
      species/ability/move rows render with full Showdown-style detail with no console errors.
-9. ✅ **Shared results panel + slider Stat Points editor (done 2026-09-18)** — user feedback after
+8. ✅ **Shared results panel + slider Stat Points editor (done 2026-09-18)** — user feedback after
    trying step 8 live: rich rows were an improvement, but each field (species/ability/item/move) still
    popped its OWN floating dropdown in a different spot depending on where that field sat in the
    layout. Real Showdown always shows results in one fixed panel regardless of which field you're
@@ -304,33 +305,33 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
      confirming the panel renders in the same spot for species/item/move on `/team-builder`, the 66-cap
      clamps correctly there while `/damage-calc` still allows exceeding it (tested up to 98), and a
      fresh custom Pokémon starts at "0/66 Stat Points used". No console errors.
-10. ✅ **Team Builder slot-strip + width pass (done 2026-09-19)** — user feedback: the 6-slot grid's
-    tiles were rendering huge (stretching to fill each grid column on a wide screen, well past a
-    sensible sprite size), and the editor card was too narrow relative to how much room the new results
-    panel (step 9) deserves, per the same "search area should be the biggest area" principle.
-    - `src/app/team-builder/[teamId]/page.tsx`'s slot strip changed from a `grid` (fluid columns,
-      `aspect-square`) to a `flex flex-wrap` row of fixed `h-16 w-16` (64px) tiles — a real horizontal
-      tab strip like Showdown's, not a stretched grid. Also stopped pre-rendering trailing empty
-      placeholder tiles for slots beyond the next open one (nothing to click there anyway, per step
-      3/4's append-only design) — only existing Pokémon + one "+" tile now, exactly matching Showdown's
-      own tab bar (filled tabs, one add tab, nothing further).
-    - The editor card's width cap widened from `md:max-w-xl` (36rem) to `w-full max-w-4xl` (56rem),
-      and `PokemonEditor`'s shared results panel (step 9) grew from a fixed `max-h-96` to a
-      viewport-relative `max-h-[65vh]` — both changes make the results area the dominant visual
-      element on the page, not an afterthought below a large identity form.
-    - Verified: `tsc --noEmit`, `npm run lint`, `npm test` (279 passed), plus a manual browser pass —
-      64px tiles confirmed in the tab strip, the results panel confirmed to grow to fill most of the
-      viewport height when there are enough options (tested with the full ~500-species list), and the
-      Damage Calculator's narrower three-column layout confirmed unaffected (panel still renders
-      correctly inside its column, no overflow). No console errors.
-12. ✅ **4-column horizontal identity layout (done 2026-09-19)** — user feedback: "more horizontal, like
+9. ✅ **Team Builder slot-strip + width pass (done 2026-09-19)** — user feedback: the 6-slot grid's
+   tiles were rendering huge (stretching to fill each grid column on a wide screen, well past a
+   sensible sprite size), and the editor card was too narrow relative to how much room the new results
+   panel (step 9) deserves, per the same "search area should be the biggest area" principle.
+   - `src/app/team-builder/[teamId]/page.tsx`'s slot strip changed from a `grid` (fluid columns,
+     `aspect-square`) to a `flex flex-wrap` row of fixed `h-16 w-16` (64px) tiles — a real horizontal
+     tab strip like Showdown's, not a stretched grid. Also stopped pre-rendering trailing empty
+     placeholder tiles for slots beyond the next open one (nothing to click there anyway, per step
+     3/4's append-only design) — only existing Pokémon + one "+" tile now, exactly matching Showdown's
+     own tab bar (filled tabs, one add tab, nothing further).
+   - The editor card's width cap widened from `md:max-w-xl` (36rem) to `w-full max-w-4xl` (56rem),
+     and `PokemonEditor`'s shared results panel (step 9) grew from a fixed `max-h-96` to a
+     viewport-relative `max-h-[65vh]` — both changes make the results area the dominant visual
+     element on the page, not an afterthought below a large identity form.
+   - Verified: `tsc --noEmit`, `npm run lint`, `npm test` (279 passed), plus a manual browser pass —
+     64px tiles confirmed in the tab strip, the results panel confirmed to grow to fill most of the
+     viewport height when there are enough options (tested with the full ~500-species list), and the
+     Damage Calculator's narrower three-column layout confirmed unaffected (panel still renders
+     correctly inside its column, no overflow). No console errors.
+10. ✅ **4-column horizontal identity layout (done 2026-09-19)** — user feedback: "more horizontal, like
     Showdown" meant more than the tab strip/width pass above — the actual Pokémon/Item/Ability/Moves/
     Stats fields should sit side by side as four columns (Pokémon | Types+Item+Ability | 4 Moves |
     Stats), not stacked vertically inside a wide card.
     - `PokemonEditor` gained a `layout?: "stacked" | "columns"` prop (default `"stacked"`, i.e. the
       exact prior behavior, zero risk to the Damage Calculator which never sets it). Every field
       (species input, item input, ability input, stat table, nature, per-move inputs) is now built
-      once as a local JSX variable and *composed* differently per layout, rather than duplicating each
+      once as a local JSX variable and _composed_ differently per layout, rather than duplicating each
       field's markup — `"stacked"` arranges them exactly as before; `"columns"` arranges them into a
       `grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1.4fr]` (the stats column gets extra width since it alone
       has four sub-columns — Stat/Base/SP/Final — versus a single input for the others). The shared
@@ -343,12 +344,12 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
       `max-w-4xl` to `max-w-6xl` so the 4 columns (plus the wider stats column) have room to breathe —
       confirmed live that the stat table's "Final" column, initially clipped at `max-w-4xl`, is fully
       visible after the widen.
-    - **Process note**: mid-verification, the *previous* session's dev server (from the step 10/11
+    - **Process note**: mid-verification, the _previous_ session's dev server (from the step 10/11
       browser checks) turned out not to have actually died — `pkill -f "next dev"` matches the
       `node .../next dev` parent but not its `next-server (vX)` child, which had been silently serving
       stale code on port 3000 across multiple later `npm run dev` invocations (each one silently fell
       back to port 3001 instead, logging `⚠ Port 3000 is in use`/`⨯ Another next dev server is already
-      running` — worth actually reading the dev server's own log output when a change doesn't show up
+running` — worth actually reading the dev server's own log output when a change doesn't show up
       in the browser, rather than assuming the code is wrong). Killed both PIDs explicitly and
       confirmed a clean restart before concluding the type-badge lookup was correct all along (a tight
       `zoom` crop had also independently cut the badge out of an earlier screenshot — two unrelated
@@ -358,14 +359,14 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
       visible, the type badge appears correctly for a Mega form (Raichu + Raichunite Y → Electric, the
       mega-aware form key), the shared results panel still opens in the same place below the grid, and
       `/damage-calc`'s stacked layout is pixel-identical to before. No console errors.
-14. ✅ **Click-to-edit Stat Points, `"columns"`-only (done 2026-09-19)** — user feedback: the always-
+11. ✅ **Click-to-edit Stat Points, `"columns"`-only (done 2026-09-19)** — user feedback: the always-
     visible Base/SP-slider/Final table doesn't fit a quarter-width column at a glance; Showdown itself
     only shows that detail once you click in to edit, and the compact "Stats" summary should reuse the
     same shared-panel space every other field's search results already use.
     - `ActiveField` gained a `{ kind: "stats" }` variant (no params, unlike `move`'s `slot`) — set by a
       new `statsSummary` block: a clickable compact list (label + Stat Points per row, "–" for 0,
       nature ↑/↓ carried over unchanged from the full table) that replaces `statSection` in the
-      `"columns"` layout's 4th column. Clicking it doesn't open a *new* kind of panel — it just makes
+      `"columns"` layout's 4th column. Clicking it doesn't open a _new_ kind of panel — it just makes
       `resultsPanel` (the same shared container every other field already renders into) show
       `statSection` (the existing full slider table, unchanged) instead of a search-results list.
       Closes the same way every other field does: click-outside or Escape, no bespoke "Done" button.
@@ -383,20 +384,122 @@ cloud sync. Editing an existing team in the builder just calls the same `saveMyT
       problem noted in step 12 — this time doing a full `ps aux` sweep and `rm -rf .next` before
       restarting, rather than trusting `pkill` pattern-matching again.)
 
+12. ✅ **Resumed for 0.2: in sync with the app, wired into My Teams (done 2026-10-28)** — user
+    feedback: support localization, keyboard control like the Damage Calculator's form, a UI in
+    sync with the rest of the app, Import/Export, copy/paste one Pokémon, removing Pokémon, picking
+    a regulation; the `/team-builder` landing list was redundant with My Teams.
+    - **Routes**: `/team-builder` now _creates_ a team (no list). It's an unsaved draft
+      (`createTeam("", …)` in state) until its first Pokémon, then `useMyTeams().addBuiltTeam`
+      saves it and `window.history.replaceState` moves the address to `/teams/[id]/edit` without
+      remounting (so the keyboard flow isn't interrupted). `/teams/[id]/edit` edits a saved team,
+      linked by "Edit Pokémon" above the roster on its Team Report; My Teams has "Build a team"
+      (desktop header, and a line under the Add team dialog's paste form). Both stay behind the
+      `teamBuilder` flag (`useFeatureEnabled`, same rule as FeatureGate). The old
+      `/team-builder/[id]` redirects to the edit page. `addBlankTeam` is gone.
+    - **One shared component**, `src/components/TeamBuilder/`: name + regulation select +
+      a back link (the team's page once saved, else My Teams; no Done button), one Import / Export dialog (the team's text to copy, or paste a team over it and Save), the slot strip (tabs; ← / → / Home / End), and the editor
+      card: the Damage Calculator's `PokemonSetPicker` (species and saved sets, limited to the
+      regulation via its new `speciesKeys` prop) with Copy / Import / Export (one dialog per Pokémon, like the team's) / Remove beside the Stats heading, Ctrl/⌘+Delete to remove, then
+      `PokemonEditor layout="columns"`. Outside a text field, Ctrl/⌘+C copies the selected Pokémon
+      and Ctrl/⌘+V pastes one into the selected slot (a whole team opens Import with it).
+    - **`layout="columns"` reworked** to the calc's controls: the `SearchableSelect` dropdowns
+      (`FLOW_FIELD`, so Enter moves on: Pokémon → item → ability → moves → Stat Points → nature),
+      keeping each option's detailed row (only the calc strips them). Item/ability/moves on the
+      left, the full stat table (nature on its footer) on the right. The step 14 stats summary and
+      the step 9 shared results panel are no longer used by it (the panel stays for a non-simple
+      stacked editor).
+    - **Regulation**: the select sets the team's first `regulationIds` entry (other tags stay);
+      `computePokemonBuild`/`PokemonEditor` take the regulation for items (`regulationId` prop),
+      and `getRegulationLegalityIssues` rings any illegal Pokémon and lists why.
+    - **Removing a Pokémon** (§15's old deferral): `src/lib/rosterSlots.ts` shifts every saved
+      position — the team's combinations and `pokemonNotes` (`teamWithoutSlot`), your side of
+      each matchup plan and its Plans B+ (`matchupPlanWithoutSlot`; their picks point at their
+      roster and stay), and logged games' `myPicks` (`tournamentWithoutSlot`) — clearing picks of
+      the removed one. `removePokemonEverywhere` applies it to your opponents, tournaments and
+      prep-group plans (`getMyGroupPlans`), pulling the cloud copies first when signed in. A
+      saved team asks to confirm; a draft removes in place.
+    - **Fixed on the way** (also in the calc): `SearchableSelect` opened highlighting the first row
+      when the current pick's label carried a note ("(Hidden Ability)", "(Mega Stone)"), so Enter
+      replaced it. It now takes `selectedId`, and keeps the current pick listed when unfiltered.
+    - All builder text is in `messages.teamBuilder` (English and Spanish).
+
+13. ✅ **Showdown-style form and results area (done 2026-10-28)** — user feedback on step 16: the
+    dropdowns over each field should be one selection area, like Showdown's, under a more
+    compact form in three sections (the Pokémon, moves, stats).
+    - New `src/components/TeamBuilder/BuilderEditor.tsx` replaces step 16's `PokemonSetPicker` +
+      `PokemonEditor layout="columns"`: the Pokémon section (sprite with its types and Mega
+      toggle beside it; Pokémon, Ability and Item in one row underneath), Moves (four fields) and Stats (compact bars and Stat Points; click or Enter opens
+      the table) side by side from `md`, stacked on phones. The focused field's options list in
+      ONE area below: its current pick pinned on top, then headed groups (Mega Stones / Items,
+      Abilities / Hidden Ability, Moves), filtered as you type, capped at 150 rows. Its own
+      keyboard flow: ↑ / ↓ highlight, Enter picks and focuses the next field (Pokémon → ability →
+      item → moves → stats, the order they're shown in); Enter on an untouched field keeps its value (never re-picks the
+      species, which would start a blank set); clicking a row also moves on. The stats area is
+      `PokemonEditor layout="stats"` (just the table + nature) inside a `FLOW_ROOT`.
+    - Option lists reuse `localizedOptions` (now exported, per regulation) and
+      `computePokemonBuild` (now also returning `megaStones` and `hiddenAbility` for the
+      headings). `layout="columns"` is gone; the calc's dropdowns are name-only again.
+    - **Mega Stones and abilities** (user feedback): the ability is always the _base_ form's
+      (`computePokemonBuild(…, mega=false)` for the options, `pokemon.ability` as the value) —
+      that's what a team sheet lists and the export writes; the area says "Will be X after Mega
+      Evolving" above the list. A "Mega" toggle (view only, per slot) switches the sprite, types
+      and stats between the forms. A saved ability the base form can't have (a Mega's, from an
+      older save) is pinned with an Illegal tag and outlines the field in red.
+    - **Search filters** (user feedback, like Showdown's): in the Pokémon and move fields, typed
+      text that starts a type's name (translated or English) — or, for moves, a category's —
+      offers it as a "Filters" row on top. Picked, it becomes a chip above the list and narrows
+      it (`passes`: species types from `speciesTypes.json`, move type/category from
+      `moves.json`); filters stack (AND), the chip's × or Backspace in the empty field removes
+      one, and leaving the field clears them.
+    - **Sorting** (user feedback): a "Sort:" bar over the Pokémon and move lists (`MOVE_SORTS`,
+      `SPECIES_SORTS`; `sortOptions`). Text columns read A→Z, numbers high to low; a second click
+      reverses; ties fall back to the name, and a missing value (a status move's power) is last
+      either way. Each list keeps its sort while you move between fields; the "Filters" rows
+      aren't sorted.
+    - **Columns** (user feedback): from `sm` up, Pokémon and move rows are grids (`SPECIES_GRID`,
+      `MOVE_GRID`, built in `speciesCells`/`moveCells` from the species/move data rather than
+      the options' stacked `content`) under a sticky column header that is the sort bar;
+      the sorted column is bold. Phones keep the stacked rows and a wrapping sort bar. Item
+      and ability rows are unchanged.
+    - **Mega rows and ability search** (user feedback): `megaRows` adds each of the regulation's
+      Mega forms right after its base species (id = the form key from `candidateFormKeys`, e.g.
+      "raichu-mega-y"; `MEGA_ROWS` maps it to its base key, stone and Mega ability). Picking one
+      sets the base species holding that stone — the same Pokémon keeps its set, another starts
+      a blank one. A Mega Stone holder's Pokémon field shows the Mega's name and pins its row.
+      Typed text also matches a row's abilities (`speciesAbilities`, translated or English), and
+      abilities starting with it are offered as filters (kind `"ability"`, up to four).
+    - **Learnsets** (user feedback; supersedes §15's "no learnset validation" for the builder):
+      `scripts/generate-learnsets.mjs` (`npm run generate:learnsets`) writes
+      `src/data/learnsets.json` from `@pkmn/dex` — per species key, the moves.json keys it learns
+      in any generation, pre-evolutions included, minus nonstandard ("Past") moves; a form without
+      its own learnset uses its base species'; Megas are skipped (sets store the base species).
+      @pkmn/dex has no Pokémon Champions movepools, so this is an approximation (Raichu gets a
+      few, like Attract, that Showdown's Champions list doesn't show). Compact (indexes into one
+      move list, ~350 KB) and loaded with a dynamic `import()` only by the builder. The move list
+      shows only learnable moves, with "Show all moves" to lift it (kept while editing that slot);
+      a saved move outside the learnset is pinned as Illegal and its field outlined red. Species
+      the data doesn't cover (some forms, e.g. Minior colors) list every move.
+    - **Admin learnset corrections**: `/admin/learnsets` (admin-only, English like the other
+      admin pages; linked from /admin/features) — search a species, see its moves, Remove /
+      Restore generated ones and Add any other. Saved per click to `appConfig/learnsetOverrides`
+      (`{ [speciesKey]: { add?, remove? } }`, `saveLearnsetOverride` merges one species; the
+      existing `appConfig` rule already makes it public-read/admin-write, no rules deploy).
+      `src/lib/learnsets.ts` owns loading and applying them: learnable = generated + add −
+      remove (`learnableMoves`), kept minimal by `withMove` (a generated move only ever in
+      `remove`, any other only in `add`; an empty override is deleted). The builder reads them
+      through `useLearnsetOverrides` (one fetch per session, like the feature flags).
+    - Saved calc sets aren't offered in the builder any more (step 16 had them through
+      `PokemonSetPicker`).
+
 ## 15. Deferred / explicitly out of scope for this phase
 
-- Wiring the builder into `/teams`'s own UI (its own future phase, per §2).
-- **Removing, duplicating, or reordering a slot once it's filled** — deliberately deferred, not an
-  oversight (see step 3/4's "slot semantics" note above): `Team.pokemon`'s index is load-bearing
-  elsewhere (lead/back plan references, per-Pokémon notes), so any operation that shifts indices
-  needs a real design for fixing up those references first, not a quick splice. Revisit alongside
-  step 6 (Import, which already fully replaces the array in one shot and is index-safe by
-  construction).
-- Per-slot/team-level Export (§6) — the read-only "Regulation: …" label is the only per-team-level UI
-  so far; `formatPokemonPaste`/`formatTeamPaste` are already proven (Damage Calculator) and just need
-  wiring up here.
-- Regulation-aware species/item gating per the team being edited (currently always `REGULATIONS[0]`).
-- Drag-and-drop slot reordering (start with simple up/down or none).
+- _(Done in step 16: wiring into My Teams, removing a Pokémon, Import/Export, regulation-aware
+  species and items.)_
+- **Reordering or duplicating a slot** — removal's position shifting (`src/lib/rosterSlots.ts`)
+  is the model to follow for a reorder (a permutation instead of a removal).
+- Import replaces the roster outright, so saved picks keep their positions rather than following
+  the Pokémon — the dialog says so. Matching by species could carry them over.
+- Turning the `teamBuilder` flag on for everyone.
 - Per-species learnset validation for the move picker (the app doesn't enforce this anywhere today —
   see PLANNING.md's move-options comment in `RosterPokemonPicker.tsx`).
 - IVs, Shiny, Tera Type editing — not modeled anywhere in this app (Pokémon Champions has no IVs; Tera/

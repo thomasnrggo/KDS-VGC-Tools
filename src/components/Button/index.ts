@@ -1,1 +1,8 @@
-export { Button, IconButton, TextAction, TogglePill } from "./Button";
+export {
+  Button,
+  buttonVariants,
+  IconButton,
+  iconButtonVariants,
+  TextAction,
+  TogglePill,
+} from "./Button";

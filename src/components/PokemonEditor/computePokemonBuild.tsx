@@ -4,7 +4,7 @@ import { applyStatOverrides, type StatOverrides } from "@/lib/stats/applyStatOve
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
-import { REGULATIONS } from "@/data/regulations";
+import { REGULATIONS, type Regulation } from "@/data/regulations";
 import abilitiesData from "@/data/abilities.json";
 import abilityDescriptionsData from "@/data/abilityDescriptions.json";
 import itemsData from "@/data/items.json";
@@ -36,6 +36,10 @@ export interface PokemonBuild {
   abilitySelectOptions: SearchableSelectOption[];
   /** Every legal held item (this Pokémon's own Mega Stone(s) first, then the Regulation's other legal items), with the pasted item injected as its own option first if it's off both lists (an older/off-meta paste). Each option's `content` is a Showdown-style icon+name+description row (see itemOptionContent). */
   itemOptions: SearchableSelectOption[];
+  /** The ids in `itemOptions` that are this Pokémon's Mega Stones — the Team Builder lists them under their own heading. */
+  megaStones: string[];
+  /** The current form's Hidden Ability, if it has one — listed under its own heading in the Team Builder. */
+  hiddenAbility: string | undefined;
 }
 
 /** A Showdown-style "Name / description" row, shared by the ability and item pickers (see abilityOptionContent/itemOptionContent) — the only difference between the two is the leading icon. */
@@ -98,11 +102,11 @@ export function computePokemonBuild(
   mega: boolean,
   statOverrides: StatOverrides,
   labels: BuildLabels = ENGLISH_LABELS,
+  /** Which items are offered — the current regulation unless a team says otherwise. */
+  regulation: Regulation = REGULATIONS[0],
 ): PokemonBuild {
   const { text } = labels;
-  const hasMegaForm = pokemon
-    ? candidateFormKeys(pokemon.species, pokemon.item).length > 1
-    : false;
+  const hasMegaForm = pokemon ? candidateFormKeys(pokemon.species, pokemon.item).length > 1 : false;
   const effectivePokemon =
     pokemon && hasMegaForm && !mega ? { ...pokemon, item: undefined } : pokemon;
   const overriddenPokemon = effectivePokemon
@@ -137,13 +141,13 @@ export function computePokemonBuild(
     };
   });
 
-  // REGULATIONS[0]'s own function, not the bare `megaStoneItemsForSpecies`
+  // The regulation's own function, not the bare `megaStoneItemsForSpecies`
   // re-export (that's specifically Regulation M-B's list — seven other
   // callers thread `regulation.megaStoneItemsForSpecies` through correctly;
   // this one didn't, which silently hid every Mega Stone M-C added on top of
   // M-B, e.g. Salamencite for Salamence).
   const megaStoneOptions = pokemon
-    ? REGULATIONS[0].megaStoneItemsForSpecies(normalizeSpeciesKey(pokemon.species))
+    ? regulation.megaStoneItemsForSpecies(normalizeSpeciesKey(pokemon.species))
     : [];
   // Flat, searchable item list — a real pasted team's item might not be in
   // the Regulation's list (an older/off-meta paste), so it's injected as its
@@ -153,7 +157,7 @@ export function computePokemonBuild(
     ? [
         ...(pokemon.item &&
         !megaStoneOptions.includes(pokemon.item) &&
-        !REGULATIONS[0].items.includes(pokemon.item)
+        !regulation.items.includes(pokemon.item)
           ? [
               {
                 id: pokemon.item,
@@ -167,7 +171,7 @@ export function computePokemonBuild(
           const label = `${text.item(item)} (${labels.megaStone})`;
           return { id: item, label, searchText: item, content: itemOptionContent(item, label) };
         }),
-        ...REGULATIONS[0].items.map((item) => ({
+        ...regulation.items.map((item) => ({
           id: item,
           label: text.item(item),
           searchText: item,
@@ -185,5 +189,7 @@ export function computePokemonBuild(
     effectiveAbility,
     abilitySelectOptions,
     itemOptions,
+    megaStones: megaStoneOptions,
+    hiddenAbility: abilityOptions.find((ability) => ability.isHidden)?.name,
   };
 }

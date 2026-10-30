@@ -116,6 +116,12 @@ export default function AdminFeaturesPage() {
           >
             Seasons →
           </Link>
+          <Link
+            href="/admin/learnsets"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
+            Learnsets →
+          </Link>
         </div>
         <AuthMenu
           user={user}

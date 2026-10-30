@@ -7,6 +7,7 @@ export {
   DEFAULT_SPECIES_KEY,
   buildCustomPokemon,
   natureLabel,
+  localizedOptions,
   type PokemonEditorProps,
 } from "./PokemonEditor";
 export { computePokemonBuild, type PokemonBuild } from "./computePokemonBuild";

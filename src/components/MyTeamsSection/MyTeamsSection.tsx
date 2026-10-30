@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Team } from "@/types";
 import { REGULATIONS } from "@/data/regulations";
@@ -16,7 +17,8 @@ import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/Button";
+import { Button, buttonVariants } from "@/components/Button";
+import { useFeatureEnabled } from "@/hooks/useFeatureFlags";
 import { LoadingState } from "@/components/LoadingState";
 
 interface MyTeamsSectionProps {
@@ -51,6 +53,8 @@ export function MyTeamsSection({
   const t = useMessages();
   const pokemonText = usePokemonText();
   const router = useRouter();
+  // Building a team Pokémon by Pokémon, besides pasting one (see /team-builder).
+  const canBuild = useFeatureEnabled("teamBuilder");
   const [tab, setTab] = useState<Tab>("active");
   const [isAdding, setIsAdding] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
@@ -257,7 +261,18 @@ export function MyTeamsSection({
           <h2 className="text-xl font-semibold text-zinc-900">{t.myTeams.title}</h2>
           {regulationControl}
         </div>
-        <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
+        <div className="flex items-center gap-2">
+          {canBuild && (
+            <Link
+              href="/team-builder"
+              title={t.teamBuilder.buildTeamHint}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              {t.teamBuilder.buildTeam}
+            </Link>
+          )}
+          <Button onClick={() => setIsAdding(true)}>{t.myTeams.addTeam}</Button>
+        </div>
       </div>
 
       {tabsControl}
@@ -279,6 +294,13 @@ export function MyTeamsSection({
             {t.myTeams.addTeamTitle}
           </ModalTitle>
           <TeamPasteForm onSubmit={handleAddSubmit} onCancel={() => setIsAdding(false)} />
+          {canBuild && (
+            <p className="mt-4 border-t border-zinc-200 pt-3 text-sm text-zinc-600">
+              <Link href="/team-builder" className="font-medium text-zinc-800 underline">
+                {t.teamBuilder.orBuild}
+              </Link>
+            </p>
+          )}
         </Modal>
       )}
 

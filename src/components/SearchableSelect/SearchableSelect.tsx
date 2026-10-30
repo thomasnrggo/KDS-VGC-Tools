@@ -8,7 +8,7 @@ import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 import { useMessages } from "@/hooks/useLanguage";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import { FLOW_FIELD, focusNextFlowField } from "@/lib/fieldFlow";
+import { FLOW_FIELD, focusNextFlowField, isInFlow } from "@/lib/fieldFlow";
 import { PickerSheet, pickerSheetSearchClassName } from "../PickerSheet";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,12 @@ interface SearchableSelectProps {
   autoFocus?: boolean;
   /** Shows this as the input's current text (e.g. an already-picked move) instead of starting empty — clicking/focusing the input re-opens the dropdown with every option available and selects the existing text, so typing (or just picking a new result) replaces it in one step instead of needing to clear the slot first. */
   value?: string;
+  /**
+   * The picked option's id, when its label isn't exactly `value` (a hidden
+   * ability's or Mega Stone's label carries a note) — so the list opens
+   * highlighting it, and Enter keeps it instead of picking the first row.
+   */
+  selectedId?: string;
   /** Smaller padding/font size for tight inline contexts (e.g. the ability/nature row) — same behavior, just sized to sit next to other small controls instead of taking a full-width form row. */
   compact?: boolean;
   /**
@@ -81,6 +87,7 @@ export function SearchableSelect({
   ariaLabel,
   autoFocus,
   value,
+  selectedId,
   compact,
   narrow,
   onClear,
@@ -147,7 +154,9 @@ export function SearchableSelect({
   // not a narrow self-match. Once they type, normal substring filtering
   // takes over.
   const trimmed = query === value ? "" : foldForSearch(query.trim());
-  const filtered = (
+  const isCurrent = (option: SearchableSelectOption) =>
+    selectedId !== undefined ? option.id === selectedId : option.label === value;
+  const matching = (
     trimmed
       ? options.filter(
           (o) =>
@@ -156,6 +165,13 @@ export function SearchableSelect({
         )
       : options
   ).slice(0, MAX_VISIBLE_RESULTS);
+  // Unfiltered, the current pick stays listed even past the first results,
+  // so it's the highlighted row and Enter keeps it.
+  const current = !trimmed && value ? options.find(isCurrent) : undefined;
+  const filtered =
+    current && !matching.includes(current)
+      ? [current, ...matching.slice(0, MAX_VISIBLE_RESULTS - 1)]
+      : matching;
 
   // Keeps the highlighted row in view while arrowing through.
   useEffect(() => {
@@ -241,6 +257,19 @@ export function SearchableSelect({
             } else if (event.key === "Escape" && isOpen) {
               setIsOpen(false);
               setQuery(value ?? "");
+            } else if (
+              event.key === "Tab" &&
+              !event.shiftKey &&
+              isOpen &&
+              filtered[activeIndex] &&
+              !isCurrent(filtered[activeIndex]) &&
+              !skipFlow &&
+              isInFlow(inputRef.current)
+            ) {
+              // In a flow, Tab picks like Enter (a field still showing its
+              // pick just tabs on); past the last field Tab goes on as usual.
+              pick(filtered[activeIndex]);
+              if (focusNextFlowField(inputRef.current)) event.preventDefault();
             } else if (event.key === "Tab") {
               // Tabbing on leaves the list closed behind you.
               setIsOpen(false);
@@ -253,12 +282,7 @@ export function SearchableSelect({
           onFocus={(event) => {
             setIsOpen(true);
             // Starts on the current pick, so arrowing moves from there.
-            setActiveIndex(
-              Math.max(
-                0,
-                filtered.findIndex((option) => option.label === value),
-              ),
-            );
+            setActiveIndex(Math.max(0, filtered.findIndex(isCurrent)));
             if (pointerTypeRef.current === "touch") {
               // A touch tap on selected text opens the device's text menu
               // (iPadOS's Cut/Copy/Look Up bar; Chrome's context menu in its

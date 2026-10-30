@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
-import { FLOW_FIELD, focusNextFlowField } from "@/lib/fieldFlow";
+import { FLOW_FIELD, focusNextFlowField, isFlowAdvanceKey } from "@/lib/fieldFlow";
 import { NATURE_MODIFIERS } from "@/constants";
 import { REGULATIONS } from "@/data/regulations";
 import abilitiesData from "@/data/abilities.json";
@@ -24,6 +24,8 @@ import { MESSAGES, type Messages } from "@/lib/i18n/messages";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/Slider";
+import { natureFromSign } from "@/lib/stats/natureFromSign";
+import { statBarColor, statBarWidth } from "@/lib/stats/statBarColor";
 
 const ABILITIES = abilitiesData as unknown as Record<string, SpeciesAbility[]>;
 const MOVES = movesData as unknown as Record<string, MoveData>;
@@ -170,7 +172,8 @@ export function natureLabel(
 /**
  * The species, move and nature lists in a given language — ids stay the
  * English names that get saved; the English name is also searchable, so
- * "Swords Dance" still finds "Danza Espada". Built once per language pair.
+ * "Swords Dance" still finds "Danza Espada". Built once per language pair
+ * (and regulation — its species list; the current one when omitted).
  */
 const localizedOptionsCache = new Map<
   string,
@@ -181,19 +184,24 @@ const localizedOptionsCache = new Map<
   }
 >();
 
-function localizedOptions(labels: OptionLabels) {
-  const key = `${labels.text.language}|${labels.t === MESSAGES.en ? "en" : "es"}`;
+export function localizedOptions(labels: OptionLabels, regulationId?: string) {
+  const regulation = REGULATIONS.find((r) => r.id === regulationId) ?? REGULATIONS[0];
+  const key = `${labels.text.language}|${labels.t === MESSAGES.en ? "en" : "es"}|${regulation.id}`;
   // While a language's names are still loading, `text` is the English one —
   // its language is "en", so it's cached under the English key, not this one.
   const cachedOptions = localizedOptionsCache.get(key);
   if (cachedOptions) return cachedOptions;
   const built = {
-    species: SPECIES_OPTIONS.map((option) => ({
-      ...option,
-      label: labels.text.species(option.label),
-      searchText: option.label,
-      content: speciesOptionContent(option.id, option.label, labels),
-    })),
+    species: regulation.speciesKeys.map((speciesKey) => {
+      const englishName = formatSpeciesDisplayName(speciesKey);
+      return {
+        id: speciesKey,
+        label: labels.text.species(englishName),
+        searchText: englishName,
+        sprite: englishName,
+        content: speciesOptionContent(speciesKey, englishName, labels),
+      };
+    }),
     moves: Object.entries(MOVES).map(([moveKey, move]) => ({
       id: moveKey,
       label: labels.text.move(move.name ?? moveKey),
@@ -213,17 +221,13 @@ function localizedOptions(labels: OptionLabels) {
 /**
  * Which field the shared results panel below is currently sourced from — at
  * most one at a time, same as Showdown's teambuilder (click Item while
- * browsing Moves and the panel just swaps to items). `"stats"` is the odd
- * one out — it has no option list, it swaps the panel to the full
- * Base/SP-slider/Final editor instead (`"columns"` layout only; `"stacked"`
- * keeps that table always visible and never sets this).
+ * browsing Moves and the panel just swaps to items).
  */
 type ActiveField =
   | { kind: "species" }
   | { kind: "ability" }
   | { kind: "item" }
   | { kind: "move"; slot: number }
-  | { kind: "stats" }
   | null;
 
 const MAX_VISIBLE_RESULTS = 40;
@@ -306,20 +310,19 @@ export interface PokemonEditorProps {
   children?: ReactNode;
   /**
    * `"stacked"` (default) is RosterPokemonPicker's narrow-column layout —
-   * everything in one vertical flow. `"columns"` is a wide, Showdown-style
-   * horizontal layout (Pokémon | Types+Item+Ability | 4 Moves | Stats as
-   * four side-by-side columns, collapsing to stacked below the `md`
-   * breakpoint) — use it only where the container is actually wide enough
-   * (the Team Builder's card), since it doesn't fit the Damage Calculator's
-   * narrow per-side columns.
+   * everything in one vertical flow. `"stats"` is just the Stat Points table
+   * (with its nature) — the Team Builder's stats area, which has its own
+   * fields for the rest.
    */
-  layout?: "stacked" | "columns";
+  layout?: "stacked" | "stats";
   /**
    * Plain pickers for item and ability — name-only searchable dropdowns —
    * instead of the shared results panel's detailed rows (descriptions),
    * which suit building a team more than a quick calc.
    */
   simpleFields?: boolean;
+  /** Which regulation's items are offered — the current one when omitted (the Team Builder passes the team's). */
+  regulationId?: string;
 }
 
 /**
@@ -356,24 +359,26 @@ export function PokemonEditor({
   children,
   layout = "stacked",
   simpleFields = false,
+  regulationId,
 }: PokemonEditorProps) {
   const t = useMessages();
   const text = usePokemonText();
   const isPhone = useIsPhone();
-  const options = localizedOptions({ text, t });
+  const options = localizedOptions({ text, t }, regulationId);
   const {
     hasMegaForm,
-    types,
     breakdown,
     currentNature,
     effectiveAbility,
     abilitySelectOptions,
     itemOptions,
-  } = computePokemonBuild(pokemon, mega, statOverrides, {
-    text,
-    hiddenAbility: t.editor.hiddenAbility,
-    megaStone: t.editor.megaStone,
-  });
+  } = computePokemonBuild(
+    pokemon,
+    mega,
+    statOverrides,
+    { text, hiddenAbility: t.editor.hiddenAbility, megaStone: t.editor.megaStone },
+    REGULATIONS.find((regulation) => regulation.id === regulationId),
+  );
 
   const [activeField, setActiveField] = useState<ActiveField>(null);
   const [query, setQuery] = useState("");
@@ -433,7 +438,7 @@ export function PokemonEditor({
     setQuery("");
   }
 
-  function updateSp(stat: StatKey, rawValue: number) {
+  function updateSp(stat: StatKey, rawValue: number, nature?: string) {
     if (!breakdown) return;
     let maxAllowed = 32;
     if (maxTotalStatPoints !== undefined) {
@@ -448,8 +453,34 @@ export function PokemonEditor({
       : Math.max(0, Math.min(maxAllowed, Math.round(rawValue)));
     onStatOverridesChange({
       ...statOverrides,
+      ...(nature && { nature }),
       sp: { ...statOverrides.sp, [stat]: clamped },
     });
+  }
+
+  /**
+   * The Stat Points box shows the nature before the number ("+20", "-0"), and
+   * typing "+" or "-" in it sets the nature (natureFromSign). Deleting just
+   * the sign makes the nature neutral; typing a new number keeps it.
+   */
+  function onSpTextChange(stat: StatKey, value: string) {
+    if (!breakdown) return;
+    const sign =
+      breakdown.final.increasedStat === stat
+        ? "+"
+        : breakdown.final.decreasedStat === stat
+          ? "-"
+          : "";
+    const digits = value.replace(/\D/g, "");
+    const typed =
+      value.includes("+") && sign !== "+" ? "+" : value.includes("-") && sign !== "-" ? "-" : null;
+    let nature: string | undefined;
+    if (typed) {
+      nature = natureFromSign(currentNature, stat, typed, breakdown.base) ?? undefined;
+    } else if (sign && !value.includes(sign) && digits === String(breakdown.statPoints[stat])) {
+      nature = "serious";
+    }
+    updateSp(stat, digits === "" ? 0 : Number(digits), nature);
   }
 
   function defaultRenderFinalCell(_stat: StatKey, value: number): ReactNode {
@@ -522,23 +553,19 @@ export function PokemonEditor({
     </div>
   );
 
-  const typesRow = pokemon && types.length > 0 && (
-    <div className="flex items-center gap-1.5">
-      {types.map((type) => (
-        <TypeIcon key={type} type={type} size={18} />
-      ))}
-    </div>
-  );
+  // Name-only rows in the dropdowns — the details are the Team Builder's.
+  const optionRow = (option: SearchableSelectOption): SearchableSelectOption => ({
+    ...option,
+    content: undefined,
+  });
 
   const simpleItemField = onItemChange ? (
     <div className="flex flex-col gap-0.5">
       <FieldLabel>{t.editor.item}</FieldLabel>
       <SearchableSelect
-        options={itemOptions.map((option) => ({
-          ...option,
-          content: undefined,
-        }))}
+        options={itemOptions.map(optionRow)}
         value={itemDisplay}
+        selectedId={pokemon?.item}
         onSelect={(option) => onItemChange(option.id)}
         onClear={() => onItemChange(undefined)}
         placeholder={t.editor.addItem}
@@ -557,11 +584,9 @@ export function PokemonEditor({
     <div className="flex flex-col gap-0.5">
       <FieldLabel>{t.editor.ability}</FieldLabel>
       <SearchableSelect
-        options={simpleAbilityOptions.map((option) => ({
-          ...option,
-          content: undefined,
-        }))}
+        options={simpleAbilityOptions.map(optionRow)}
         value={abilityDisplay}
+        selectedId={effectiveAbility}
         onSelect={(option) => onAbilityChange(option.id)}
         placeholder={t.editor.selectAbility}
         ariaLabel={t.editor.fieldLabel(title, t.editor.ability)}
@@ -640,16 +665,15 @@ export function PokemonEditor({
 
   // One line per stat: name, base, SP box, SP slider (takes the spare
   // width), final value, then the caller's extra columns. Phones fold the
+  // The builder's stats area has room for Showdown's colored base-stat bars.
+  const showBaseBars = layout === "stats" && !isPhone;
   // base under the name, giving that column's width to the slider.
   const statGridStyle = {
     gridTemplateColumns: isPhone
       ? `2.25rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`
-      : `2.75rem 1.75rem 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`,
+      : `2.75rem 1.75rem${showBaseBars ? " 5rem" : ""} 2.75rem minmax(3rem, 1fr) auto${" auto".repeat(extraStatColumns.length)}`,
   };
   const remainingSp = maxTotalStatPoints !== undefined ? maxTotalStatPoints - totalSp : undefined;
-  // The stacked layout (the calc) puts the nature on the stats' footer line;
-  // the Team Builder's columns layout keeps it in its own column.
-  const natureInFooter = layout === "stacked";
   const natureSelect = (
     <SearchableSelect
       options={options.natures}
@@ -683,6 +707,7 @@ export function PokemonEditor({
       >
         <span className="text-zinc-500">{t.editor.stat}</span>
         {!isPhone && <span className="text-right text-zinc-500">{t.editor.base}</span>}
+        {showBaseBars && <span />}
         <span className="text-center text-zinc-500">{t.editor.sp}</span>
         <span />
         <span className="text-right text-zinc-500">{t.editor.final}</span>
@@ -716,25 +741,48 @@ export function PokemonEditor({
                 )}
               </span>
               {!isPhone && <span className="text-right">{breakdown.base[stat]}</span>}
+              {showBaseBars && (
+                <span className="h-2 overflow-hidden rounded-full bg-zinc-200" aria-hidden>
+                  <span
+                    className="block h-full rounded-full"
+                    style={{
+                      width: `${statBarWidth(breakdown.base[stat])}%`,
+                      backgroundColor: statBarColor(breakdown.base[stat]),
+                    }}
+                  />
+                </span>
+              )}
               <input
-                type="number"
-                min={0}
-                max={32}
-                value={breakdown.statPoints[stat]}
-                onChange={(event) => updateSp(stat, Number(event.target.value))}
+                type="text"
+                inputMode="numeric"
+                value={`${isIncreased ? "+" : isDecreased ? "-" : ""}${breakdown.statPoints[stat]}`}
+                onChange={(event) => onSpTextChange(stat, event.target.value)}
                 {...FLOW_FIELD}
                 // Part of the keyboard flow: typing replaces the number, Enter moves on.
                 onFocus={(event) => event.target.select()}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") {
+                  if (isFlowAdvanceKey(event)) {
+                    // Tab like Enter; past the last field Tab goes on as usual.
+                    if (focusNextFlowField(event.currentTarget) || event.key === "Enter") {
+                      event.preventDefault();
+                    }
+                  } else if (event.key === "+" || event.key === "-") {
+                    // Sets the nature without replacing the selected number.
                     event.preventDefault();
-                    focusNextFlowField(event.currentTarget);
+                    const nature = natureFromSign(currentNature, stat, event.key, breakdown.base);
+                    if (nature) onStatOverridesChange({ ...statOverrides, nature });
+                  } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                    event.preventDefault();
+                    const step = event.key === "ArrowUp" ? 1 : -1;
+                    updateSp(stat, breakdown.statPoints[stat] + step);
                   }
                 }}
+                aria-keyshortcuts={stat === "hp" ? undefined : "+ -"}
                 aria-label={t.editor.statPointsLabel(title, statLabels[stat])}
                 className={cn(
                   "w-full rounded border border-zinc-300 bg-zinc-50 px-1 text-xs text-zinc-900",
                   isPhone ? "py-1 text-center" : "py-0.5 text-right",
+                  natureColor(isIncreased, isDecreased),
                 )}
               />
               <Slider
@@ -742,6 +790,8 @@ export function PokemonEditor({
                 max={32}
                 value={breakdown.statPoints[stat]}
                 onChange={(event) => updateSp(stat, Number(event.target.value))}
+                // Out of the Tab order: Tab goes box to box, and the box's ↑/↓ do the slider's job.
+                tabIndex={-1}
                 aria-label={t.editor.statPointsSlider(title, statLabels[stat])}
                 className={cn("min-w-0", isPhone && "h-8")}
               />
@@ -785,50 +835,14 @@ export function PokemonEditor({
         ) : (
           <span className="text-zinc-500">{t.editor.statPointsUsed(totalSp)}</span>
         )}
-        {natureInFooter && inlineNatureField}
+        {inlineNatureField}
       </div>
+      {layout === "stats" && !isPhone && (
+        <p className="text-xs text-zinc-500">{t.editor.natureShortcutHint}</p>
+      )}
     </div>
   ) : (
     <p className="text-xs text-amber-600">{t.editor.noBaseStats}</p>
-  );
-
-  // The "columns" layout's compact stand-in for statSection — just label +
-  // Stat Points per row (nature's ↑/↓ carried over from the full table, "–"
-  // for an unspent stat), clickable to swap the shared results panel over to
-  // the full slider editor instead of keeping it permanently inline (there's
-  // no room for a 4-column Base/SP/Final table in a quarter-width column,
-  // and Showdown's own teambuilder only shows the full EV editor once you've
-  // actually clicked in to edit it).
-  const statsSummary = breakdown && (
-    <button
-      type="button"
-      onClick={() => setActiveField({ kind: "stats" })}
-      className={cn(
-        "flex w-full flex-col gap-1 rounded-lg border p-1.5 text-left transition-colors",
-        activeField?.kind === "stats"
-          ? "border-zinc-600 bg-zinc-100"
-          : "border-transparent hover:border-zinc-200 hover:bg-zinc-100",
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <FieldLabel>{t.editor.stats}</FieldLabel>
-        <span className="flex items-center gap-0.5 text-[10px] text-zinc-400">
-          <Icon name={IconName.Edit} size={11} />
-          {t.editor.edit}
-        </span>
-      </div>
-      {STAT_ORDER.map((stat) => {
-        const isIncreased = breakdown.final.increasedStat === stat;
-        const isDecreased = breakdown.final.decreasedStat === stat;
-        const sp = breakdown.statPoints[stat];
-        return (
-          <div key={stat} className="flex items-center justify-between text-xs text-zinc-700">
-            <span className={natureColor(isIncreased, isDecreased)}>{statLabels[stat]}</span>
-            <span className="font-medium">{sp > 0 ? sp : "–"}</span>
-          </div>
-        );
-      })}
-    </button>
   );
 
   const natureField = (
@@ -851,7 +865,7 @@ export function PokemonEditor({
           <SearchableSelect
             options={options.moves
               .filter((option) => !usedElsewhere.includes(MOVES[option.id]?.name ?? option.id))
-              .map((option) => ({ ...option, content: undefined }))}
+              .map(optionRow)}
             value={move ? text.move(move) : ""}
             onSelect={(option) => {
               // Saved by its English name — the label may be translated.
@@ -909,20 +923,16 @@ export function PokemonEditor({
 
   const resultsPanel = activeField && (
     <div
-      role={activeField.kind === "stats" ? undefined : "listbox"}
-      aria-label={activeField.kind === "stats" ? undefined : activeAriaLabel}
+      role="listbox"
+      aria-label={activeAriaLabel}
       // Deliberately the tallest thing on the page (Showdown's own
       // teambuilder gives the results list most of the screen, not the
       // compact identity/stat fields above it) — a viewport-relative
       // height rather than a fixed one so it still dominates on any window
-      // size, not just the one it was tuned against. Also where the full
-      // stat editor lives in "columns" layout (see statsSummary) — same
-      // spot as every other field's results, just different content.
+      // size, not just the one it was tuned against.
       className="flex max-h-[65vh] flex-col gap-0.5 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-1 shadow-sm"
     >
-      {activeField.kind === "stats" ? (
-        <div className="p-2">{statSection}</div>
-      ) : filteredOptions.length === 0 ? (
+      {filteredOptions.length === 0 ? (
         <p className="p-2 text-xs text-zinc-500">{t.editor.noMatches}</p>
       ) : (
         filteredOptions.map((option) => (
@@ -950,36 +960,7 @@ export function PokemonEditor({
     </div>
   );
 
-  if (layout === "columns") {
-    return (
-      <div ref={containerRef} className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1fr_1.4fr]">
-          <div className="flex flex-col gap-2">{speciesField}</div>
-          {pokemon && (
-            <>
-              <div className="flex flex-col gap-2">
-                {typesRow}
-                {itemField}
-                {abilityField}
-              </div>
-              {onMovesChange && (
-                <div className="flex flex-col gap-1.5">
-                  <FieldLabel>{t.editor.moves}</FieldLabel>
-                  {moveFields}
-                </div>
-              )}
-              <div className="flex flex-col gap-3">
-                {statsSummary}
-                {natureField}
-              </div>
-            </>
-          )}
-        </div>
-        {children}
-        {resultsPanel}
-      </div>
-    );
-  }
+  if (layout === "stats") return statSection;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-3">

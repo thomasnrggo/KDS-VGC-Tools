@@ -6,6 +6,7 @@ import {
   deleteField,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   query,
   setDoc,
@@ -174,6 +175,12 @@ export async function saveGroupOpponent(groupId: string, opponent: SharedOpponen
 
 export async function deleteGroupOpponent(groupId: string, opponentId: string): Promise<void> {
   await deleteDoc(doc(opponentsRef(groupId), opponentId));
+}
+
+/** Every one of your private group plans, across all groups — see removePokemonEverywhere. */
+export async function getMyGroupPlans(uid: string): Promise<GroupPlanDoc[]> {
+  const snap = await getDocs(plansRef(uid));
+  return snap.docs.map((d) => d.data() as GroupPlanDoc);
 }
 
 export async function saveGroupPlan(uid: string, plan: GroupPlanDoc): Promise<void> {
