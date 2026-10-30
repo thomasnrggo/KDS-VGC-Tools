@@ -39,6 +39,68 @@ describe("officialSpeciesName", () => {
   });
 });
 
+describe("parseOfficialEvent's join", () => {
+  function sheet(name: string, country: string, placing: number, species: string) {
+    return {
+      n: name,
+      c: country,
+      d: "M",
+      "#": String(placing),
+      tl: [["0", "000", "Jolly", null, "Intimidate", species, null, ["Fake Out"]]],
+    } as unknown as PokedataRosterEntry;
+  }
+  function standing(name: string, country: string, id: number) {
+    return { n: name, c: country, s: [1, 0, 0], d: null, i: id, r: [], top_cut_seed: null };
+  }
+  const file = (players: ReturnType<typeof standing>[]) =>
+    ({
+      tournament: { title: "Test", date: "" },
+      standings: { division: "Masters", players },
+    }) as unknown as PokedataStandings;
+
+  it("matches by name and country even when the roster's placings are stale", () => {
+    // The standings were re-sorted after the roster was numbered.
+    const event = parseOfficialEvent(
+      [sheet("Ann", "US", 1, "Incineroar"), sheet("Bo", "MX", 2, "Rillaboom")],
+      file([standing("Bo", "MX", 7), standing("Ann", "US", 8)]),
+    );
+    expect(event.players.map((player) => player.team[0].species)).toEqual([
+      "Rillaboom",
+      "Incineroar",
+    ]);
+    expect(event.join).toEqual({ sheets: 2, standings: 2, matched: 2 });
+  });
+
+  it("tells same-named players apart by the nearest placing", () => {
+    const event = parseOfficialEvent(
+      [sheet("Sam", "MX", 52, "Sneasler"), sheet("Sam", "MX", 322, "Pelipper")],
+      file([
+        standing("Sam", "MX", 1),
+        ...Array(300).fill(standing("x", "", 9)),
+        standing("Sam", "MX", 2),
+      ]),
+    );
+    expect(event.players[0].team[0].species).toBe("Sneasler");
+    expect(event.players[1].team[0].species).toBe("Pelipper");
+  });
+
+  it("falls back to the name when the countries don't agree", () => {
+    const event = parseOfficialEvent(
+      [sheet("Ann", "", 1, "Incineroar")],
+      file([standing("Ann", "US", 1)]),
+    );
+    expect(event.join.matched).toBe(1);
+  });
+
+  it("leaves out players without a sheet and says so", () => {
+    const event = parseOfficialEvent(
+      [sheet("Ann", "US", 1, "Incineroar")],
+      file([standing("Ann", "US", 1), standing("Cy", "BR", 2)]),
+    );
+    expect(event.join).toEqual({ sheets: 1, standings: 2, matched: 1 });
+  });
+});
+
 describe("parseOfficialEvent", () => {
   const event = parseOfficialEvent(roster, standings);
 
@@ -76,11 +138,8 @@ describe("parseOfficialEvent", () => {
     expect(JSON.stringify(event)).not.toContain("Player ");
   });
 
-  it("refuses to pair a team with the wrong player's result", () => {
-    const shuffled = roster.map((entry) =>
-      entry.d === "M" && entry["#"] === "2" ? { ...entry, n: "Someone Else" } : entry,
-    );
-    expect(() => parseOfficialEvent(shuffled, standings)).toThrow(/Placing 2/);
+  it("reports a complete join", () => {
+    expect(event.join).toEqual({ sheets: 333, standings: 333, matched: 333 });
   });
 
   it("leaves out the other divisions", () => {

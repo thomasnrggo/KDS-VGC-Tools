@@ -2778,7 +2778,8 @@ leads/backs) is complete and working end to end.
         HTML only, and pokedata has every team); RK9 directly (no API).
     - **Official data, raw → processed.** Raw: teams + results. Joined on the roster's `#`, which is
       the final placing (= index + 1 in the standings list) — names aren't unique (two "Ricardo
-      Rodriguez, MX" at Puebla). Round entries are `[opponent id, result, …]`: 3 win, 0 loss,
+      Rodriguez, MX" at Puebla). *(Corrected: `#` turned out not to be reliable on live data —
+      the join is by name and country, see step 2.)* Round entries are `[opponent id, result, …]`: 3 win, 0 loss,
       opponent −1 a bye. Form names map to the app's species ("Basculegion [Female]" →
       Basculegion-F, "Tauros [Paldean Form - Blaze Breed]" → Tauros-Paldea-Blaze, "Sinistcha
       [Masterpiece Form]" → Sinistcha, …). Calculated in the job: **usage** (all players, and the
@@ -2817,7 +2818,13 @@ leads/backs) is complete and working end to end.
       and wraps each event in `<div class="tournament vg|tcg">`, now parsed block by block (VGC
       = the "vg" block) and tested against an excerpt of the real page. The job also logs what
       came back when nothing parses, and skips an event whose standings title doesn't match the
-      index's. Needs the `FIREBASE_SERVICE_ACCOUNT` secret and the rules deployed; (3) Limitless
+      index's. Second dry run: Puebla and Recife stopped on a name mismatch — the roster's `#`
+      isn't reliably the final placing (pokedata re-sorts standings) — and Nice and Louisville
+      parsed 0 teams, which a real run would have saved as done, plus an empty summary. Now the
+      join is by name and country (name alone as a fallback), `#` only choosing between players
+      who share a name; an event counts as done only when ≥90% of the players match a sheet (else
+      it's retried, with counts — never names — logged); an empty summary is never written.
+      Needs the `FIREBASE_SERVICE_ACCOUNT` secret and the rules deployed; (3) Limitless
       and Smogon sources; (4) meta-weighted Coverage; then threat detection.
 
 ## 8. Attribution

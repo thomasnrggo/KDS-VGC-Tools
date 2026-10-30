@@ -87,6 +87,7 @@ describe("aggregateOfficialMeta's maths", () => {
       player(2, ["Pelipper"], ["loss", "win"]),
       player(3, ["Incineroar"], ["loss", "tie"]),
     ],
+    join: { sheets: 3, standings: 3, matched: 3 },
   };
   const meta = aggregateOfficialMeta([event], { top: 1 });
 

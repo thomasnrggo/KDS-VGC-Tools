@@ -35,6 +35,8 @@ const USER_AGENT =
   "VGCBox-meta-job/1.0 (weekly, finished events only; https://github.com/thomasnrggo/KDS-VGC-Tools)";
 const DELAY_MS = 4000;
 const DIVISION = "Masters";
+/** The share of players that must match a team sheet for an event to count. */
+const MIN_JOIN = 0.9;
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -172,6 +174,21 @@ async function main() {
         continue;
       }
       const parsed = parseOfficialEvent(roster, standings);
+      const { sheets, standings: ranked, matched } = parsed.join;
+      // Only a good join counts as done: anything less is left for the next run,
+      // with counts (never names) saying what the files held.
+      if (matched === 0 || matched < MIN_JOIN * Math.min(sheets, ranked)) {
+        const divisions = {};
+        for (const entry of roster) divisions[entry.d] = (divisions[entry.d] ?? 0) + 1;
+        const withSheets = roster.filter((entry) => entry.tl?.length > 0).length;
+        console.warn(
+          `  ${event.title}: only ${matched} of ${ranked} standings players matched ` +
+            `${sheets} team sheets — skipped. Roster: ${roster.length} entries ` +
+            `${JSON.stringify(divisions)}, ${withSheets} with a team; standings division ` +
+            `"${standings.standings?.division}", ${ranked} players.`,
+        );
+        continue;
+      }
       const regulationId = regulationForDate(event.startDate);
       await store.saveEvent(event.id, {
         id: event.id,
@@ -184,7 +201,9 @@ async function main() {
         fetchedAt: new Date().toISOString(),
       });
       changedRegulations.add(regulationId);
-      console.log(`  ${event.title}: ${parsed.players.length} ${parsed.division} teams`);
+      console.log(
+        `  ${event.title}: ${matched} ${parsed.division} teams (${ranked} in the standings)`,
+      );
     } catch (error) {
       // Left unprocessed, so the next run tries it again.
       console.error(`  ${event.title}: failed — ${error.message}`);
@@ -196,6 +215,10 @@ async function main() {
       a.startDate.localeCompare(b.startDate),
     );
     const summary = aggregateOfficialMeta(events);
+    if (summary.teams === 0) {
+      console.warn(`meta/${regulationId}: no teams — left as it was`);
+      continue;
+    }
     await store.saveMeta(regulationId, {
       regulationId,
       updatedAt: new Date().toISOString(),
