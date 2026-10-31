@@ -32,7 +32,7 @@ import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { FLOW_ROOT } from "@/lib/fieldFlow";
 import { foldForSearch } from "@/lib/pokemonMatchesQuery";
-import { useLearnableMoves } from "@/hooks/useLearnableMoves";
+import { useLearnableMoves, useLearnsets } from "@/hooks/useLearnableMoves";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { formatSpeciesDisplayName } from "@/lib/species/formatSpeciesDisplayName";
@@ -66,13 +66,19 @@ const CATEGORIES = ["Physical", "Special", "Status"] as const;
 
 /**
  * A search filter, like Showdown's: typing a type's name ("electric") offers
- * it as a filter for Pokémon and moves (and a category's for moves); picked,
- * it narrows the list until it's removed. Several apply together.
+ * it as a filter for Pokémon and moves (and a category's for moves, an
+ * ability's or a move's for Pokémon — "trick room" keeps those that learn
+ * it); picked, it narrows the list until it's removed. Several apply together.
  */
 type Filter =
   | { kind: "type"; value: string }
   | { kind: "category"; value: MoveData["category"] }
-  | { kind: "ability"; value: string };
+  | { kind: "ability"; value: string }
+  /** A moves.json key. */
+  | { kind: "move"; value: string };
+
+/** Any species' learnable moves (see useLearnsets) — null while they load. */
+type Learnsets = ((species: string) => Set<string> | null) | null;
 
 /** A filter's row in the list — an option whose id says it's a filter, see pick(). */
 const FILTER_PREFIX = "filter:";
@@ -84,14 +90,25 @@ function filterId(filter: Filter): string {
 function parseFilterId(id: string): Filter | null {
   if (!id.startsWith(FILTER_PREFIX)) return null;
   const [kind, value] = id.slice(FILTER_PREFIX.length).split(":");
-  if (kind === "type" || kind === "ability") return { kind, value };
+  if (kind === "type" || kind === "ability" || kind === "move") return { kind, value };
   return { kind: "category", value: value as MoveData["category"] };
 }
 
 /** Whether an option of the Pokémon or move list passes a filter. */
-function passes(field: Field, option: SearchableSelectOption, filter: Filter): boolean {
+function passes(
+  field: Field,
+  option: SearchableSelectOption,
+  filter: Filter,
+  learnsets: Learnsets,
+): boolean {
   if (field.kind === "species") {
     if (filter.kind === "ability") return speciesAbilities(option.id).includes(filter.value);
+    // A Mega learns what its base form does. Unknown movepools (or still
+    // loading) don't pass: the filter promises the move is learnable.
+    if (filter.kind === "move") {
+      const key = MEGA_ROWS.get(option.id)?.baseKey ?? option.id;
+      return !!learnsets?.(formatSpeciesDisplayName(key))?.has(filter.value);
+    }
     return filter.kind === "type" && (SPECIES_TYPES[option.id] ?? []).includes(filter.value);
   }
   const move = MOVES[option.id];
@@ -353,6 +370,8 @@ export function BuilderEditor({
   // The moves this Pokémon learns (keys), the admin's corrections included —
   // null while loading, or for a form nothing covers; then every move is listed.
   const learnable = useLearnableMoves(pokemon?.species);
+  // Every species' moves, for the Pokémon list's "learns" filter.
+  const learnsets = useLearnsets();
   // The move list shows only those, unless "Show all moves" is on.
   const [learnableOnly, setLearnableOnly] = useState(true);
   /** A saved move this Pokémon can't learn — flagged like an illegal ability. */
@@ -491,7 +510,7 @@ export function BuilderEditor({
           ...(active.kind === "move"
             ? CATEGORIES.map((category): Filter => ({ kind: "category", value: category }))
             : []),
-          ...(active.kind === "species" ? abilitySuggestions() : []),
+          ...(active.kind === "species" ? [...abilitySuggestions(), ...moveSuggestions()] : []),
         ]
           .filter((filter) => !filters.some((applied) => filterId(applied) === filterId(filter)))
           .filter((filter) => {
@@ -515,7 +534,7 @@ export function BuilderEditor({
     ...groupsFor(active).map((group) => ({
       ...group,
       options: group.options.filter((option) =>
-        filters.every((filter) => passes(active, option, filter)),
+        filters.every((filter) => passes(active, option, filter, learnsets)),
       ),
     })),
   ];
@@ -596,6 +615,7 @@ export function BuilderEditor({
   function filterName(filter: Filter): string {
     if (filter.kind === "type") return text.type(filter.value);
     if (filter.kind === "ability") return text.ability(filter.value);
+    if (filter.kind === "move") return text.move(MOVES[filter.value]?.name ?? filter.value);
     return t.editor.categories[filter.value];
   }
 
@@ -619,17 +639,40 @@ export function BuilderEditor({
       .map((name) => ({ kind: "ability", value: name }));
   }
 
+  /** Moves whose name starts with what's typed, offered as "learns" filters (a few at most). */
+  function moveSuggestions(): Filter[] {
+    // The move field's own list: no Z-Moves or Max Moves.
+    return options.moves
+      .filter(
+        (option) =>
+          foldForSearch(option.label).startsWith(folded) ||
+          foldForSearch(englishValue(option)).startsWith(folded),
+      )
+      .slice(0, 4)
+      .map((option) => ({ kind: "move", value: option.id }));
+  }
+
+  /** The type icon a filter shows: its own type, or a move's. */
+  function filterType(filter: Filter): string | undefined {
+    if (filter.kind === "type") return filter.value;
+    if (filter.kind === "move") return MOVES[filter.value]?.type;
+    return undefined;
+  }
+
   function filterContent(filter: Filter) {
+    const type = filterType(filter);
     return (
       <span className="flex items-center gap-2">
-        {filter.kind === "type" && <TypeIcon type={filter.value} size={16} />}
+        {type && <TypeIcon type={type} size={16} />}
         <span className="font-medium">{filterName(filter)}</span>
         <span className="text-xs text-zinc-500">
           {filter.kind === "type"
             ? t.teamBuilder.typeFilter
             : filter.kind === "ability"
               ? t.teamBuilder.abilityFilter
-              : t.teamBuilder.categoryFilter}
+              : filter.kind === "move"
+                ? t.teamBuilder.moveFilter
+                : t.teamBuilder.categoryFilter}
         </span>
       </span>
     );
@@ -1162,7 +1205,7 @@ export function BuilderEditor({
               key={filterId(filter)}
               className="flex items-center gap-1 rounded-full border border-zinc-300 bg-zinc-100 py-0.5 pr-1 pl-2 font-medium text-zinc-800"
             >
-              {filter.kind === "type" && <TypeIcon type={filter.value} size={12} />}
+              {filterType(filter) && <TypeIcon type={filterType(filter)!} size={12} />}
               {filterName(filter)}
               <button
                 type="button"

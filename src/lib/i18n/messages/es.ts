@@ -115,7 +115,6 @@ export const es: Messages = {
   myTeams: {
     title: "Mis equipos",
     createTeam: "Crear equipo",
-    createTeamTitle: "Crear un equipo",
     searchTeams: "Buscar equipos",
     searchHint: "Busca por nombre de equipo, Pokémon u objeto",
     searchPlaceholder: 'Busca por nombre de equipo, Pokémon u objeto… (p. ej. "charizard pañuelo")',
@@ -191,7 +190,6 @@ export const es: Messages = {
     showMega: "Mostrar la megaevolución",
     natureTitle: (nature) => `Naturaleza ${nature}`,
     base: (value) => `Base ${value}`,
-    statTooltip: (stat, base, points) => `${stat}: base ${base}, ${points} puntos de estadística`,
   },
   teamPage: {
     notFound: "Equipo no encontrado",
@@ -917,6 +915,7 @@ export const es: Messages = {
     showAllMoves: "Ver todos los movimientos",
     showLearnable: (name) => `Solo los de ${name}`,
     abilityFilter: "habilidad",
+    moveFilter: "aprende",
     categoryFilter: "movimientos",
     removeFilter: (name) => `Quitar el filtro ${name}`,
     filterBackspaceHint: "(Retroceso en el campo vacío quita el último)",
@@ -969,8 +968,6 @@ export const es: Messages = {
     illegalSlot: (name) => `${name} no es legal en esta regulación`,
     editPokemon: "Editar Pokémon",
     editPokemonHint: "Editar los Pokémon de este equipo en el constructor de equipos",
-    orBuild:
-      "¿No tienes una exportación que pegar? Construye el equipo Pokémon a Pokémon en el constructor de equipos.",
     notFoundBody: "Puede que se haya eliminado en otro dispositivo.",
   },
   calcPanel: {

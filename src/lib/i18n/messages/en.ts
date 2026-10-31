@@ -112,7 +112,6 @@ export const en = {
   myTeams: {
     title: "My Teams",
     createTeam: "Create team",
-    createTeamTitle: "Create a team",
     searchTeams: "Search teams",
     searchHint: "Search by team name, Pokémon, or item",
     searchPlaceholder: 'Search by team name, Pokémon, or item… (e.g. "charizard scarf")',
@@ -189,8 +188,6 @@ export const en = {
     showMega: "Show the Mega form",
     natureTitle: (nature: string) => `${nature} nature`,
     base: (value: number) => `Base ${value}`,
-    statTooltip: (stat: string, base: number, points: number) =>
-      `${stat}: base ${base}, ${points} Stat Points`,
   },
   teamPage: {
     notFound: "Team not found",
@@ -912,6 +909,7 @@ export const en = {
     showAllMoves: "Show all moves",
     showLearnable: (name: string) => `Only ${name}'s moves`,
     abilityFilter: "ability",
+    moveFilter: "learns",
     categoryFilter: "moves",
     removeFilter: (name: string) => `Remove the ${name} filter`,
     filterBackspaceHint: "(Backspace in the empty field removes the last one)",
@@ -964,7 +962,6 @@ export const en = {
     illegalSlot: (name: string) => `${name} isn't legal under this regulation`,
     editPokemon: "Edit Pokémon",
     editPokemonHint: "Edit this team's Pokémon in the Team Builder",
-    orBuild: "No export to paste? Build the team Pokémon by Pokémon in the Team Builder.",
     notFoundBody: "It may have been removed on another device.",
   },
   calcPanel: {

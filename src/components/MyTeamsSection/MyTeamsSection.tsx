@@ -10,7 +10,6 @@ import { isTeamArchived, addRegulationTag, removeRegulationTag } from "@/lib/tea
 import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { TeamRoster } from "../TeamRoster";
 import { Modal, ModalDescription, ModalTitle } from "../Modal";
-import { TeamPasteForm } from "../TeamPasteForm";
 import { SearchField } from "../SearchField";
 import { TeamRegulationTags } from "../TeamRegulationTags";
 import { Icon } from "../Icon";
@@ -23,7 +22,6 @@ import { LoadingState } from "@/components/LoadingState";
 interface MyTeamsSectionProps {
   teams: Team[];
   isLoading: boolean;
-  addTeam: (rawPaste: string, name: string, regulationId: string) => string | null;
   duplicateTeam: (id: string) => void;
   updateTeam: (id: string, updater: (team: Team) => Team) => void;
   removeTeam: (id: string) => void;
@@ -48,7 +46,6 @@ const desktopRowActionClass = "hidden text-zinc-500 hover:bg-zinc-50 md:flex";
 export function MyTeamsSection({
   teams,
   isLoading,
-  addTeam,
   duplicateTeam,
   updateTeam,
   removeTeam,
@@ -62,7 +59,6 @@ export function MyTeamsSection({
   const pokemonText = usePokemonText();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("active");
-  const [isAdding, setIsAdding] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,15 +97,17 @@ export function MyTeamsSection({
     });
   }
 
+  /**
+   * A new team starts in the Team Builder (a whole team can be pasted there
+   * too, via Import / Export), in the regulation this list is showing.
+   */
+  function createTeam() {
+    router.push(`/team-builder?regulation=${encodeURIComponent(selectedRegulationId)}`);
+  }
+
   function switchTab(next: Tab) {
     setTab(next);
     setSearchQuery("");
-  }
-
-  function handleAddSubmit(rawPaste: string, name: string) {
-    const error = addTeam(rawPaste, name, selectedRegulationId);
-    if (!error) setIsAdding(false);
-    return error;
   }
 
   /**
@@ -233,7 +231,7 @@ export function MyTeamsSection({
           )}
           <button
             type="button"
-            onClick={() => setIsAdding(true)}
+            onClick={createTeam}
             aria-label={t.myTeams.createTeam}
             title={t.myTeams.createTeam}
             className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-chrome-600 text-white hover:bg-chrome-700"
@@ -262,25 +260,11 @@ export function MyTeamsSection({
               className="w-full max-w-xl"
             />
           )}
-          <Button onClick={() => setIsAdding(true)} className="shrink-0">
+          <Button onClick={createTeam} className="shrink-0">
             {t.myTeams.createTeam}
           </Button>
         </div>
       </div>
-
-      {isAdding && (
-        <Modal onClose={() => setIsAdding(false)} labelledBy="add-team-modal-title">
-          <ModalTitle id="add-team-modal-title" className="mb-4">
-            {t.myTeams.createTeamTitle}
-          </ModalTitle>
-          <TeamPasteForm onSubmit={handleAddSubmit} onCancel={() => setIsAdding(false)} />
-          <p className="mt-4 border-t border-zinc-200 pt-3 text-sm text-zinc-600">
-            <Link href="/team-builder" className="font-medium text-zinc-800 underline">
-              {t.teamBuilder.orBuild}
-            </Link>
-          </p>
-        </Modal>
-      )}
 
       {confirmRemoveTeam && (
         <Modal onClose={() => setConfirmRemoveId(null)} labelledBy="confirm-remove-team-title">
@@ -310,7 +294,7 @@ export function MyTeamsSection({
             <p className="max-w-md text-sm text-zinc-600">
               {regulationTeams.length === 0 ? t.myTeams.noTeamsBody : t.myTeams.allArchivedBody}
             </p>
-            <Button onClick={() => setIsAdding(true)}>{t.myTeams.createTeam}</Button>
+            <Button onClick={createTeam}>{t.myTeams.createTeam}</Button>
           </div>
         ) : (
           <p className="py-12 text-center text-sm text-zinc-500">{t.myTeams.noArchived}</p>

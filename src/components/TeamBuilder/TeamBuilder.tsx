@@ -74,6 +74,7 @@ export function TeamBuilder({
   );
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   const pokemon = team.pokemon;
   const regulation =
@@ -234,6 +235,21 @@ export function TeamBuilder({
         requestRemove();
         return;
       }
+      // Typing on the row (or with nothing focused, like on arriving) goes
+      // into the Pokémon field — focused before the key lands, so it gets it.
+      if (
+        !isPhone &&
+        event.key.length === 1 &&
+        event.key !== " " &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        (event.target === document.body ||
+          (event.target instanceof Node && !!stripRef.current?.contains(event.target)))
+      ) {
+        focusSpeciesField();
+        return;
+      }
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       if (event.shiftKey || isEditableTarget(event.target)) return;
@@ -267,6 +283,24 @@ export function TeamBuilder({
   function selectTile(index: number) {
     setSelectedIndex(index);
     stripRef.current?.querySelector<HTMLElement>(`[data-tile="${index}"]`)?.focus();
+  }
+
+  /**
+   * Clicking a tile opens it with the focus in its Pokémon field, ready to
+   * type (desktop — on phones the field opens a sheet, so the tile keeps it).
+   * Arrowing along the row keeps the focus there; typing then moves it (see
+   * the keydown handler).
+   */
+  function openTile(index: number) {
+    setSelectedIndex(index);
+    if (isPhone) return;
+    // After the editor re-renders for the new slot.
+    requestAnimationFrame(focusSpeciesField);
+  }
+
+  /** Focuses the editor's Pokémon field (its first). */
+  function focusSpeciesField() {
+    panelRef.current?.querySelector<HTMLInputElement>("input[role=combobox]")?.focus();
   }
 
   // ← / → move along the Pokémon row, like tabs.
@@ -382,7 +416,7 @@ export function TeamBuilder({
                     data-tile={tileIndex}
                     aria-selected={isSelected}
                     tabIndex={isSelected ? 0 : -1}
-                    onClick={() => setSelectedIndex(tileIndex)}
+                    onClick={() => openTile(tileIndex)}
                     onKeyDown={(event) => handleStripKeyDown(event, tileIndex)}
                     aria-label={isIllegal ? `${name} — ${t.teamBuilder.illegalSlot(name)}` : name}
                     title={mon.item ? `${name} @ ${text.item(mon.item)}` : name}
@@ -409,7 +443,7 @@ export function TeamBuilder({
                 data-tile={pokemon.length}
                 aria-selected={index === pokemon.length}
                 tabIndex={index === pokemon.length ? 0 : -1}
-                onClick={() => setSelectedIndex(pokemon.length)}
+                onClick={() => openTile(pokemon.length)}
                 onKeyDown={(event) => handleStripKeyDown(event, pokemon.length)}
                 aria-label={t.teamBuilder.addPokemon}
                 title={t.teamBuilder.addPokemon}
@@ -442,6 +476,7 @@ export function TeamBuilder({
       </div>
 
       <section
+        ref={panelRef}
         role="tabpanel"
         aria-label={selectedName}
         className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:p-4"

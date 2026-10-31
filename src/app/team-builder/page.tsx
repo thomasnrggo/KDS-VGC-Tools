@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { useMessages } from "@/hooks/useLanguage";
@@ -16,8 +16,14 @@ import type { Team } from "@/types";
  * address becomes its edit page — /teams/[id]/edit, where My Teams links to
  * — without leaving this page, so the keyboard flow isn't interrupted.
  */
-export default function NewTeamBuilderPage() {
+interface NewTeamBuilderPageProps {
+  /** ?regulation= — the regulation to start in (My Teams passes the one it's showing). */
+  searchParams: Promise<{ regulation?: string }>;
+}
+
+export default function NewTeamBuilderPage({ searchParams }: NewTeamBuilderPageProps) {
   const t = useMessages();
+  const { regulation: regulationId } = use(searchParams);
   const {
     teams,
     activeTeams,
@@ -32,7 +38,11 @@ export default function NewTeamBuilderPage() {
   } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const [draft, setDraft] = useState<Team>(() =>
-    createTeam("", t.teamBuilder.newTeam, REGULATIONS[0].id),
+    createTeam(
+      "",
+      t.teamBuilder.newTeam,
+      REGULATIONS.find((regulation) => regulation.id === regulationId)?.id ?? REGULATIONS[0].id,
+    ),
   );
   const [savedId, setSavedId] = useState<string | null>(null);
   const team = (savedId && teams.find((saved) => saved.id === savedId)) || draft;

@@ -10,6 +10,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.2.11 — 2026-10-31
+
+### Added
+
+- Team Builder: search Pokémon **by move** — typing a move's name in the Pokémon field ("trick
+  room") offers it as a "learns" filter, keeping only the Pokémon that learn it (Megas by their
+  base form, the admin's learnset corrections included). Stacks with type, ability and other move
+  filters.
+
+### Changed
+
+- Team Builder: clicking a Pokémon in the team row, or the "+" tile, puts the cursor in its
+  Pokémon field, so you can start typing right away. Typing while on the row (after moving along
+  it with the arrow keys) or right after the page opens goes there too (desktop).
+- My Teams: **Create team** opens the Team Builder instead of the paste dialog, in the regulation
+  the list is showing (a whole team can still be pasted there, with Import / Export).
+- Team report: every Pokémon card shows the full stats table (Stat Points, nature and final stats),
+  even before it has any Stat Points.
+
 ## 0.2.10 — 2026-10-30
 
 ### Added

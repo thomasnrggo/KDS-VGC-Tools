@@ -74,7 +74,6 @@ export function PokemonReportCard({
   const ability = resolveEffectiveAbility(formPokemon.species, formPokemon.item, pokemon.ability);
   const breakdown = calculateStatBreakdown(formPokemon);
   const nature = pokemon.nature ? NATURE_MODIFIERS[pokemon.nature.toLowerCase()] : undefined;
-  const hasStatPoints = !!breakdown && STAT_ORDER.some((stat) => breakdown.statPoints[stat] > 0);
 
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm">
@@ -239,7 +238,7 @@ export function PokemonReportCard({
           </ul>
         )}
 
-        {sheet === "open" ? null : breakdown && hasStatPoints ? (
+        {sheet === "open" ? null : breakdown ? (
           <div
             title={
               pokemon.nature ? t.pokemonCard.natureTitle(text.nature(pokemon.nature)) : undefined
@@ -280,51 +279,19 @@ export function PokemonReportCard({
             })}
           </div>
         ) : (
-          <>
-            {pokemon.nature && (
-              <p className="truncate">
-                {text.nature(pokemon.nature)}
-                {nature?.increased && nature.decreased && (
-                  <>
-                    {" "}
-                    (<span className="text-red-600">+{STAT_LABELS[nature.increased]}</span>,{" "}
-                    <span className="text-blue-600">-{STAT_LABELS[nature.decreased]}</span>)
-                  </>
-                )}
-              </p>
-            )}
-
-            {breakdown && (
-              <div className="mt-auto grid grid-cols-6 border-t border-zinc-200 pt-2 text-center">
-                {STAT_ORDER.map((stat) => {
-                  const tone =
-                    breakdown.final.increasedStat === stat
-                      ? "text-red-600"
-                      : breakdown.final.decreasedStat === stat
-                        ? "text-blue-600"
-                        : "";
-                  return (
-                    <div
-                      key={stat}
-                      title={t.pokemonCard.statTooltip(
-                        STAT_LABELS[stat],
-                        breakdown.base[stat],
-                        breakdown.statPoints[stat],
-                      )}
-                      className="flex flex-col"
-                    >
-                      <span className={cn("text-[10px] text-zinc-500", tone)}>
-                        {STAT_LABELS[stat]}
-                      </span>
-                      <span className={cn("text-xs font-medium", tone)}>
-                        {breakdown.final[stat]}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </>
+          // An unknown species: no stats to show, just the nature.
+          pokemon.nature && (
+            <p className="truncate">
+              {text.nature(pokemon.nature)}
+              {nature?.increased && nature.decreased && (
+                <>
+                  {" "}
+                  (<span className="text-red-600">+{STAT_LABELS[nature.increased]}</span>,{" "}
+                  <span className="text-blue-600">-{STAT_LABELS[nature.decreased]}</span>)
+                </>
+              )}
+            </p>
+          )
         )}
       </div>
     </div>

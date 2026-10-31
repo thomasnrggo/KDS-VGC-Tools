@@ -47,7 +47,6 @@ export default function TeamsPage() {
         <MyTeamsSection
           teams={teams}
           isLoading={isLoading}
-          addTeam={addTeam}
           duplicateTeam={duplicateTeam}
           updateTeam={updateTeam}
           removeTeam={removeTeam}
