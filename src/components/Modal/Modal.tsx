@@ -38,7 +38,9 @@ export function Modal({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 sm:items-center sm:p-4",
+        // Centered with auto margins, not items-center: a dialog taller than the
+        // window then scrolls from its top instead of being cut off above it.
+        "fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 sm:p-4",
         fullScreenOnPhone ? "" : "p-4 pt-16",
       )}
       onClick={onClose}
@@ -49,7 +51,7 @@ export function Modal({
         aria-labelledby={labelledBy}
         onClick={(event) => event.stopPropagation()}
         className={cn(
-          "w-full",
+          "w-full sm:my-auto",
           size === "wide" ? "max-w-3xl" : "max-w-xl",
           "bg-zinc-50 shadow-xl sm:rounded-lg sm:p-6",
           fullScreenOnPhone

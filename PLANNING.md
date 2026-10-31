@@ -2823,6 +2823,11 @@ leads/backs) is complete and working end to end.
       imports app code (`@/lib/species/megaForm`), so the job runs under `tsx` (dev dependency),
       which resolves the `@/` paths and JSON imports. Page: scope chips (last 4 events / whole
       regulation / each tournament), tabs Pokémon | Megas | Cores | Teams.
+    - **Overview** (2026-10-30, the owner's sketch): the default tab — the top 20 Pokémon as
+      cards and the top 5 pairs, trios and quads side by side ("See all" → the Cores tab). Details
+      open in a dialog (full screen on phones) instead of an expanding row: a Pokémon's numbers,
+      usage by event, sets, items, moves, teammates; a core's numbers and its Pokémon, each linked
+      to its most-used form (cores count plain species, the list keeps Megas apart).
     - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
       Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
       picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder

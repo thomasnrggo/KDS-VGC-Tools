@@ -10,6 +10,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.2.10 — 2026-10-30
+
+### Added
+
+- Metagame page: an **Overview** tab (the default) — the top 20 Pokémon as cards, then the five
+  most common 2-, 3- and 4-Pokémon cores (with "See all" opening the Cores tab). Tap a Pokémon for
+  a dialog with all its numbers, usage by event, sets, items, moves and teammates; tap a core for
+  its teams, usage, top 32 and win rate, and its Pokémon, each opening its own details.
+
+### Changed
+
+- Metagame page: usage bars show the share of teams (47% fills 47% of the bar), not usage
+  relative to the most-used Pokémon, which always showed a full bar for #1.
+
+### Fixed
+
+- Dialogs taller than the window (on desktop) scroll from their top instead of being cut off above
+  it.
+
 ## 0.2.9 — 2026-10-30
 
 ### Added
