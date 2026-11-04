@@ -199,6 +199,7 @@ export const en = {
       report: "Team report",
       strategy: "Strategy",
       coverage: "Coverage",
+      threats: "Threats",
       calcs: "Calcs",
       matchups: "Matchups",
       stats: "Tournament stats",
@@ -544,6 +545,147 @@ export const en = {
       `Metagame: ${tournaments} official tournament${tournaments === 1 ? "" : "s"}, ${teams.toLocaleString("en")} teams · updated ${date} · via ${source}`,
     empty: "Add Pokémon to the team to see its coverage.",
   },
+  threats: {
+    summary: "In short",
+    biggest: "Biggest threats",
+    noAnswer: "Nothing answers",
+    outspeedAll: "Faster than your whole team",
+    tailwindFixes: (count: number) => `your Tailwind fixes ${count === 1 ? "it" : count}`,
+    setProblems: "Set problems",
+    noneFound: "None",
+    title: "Threats",
+    intro:
+      "Common metagame sets (one per common item) against your team. Red: whom it OHKOs. Green: who answers it. Open one for the numbers.",
+    speedMode: "Speed",
+    speedModes: {
+      normal: "As built",
+      tailwind: "Your Tailwind",
+      theirTailwind: "Their Tailwind",
+      trickRoom: "Trick Room",
+    },
+    levels: { high: "High danger", medium: "Medium danger", low: "Low danger" },
+    ofTeams: (usage: string) => `${usage} of teams`,
+    kos: "KOs",
+    answeredBy: "Answered by",
+    nobody: "Nobody",
+    noKos: "Nothing",
+    koLong: { ohko: "OHKO", rollOhko: "OHKO on a high roll", twoHko: "2HKO" },
+    answerLong: { ko: "KOs it", rollKo: "KOs it on a high roll", check: "2HKOs it" },
+    first: "moves first",
+    after: "moves after it",
+    inField: (field: string) => `In ${field}`,
+    movesFirst: (count: number, total: number) => `Moves first against ${count} of ${total}`,
+    hit: (move: string, min: string, max: string) => `${move} ${min}–${max}%`,
+    yours: "Yours",
+    itsHit: "Its best hit",
+    yourHit: "Your best hit",
+    showDetails: "Show the numbers",
+    showMore: (count: number) => `Show ${count} more`,
+    showFewer: "Show fewer",
+    speedControl: "Speed control",
+    against: { trickRoom: "Their Trick Room", tailwind: "Their Tailwind" },
+    verdicts: {
+      unaffected: "Barely matters",
+      covered: "Covered",
+      partial: "Some answers",
+      exposed: "Exposed",
+    },
+    exposure: (under: number, normal: number, total: number) =>
+      `Common threats would move first against ${under} of your ${total} (${normal} as built).`,
+    setters: "Common setters",
+    runsIt: (share: string) => `${share} run it`,
+    fakeOutFails: (reason: string) => `Fake Out fails (${reason})`,
+    counters: "Your answers",
+    counterKinds: {
+      taunt: "Taunt",
+      imprison: "Imprison",
+      trickRoom: "Your Trick Room",
+      tailwind: "Your Tailwind",
+      speedDrop: "Speed drop",
+      priority: "Priority",
+      choiceScarf: "Choice Scarf",
+      fakeOut: "Fake Out (delays it)",
+      koSetter: "KOs a setter",
+    },
+    noCounters: {
+      trickRoom:
+        "Nothing: no Taunt, Imprison or Trick Room of your own, and nothing KOs the common setters.",
+      tailwind:
+        "Nothing: no Tailwind or Trick Room of your own, speed drops, priority or Choice Scarf.",
+    },
+    roles: "Roles",
+    roleNames: {
+      speedControl: "Speed control",
+      trickRoom: "Trick Room",
+      fakeOut: "Fake Out",
+      redirection: "Redirection",
+      intimidate: "Intimidate",
+      weather: "Weather",
+      terrain: "Terrain",
+      spreadDamage: "Spread damage",
+    },
+    protect: (count: number, total: number) => `Protect ${count}/${total}`,
+    issue: {
+      terrainNeverSet: (pokemon: string, via: string, terrain: string, clashes?: string) =>
+        `${pokemon}'s ${via} needs ${terrain} Terrain, which nobody on the team sets${clashes ? ` (your ${clashes} Terrain would replace it)` : ""}.`,
+      weatherNeverSet: (pokemon: string, via: string, weather: string) =>
+        `${pokemon}'s ${via} needs ${weather}, which nobody on the team sets.`,
+      choiceProtect: (pokemon: string, item: string, move: string) =>
+        `${pokemon} holds ${item}, which locks it into one move: ${move} is a wasted slot.`,
+      vestStatus: (pokemon: string, move: string) =>
+        `${pokemon} can't use ${move} while holding an Assault Vest.`,
+    },
+    howCalculated: "How this is calculated",
+    estimated: (names: string) => `No Stat Points on ${names}: calced with an estimated spread.`,
+    method:
+      "Opponents' spreads are estimated from their nature and item (team sheets don't list Stat Points). Each matchup is one-on-one, in the opponent's weather or terrain if it sets one (else yours), with spread moves at ×0.75, Intimidate and priority applied. Partners, redirection and double-targeting aren't counted.",
+    basedOn: (teams: string, events: number, names: string, date: string) =>
+      `Based on ${teams} team sheets from ${events === 1 ? "the latest official tournament" : `the ${events} latest official tournaments`} (${names}), updated ${date}.`,
+    style: {
+      title: "Your team",
+      archetypes: {
+        balance: "Balance",
+        trickRoom: "Trick Room",
+        weather: "Weather",
+        setup: "Setup",
+        hyperOffense: "Hyper offense",
+      },
+      weatherTeam: (weather: string) => `${weather} team`,
+      descriptions: {
+        balance: "A mix of attackers and support, without one game plan an opponent can shut down.",
+        trickRoom:
+          "Built to win under Trick Room: a setter and slow Pokémon that hit hard once it's up.",
+        weather: "",
+        setup: "Wins by boosting: several Pokémon set up while their partners keep them safe.",
+        hyperOffense:
+          "All-out offense: mostly attackers and little support. It wins fast, or not at all.",
+      },
+      weatherDescription: (weather: string) =>
+        `Built around ${weather}: a setter and Pokémon that hit harder or move faster in it.`,
+      alsoHas: (extras: string) => `Also: ${extras}`,
+      extras: {
+        tailwind: "Tailwind",
+        trickRoomMode: "Trick Room mode",
+        setupOptions: "setup options",
+        terrain: (terrain: string) => `${terrain} Terrain`,
+      },
+      roles: {
+        pressure: "Offensive pressure",
+        support: "Support",
+        revengeKiller: "Revenge killers",
+        setup: "Setup",
+      },
+      noJob: "No clear job",
+      ohkos: (count: number, total: number) => `OHKOs ${count} of ${total}`,
+      beforeTheyMove: (count: number, total: number) => `${count} of ${total} before they move`,
+      measured: (total: number) =>
+        `Pressure and revenge kills are counted against the ${total} most common sets.`,
+    },
+    caveat:
+      "Opponents' Stat Points are estimated and each matchup is one-on-one, so use it as a guide, not a verdict.",
+    noMeta: "No metagame data for this regulation yet.",
+    empty: "Add Pokémon to the team to see what threatens it.",
+  },
   metagame: {
     title: "Metagame",
     basedOn: (tournaments: number, teams: number) =>
@@ -574,7 +716,7 @@ export const en = {
     scopeRecent: (count: number) => `Last ${count} events`,
     scopeAll: "Whole regulation",
     scopeHint:
-      "The metagame moves: the last few events show it as it is now; the whole regulation includes its early weeks.",
+      "The metagame moves: the last few events show it as it is now. Pick an event to see just that one.",
     latest: "Latest",
     latestHint: (event: string, usage: string, previous: string | null, before: string | null) =>
       previous
@@ -618,6 +760,11 @@ export const en = {
       "No cores or teams in this data yet — they arrive with the metagame job's next rebuild.",
     noTournament: "No summary for this tournament yet.",
     topPokemon: (count: number) => `Top ${count} Pokémon`,
+    winningTeams: "Winning teams",
+    winningTeamsHint: "The winner and runner-up of each event, from their open team sheets.",
+    finalistPlacing: (placing: number): string => (placing === 1 ? "Winner" : "Runner-up"),
+    copyTeam: "Copy team",
+    teamCopied: "Team copied as a paste — import it in the Team Builder or Showdown.",
     commonCores: "Common cores",
     commonCoresHint:
       "Pokémon that show up on the same team most often. Tap one to see how it does.",
@@ -949,6 +1096,17 @@ export const en = {
       "Couldn't update the plans and logged games that pick from this team — check your connection.",
     importExport: "Import / Export",
     importExportHint: "The team as Showdown export text — copy it, or paste a team in",
+    analyze: "Analyze",
+    analyzeHint: "What the metagame brings against this team, and who answers it",
+    calculator: "Calculator",
+    calculatorHint: "Calc the Pokémon you're editing against an opponent you set up",
+    panel: "Panel",
+    panelModes: { analysis: "Analysis", calculator: "Calculator" },
+    panelTitle: (team: string) => `${team}: analysis and calculator`,
+    calcPickPokemon: "Pick a Pokémon in the builder: it's your side of the calc.",
+    calcYourMoves: (name: string) => `${name}'s moves`,
+    calcTheirMoves: (name: string) => `${name}'s moves`,
+    calcOpponent: "Opponent",
     importIntro:
       "The team as Showdown export text: copy it, or paste a full team over it (a blank line between each Pokémon) and save.",
     importReplaces:

@@ -1,6 +1,7 @@
 {
   "accelerock": {
-    "contact": true
+    "contact": true,
+    "priority": 1
   },
   "acid": {
     "secondary": true
@@ -26,6 +27,9 @@
     "sound": true,
     "secondary": true
   },
+  "ally-switch": {
+    "priority": 2
+  },
   "anchor-shot": {
     "contact": true,
     "secondary": true
@@ -40,7 +44,8 @@
     "slicing": true
   },
   "aqua-jet": {
-    "contact": true
+    "contact": true,
+    "priority": 1
   },
   "aqua-step": {
     "contact": true,
@@ -69,15 +74,25 @@
     "secondary": true
   },
   "avalanche": {
-    "contact": true
+    "contact": true,
+    "priority": -4
   },
   "axe-kick": {
     "contact": true,
     "secondary": true,
     "recoil": true
   },
+  "baby-doll-eyes": {
+    "priority": 1
+  },
+  "baneful-bunker": {
+    "priority": 4
+  },
   "barb-barrage": {
     "secondary": true
+  },
+  "beak-blast": {
+    "priority": -3
   },
   "behemoth-bash": {
     "contact": true
@@ -87,7 +102,8 @@
     "slicing": true
   },
   "bide": {
-    "contact": true
+    "contact": true,
+    "priority": 1
   },
   "bind": {
     "contact": true
@@ -180,7 +196,11 @@
   },
   "bullet-punch": {
     "contact": true,
-    "punch": true
+    "punch": true,
+    "priority": 1
+  },
+  "burning-bulwark": {
+    "priority": 4
   },
   "burning-jealousy": {
     "secondary": true
@@ -210,7 +230,8 @@
     "contact": true
   },
   "circle-throw": {
-    "contact": true
+    "contact": true,
+    "priority": -6
   },
   "clamp": {
     "contact": true
@@ -252,13 +273,17 @@
     "secondary": true
   },
   "counter": {
-    "contact": true
+    "contact": true,
+    "priority": -5
   },
   "covet": {
     "contact": true
   },
   "crabhammer": {
     "contact": true
+  },
+  "crafty-shield": {
+    "priority": 3
   },
   "cross-chop": {
     "contact": true
@@ -290,6 +315,9 @@
   },
   "darkest-lariat": {
     "contact": true
+  },
+  "detect": {
+    "priority": 4
   },
   "diamond-storm": {
     "secondary": true
@@ -356,7 +384,8 @@
     "secondary": true
   },
   "dragon-tail": {
-    "contact": true
+    "contact": true,
+    "priority": -6
   },
   "drain-punch": {
     "contact": true,
@@ -407,6 +436,9 @@
   "endeavor": {
     "contact": true
   },
+  "endure": {
+    "priority": 4
+  },
   "energy-ball": {
     "secondary": true
   },
@@ -417,20 +449,25 @@
     "secondary": true
   },
   "extreme-speed": {
-    "contact": true
+    "contact": true,
+    "priority": 2
   },
   "facade": {
     "contact": true
   },
   "fake-out": {
     "contact": true,
-    "secondary": true
+    "secondary": true,
+    "priority": 3
   },
   "false-surrender": {
     "contact": true
   },
   "false-swipe": {
     "contact": true
+  },
+  "feint": {
+    "priority": 2
   },
   "feint-attack": {
     "contact": true
@@ -462,7 +499,8 @@
     "secondary": true
   },
   "first-impression": {
-    "contact": true
+    "contact": true,
+    "priority": 2
   },
   "fishious-rend": {
     "contact": true,
@@ -508,7 +546,11 @@
   },
   "focus-punch": {
     "contact": true,
-    "punch": true
+    "punch": true,
+    "priority": -3
+  },
+  "follow-me": {
+    "priority": 2
   },
   "force-palm": {
     "contact": true,
@@ -621,6 +663,9 @@
   "heavy-slam": {
     "contact": true
   },
+  "helping-hand": {
+    "priority": 5
+  },
   "high-horsepower": {
     "contact": true
   },
@@ -680,6 +725,9 @@
     "punch": true,
     "secondary": true
   },
+  "ice-shard": {
+    "priority": 1
+  },
   "ice-spinner": {
     "contact": true
   },
@@ -698,6 +746,9 @@
   "infestation": {
     "contact": true
   },
+  "ion-deluge": {
+    "priority": 1
+  },
   "iron-head": {
     "contact": true,
     "secondary": true
@@ -712,7 +763,8 @@
   },
   "jet-punch": {
     "contact": true,
-    "punch": true
+    "punch": true,
+    "priority": 1
   },
   "jump-kick": {
     "contact": true,
@@ -720,6 +772,9 @@
   },
   "karate-chop": {
     "contact": true
+  },
+  "kings-shield": {
+    "priority": 4
   },
   "knock-off": {
     "contact": true
@@ -780,7 +835,11 @@
   },
   "mach-punch": {
     "contact": true,
-    "punch": true
+    "punch": true,
+    "priority": 1
+  },
+  "magic-coat": {
+    "priority": 4
   },
   "magical-torque": {
     "secondary": true
@@ -793,6 +852,9 @@
   },
   "matcha-gotcha": {
     "secondary": true
+  },
+  "max-guard": {
+    "priority": 4
   },
   "mega-kick": {
     "contact": true
@@ -819,6 +881,9 @@
   "mighty-cleave": {
     "contact": true,
     "slicing": true
+  },
+  "mirror-coat": {
+    "priority": -5
   },
   "mirror-shot": {
     "secondary": true
@@ -877,6 +942,9 @@
   "nuzzle": {
     "contact": true,
     "secondary": true
+  },
+  "obstruct": {
+    "priority": 4
   },
   "octazooka": {
     "secondary": true
@@ -949,6 +1017,9 @@
   "pound": {
     "contact": true
   },
+  "powder": {
+    "priority": 1
+  },
   "powder-snow": {
     "secondary": true
   },
@@ -962,6 +1033,9 @@
   },
   "power-whip": {
     "contact": true
+  },
+  "protect": {
+    "priority": 4
   },
   "psybeam": {
     "secondary": true
@@ -1007,7 +1081,11 @@
     "secondary": true
   },
   "quick-attack": {
-    "contact": true
+    "contact": true,
+    "priority": 1
+  },
+  "quick-guard": {
+    "priority": 3
   },
   "rage": {
     "contact": true
@@ -1015,6 +1093,9 @@
   "rage-fist": {
     "contact": true,
     "punch": true
+  },
+  "rage-powder": {
+    "priority": 2
   },
   "raging-bull": {
     "contact": true
@@ -1042,13 +1123,15 @@
     "contact": true
   },
   "revenge": {
-    "contact": true
+    "contact": true,
+    "priority": -4
   },
   "reversal": {
     "contact": true
   },
   "roar": {
-    "sound": true
+    "sound": true,
+    "priority": -6
   },
   "rock-climb": {
     "contact": true,
@@ -1135,13 +1218,20 @@
     "punch": true
   },
   "shadow-sneak": {
-    "contact": true
+    "contact": true,
+    "priority": 1
   },
   "shell-side-arm": {
     "secondary": true
   },
+  "shell-trap": {
+    "priority": -3
+  },
   "signal-beam": {
     "secondary": true
+  },
+  "silk-trap": {
+    "priority": 4
   },
   "silver-wind": {
     "secondary": true
@@ -1202,6 +1292,9 @@
     "sound": true,
     "secondary": true
   },
+  "snatch": {
+    "priority": 4
+  },
   "snore": {
     "sound": true,
     "secondary": true
@@ -1224,6 +1317,9 @@
   "spectral-thief": {
     "contact": true
   },
+  "spiky-shield": {
+    "priority": 4
+  },
   "spin-out": {
     "contact": true
   },
@@ -1236,6 +1332,9 @@
   },
   "splishy-splash": {
     "secondary": true
+  },
+  "spotlight": {
+    "priority": 3
   },
   "springtide-storm": {
     "secondary": true
@@ -1289,7 +1388,8 @@
     "recoil": true
   },
   "sucker-punch": {
-    "contact": true
+    "contact": true,
+    "priority": 1
   },
   "sunsteel-strike": {
     "contact": true
@@ -1327,6 +1427,9 @@
     "contact": true,
     "recoil": true
   },
+  "teleport": {
+    "priority": -6
+  },
   "temper-flare": {
     "contact": true
   },
@@ -1362,6 +1465,9 @@
   "thunderbolt": {
     "secondary": true
   },
+  "thunderclap": {
+    "priority": 1
+  },
   "thunderous-kick": {
     "contact": true,
     "secondary": true
@@ -1376,6 +1482,9 @@
   },
   "tri-attack": {
     "secondary": true
+  },
+  "trick-room": {
+    "priority": -7
   },
   "triple-arrows": {
     "secondary": true
@@ -1407,13 +1516,17 @@
   },
   "upper-hand": {
     "contact": true,
-    "secondary": true
+    "secondary": true,
+    "priority": 3
   },
   "uproar": {
     "sound": true
   },
   "v-create": {
     "contact": true
+  },
+  "vacuum-wave": {
+    "priority": 1
   },
   "veevee-volley": {
     "contact": true
@@ -1425,7 +1538,8 @@
     "contact": true
   },
   "vital-throw": {
-    "contact": true
+    "contact": true,
+    "priority": -1
   },
   "volt-tackle": {
     "contact": true,
@@ -1439,6 +1553,9 @@
     "pulse": true,
     "secondary": true
   },
+  "water-shuriken": {
+    "priority": 1
+  },
   "waterfall": {
     "contact": true,
     "secondary": true
@@ -1447,12 +1564,18 @@
     "contact": true,
     "recoil": true
   },
+  "whirlwind": {
+    "priority": -6
+  },
   "wicked-blow": {
     "contact": true,
     "punch": true
   },
   "wicked-torque": {
     "secondary": true
+  },
+  "wide-guard": {
+    "priority": 3
   },
   "wild-charge": {
     "contact": true,
@@ -1491,6 +1614,7 @@
   },
   "zippy-zap": {
     "contact": true,
-    "secondary": true
+    "secondary": true,
+    "priority": 2
   }
 }

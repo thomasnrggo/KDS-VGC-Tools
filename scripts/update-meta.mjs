@@ -37,6 +37,8 @@ const USER_AGENT =
 const DELAY_MS = 4000;
 const REQUEST_TIMEOUT_MS = 60_000;
 const DIVISION = "Masters";
+/** The placings published as an event's finalists: the winner and the runner-up. */
+const FINALISTS = 2;
 /** The share of players that must match a team sheet for an event to count. */
 const MIN_JOIN = 0.9;
 
@@ -148,6 +150,17 @@ async function openStore() {
       await db.collection("meta").doc(regulationId).collection("tournaments").doc(id).set(data);
     },
   };
+}
+
+/**
+ * The winner and runner-up of an event: placing, record and team sheet (open
+ * team sheets are public) — never who played them, like everything published.
+ */
+function finalistsOf(players) {
+  return players
+    .filter((player) => player.placing <= FINALISTS)
+    .sort((a, b) => a.placing - b.placing)
+    .map(({ placing, record, team }) => ({ placing, record, team }));
 }
 
 async function main() {
@@ -265,6 +278,7 @@ async function main() {
           startDate,
           endDate,
           teams: players.length,
+          finalists: finalistsOf(players),
         })),
         teams: summary.teams,
         topTeams: summary.topTeams,
@@ -297,6 +311,7 @@ async function main() {
           startDate: event.startDate,
           endDate: event.endDate,
           teams: event.players.length,
+          finalists: finalistsOf(event.players),
         },
         teams: single.teams,
         topTeams: single.topTeams,

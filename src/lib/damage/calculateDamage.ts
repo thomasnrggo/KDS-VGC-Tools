@@ -29,7 +29,7 @@ import type {
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
 /** Per-move flags and stat overrides from Showdown's data — see scripts/generate-calc-data.mjs. */
-interface MoveFlags {
+export interface MoveFlags {
   contact?: boolean;
   punch?: boolean;
   bite?: boolean;
@@ -41,8 +41,15 @@ interface MoveFlags {
   defensiveStat?: "def" | "spd";
   offensiveStat?: "def";
   offensivePokemon?: "target";
+  /** Absent for the usual 0 (Fake Out +3, Extreme Speed +2, Trick Room -7). */
+  priority?: number;
 }
 const MOVE_FLAGS = moveFlagsData as unknown as Record<string, MoveFlags>;
+
+/** A move's flags (see MoveFlags), by name or key — empty for a move with none. */
+export function getMoveFlags(moveName: string): MoveFlags {
+  return MOVE_FLAGS[normalizeSpeciesKey(moveName)] ?? {};
+}
 const SPECIES_WEIGHTS = speciesWeightsData as unknown as Record<string, number>;
 const TYPE_CHART = typeChartData as unknown as Record<string, Record<string, number>>;
 const SPECIES_TYPES = speciesTypesData as unknown as Record<string, string[]>;

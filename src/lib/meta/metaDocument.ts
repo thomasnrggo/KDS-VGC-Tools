@@ -1,3 +1,4 @@
+import type { ParsedPokemon } from "@/types";
 import type { MetaCombos, MetaPokemon } from "./aggregateMeta";
 
 /** How many of the newest events make up the "recent" metagame. */
@@ -54,6 +55,15 @@ export interface MetaTournament {
   startDate: string;
   endDate: string;
   teams: number;
+  /** The winner and the runner-up, when their team sheets matched — absent in documents written before they existed. */
+  finalists?: MetaFinalist[];
+}
+
+/** A finalist's team as its open team sheet shows it — never the player. */
+export interface MetaFinalist {
+  placing: number;
+  record: { wins: number; losses: number; ties: number };
+  team: ParsedPokemon[];
 }
 
 /** "2027 Puebla Pokémon VGC Regional Championships" → "Puebla"; "2026 Pokémon VGC World Championship" → "Worlds". */

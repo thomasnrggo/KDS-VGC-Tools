@@ -2821,8 +2821,15 @@ leads/backs) is complete and working end to end.
       `meta/{reg}/tournaments/{id}` (public read; ~116KB each — all in the main document would pass
       1MB), loaded only when that chip is picked (`useMetaTournament`). The aggregation now
       imports app code (`@/lib/species/megaForm`), so the job runs under `tsx` (dev dependency),
-      which resolves the `@/` paths and JSON imports. Page: scope chips (last 4 events / whole
-      regulation / each tournament), tabs Pokémon | Megas | Cores | Teams.
+      which resolves the `@/` paths and JSON imports. Page: an events select (last 4 events, then
+      each tournament newest first; "whole regulation" only as the fallback for a document with no
+      recent slice — chips stopped scaling with weekly events, 2026-11-04) on the same row as the
+      tabs Overview | Pokémon | Megas | Cores | Teams.
+    - **Winning teams** (2026-11-04): each `tournaments[]` entry (and each per-tournament document)
+      carries `finalists` — placings 1 and 2 with record and team sheet (~2KB per event), never
+      the player, same as everything published. The Overview shows a card per event in view;
+      each team opens its sheet with a copy-as-paste. Older documents lack the field (section
+      hidden) until the job runs with `--rebuild`.
     - **Overview** (2026-10-30, the owner's sketch): the default tab — the top 20 Pokémon as
       cards and the top 5 pairs, trios and quads side by side ("See all" → the Cores tab). Details
       open in a dialog (full screen on phones) instead of an expanding row: a Pokémon's numbers,
@@ -2864,6 +2871,180 @@ leads/backs) is complete and working end to end.
       `meta: null` whenever there's nothing, so every use must work without it. First use: the
       Coverage tab's "Metagame: N official tournaments, N teams · updated … · via …" line; (3) Limitless
       and Smogon sources; (4) meta-weighted Coverage; then threat detection.
+
+- [ ] **Team analysis from the metagame — 0.3** (planned 2026-10-31, building 2026-11-01). The
+      owner approved 0.3 for it. The goal: analyze the team as a whole (sets, items, abilities,
+      coverage), the way a player would: "Scarf Garchomp threatens this team; Sitrus Garchomp
+      doesn't". **No AI**: an LLM analysis was discussed (our engine computing the facts, an agent
+      writing it up and calling calc tools), but this is a free project and paying per analysis for
+      every user isn't affordable. So everything is computed in the browser. A prototype against the
+      real M-C data and the owner's team came first, to see how far that gets. It got far.
+    - **Engine** — `src/lib/threats/`, pure and unit-tested:
+        - **Meta sets** (`metaThreatSets`): each of the 40 most-used Pokémon split by common item
+          (≥15% of its teams, up to 3). The item is what changes the threat: Choice Scarf
+          outspeeds, Life Orb hits harder, Sitrus Berry stays around. Moves, ability and nature
+          come from the most common full set with that item, else the Pokémon's most common ones. A
+          Mega is calced as its base species holding the stone. Uses `official.recent` (the newest
+          4 events), like the Metagame page.
+        - **Estimated spreads** (`estimateSpread`): team sheets have no Stat Points. Spreads are
+          32/32/2, read from the nature and item:
+            - a defensive nature: HP and that defense;
+            - −Speed (Trick Room): HP and the attacking stat;
+            - +Speed or Choice Scarf: the attacking stat and Speed;
+            - a bulky item: HP and the attacking stat;
+            - else the attacking stat and Speed.
+
+          The user's own Pokémon without Stat Points get one too, and the tab says which.
+        - **Threats** (`analyzeThreats`): every set against each of the team's Pokémon, both ways,
+          through the damage calculator.
+            - The field is the set's own weather or terrain if it sets one, else the team's.
+            - Spread moves are at ×0.75, and Intimidate holders take −1 Attack hits.
+            - Accuracy weights a hit (No Guard on either side makes it sure). Recharge moves are
+              left out.
+            - Who moves first: priority, then Speed through `computeBattleStat` (Scarf, weather
+              abilities). Priority comes from Showdown's data (`moveFlags.json`'s new `priority`,
+              via `npm run generate:calc-data`). Grassy Glide's +1 only applies in Grassy Terrain.
+            - **Pressure**: OHKO 1, high-roll OHKO 0.75, 2HKO 0.4, × accuracy, ×1.3 if it moves
+              first.
+            - **Your best answer**: KO 1, high-roll KO 0.7, 2HKO while taking under half 0.5. It
+              counts when it lands before the threat moves, or after surviving the threat's hit.
+            - **Danger** = pressure × (1 − 0.7 × answer). The ranking is danger × √usage, so a
+              common set ranks above a rare one, but a rare set that sweeps still shows.
+            - **Speed modes**: as built, with your Tailwind, or under Trick Room.
+        - **Team checks** (`teamRoles`, `setIssues`):
+            - Roles: speed control, Trick Room, Fake Out, redirection, Intimidate, weather, terrain,
+              spread damage, and Protect count.
+            - Sets that can't work as built: a Terrain Seed or terrain/weather ability nobody on
+              the team sets up for (the owner's Electric Seed Sneasler on a Grassy Surge team), a
+              Choice item with Protect, an Assault Vest with a status move.
+    - **Threats tab** on the team page (`TeamThreats`), after Coverage, in this order:
+      1. Set problems.
+      2. The ranked threats, 10 then "Show more". Each card shows sprite, item, danger level,
+            ability (a Mega's own), nature, moves, "on N% of teams (M% of that Pokémon)", the field,
+            and how many of yours it moves first against. Then "KOs" (your Pokémon with
+            OHKO / OHKO? / 2HKO, marked "first") and "Answered by" (KO / KO? / 2HKO, marked "after
+            it" when slower; "Nobody" in red). Each chip's tooltip has the move and damage range.
+      3. Roles.
+      4. The method and the metagame source.
+    - **Calmer layout** (2026-11-01, the owner found the cards overwhelming): answer first.
+        - **In short**: biggest threats, nothing answers (from the top 15 sets), faster than the
+          whole team (sprites only past 3; "your Tailwind fixes N" when it does), Trick Room
+          and Tailwind verdicts, set problems.
+        - **One row per Pokémon**, top 5 then "Show more": danger dots, usage, and sprite-only
+          chips (the owner's pick over sprite + OHKO mark). A red ring means it OHKOs that one
+          (sure or high roll; 2HKOs only in the details). A green ring means that one answers it.
+          Sets are pills (one per common item), and a chevron opens the set and both best hits
+          per Pokémon of yours.
+        - Roles become one row of chips (missing ones dashed). The method and source go under
+          "How this is calculated".
+        - The engine is split into `threatMatchups` (the calcs, ~80ms for 58 sets × 6) and
+          `rankThreats(matchups, mode)` (~0.3ms), so the four speed modes (as built, your
+          Tailwind, their Tailwind, Trick Room) cost one calc pass.
+    - **Speed control** (2026-11-01, the owner's ask: "is my team weak against Trick Room or a
+      speed control, and can I stop it?") — `src/lib/threats/speedControl.ts`:
+        - **Exposure**: the share of your team the 20 most-used sets move first against, as
+          built and under their Trick Room or Tailwind.
+        - **Common setters**: meta Pokémon running the move on ≥25% of their teams, top 4.
+        - **Counters** — Trick Room: Taunt, Imprison (with Trick Room of its own), your own Trick
+          Room, Fake Out, and a KO on a common setter's set (Trick Room goes at −7, so a KO stops
+          it whoever's faster; not through Focus Sash or Sturdy). Tailwind: your own Tailwind or
+          Trick Room, speed drops (Icy Wind, Electroweb, …), damaging priority, Choice Scarf.
+        - **Fake Out only counts when it works** on a common setter. Armor Tail, Queenly Majesty,
+          Dazzling and Inner Focus block it, and so does Psychic Terrain on grounded Pokémon. On
+          M-C the top two Trick Room setters, Farigiraf and Indeedee, both block it.
+        - **Verdict**: barely matters (exposure up under 15 points), covered (two or more kinds of
+          strong counter), some answers, exposed.
+    - **Behind a feature flag** (2026-11-01, the owner: "I think we need more discussion over the
+      feature"): `teamThreats` in `FeatureFlags`, **off by default** (unlike the section flags,
+      which fail open — a preview must not show to everyone on a missing key or a failed read),
+      toggled in /admin/features. The tab is shown when the flag is on or to the admin; a
+      `?tab=threats` link opens the report otherwise. Still open for discussion before it's
+      switched on.
+    - **In the Team Builder** (2026-11-01, the owner's ask): an "Analyze" button beside Import /
+      Export (a toggle, filled while open) shows `TeamThreats` for the team as built so far.
+        - **Desktop: a panel that pushes the layout**, not an overlay (the owner: use both
+          sections at the same time). The builder and a sticky `<aside>` (45%, up to 42rem, its own
+          scroll) sit side by side, with no backdrop. The builder's keyboard shortcuts stay on. The
+          analysis follows every edit; its ~80ms of calcs run on `useDeferredValue(pokemon)`, so
+          dragging a Stat Points slider doesn't wait on them.
+        - **Slide in / out** (same day): not the Base UI drawer. It's always `position: fixed` over
+          the page. `modal={false}` plus `Drawer.Indent` padding could fake a push, but it would
+          cover the app header and need the padding kept in sync with the drawer's width. Instead
+          the `<aside>` animates its own width (and margin, opacity) over 300ms, from 0 on mount
+          via `@starting-style` (Tailwind's `starting:`). It stays mounted until the width
+          transition ends when closing. The panel inside keeps its width, so it's revealed, not
+          squeezed. Reduced motion: no transition, removed at once.
+        - **Phones**: no room beside the builder, so a full-screen drawer from the right
+          (`swipeDirection="right"`), with the builder's shortcuts paused like for its dialogs. The
+          button is an icon (`IconName.BarChart`, three bars drawn in the 960 grid) in the
+          header row beside Import / Export's. It was first a text action under the tiles, which
+          the owner found out of place.
+        - Same flag (and the admin), and the team needs a Pokémon. `TeamThreats` lays out by
+          **container queries** (`@container`, `@xl:` / `@4xl:`) instead of screen breakpoints,
+          so the narrower panel gets the stacked layout.
+    - **"Based on" banner** (2026-11-01, the owner's ask): a short note above the analysis, in the
+      tab and the Team Builder's panel alike. It says the number of team sheets and the
+      tournaments by name (the recent slice, else the whole regulation), when the data was
+      updated, and that spreads are estimated and matchups one-on-one: "a guide, not a verdict".
+      The footer keeps the method and the source credit.
+    - **Your team's style and roles** (2026-11-01, the owner's ask) — `src/lib/threats/teamStyle.ts`,
+      the first section under the banner:
+        - **Roles**, measured against the 20 most-used sets (from `threatMatchups`):
+            - **offensive pressure**: OHKOs (on a high roll at least) ≥30% of them;
+            - **revenge killer**: KOs ≥30% of them before they move;
+            - **support**: Fake Out alone (a lead support's job in doubles), two support moves
+              (redirection, speed control, Helping Hand, Wide Guard, Will-O-Wisp, …), or one with a
+              support ability (Intimidate, Prankster, Lightning Rod, …);
+            - **setup**: a boosting move.
+        - A Pokémon with none is listed under **"No clear job"** with its OHKO count — a slot to
+          look at.
+        - **Archetype**, the first that fits:
+            1. Trick Room: a setter and 3+ slow Pokémon (base Speed ≤65 or a −Speed nature).
+            2. Weather: a setter and 2+ Pokémon using it — its abilities and moves, or the attacks
+               it boosts (Water in rain, Fire in sun). One Water attacker beside a Pelipper isn't
+               a rain team.
+            3. Setup: 3+ setup users.
+            4. Hyper offense: 4+ applying pressure, at most one support.
+            5. Else balance.
+        - **"Also"** names what else it leans on: Tailwind, a Trick Room mode, setup options, a
+          terrain.
+        - Tuned on the owner's two teams. A first pass counted 2HKOs as pressure (every Pokémon
+          qualified, so "Ychu balance" came out as hyper offense), and only weather abilities as
+          weather users (the rain team read as balance).
+    - **Calculator in the Team Builder's panel** (2026-11-03, the owner's ask): the panel has
+      two modes, Analysis | Calculator. They're switched in its header, and each header button
+      (Analyze, Calculator; chart and calculator icons on phones) opens it on its own mode.
+        - **Your side is the builder's open Pokémon**, edited there and not in the panel. A Stat
+          Points, nature, item or move change shows in the calcs at once (checked: 0 → 32 Atk
+          Garchomp, Earthquake on Venusaur 39.4–47.1% → 48.4–56.8%). Crits and hit counts on
+          its move rows reset when another Pokémon is opened. It's shown in its Mega form when
+          it holds its stone.
+        - **One opponent** (the owner's pick: one at a time): the Damage Calculator's
+          `RosterPokemonPicker` with a new `single` prop. That hides the roster strip, "add to
+          the roster" and team import/export, and keeps the species search, saved sets, item,
+          ability, nature, Stat Points, boosts, status and moves.
+        - **Field**: format, weather, terrain, Fairy Aura, Gravity, and each side's conditions,
+          collapsed under "Field". Weather and Fairy Aura switch on from abilities, as on the
+          calculator page.
+        - **Results**: both sides' move lists and the result readout, as on the calculator
+          page. **Save** files the calc on the team's Calcs tab under your Pokémon: offensive
+          for your move, defensive for theirs (checked: it appears on the Calcs tab).
+        - To share one implementation, the calculator's pieces moved verbatim into
+          `src/components/DamageCalculator/calcShared.tsx`: `ResultPanel`, `MoveList`,
+          `SideConditionsPanel`, the calc-line formatter, `toEffectivePokemon`, auto weather,
+          and the options (`calcOptions(field, …)`, `forMove`, from the page's `optionsFor`).
+          The calculator page imports them back.
+        - The calculator stays mounted once opened, so the opponent survives a switch to
+          Analysis. The analysis is only built while it shows.
+        - **Next** (agreed): suggest the biggest threats as opponents.
+    - **Limits, said on the tab**: one-on-one matchups, so partners, redirection and focus fire
+      aren't modelled, and opposing spreads are estimates.
+    - **Next**:
+        - head-to-head records from the round pairings, so rankings can be checked against real
+          results;
+        - Pokémon suggestions that answer the top threats, ranked by usage and win rate;
+        - teammate suggestions from cores in the Team Builder;
+        - a set check against common meta sets.
 
 ## 8. Attribution
 

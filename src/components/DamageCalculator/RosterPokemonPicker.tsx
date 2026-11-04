@@ -152,6 +152,11 @@ interface RosterPokemonPickerProps {
   calcSets: CalcSetsApi;
   /** Extra classes on the card (e.g. hiding it while the other side's tab is open on phones). */
   className?: string;
+  /**
+   * One Pokémon, no roster (the Team Builder's calculator panel): no roster
+   * strip, no "add to the roster", no team import/export.
+   */
+  single?: boolean;
 }
 
 export function RosterPokemonPicker({
@@ -178,6 +183,7 @@ export function RosterPokemonPicker({
   onItemChange,
   onMovesChange,
   loadableOpponents,
+  single = false,
   calcSets,
   className = "",
 }: RosterPokemonPickerProps) {
@@ -451,7 +457,7 @@ export function RosterPokemonPicker({
           },
         ]
       : []),
-    ...(["pokemon", "team"] as const).map((mode) => ({
+    ...(single ? (["pokemon"] as const) : (["pokemon", "team"] as const)).map((mode) => ({
       key: `import-${mode}`,
       placement: mode === "pokemon" ? ("right" as const) : undefined,
       shortLabel: mode === "pokemon" ? t.calcPanel.import : undefined,
@@ -476,7 +482,7 @@ export function RosterPokemonPicker({
           },
         ]
       : []),
-    ...(sidebar.length > 0
+    ...(sidebar.length > 0 && !single
       ? [
           {
             key: "export-team",
@@ -767,7 +773,7 @@ export function RosterPokemonPicker({
                 <Icon name={IconName.BookmarkAdd} size={14} />
               </IconButton>
             )}
-            {pokemon && sidebar.length < MAX_SIDEBAR_POKEMON && (
+            {pokemon && !single && sidebar.length < MAX_SIDEBAR_POKEMON && (
               <IconButton
                 variant="ghost"
                 onClick={() => {
@@ -876,7 +882,10 @@ export function RosterPokemonPicker({
         </div>
 
         <div
-          className="hidden shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3 lg:flex"
+          className={cn(
+            "hidden shrink-0 flex-col gap-1.5 border-l border-zinc-200 pl-3 lg:flex",
+            single && "lg:hidden",
+          )}
           role="listbox"
           aria-label={t.calcPanel.sidebar(title)}
         >

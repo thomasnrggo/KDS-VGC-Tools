@@ -10,6 +10,59 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.0 — 2026-11-04
+
+### Added
+
+- Team page: a **Threats** tab (**preview, hidden**: behind the new `teamThreats` feature flag, off
+  by default and visible only to the admin until it's switched on in /admin/features) — what the
+  metagame brings against your team, answer first:
+  - **Your team**: its style (balance, Trick Room, weather, setup or hyper offense, plus Tailwind,
+    a Trick Room mode, setup options or a terrain it also has) and each Pokémon's job: offensive
+    pressure (how many of the 20 most common sets it OHKOs), support (Fake Out, redirection, speed
+    control, Intimidate, …), revenge killers (how many it KOs before they move) and setup — and
+    any with no clear job.
+  - **In short**: the biggest threats, what nothing on your team answers, what's faster than your
+    whole team (and whether your Tailwind fixes it), how you stand against Trick Room and
+    Tailwind, and sets that can't work as built (a Terrain Seed nobody sets the terrain for, a
+    Choice item with Protect, an Assault Vest with a status move).
+  - **Threats**: one row per Pokémon — whom it OHKOs (red) and who answers it (green). Its common
+    sets are pills (Choice Scarf, Life Orb, …). Open a row for the set and both best hits against
+    each of your Pokémon. Switch between as built, your Tailwind, their Tailwind and Trick Room.
+  - **Speed control**: against their Trick Room and their Tailwind — how many of your Pokémon
+    the common threats would then move first against, the common setters, and your ways to stop
+    it or play through it (Taunt, Imprison, your own Trick Room or Tailwind, speed drops,
+    priority, Choice Scarf, Fake Out, a KO on the setter). Fake Out doesn't count against setters
+    it can't hit (Farigiraf's Armor Tail, Indeedee's Psychic Terrain).
+  - **Roles**: speed control, Trick Room, Fake Out, redirection, Intimidate, weather, terrain,
+    spread damage, Protect.
+
+  Opponents' spreads are estimated; so are yours without Stat Points.
+
+- Team Builder: a **Calculator** in the same panel (its own button, or the panel's Analysis /
+  Calculator switch). Your side is the Pokémon open in the builder — edit its Stat Points,
+  nature, item or moves there and the calcs follow at once — and the panel holds one opponent
+  (the Damage Calculator's own editor and saved sets), the field and side conditions. Both
+  sides' moves are calced as on the calculator page, and **Save** files a calc on the team's
+  Calcs tab under your Pokémon. Same preview flag.
+- Team Builder: an **Analyze** button beside Import / Export opens the same analysis in a panel
+  beside the builder — it makes room instead of covering it, so you can edit and watch the
+  analysis update at once (full screen on phones, where it's a chart icon beside Import / Export). Same
+  preview flag.
+
+- Metagame: **Winning teams** on the Overview — the winner and runner-up of each event in view
+  (sprites, held items, record), each opening its open team sheet with a **Copy team** paste. The
+  metagame job now saves each event's top two (team and record only, never the player); the section
+  appears once the job has run with "rebuild".
+
+### Changed
+
+- Metagame: the events are now one select ("Last 4 events" by default, then each event, newest
+  first, with its date) instead of a row of buttons that grew every week; "Whole regulation" is
+  gone (it only shows when a regulation has no recent-events slice).
+- Metagame: the view chips (Overview, Pokémon, Megas, Cores, Teams) sit on the same row as the
+  events select, with the "based on" line under them.
+
 ## 0.2.11 — 2026-10-31
 
 ### Added

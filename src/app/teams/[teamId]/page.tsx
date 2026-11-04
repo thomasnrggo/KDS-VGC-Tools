@@ -9,11 +9,14 @@ import { useOpponents } from "@/hooks/useOpponents";
 import { useGroups } from "@/hooks/useGroups";
 import { useAllGroupOpponents } from "@/hooks/useAllGroupOpponents";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
 import { TeamCoverage } from "@/components/TeamCoverage";
+import { TeamThreats } from "@/components/TeamThreats";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PokemonCalcsBox } from "@/components/TeamCalcs";
@@ -49,9 +52,17 @@ interface TeamReportPageProps {
   searchParams: Promise<{ tab?: string }>;
 }
 
-type ReportTab = "report" | "strategy" | "coverage" | "calcs" | "matchups" | "stats";
+type ReportTab = "report" | "strategy" | "coverage" | "threats" | "calcs" | "matchups" | "stats";
 
-const ALL_TABS: ReportTab[] = ["report", "strategy", "coverage", "calcs", "matchups", "stats"];
+const ALL_TABS: ReportTab[] = [
+  "report",
+  "strategy",
+  "coverage",
+  "threats",
+  "calcs",
+  "matchups",
+  "stats",
+];
 // Matchups is on hold — see TEAM_REPORT_PREP_ENABLED.
 const TABS = TEAM_REPORT_PREP_ENABLED ? ALL_TABS : ALL_TABS.filter((tab) => tab !== "matchups");
 
@@ -113,9 +124,15 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const [calcQuery, setCalcQuery] = useState("");
   const [isConfirmingClearCalcs, setIsConfirmingClearCalcs] = useState(false);
   const calcSearchTerms = parseSearchTerms(calcQuery);
-  const [activeTab, setActiveTab] = useState<ReportTab>(
+  const [selectedTab, setActiveTab] = useState<ReportTab>(
     isReportTab(initialTab) ? initialTab : "report",
   );
+  // The Threats tab is a preview: behind its flag, always there for the admin.
+  const { flags } = useFeatureFlags();
+  const { isAdmin } = useIsAdmin();
+  const visibleTabs = TABS.filter((tab) => tab !== "threats" || flags.teamThreats || isAdmin);
+  // A tab from the URL that isn't shown (yet — the flags and admin load after) opens the report.
+  const activeTab = visibleTabs.includes(selectedTab) ? selectedTab : "report";
 
   function selectTab(tab: ReportTab) {
     setActiveTab(tab);
@@ -234,7 +251,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   <DrawerTitle>{t.teamPage.sections}</DrawerTitle>
                 </DrawerHeader>
                 <div className="flex flex-col gap-1 p-3 pt-1 pb-6">
-                  {TABS.map((tab) => (
+                  {visibleTabs.map((tab) => (
                     <button
                       key={tab}
                       type="button"
@@ -262,7 +279,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               aria-label={t.teamPage.sections}
               className="order-last hidden basis-full flex-wrap gap-1.5 sm:flex lg:order-none lg:basis-auto"
             >
-              {TABS.map((tab) => (
+              {visibleTabs.map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -480,6 +497,11 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           {/* What the team is weak to and what it can hit — see src/lib/teamCoverage.ts. */}
           {activeTab === "coverage" && (
             <TeamCoverage pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
+          )}
+
+          {/* The metagame's common sets calced against the team — see src/lib/threats/. */}
+          {activeTab === "threats" && (
+            <TeamThreats pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
           )}
 
           {/* Each Pokémon's card (collapsed to its sprite header until clicked)

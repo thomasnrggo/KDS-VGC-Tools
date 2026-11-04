@@ -6,7 +6,8 @@
 //   depends on (contact, punch, bite, pulse, slicing, sound), whether it has
 //   secondary effects (Sheer Force), recoil/crash damage (Reckless), and
 //   Showdown's stat overrides (Body Press uses Defense, Psyshock targets
-//   Defense, Foul Play uses the target's Attack). Moves with none are left out.
+//   Defense, Foul Play uses the target's Attack), and its priority when it
+//   isn't 0 (Fake Out +3, Trick Room -7). Moves with none are left out.
 // - src/data/speciesWeights.json — per species key (species.json): weight in
 //   kg, for Low Kick/Grass Knot/Heavy Slam/Heat Crash. A form @pkmn/dex
 //   doesn't know falls back to its base species' weight.
@@ -66,6 +67,7 @@ async function main() {
     if (move.overrideDefensiveStat) entry.defensiveStat = move.overrideDefensiveStat;
     if (move.overrideOffensiveStat) entry.offensiveStat = move.overrideOffensiveStat;
     if (move.overrideOffensivePokemon) entry.offensivePokemon = move.overrideOffensivePokemon;
+    if (move.priority) entry.priority = move.priority;
     if (Object.keys(entry).length) moveFlags[key] = entry;
   }
 
@@ -87,8 +89,14 @@ async function main() {
 
   const sorted = (object) =>
     Object.fromEntries(Object.entries(object).sort(([a], [b]) => a.localeCompare(b)));
-  await writeFile(path.join(DATA_DIR, "moveFlags.json"), `${JSON.stringify(sorted(moveFlags), null, 2)}\n`);
-  await writeFile(path.join(DATA_DIR, "speciesWeights.json"), `${JSON.stringify(sorted(weights), null, 2)}\n`);
+  await writeFile(
+    path.join(DATA_DIR, "moveFlags.json"),
+    `${JSON.stringify(sorted(moveFlags), null, 2)}\n`,
+  );
+  await writeFile(
+    path.join(DATA_DIR, "speciesWeights.json"),
+    `${JSON.stringify(sorted(weights), null, 2)}\n`,
+  );
   console.log(
     `moveFlags: ${Object.keys(moveFlags).length} moves (${unknownMoves} unknown to @pkmn/dex)`,
   );

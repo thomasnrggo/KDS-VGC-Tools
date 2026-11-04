@@ -201,6 +201,7 @@ export const es: Messages = {
       report: "Informe del equipo",
       strategy: "Estrategia",
       coverage: "Cobertura",
+      threats: "Amenazas",
       calcs: "Cálculos",
       matchups: "Enfrentamientos",
       stats: "Estadísticas de torneos",
@@ -552,6 +553,152 @@ export const es: Messages = {
       `Metajuego: ${tournaments} torneo${tournaments === 1 ? "" : "s"} oficial${tournaments === 1 ? "" : "es"}, ${teams.toLocaleString("es")} equipos · actualizado el ${date} · vía ${source}`,
     empty: "Añade Pokémon al equipo para ver su cobertura.",
   },
+  threats: {
+    summary: "En resumen",
+    biggest: "Mayores amenazas",
+    noAnswer: "Nadie lo maneja",
+    outspeedAll: "Más rápido que todo tu equipo",
+    tailwindFixes: (count) => `tu Viento Afín lo arregla${count === 1 ? "" : ` en ${count}`}`,
+    setProblems: "Problemas en los sets",
+    noneFound: "Ninguno",
+    title: "Amenazas",
+    intro:
+      "Los sets comunes del metajuego (uno por objeto común) contra tu equipo. Rojo: a quién debilita de un golpe. Verde: quién lo maneja. Ábrelo para ver los números.",
+    speedMode: "Velocidad",
+    speedModes: {
+      normal: "Tal cual",
+      tailwind: "Tu Viento Afín",
+      theirTailwind: "Su Viento Afín",
+      trickRoom: "Espacio Raro",
+    },
+    levels: { high: "Peligro alto", medium: "Peligro medio", low: "Peligro bajo" },
+    ofTeams: (usage) => `${usage} de los equipos`,
+    kos: "Debilita",
+    answeredBy: "Lo maneja",
+    nobody: "Nadie",
+    noKos: "Nada",
+    koLong: { ohko: "OHKO", rollOhko: "OHKO con tirada alta", twoHko: "2HKO" },
+    answerLong: {
+      ko: "Lo debilita",
+      rollKo: "Lo debilita con tirada alta",
+      check: "Lo debilita en 2",
+    },
+    first: "se mueve antes",
+    after: "se mueve después",
+    inField: (field) => `Con ${field}`,
+    movesFirst: (count, total) => `Se mueve antes que ${count} de ${total}`,
+    hit: (move, min, max) => `${move} ${min}–${max}%`,
+    yours: "Tuyo",
+    itsHit: "Su mejor golpe",
+    yourHit: "Tu mejor golpe",
+    showDetails: "Ver los números",
+    showMore: (count) => `Ver ${count} más`,
+    showFewer: "Ver menos",
+    speedControl: "Control de velocidad",
+    against: { trickRoom: "Su Espacio Raro", tailwind: "Su Viento Afín" },
+    verdicts: {
+      unaffected: "Apenas importa",
+      covered: "Cubierto",
+      partial: "Algunas respuestas",
+      exposed: "Expuesto",
+    },
+    exposure: (under, normal, total) =>
+      `Las amenazas comunes se moverían antes que ${under} de tus ${total} (${normal} tal cual).`,
+    setters: "Quién lo pone",
+    runsIt: (share) => `${share} lo lleva`,
+    fakeOutFails: (reason) => `Sorpresa falla (${reason})`,
+    counters: "Tus respuestas",
+    counterKinds: {
+      taunt: "Mofa",
+      imprison: "Cerca",
+      trickRoom: "Tu Espacio Raro",
+      tailwind: "Tu Viento Afín",
+      speedDrop: "Bajar velocidad",
+      priority: "Prioridad",
+      choiceScarf: "Pañuelo Elección",
+      fakeOut: "Sorpresa (lo retrasa)",
+      koSetter: "Debilita a quien lo pone",
+    },
+    noCounters: {
+      trickRoom:
+        "Nada: ni Mofa, ni Cerca, ni Espacio Raro propio, y nada debilita a quienes lo ponen.",
+      tailwind:
+        "Nada: ni Viento Afín ni Espacio Raro propio, ni bajar velocidad, prioridad o Pañuelo Elección.",
+    },
+    roles: "Roles",
+    roleNames: {
+      speedControl: "Control de velocidad",
+      trickRoom: "Espacio Raro",
+      fakeOut: "Sorpresa",
+      redirection: "Redirección",
+      intimidate: "Intimidación",
+      weather: "Clima",
+      terrain: "Campo",
+      spreadDamage: "Daño a ambos",
+    },
+    protect: (count, total) => `Protección ${count}/${total}`,
+    issue: {
+      terrainNeverSet: (pokemon, via, terrain, clashes) =>
+        `${via} de ${pokemon} necesita Campo ${terrain}, que nadie en el equipo pone${clashes ? ` (tu Campo ${clashes} lo reemplazaría)` : ""}.`,
+      weatherNeverSet: (pokemon, via, weather) =>
+        `${via} de ${pokemon} necesita ${weather}, que nadie en el equipo pone.`,
+      choiceProtect: (pokemon, item, move) =>
+        `${pokemon} lleva ${item}, que lo bloquea en un movimiento: ${move} es un espacio perdido.`,
+      vestStatus: (pokemon, move) => `${pokemon} no puede usar ${move} con Chaleco Asalto.`,
+    },
+    howCalculated: "Cómo se calcula",
+    estimated: (names) =>
+      `Sin puntos de estadística en ${names}: calculado con un reparto estimado.`,
+    method:
+      "Los repartos de los rivales se estiman por su naturaleza y objeto (las hojas de equipo no los incluyen). Cada enfrentamiento es uno contra uno, con el clima o campo del rival si lo pone (si no, el tuyo), con los movimientos a ambos a ×0,75, Intimidación y prioridad. No se cuentan compañeros, redirección ni ataques dobles.",
+    basedOn: (teams, events, names, date) =>
+      `Basado en ${teams} hojas de equipo de ${events === 1 ? "el último torneo oficial" : `los ${events} últimos torneos oficiales`} (${names}), actualizado el ${date}.`,
+    style: {
+      title: "Tu equipo",
+      archetypes: {
+        balance: "Equilibrado",
+        trickRoom: "Espacio Raro",
+        weather: "Clima",
+        setup: "Potenciación",
+        hyperOffense: "Hiperofensivo",
+      },
+      weatherTeam: (weather) => `Equipo de ${weather}`,
+      descriptions: {
+        balance:
+          "Una mezcla de atacantes y apoyo, sin un único plan de juego que el rival pueda frenar.",
+        trickRoom:
+          "Hecho para ganar bajo Espacio Raro: quien lo pone y Pokémon lentos que pegan fuerte con él activo.",
+        weather: "",
+        setup:
+          "Gana potenciándose: varios Pokémon se potencian mientras sus compañeros los protegen.",
+        hyperOffense: "Ofensiva total: casi todo atacantes y poco apoyo. Gana rápido o no gana.",
+      },
+      weatherDescription: (weather) =>
+        `Construido alrededor de ${weather}: quien lo pone y Pokémon que pegan más fuerte o son más rápidos con él.`,
+      alsoHas: (extras) => `Además: ${extras}`,
+      extras: {
+        tailwind: "Viento Afín",
+        trickRoomMode: "modo Espacio Raro",
+        setupOptions: "opciones de potenciación",
+        terrain: (terrain) => `Campo ${terrain}`,
+      },
+      roles: {
+        pressure: "Presión ofensiva",
+        support: "Apoyo",
+        revengeKiller: "Rematadores",
+        setup: "Potenciación",
+      },
+      noJob: "Sin un rol claro",
+      ohkos: (count, total) => `Debilita de un golpe a ${count} de ${total}`,
+      beforeTheyMove: (count, total) => `${count} de ${total} antes de que se muevan`,
+      measured: (total) =>
+        `La presión y los remates se cuentan contra los ${total} sets más comunes.`,
+    },
+    caveat:
+      "Los puntos de estadística de los rivales son estimados y cada enfrentamiento es uno contra uno: úsalo como guía, no como veredicto.",
+    noMeta: "Aún no hay datos del metajuego para esta regulación.",
+    empty: "Añade Pokémon al equipo para ver qué lo amenaza.",
+  },
   metagame: {
     title: "Metajuego",
     basedOn: (tournaments, teams) =>
@@ -582,7 +729,7 @@ export const es: Messages = {
     scopeRecent: (count) => `Últimos ${count} torneos`,
     scopeAll: "Toda la regulación",
     scopeHint:
-      "El metajuego cambia: los últimos torneos lo muestran como está ahora; toda la regulación incluye sus primeras semanas.",
+      "El metajuego cambia: los últimos torneos lo muestran como está ahora. Elige un torneo para ver solo ese.",
     latest: "Último",
     latestHint: (event, usage, previous, before) =>
       previous
@@ -619,6 +766,12 @@ export const es: Messages = {
       "Aún no hay núcleos ni equipos en estos datos — llegan con la próxima reconstrucción del job de metajuego.",
     noTournament: "Aún no hay resumen de este torneo.",
     topPokemon: (count) => `Top ${count} Pokémon`,
+    winningTeams: "Equipos ganadores",
+    winningTeamsHint:
+      "El campeón y el subcampeón de cada torneo, según sus listas de equipo abiertas.",
+    finalistPlacing: (placing) => (placing === 1 ? "Campeón" : "Subcampeón"),
+    copyTeam: "Copiar equipo",
+    teamCopied: "Equipo copiado como texto — impórtalo en el Constructor de equipos o en Showdown.",
     commonCores: "Núcleos comunes",
     commonCoresHint:
       "Pokémon que aparecen juntos en el mismo equipo con más frecuencia. Toca uno para ver cómo le va.",
@@ -955,6 +1108,17 @@ export const es: Messages = {
       "No se pudieron actualizar los planes y partidas registradas que eligen de este equipo: revisa tu conexión.",
     importExport: "Importar / Exportar",
     importExportHint: "El equipo como texto de exportación de Showdown: cópialo o pega un equipo",
+    analyze: "Analizar",
+    analyzeHint: "Lo que el metajuego trae contra este equipo, y quién lo maneja",
+    calculator: "Calculadora",
+    calculatorHint: "Calcula el Pokémon que estás editando contra un rival que configuras",
+    panel: "Panel",
+    panelModes: { analysis: "Análisis", calculator: "Calculadora" },
+    panelTitle: (team) => `${team}: análisis y calculadora`,
+    calcPickPokemon: "Elige un Pokémon en el constructor: es tu lado del cálculo.",
+    calcYourMoves: (name) => `Movimientos de ${name}`,
+    calcTheirMoves: (name) => `Movimientos de ${name}`,
+    calcOpponent: "Rival",
     importIntro:
       "El equipo como texto de exportación de Showdown: cópialo, o pega encima un equipo completo (una línea en blanco entre cada Pokémon) y guarda.",
     importReplaces:

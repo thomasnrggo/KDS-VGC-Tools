@@ -1,19 +1,24 @@
 "use client";
 
 import { Select } from "@/components/Select";
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import Link from "next/link";
-import { Button, IconButton, iconButtonVariants, TextAction } from "../Button";
+import { Button, IconButton, iconButtonVariants, TextAction, TogglePill } from "../Button";
 import { Icon } from "../Icon";
 import { ItemIcon } from "../ItemIcon";
 import { Modal, ModalActions, ModalDescription, ModalTitle } from "../Modal";
 import { BuilderEditor } from "./BuilderEditor";
+import { TeamThreats } from "../TeamThreats";
+import { BuilderCalculator } from "./BuilderCalculator";
+import { Drawer, DrawerContent, DrawerTitle } from "../ui/drawer";
 import { PokemonSprite } from "../PokemonSprite";
 import { shortRegulationLabel } from "../TeamRegulationTags";
 import { Textarea } from "../Textarea";
 import { toast } from "../Toast";
 import { IconName } from "@/enums";
 import { REGULATIONS } from "@/data/regulations";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsPhone } from "@/hooks/useIsPhone";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
@@ -57,6 +62,10 @@ interface TeamBuilderProps {
  * (one dialog) works on the whole team; Copy/Paste on one Pokémon, also from the
  * keyboard (Ctrl/⌘+C and Ctrl/⌘+V outside a text field).
  */
+/** What the panel beside the builder shows. */
+type PanelMode = "analysis" | "calculator";
+const PANEL_MODES: PanelMode[] = ["analysis", "calculator"];
+
 export function TeamBuilder({
   team,
   onChange,
@@ -86,7 +95,23 @@ export function TeamBuilder({
   const selected: ParsedPokemon | null = pokemon[index] ?? null;
   const selectedName = selected ? text.species(selected.species) : t.teamBuilder.slot(index + 1);
   const issues = getRegulationLegalityIssues(pokemon, regulation);
-  const modalOpen = pasteDraft !== null || importDraft !== null || confirmRemoveIndex !== null;
+  // The panel beside the builder (a drawer on phones): the analysis (the team
+  // page's Threats tab) or the calculator (your side being the Pokémon open
+  // here) — a preview behind its flag, always there for the admin.
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [panelMode, setPanelMode] = useState<PanelMode>("analysis");
+  // Desktop: the panel stays mounted while it slides out (see its onTransitionEnd).
+  const [isPanelMounted, setIsPanelMounted] = useState(false);
+  // Kept once opened, so the opponent set up there survives a look at the analysis.
+  const [hasCalculator, setHasCalculator] = useState(false);
+  const { flags } = useFeatureFlags();
+  const { isAdmin } = useIsAdmin();
+  const canUsePanel = (flags.teamThreats || isAdmin) && pokemon.length > 0;
+  const modalOpen =
+    pasteDraft !== null ||
+    importDraft !== null ||
+    confirmRemoveIndex !== null ||
+    (isPanelOpen && isPhone);
 
   function setRoster(next: ParsedPokemon[]) {
     onChange((current) => ({ ...current, pokemon: next, rawPaste: formatTeamPaste(next) }));
@@ -320,344 +345,488 @@ export function TeamBuilder({
       : t.regulationTags.illegalItem(item, regulationLabel);
   }
 
-  return (
-    <div className="flex flex-col gap-3">
-      {/* One compact row (instead of a breadcrumb): back (to the team's page, or My Teams), name
-          and regulation on the left, Import / Export on the right (an icon in the same row on phones). */}
-      <h1 className="sr-only">{heading}</h1>
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div
-          className={cn(
-            "grid min-w-0 items-center gap-2",
-            isPhone
-              ? "grid-cols-[auto_minmax(0,1fr)_auto_auto]"
-              : "grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,20rem)_auto]",
-          )}
-        >
-          <Link
-            href={teamHref ?? "/teams"}
-            aria-label={teamHref ? t.teamBuilder.backToTeam : t.teamBuilder.backToMyTeams}
-            title={teamHref ? t.teamBuilder.backToTeam : t.teamBuilder.backToMyTeams}
-            className={iconButtonVariants()}
-          >
-            <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
-          </Link>
-          <input
-            value={team.name}
-            onChange={(event) => onChange((current) => ({ ...current, name: event.target.value }))}
-            // A team always has a name — a cleared one goes back to "New team".
-            onBlur={() => {
-              if (!team.name.trim()) {
-                onChange((current) => ({ ...current, name: t.teamBuilder.newTeam }));
-              }
-            }}
-            maxLength={60}
-            aria-label={t.teamBuilder.teamName}
-            placeholder={t.teamBuilder.teamName}
-            className="h-8 min-w-0 rounded-md border border-zinc-300 bg-field px-2.5 text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
-          />
-          <Select
-            variant="field"
-            value={regulation.id}
-            onChange={setRegulation}
-            ariaLabel={t.common.regulation}
-            title={t.teamBuilder.regulationHint}
-            options={REGULATIONS.map((option) => ({
-              value: option.id,
-              // Phones: just "M-C", leaving the team name room.
-              label: isPhone
-                ? shortRegulationLabel(option.label)
-                : t.common.regulationLabel(option.label),
-            }))}
-            className="h-8 w-auto shrink-0 rounded-md bg-field px-2.5"
-          />
-          {isPhone && (
-            <IconButton
-              onClick={openImportExport}
-              aria-label={t.teamBuilder.importExport}
-              title={t.teamBuilder.importExportHint}
-            >
-              <Icon name={IconName.ContentPaste} size={16} />
-            </IconButton>
-          )}
-        </div>
-        <div className={cn("flex flex-wrap items-center gap-1.5", isPhone && "hidden")}>
-          {/* One dialog for both, like Showdown: the team's text to copy, or paste one over it. */}
-          <Button
-            variant="outline"
-            onClick={openImportExport}
-            title={t.teamBuilder.importExportHint}
-            className="flex items-center gap-1.5 px-3 py-1"
-          >
-            <Icon name={IconName.ContentPaste} size={14} />
-            {t.teamBuilder.importExport}
-          </Button>
-        </div>
-      </div>
+  function setPanelOpen(open: boolean) {
+    setIsPanelOpen(open);
+    if (open) setIsPanelMounted(true);
+    // Without the transition (reduced motion), nothing's left to wait for.
+    else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsPanelMounted(false);
+    }
+  }
 
-      {/* The team's Pokémon, then a "+" tile — ← / → move along it like tabs. */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-3">
-          <div
-            ref={stripRef}
-            role="tablist"
-            aria-label={t.teamBuilder.slots}
-            className="flex flex-wrap items-center gap-1.5"
+  function showPanel(mode: PanelMode) {
+    setPanelMode(mode);
+    if (mode === "calculator") setHasCalculator(true);
+    setPanelOpen(true);
+  }
+
+  /** A header button: opens the panel on its mode, or closes it when that mode is showing. */
+  function togglePanel(mode: PanelMode) {
+    if (isPanelOpen && panelMode === mode) setPanelOpen(false);
+    else showPanel(mode);
+  }
+
+  const panelHeader = (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 px-3 py-2.5">
+      <div role="group" aria-label={t.teamBuilder.panel} className="flex gap-1.5">
+        {PANEL_MODES.map((mode) => (
+          <TogglePill
+            key={mode}
+            active={panelMode === mode}
+            onClick={() => showPanel(mode)}
+            className="px-3 py-1 text-sm"
           >
-            {pokemon.map((mon, tileIndex) => {
-              const isSelected = tileIndex === index;
-              const name = text.species(mon.species);
-              const isIllegal = issues.some((issue) => issue.index === tileIndex);
-              return (
-                <div key={tileIndex} className="relative shrink-0">
-                  <button
-                    type="button"
-                    role="tab"
-                    data-tile={tileIndex}
-                    aria-selected={isSelected}
-                    tabIndex={isSelected ? 0 : -1}
-                    onClick={() => openTile(tileIndex)}
-                    onKeyDown={(event) => handleStripKeyDown(event, tileIndex)}
-                    aria-label={isIllegal ? `${name} — ${t.teamBuilder.illegalSlot(name)}` : name}
-                    title={mon.item ? `${name} @ ${text.item(mon.item)}` : name}
-                    className={cn(
-                      "relative block h-12 w-12 overflow-hidden rounded-lg border-2 bg-zinc-500/20 transition-colors focus:ring-2 focus:ring-zinc-400 focus:outline-none",
-                      isSelected ? "border-zinc-600" : "border-transparent hover:border-zinc-400",
-                      isIllegal && "ring-2 ring-amber-500",
-                    )}
-                  >
-                    <PokemonSprite species={mon.species} item={mon.item} fill />
-                  </button>
-                  {mon.item && (
-                    <span className="pointer-events-none absolute -right-1.5 -bottom-1.5">
-                      <ItemIcon item={mon.item} size={20} />
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-            {canAdd && (
-              <button
-                type="button"
-                role="tab"
-                data-tile={pokemon.length}
-                aria-selected={index === pokemon.length}
-                tabIndex={index === pokemon.length ? 0 : -1}
-                onClick={() => openTile(pokemon.length)}
-                onKeyDown={(event) => handleStripKeyDown(event, pokemon.length)}
-                aria-label={t.teamBuilder.addPokemon}
-                title={t.teamBuilder.addPokemon}
-                className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-colors focus:ring-2 focus:ring-zinc-400 focus:outline-none",
-                  index === pokemon.length
-                    ? "border-zinc-600 text-zinc-700"
-                    : "border-zinc-400 text-zinc-500 hover:border-zinc-600 hover:text-zinc-700",
-                )}
+            {t.teamBuilder.panelModes[mode]}
+          </TogglePill>
+        ))}
+      </div>
+      <IconButton
+        variant="ghost"
+        onClick={() => setPanelOpen(false)}
+        aria-label={t.common.close}
+        title={t.common.close}
+      >
+        <Icon name={IconName.Close} size={18} />
+      </IconButton>
+    </div>
+  );
+  const panelBody = (
+    // A container, so what's inside lays out by the panel's width.
+    <div className="@container min-h-0 flex-1 overflow-y-auto p-4">
+      {/* The analysis is only built while it shows (its calcs redo on every edit). */}
+      {panelMode === "analysis" && <TeamThreats pokemon={pokemon} regulationId={regulation.id} />}
+      {hasCalculator && (
+        <div className={cn(panelMode !== "calculator" && "hidden")}>
+          <BuilderCalculator team={team} pokemon={selected} slot={index} onChange={onChange} />
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    // Beside the builder, the analysis panel (desktop): it takes its room
+    // instead of covering it, so both can be used at once.
+    <div className="flex items-start">
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        {/* One compact row (instead of a breadcrumb): back (to the team's page, or My Teams), name
+          and regulation on the left, Import / Export on the right (an icon in the same row on phones). */}
+        <h1 className="sr-only">{heading}</h1>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div
+            className={cn(
+              "grid min-w-0 items-center gap-2",
+              isPhone
+                ? canUsePanel
+                  ? "grid-cols-[auto_minmax(0,1fr)_auto_auto_auto_auto]"
+                  : "grid-cols-[auto_minmax(0,1fr)_auto_auto]"
+                : "grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,20rem)_auto]",
+            )}
+          >
+            <Link
+              href={teamHref ?? "/teams"}
+              aria-label={teamHref ? t.teamBuilder.backToTeam : t.teamBuilder.backToMyTeams}
+              title={teamHref ? t.teamBuilder.backToTeam : t.teamBuilder.backToMyTeams}
+              className={iconButtonVariants()}
+            >
+              <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
+            </Link>
+            <input
+              value={team.name}
+              onChange={(event) =>
+                onChange((current) => ({ ...current, name: event.target.value }))
+              }
+              // A team always has a name — a cleared one goes back to "New team".
+              onBlur={() => {
+                if (!team.name.trim()) {
+                  onChange((current) => ({ ...current, name: t.teamBuilder.newTeam }));
+                }
+              }}
+              maxLength={60}
+              aria-label={t.teamBuilder.teamName}
+              placeholder={t.teamBuilder.teamName}
+              className="h-8 min-w-0 rounded-md border border-zinc-300 bg-field px-2.5 text-sm font-semibold text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
+            />
+            <Select
+              variant="field"
+              value={regulation.id}
+              onChange={setRegulation}
+              ariaLabel={t.common.regulation}
+              title={t.teamBuilder.regulationHint}
+              options={REGULATIONS.map((option) => ({
+                value: option.id,
+                // Phones: just "M-C", leaving the team name room.
+                label: isPhone
+                  ? shortRegulationLabel(option.label)
+                  : t.common.regulationLabel(option.label),
+              }))}
+              className="h-8 w-auto shrink-0 rounded-md bg-field px-2.5"
+            />
+            {/* Phones: the header row's icons, Analyze and Calculator beside Import / Export like on desktop. */}
+            {isPhone && canUsePanel && (
+              <>
+                <IconButton
+                  onClick={() => showPanel("analysis")}
+                  aria-label={t.teamBuilder.analyze}
+                  title={t.teamBuilder.analyzeHint}
+                >
+                  <Icon name={IconName.BarChart} size={16} />
+                </IconButton>
+                <IconButton
+                  onClick={() => showPanel("calculator")}
+                  aria-label={t.teamBuilder.calculator}
+                  title={t.teamBuilder.calculatorHint}
+                >
+                  <Icon name={IconName.Calculate} size={16} />
+                </IconButton>
+              </>
+            )}
+            {isPhone && (
+              <IconButton
+                onClick={openImportExport}
+                aria-label={t.teamBuilder.importExport}
+                title={t.teamBuilder.importExportHint}
               >
-                <Icon name={IconName.Add} size={20} />
-              </button>
+                <Icon name={IconName.ContentPaste} size={16} />
+              </IconButton>
             )}
           </div>
-          {/* Phones leave it out, so all six tiles fit on one row. */}
-          {!isPhone && (
-            <span className="ml-auto shrink-0 text-xs text-zinc-500">
-              {t.teamBuilder.pokemonCount(pokemon.length)}
-            </span>
-          )}
+          <div className={cn("flex flex-wrap items-center gap-1.5", isPhone && "hidden")}>
+            {/* Each opens the panel beside the builder on its mode (filled while it shows). */}
+            {canUsePanel &&
+              PANEL_MODES.map((mode) => {
+                const isShown = isPanelOpen && panelMode === mode;
+                return (
+                  <Button
+                    key={mode}
+                    variant={isShown ? "primary" : "outline"}
+                    aria-pressed={isShown}
+                    onClick={() => togglePanel(mode)}
+                    title={
+                      mode === "analysis" ? t.teamBuilder.analyzeHint : t.teamBuilder.calculatorHint
+                    }
+                    className="px-3 py-1"
+                  >
+                    {mode === "analysis" ? t.teamBuilder.analyze : t.teamBuilder.calculator}
+                  </Button>
+                );
+              })}
+            {/* One dialog for both, like Showdown: the team's text to copy, or paste one over it. */}
+            <Button
+              variant="outline"
+              onClick={openImportExport}
+              title={t.teamBuilder.importExportHint}
+              className="flex items-center gap-1.5 px-3 py-1"
+            >
+              <Icon name={IconName.ContentPaste} size={14} />
+              {t.teamBuilder.importExport}
+            </Button>
+          </div>
         </div>
-        {issues.length > 0 && (
-          <p className="flex items-start gap-1.5 text-xs text-amber-700">
-            <Icon name={IconName.Warning} size={14} className="mt-px" />
-            <span>
-              {t.teamBuilder.notLegal(regulationLabel)} {issues.map(legalityMessage).join(" ")}
-            </span>
-          </p>
-        )}
-      </div>
 
-      <section
-        ref={panelRef}
-        role="tabpanel"
-        aria-label={selectedName}
-        className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:p-4"
-      >
-        {/* Keyed by slot, so switching Pokémon starts its form fresh. */}
-        <BuilderEditor
-          key={index}
-          pokemon={selected}
-          title={selectedName}
-          regulation={regulation}
-          onChange={putSelected}
-          // The slot's own actions (like Showdown's Copy / Import / Delete), beside the stats heading.
-          actions={
-            <div className="flex items-center gap-1">
-              {selected && (
-                <TextAction
-                  onClick={() => void copyPokemon(selected)}
-                  aria-label={t.teamBuilder.copyLabel(selectedName)}
-                  title={t.teamBuilder.copyLabel(selectedName)}
+        {/* The team's Pokémon, then a "+" tile — ← / → move along it like tabs. */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+            <div
+              ref={stripRef}
+              role="tablist"
+              aria-label={t.teamBuilder.slots}
+              className="flex flex-wrap items-center gap-1.5"
+            >
+              {pokemon.map((mon, tileIndex) => {
+                const isSelected = tileIndex === index;
+                const name = text.species(mon.species);
+                const isIllegal = issues.some((issue) => issue.index === tileIndex);
+                return (
+                  <div key={tileIndex} className="relative shrink-0">
+                    <button
+                      type="button"
+                      role="tab"
+                      data-tile={tileIndex}
+                      aria-selected={isSelected}
+                      tabIndex={isSelected ? 0 : -1}
+                      onClick={() => openTile(tileIndex)}
+                      onKeyDown={(event) => handleStripKeyDown(event, tileIndex)}
+                      aria-label={isIllegal ? `${name} — ${t.teamBuilder.illegalSlot(name)}` : name}
+                      title={mon.item ? `${name} @ ${text.item(mon.item)}` : name}
+                      className={cn(
+                        "relative block h-12 w-12 overflow-hidden rounded-lg border-2 bg-zinc-500/20 transition-colors focus:ring-2 focus:ring-zinc-400 focus:outline-none",
+                        isSelected ? "border-zinc-600" : "border-transparent hover:border-zinc-400",
+                        isIllegal && "ring-2 ring-amber-500",
+                      )}
+                    >
+                      <PokemonSprite species={mon.species} item={mon.item} fill />
+                    </button>
+                    {mon.item && (
+                      <span className="pointer-events-none absolute -right-1.5 -bottom-1.5">
+                        <ItemIcon item={mon.item} size={20} />
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {canAdd && (
+                <button
+                  type="button"
+                  role="tab"
+                  data-tile={pokemon.length}
+                  aria-selected={index === pokemon.length}
+                  tabIndex={index === pokemon.length ? 0 : -1}
+                  onClick={() => openTile(pokemon.length)}
+                  onKeyDown={(event) => handleStripKeyDown(event, pokemon.length)}
+                  aria-label={t.teamBuilder.addPokemon}
+                  title={t.teamBuilder.addPokemon}
+                  className={cn(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-colors focus:ring-2 focus:ring-zinc-400 focus:outline-none",
+                    index === pokemon.length
+                      ? "border-zinc-600 text-zinc-700"
+                      : "border-zinc-400 text-zinc-500 hover:border-zinc-600 hover:text-zinc-700",
+                  )}
                 >
-                  <Icon name={IconName.ContentCopy} size={14} />
-                  {!isPhone && t.teamBuilder.copy}
-                </TextAction>
-              )}
-              {/* One dialog, like the team's: this Pokémon's text to copy, or paste one over it. */}
-              <TextAction
-                onClick={() =>
-                  setPasteDraft({ text: selected ? formatPokemonPaste(selected) : "", error: null })
-                }
-                aria-label={
-                  selected
-                    ? t.teamBuilder.pokemonImportExportLabel(selectedName)
-                    : t.teamBuilder.pasteLabel
-                }
-                title={
-                  selected
-                    ? t.teamBuilder.pokemonImportExportLabel(selectedName)
-                    : t.teamBuilder.pasteLabel
-                }
-              >
-                <Icon name={IconName.ContentPaste} size={14} />
-                {!isPhone && (selected ? t.teamBuilder.importExport : t.teamBuilder.paste)}
-              </TextAction>
-              {selected && (
-                <IconButton
-                  variant="ghost"
-                  onClick={requestRemove}
-                  aria-label={t.teamBuilder.remove(selectedName)}
-                  title={t.teamBuilder.remove(selectedName)}
-                  className="hover:text-red-600"
-                >
-                  <Icon name={IconName.Delete} size={16} />
-                </IconButton>
+                  <Icon name={IconName.Add} size={20} />
+                </button>
               )}
             </div>
-          }
-        />
-        {!isPhone && (
-          <p className="text-xs text-zinc-500">
-            {selected ? t.teamBuilder.keyboardHint : t.teamBuilder.pasteShortcutHint}
-          </p>
-        )}
-      </section>
-
-      {pasteDraft && (
-        <Modal
-          onClose={() => setPasteDraft(null)}
-          labelledBy="paste-pokemon-title"
-          fullScreenOnPhone
-        >
-          <ModalTitle id="paste-pokemon-title">
-            {selected
-              ? t.teamBuilder.pokemonImportExportTitle(selectedName)
-              : t.teamBuilder.pasteTitle}
-          </ModalTitle>
-          <ModalDescription>
-            {selected ? t.teamBuilder.pasteIntroReplace(selectedName) : t.teamBuilder.pasteIntroAdd}
-          </ModalDescription>
-          <Textarea
-            value={pasteDraft.text}
-            onChange={(event) => setPasteDraft({ text: event.target.value, error: null })}
-            onFocus={(event) => event.target.select()}
-            placeholder={PASTE_PLACEHOLDER}
-            rows={10}
-            autoFocus={!isPhone}
-            aria-label={t.teamBuilder.pasteTextLabel}
-            className="min-h-0 flex-1"
-          />
-          {pasteDraft.error && (
-            <p role="alert" className="mt-2 text-sm text-red-600">
-              {pasteDraft.error}
+            {/* Phones leave it out, so all six tiles fit on one row. */}
+            {!isPhone && (
+              <span className="ml-auto shrink-0 text-xs text-zinc-500">
+                {t.teamBuilder.pokemonCount(pokemon.length)}
+              </span>
+            )}
+          </div>
+          {issues.length > 0 && (
+            <p className="flex items-start gap-1.5 text-xs text-amber-700">
+              <Icon name={IconName.Warning} size={14} className="mt-px" />
+              <span>
+                {t.teamBuilder.notLegal(regulationLabel)} {issues.map(legalityMessage).join(" ")}
+              </span>
             </p>
           )}
-          <ModalActions>
-            {/* Save only once the text differs from the Pokémon. */}
-            <Button
-              onClick={submitPaste}
-              disabled={
-                !!selected && pasteDraft.text.trim() === formatPokemonPaste(selected).trim()
-              }
-            >
-              {selected ? t.teamBuilder.saveImport : t.teamBuilder.paste}
-            </Button>
-            {selected && (
+        </div>
+
+        <section
+          ref={panelRef}
+          role="tabpanel"
+          aria-label={selectedName}
+          className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 sm:p-4"
+        >
+          {/* Keyed by slot, so switching Pokémon starts its form fresh. */}
+          <BuilderEditor
+            key={index}
+            pokemon={selected}
+            title={selectedName}
+            regulation={regulation}
+            onChange={putSelected}
+            // The slot's own actions (like Showdown's Copy / Import / Delete), beside the stats heading.
+            actions={
+              <div className="flex items-center gap-1">
+                {selected && (
+                  <TextAction
+                    onClick={() => void copyPokemon(selected)}
+                    aria-label={t.teamBuilder.copyLabel(selectedName)}
+                    title={t.teamBuilder.copyLabel(selectedName)}
+                  >
+                    <Icon name={IconName.ContentCopy} size={14} />
+                    {!isPhone && t.teamBuilder.copy}
+                  </TextAction>
+                )}
+                {/* One dialog, like the team's: this Pokémon's text to copy, or paste one over it. */}
+                <TextAction
+                  onClick={() =>
+                    setPasteDraft({
+                      text: selected ? formatPokemonPaste(selected) : "",
+                      error: null,
+                    })
+                  }
+                  aria-label={
+                    selected
+                      ? t.teamBuilder.pokemonImportExportLabel(selectedName)
+                      : t.teamBuilder.pasteLabel
+                  }
+                  title={
+                    selected
+                      ? t.teamBuilder.pokemonImportExportLabel(selectedName)
+                      : t.teamBuilder.pasteLabel
+                  }
+                >
+                  <Icon name={IconName.ContentPaste} size={14} />
+                  {!isPhone && (selected ? t.teamBuilder.importExport : t.teamBuilder.paste)}
+                </TextAction>
+                {selected && (
+                  <IconButton
+                    variant="ghost"
+                    onClick={requestRemove}
+                    aria-label={t.teamBuilder.remove(selectedName)}
+                    title={t.teamBuilder.remove(selectedName)}
+                    className="hover:text-red-600"
+                  >
+                    <Icon name={IconName.Delete} size={16} />
+                  </IconButton>
+                )}
+              </div>
+            }
+          />
+          {!isPhone && (
+            <p className="text-xs text-zinc-500">
+              {selected ? t.teamBuilder.keyboardHint : t.teamBuilder.pasteShortcutHint}
+            </p>
+          )}
+        </section>
+
+        {pasteDraft && (
+          <Modal
+            onClose={() => setPasteDraft(null)}
+            labelledBy="paste-pokemon-title"
+            fullScreenOnPhone
+          >
+            <ModalTitle id="paste-pokemon-title">
+              {selected
+                ? t.teamBuilder.pokemonImportExportTitle(selectedName)
+                : t.teamBuilder.pasteTitle}
+            </ModalTitle>
+            <ModalDescription>
+              {selected
+                ? t.teamBuilder.pasteIntroReplace(selectedName)
+                : t.teamBuilder.pasteIntroAdd}
+            </ModalDescription>
+            <Textarea
+              value={pasteDraft.text}
+              onChange={(event) => setPasteDraft({ text: event.target.value, error: null })}
+              onFocus={(event) => event.target.select()}
+              placeholder={PASTE_PLACEHOLDER}
+              rows={10}
+              autoFocus={!isPhone}
+              aria-label={t.teamBuilder.pasteTextLabel}
+              className="min-h-0 flex-1"
+            />
+            {pasteDraft.error && (
+              <p role="alert" className="mt-2 text-sm text-red-600">
+                {pasteDraft.error}
+              </p>
+            )}
+            <ModalActions>
+              {/* Save only once the text differs from the Pokémon. */}
+              <Button
+                onClick={submitPaste}
+                disabled={
+                  !!selected && pasteDraft.text.trim() === formatPokemonPaste(selected).trim()
+                }
+              >
+                {selected ? t.teamBuilder.saveImport : t.teamBuilder.paste}
+              </Button>
+              {selected && (
+                <Button
+                  variant="outline"
+                  onClick={() => void copyText(pasteDraft.text, selectedName)}
+                  disabled={!pasteDraft.text.trim()}
+                >
+                  {t.calcPanel.copyToClipboard}
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setPasteDraft(null)}>
+                {selected ? t.common.close : t.common.cancel}
+              </Button>
+            </ModalActions>
+          </Modal>
+        )}
+
+        {/* Phones: no room beside the builder, so the panel takes the whole screen. */}
+        {isPhone && (
+          <Drawer open={isPanelOpen} onOpenChange={setPanelOpen} swipeDirection="right">
+            <DrawerContent style={{ "--drawer-content-width": "100vw" } as CSSProperties}>
+              <DrawerTitle className="sr-only">{t.teamBuilder.panelTitle(team.name)}</DrawerTitle>
+              {panelHeader}
+              {isPanelOpen && panelBody}
+            </DrawerContent>
+          </Drawer>
+        )}
+
+        {importDraft && (
+          <Modal
+            onClose={() => setImportDraft(null)}
+            labelledBy="import-team-title"
+            fullScreenOnPhone
+          >
+            <ModalTitle id="import-team-title">{t.teamBuilder.importExport}</ModalTitle>
+            <ModalDescription>
+              {t.teamBuilder.importIntro} {pokemon.length > 0 && t.teamBuilder.importReplaces}
+            </ModalDescription>
+            <Textarea
+              value={importDraft.text}
+              onChange={(event) => setImportDraft({ text: event.target.value, error: null })}
+              onFocus={(event) => event.target.select()}
+              placeholder={PASTE_PLACEHOLDER}
+              rows={12}
+              autoFocus={!isPhone}
+              aria-label={t.teamBuilder.importTextLabel}
+              className="min-h-0 flex-1"
+            />
+            {importDraft.error && (
+              <p role="alert" className="mt-2 text-sm text-red-600">
+                {importDraft.error}
+              </p>
+            )}
+            <ModalActions>
+              {/* Save only once the text differs from the team. */}
+              <Button
+                onClick={submitImport}
+                disabled={importDraft.text.trim() === formatTeamPaste(pokemon).trim()}
+              >
+                {t.teamBuilder.saveImport}
+              </Button>
               <Button
                 variant="outline"
-                onClick={() => void copyText(pasteDraft.text, selectedName)}
-                disabled={!pasteDraft.text.trim()}
+                onClick={() => void copyTeamText(importDraft.text)}
+                disabled={!importDraft.text.trim()}
               >
                 {t.calcPanel.copyToClipboard}
               </Button>
-            )}
-            <Button variant="outline" onClick={() => setPasteDraft(null)}>
-              {selected ? t.common.close : t.common.cancel}
-            </Button>
-          </ModalActions>
-        </Modal>
-      )}
+              <Button variant="outline" onClick={() => setImportDraft(null)}>
+                {t.common.close}
+              </Button>
+            </ModalActions>
+          </Modal>
+        )}
 
-      {importDraft && (
-        <Modal
-          onClose={() => setImportDraft(null)}
-          labelledBy="import-team-title"
-          fullScreenOnPhone
-        >
-          <ModalTitle id="import-team-title">{t.teamBuilder.importExport}</ModalTitle>
-          <ModalDescription>
-            {t.teamBuilder.importIntro} {pokemon.length > 0 && t.teamBuilder.importReplaces}
-          </ModalDescription>
-          <Textarea
-            value={importDraft.text}
-            onChange={(event) => setImportDraft({ text: event.target.value, error: null })}
-            onFocus={(event) => event.target.select()}
-            placeholder={PASTE_PLACEHOLDER}
-            rows={12}
-            autoFocus={!isPhone}
-            aria-label={t.teamBuilder.importTextLabel}
-            className="min-h-0 flex-1"
-          />
-          {importDraft.error && (
-            <p role="alert" className="mt-2 text-sm text-red-600">
-              {importDraft.error}
-            </p>
+        {confirmRemoveIndex !== null && pokemon[confirmRemoveIndex] && (
+          <Modal onClose={() => setConfirmRemoveIndex(null)} labelledBy="remove-pokemon-title">
+            <ModalTitle id="remove-pokemon-title">
+              {t.teamBuilder.confirmRemoveTitle(text.species(pokemon[confirmRemoveIndex].species))}
+            </ModalTitle>
+            <ModalDescription>{t.teamBuilder.confirmRemoveBody}</ModalDescription>
+            <ModalActions>
+              <Button variant="danger" onClick={() => removeAt(confirmRemoveIndex)}>
+                {t.common.remove}
+              </Button>
+              <Button variant="outline" onClick={() => setConfirmRemoveIndex(null)}>
+                {t.common.cancel}
+              </Button>
+            </ModalActions>
+          </Modal>
+        )}
+      </div>
+      {/* Slides in by growing from no width (pushing the builder over) and out
+          the same way; the panel inside keeps its width, so it's revealed, not squeezed. */}
+      {!isPhone && isPanelMounted && (
+        <aside
+          aria-label={t.teamBuilder.panelTitle(team.name)}
+          inert={!isPanelOpen}
+          onTransitionEnd={(event) => {
+            if (event.target === event.currentTarget && event.propertyName === "width") {
+              if (!isPanelOpen) setIsPanelMounted(false);
+            }
+          }}
+          className={cn(
+            "sticky top-4 shrink-0 overflow-hidden transition-[width,margin-left,opacity] duration-300 ease-out motion-reduce:transition-none",
+            isPanelOpen
+              ? "ml-4 w-[min(42rem,45vw)] opacity-100 starting:ml-0 starting:w-0 starting:opacity-0"
+              : "ml-0 w-0 opacity-0",
           )}
-          <ModalActions>
-            {/* Save only once the text differs from the team. */}
-            <Button
-              onClick={submitImport}
-              disabled={importDraft.text.trim() === formatTeamPaste(pokemon).trim()}
-            >
-              {t.teamBuilder.saveImport}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => void copyTeamText(importDraft.text)}
-              disabled={!importDraft.text.trim()}
-            >
-              {t.calcPanel.copyToClipboard}
-            </Button>
-            <Button variant="outline" onClick={() => setImportDraft(null)}>
-              {t.common.close}
-            </Button>
-          </ModalActions>
-        </Modal>
-      )}
-
-      {confirmRemoveIndex !== null && pokemon[confirmRemoveIndex] && (
-        <Modal onClose={() => setConfirmRemoveIndex(null)} labelledBy="remove-pokemon-title">
-          <ModalTitle id="remove-pokemon-title">
-            {t.teamBuilder.confirmRemoveTitle(text.species(pokemon[confirmRemoveIndex].species))}
-          </ModalTitle>
-          <ModalDescription>{t.teamBuilder.confirmRemoveBody}</ModalDescription>
-          <ModalActions>
-            <Button variant="danger" onClick={() => removeAt(confirmRemoveIndex)}>
-              {t.common.remove}
-            </Button>
-            <Button variant="outline" onClick={() => setConfirmRemoveIndex(null)}>
-              {t.common.cancel}
-            </Button>
-          </ModalActions>
-        </Modal>
+        >
+          <div className="flex max-h-[calc(100dvh-2rem)] w-[min(42rem,45vw)] flex-col overflow-hidden rounded-lg border border-zinc-200 bg-raised">
+            {panelHeader}
+            {panelBody}
+          </div>
+        </aside>
       )}
     </div>
   );

@@ -9,9 +9,14 @@ import { foldForSearch } from "@/lib/pokemonMatchesQuery";
 import { normalizeSpeciesKey } from "@/lib/species/normalize";
 import { cn } from "@/lib/utils";
 import type { MetaCombo, MetaCombos, MetaPokemon, MetaTeam, Share } from "@/lib/meta/aggregateMeta";
-import { megaDisplayName, speciesNamesMegaForm, stripMegaSuffix } from "@/lib/species/megaForm";
-import type { PokemonText } from "@/lib/i18n/pokemonNames";
-import { shortTournamentName, type MetaTournament } from "@/lib/meta/metaDocument";
+import { speciesNamesMegaForm, stripMegaSuffix } from "@/lib/species/megaForm";
+import { speciesLabel } from "@/lib/species/speciesLabel";
+import {
+  shortTournamentName,
+  type MetaFinalist,
+  type MetaTournament,
+} from "@/lib/meta/metaDocument";
+import { formatTeamPaste } from "@/lib/formatPokemonPaste";
 import type { MoveData } from "@/types/damage";
 import { IconName } from "@/enums";
 import { Icon } from "../Icon";
@@ -21,20 +26,12 @@ import { PokemonSprite } from "../PokemonSprite";
 import { SearchField } from "../SearchField";
 import { Modal, ModalTitle } from "../Modal";
 import { RegulationSelect, Select } from "../Select";
-import { IconButton, TextAction, TogglePill } from "../Button";
+import { Button, IconButton, TextAction, TogglePill } from "../Button";
+import { TeamSheetPreview } from "../TeamSheetPreview";
+import { toast } from "../Toast";
 import { TypeIcon } from "../TypeIcon";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
-
-/**
- * A species as the page shows it: "Mega Charizard Y" for a Mega form (the
- * Pokémon-name language's own when it has one), the translated name otherwise.
- */
-function speciesLabel(text: PokemonText, species: string): string {
-  const translated = text.species(species);
-  if (!speciesNamesMegaForm(species) || translated !== species) return translated;
-  return megaDisplayName(species) ?? species;
-}
 
 function percent(share: number, digits = 0): string {
   return `${(share * 100).toFixed(digits)}%`;
@@ -93,6 +90,10 @@ export function MetagameSection() {
   // The overview's detail dialogs: a Pokémon (its species) or a core.
   const [detailSpecies, setDetailSpecies] = useState<string | null>(null);
   const [detailCore, setDetailCore] = useState<MetaCombo | null>(null);
+  const [detailFinalist, setDetailFinalist] = useState<{
+    event: MetaTournament;
+    finalist: MetaFinalist;
+  } | null>(null);
 
   const official = meta?.official;
   const tournaments = official?.tournaments ?? [];
@@ -110,6 +111,14 @@ export function MetagameSection() {
   const recentIds = new Set(
     official?.recent?.tournamentIds ?? tournaments.map((event) => event.id),
   );
+  // The events the page is showing, newest first — for their winning teams.
+  const scopeEvents = (
+    tournamentScope
+      ? [tournamentScope]
+      : scope === "recent" && official?.recent
+        ? tournaments.filter((event) => recentIds.has(event.id))
+        : tournaments
+  ).toReversed();
   // Per-event histories live on the whole regulation's list.
   const historyBySpecies = new Map(
     (official?.pokemon ?? []).map((mon) => [mon.species, mon.history ?? []]),
@@ -182,86 +191,61 @@ export function MetagameSection() {
         </p>
       ) : (
         <>
-          {/* Which events: the newest few, the whole regulation, or one tournament. */}
-          <div
-            role="group"
-            aria-label={t.metagame.scopeLabel}
-            title={t.metagame.scopeHint}
-            className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
-          >
-            {official.recent && (
-              <TogglePill
-                active={scope === "recent"}
-                onClick={() => setScope("recent")}
-                className="shrink-0 px-3.5 py-1.5 text-sm"
-              >
-                {t.metagame.scopeRecent(official.recent.tournamentIds.length)}
-              </TogglePill>
-            )}
-            <TogglePill
-              active={scope === "all" || (scope === "recent" && !official.recent)}
-              onClick={() => setScope("all")}
-              className="shrink-0 px-3.5 py-1.5 text-sm"
-            >
-              {t.metagame.scopeAll}
-            </TogglePill>
-            <span aria-hidden="true" className="mx-1 w-px shrink-0 self-stretch bg-zinc-300" />
-            {[...tournaments].reverse().map((tournament) => (
-              <TogglePill
-                key={tournament.id}
-                active={scope === tournament.id}
-                onClick={() => setScope(tournament.id)}
-                title={`${tournament.title} · ${tournament.teams.toLocaleString(appLanguage)}`}
-                className="shrink-0 px-3 py-1.5 text-sm"
-              >
-                {shortTournamentName(tournament.title)}
-              </TogglePill>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-1 text-sm text-zinc-600">
-            <p>
-              <span className="font-medium text-zinc-800">
-                {tournamentScope
-                  ? tournamentScope.title
-                  : t.metagame.basedOn(eventCount, slice?.teams ?? official.teams)}
-              </span>
-              {tournamentScope && ` · ${t.metagame.teamsCount(tournamentScope.teams)}`}
-              {" · "}
-              {t.metagame.updated(
-                new Date(meta.updatedAt).toLocaleDateString(appLanguage, {
-                  month: "short",
-                  day: "numeric",
-                }),
-              )}
-            </p>
-          </div>
-
+          {/* Which events (the newest few, or one tournament — a select, as the list grows weekly),
+              then the view. Event dates are ISO (UTC midnight): shown in UTC so they don't shift a day back. */}
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div role="tablist" aria-label={t.metagame.view} className="flex flex-wrap gap-1.5">
-              {(["overview", "pokemon", "megas", "cores", "teams"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab === option}
-                  onClick={() => {
-                    setTab(option);
-                    setOpenSpecies(null);
-                  }}
-                  className={TAB_CLASS(tab === option)}
-                >
-                  {
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={tournamentScope ? tournamentScope.id : official.recent ? "recent" : "all"}
+                onChange={setScope}
+                ariaLabel={t.metagame.scopeLabel}
+                title={t.metagame.scopeHint}
+                className="px-3.5 py-1.5 text-sm"
+                options={[
+                  official.recent
+                    ? {
+                        value: "recent",
+                        label: t.metagame.scopeRecent(official.recent.tournamentIds.length),
+                      }
+                    : { value: "all", label: t.metagame.scopeAll },
+                  ...[...tournaments].reverse().map((tournament) => ({
+                    value: tournament.id,
+                    label: `${shortTournamentName(tournament.title)} · ${new Date(
+                      tournament.startDate,
+                    ).toLocaleDateString(appLanguage, {
+                      month: "short",
+                      day: "numeric",
+                      timeZone: "UTC",
+                    })}`,
+                  })),
+                ]}
+              />
+              <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-zinc-300 sm:block" />
+              <div role="tablist" aria-label={t.metagame.view} className="flex flex-wrap gap-1.5">
+                {(["overview", "pokemon", "megas", "cores", "teams"] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === option}
+                    onClick={() => {
+                      setTab(option);
+                      setOpenSpecies(null);
+                    }}
+                    className={TAB_CLASS(tab === option)}
+                  >
                     {
-                      overview: t.metagame.tabOverview,
-                      pokemon: t.metagame.tabPokemon,
-                      megas: t.metagame.tabMegas,
-                      cores: t.metagame.tabCores,
-                      teams: t.metagame.tabTeams,
-                    }[option]
-                  }
-                </button>
-              ))}
+                      {
+                        overview: t.metagame.tabOverview,
+                        pokemon: t.metagame.tabPokemon,
+                        megas: t.metagame.tabMegas,
+                        cores: t.metagame.tabCores,
+                        teams: t.metagame.tabTeams,
+                      }[option]
+                    }
+                  </button>
+                ))}
+              </div>
             </div>
             <div
               className={cn("flex flex-wrap items-center gap-2", tab === "overview" && "hidden")}
@@ -309,6 +293,24 @@ export function MetagameSection() {
             </div>
           </div>
 
+          <div className="-mt-1 text-sm text-zinc-600">
+            <p>
+              <span className="font-medium text-zinc-800">
+                {tournamentScope
+                  ? tournamentScope.title
+                  : t.metagame.basedOn(eventCount, slice?.teams ?? official.teams)}
+              </span>
+              {tournamentScope && ` · ${t.metagame.teamsCount(tournamentScope.teams)}`}
+              {" · "}
+              {t.metagame.updated(
+                new Date(meta.updatedAt).toLocaleDateString(appLanguage, {
+                  month: "short",
+                  day: "numeric",
+                }),
+              )}
+            </p>
+          </div>
+
           {tournamentScope && !tournamentMeta ? (
             isTournamentLoading ? (
               <LoadingState />
@@ -319,6 +321,8 @@ export function MetagameSection() {
             <MetaOverview
               pokemon={slice?.pokemon ?? []}
               combos={combos}
+              events={scopeEvents}
+              onOpenFinalist={(event, finalist) => setDetailFinalist({ event, finalist })}
               onOpenPokemon={setDetailSpecies}
               onOpenCore={setDetailCore}
               onSeeAllCores={(size) => {
@@ -412,6 +416,9 @@ export function MetagameSection() {
                 />
               );
             })()}
+          {detailFinalist && (
+            <FinalistModal {...detailFinalist} onClose={() => setDetailFinalist(null)} />
+          )}
           {detailCore && (
             <CoreDetailModal
               core={detailCore}
@@ -433,12 +440,17 @@ export function MetagameSection() {
 function MetaOverview({
   pokemon,
   combos,
+  events,
+  onOpenFinalist,
   onOpenPokemon,
   onOpenCore,
   onSeeAllCores,
 }: {
   pokemon: MetaPokemon[];
   combos: MetaCombos | undefined;
+  /** Newest first. */
+  events: MetaTournament[];
+  onOpenFinalist: (event: MetaTournament, finalist: MetaFinalist) => void;
   onOpenPokemon: (species: string) => void;
   onOpenCore: (core: MetaCombo) => void;
   onSeeAllCores: (size: CoreSize) => void;
@@ -491,6 +503,8 @@ function MetaOverview({
           })}
         </ol>
       </section>
+
+      <WinningTeams events={events} onOpen={onOpenFinalist} />
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
@@ -1205,5 +1219,144 @@ function MovePill({ move }: { move: string }) {
     <li className="flex h-7 min-w-0 items-center rounded bg-zinc-100 px-1.5 text-[13px] text-zinc-800">
       <MoveName move={move} />
     </li>
+  );
+}
+
+/** "13–2", or "12–2–1" with ties. */
+function formatRecord({ wins, losses, ties }: MetaFinalist["record"]): string {
+  return ties ? `${wins}–${losses}–${ties}` : `${wins}–${losses}`;
+}
+
+/** An event's date, read in UTC (the ISO date is UTC midnight). */
+function eventDate(event: MetaTournament, language: string): string {
+  return new Date(event.startDate).toLocaleDateString(language, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
+ * The winner and runner-up of each event in view, a card per event — each
+ * team opens its sheet. Hidden until the metagame job has written them.
+ */
+function WinningTeams({
+  events,
+  onOpen,
+}: {
+  events: MetaTournament[];
+  onOpen: (event: MetaTournament, finalist: MetaFinalist) => void;
+}) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const { appLanguage } = useLanguageSettings();
+  const withFinalists = events.filter((event) => event.finalists?.length);
+  if (withFinalists.length === 0) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-lg font-semibold text-zinc-900">{t.metagame.winningTeams}</h3>
+        <p className="text-sm text-zinc-600">{t.metagame.winningTeamsHint}</p>
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {withFinalists.map((event) => {
+          const name = shortTournamentName(event.title);
+          return (
+            <div
+              key={event.id}
+              className="flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-raised"
+            >
+              <div className="flex items-baseline justify-between gap-2 border-b border-zinc-200 px-3 py-2.5">
+                <h4 className="truncate text-sm font-semibold text-zinc-900" title={event.title}>
+                  {name}
+                </h4>
+                <span className="shrink-0 text-xs text-zinc-500">
+                  {eventDate(event, appLanguage)} · {t.metagame.teamsCount(event.teams)}
+                </span>
+              </div>
+              <ol className="flex flex-col divide-y divide-zinc-200">
+                {event.finalists!.map((finalist) => {
+                  const placing = t.metagame.finalistPlacing(finalist.placing);
+                  return (
+                    <li key={finalist.placing}>
+                      <button
+                        type="button"
+                        onClick={() => onOpen(event, finalist)}
+                        aria-label={t.metagame.openDetails(`${placing} · ${name}`)}
+                        title={finalist.team.map((mon) => text.species(mon.species)).join(" / ")}
+                        className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-zinc-100"
+                      >
+                        <span className="flex w-16 shrink-0 flex-col">
+                          <span className="text-xs font-semibold text-zinc-900">{placing}</span>
+                          <span className="text-xs text-zinc-500 tabular-nums">
+                            {formatRecord(finalist.record)}
+                          </span>
+                        </span>
+                        <span className="grid min-w-0 flex-1 grid-cols-6 gap-0.5">
+                          {finalist.team.map((mon, index) => (
+                            <span key={index} className="relative aspect-square max-w-10">
+                              <PokemonSprite species={mon.species} fill />
+                              {mon.item && (
+                                <span className="absolute -right-0.5 -bottom-0.5">
+                                  <ItemIcon item={mon.item} size={14} />
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/** A finalist's team sheet, with a copy of it as a paste. */
+function FinalistModal({
+  event,
+  finalist,
+  onClose,
+}: {
+  event: MetaTournament;
+  finalist: MetaFinalist;
+  onClose: () => void;
+}) {
+  const t = useMessages();
+  const { appLanguage } = useLanguageSettings();
+  const placing = t.metagame.finalistPlacing(finalist.placing);
+
+  async function copyTeam() {
+    try {
+      await navigator.clipboard.writeText(formatTeamPaste(finalist.team));
+      toast.success(t.metagame.teamCopied);
+    } catch {
+      toast.error(t.opponentCard.copyFailed);
+    }
+  }
+
+  return (
+    <Modal onClose={onClose} labelledBy="meta-finalist-title" size="wide" fullScreenOnPhone>
+      <DetailHeader
+        id="meta-finalist-title"
+        species={[]}
+        title={`${placing} · ${shortTournamentName(event.title)}`}
+        subtitle={`${event.title} · ${eventDate(event, appLanguage)} · ${formatRecord(finalist.record)}`}
+        onClose={onClose}
+      />
+      <TeamSheetPreview pokemon={finalist.team} />
+      <div className="flex justify-end pt-3">
+        <Button variant="outline" onClick={copyTeam} className="flex items-center gap-1.5">
+          <Icon name={IconName.ContentCopy} size={16} />
+          {t.metagame.copyTeam}
+        </Button>
+      </div>
+    </Modal>
   );
 }
