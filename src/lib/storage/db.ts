@@ -224,6 +224,50 @@ export async function setActiveTeamId(id: string | null): Promise<void> {
   }
 }
 
+// ── Team Library favorites ─────────────────────────────────────────────────
+// The VGCPastes team ids ("MC780") starred in the Team Library — this
+// device's copy in META_STORE, and the account's in users/{uid}/meta/libraryFavorites.
+
+const LIBRARY_FAVORITES_KEY = "libraryFavorites";
+
+export async function getLibraryFavorites(): Promise<string[]> {
+  const db = await getDb();
+  const ids = await db.get(META_STORE, LIBRARY_FAVORITES_KEY);
+  return Array.isArray(ids) ? ids : [];
+}
+
+export async function setLibraryFavorites(ids: string[]): Promise<void> {
+  const db = await getDb();
+  await db.put(META_STORE, ids, LIBRARY_FAVORITES_KEY);
+  const uid = currentUid();
+  if (uid) {
+    void pushMetaDoc(uid, LIBRARY_FAVORITES_KEY, { ids }).catch((error) =>
+      logCloudSyncError("push library favorites", error),
+    );
+  }
+}
+
+/**
+ * The account's favorites, once signed in: the cloud copy wins (a star
+ * removed on another device stays removed); with none yet, this device's
+ * are uploaded. Falls back to this device's on a failed read.
+ */
+export async function syncLibraryFavorites(uid: string): Promise<string[]> {
+  const local = await getLibraryFavorites();
+  try {
+    const cloud = await pullMetaDoc<{ ids?: string[] }>(uid, LIBRARY_FAVORITES_KEY);
+    if (cloud && Array.isArray(cloud.ids)) {
+      const db = await getDb();
+      await db.put(META_STORE, cloud.ids, LIBRARY_FAVORITES_KEY);
+      return cloud.ids;
+    }
+    if (local.length > 0) await pushMetaDoc(uid, LIBRARY_FAVORITES_KEY, { ids: local });
+  } catch (error) {
+    logCloudSyncError("pull library favorites", error);
+  }
+  return local;
+}
+
 export async function getOpponents(): Promise<Opponent[]> {
   const db = await getDb();
   const [opponents, activeTeamId] = await Promise.all([

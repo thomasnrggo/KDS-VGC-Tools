@@ -43,7 +43,8 @@ interface MyTeamHeaderProps {
     | "teams"
     | "tournaments"
     | "speed-tiers"
-    | "metagame";
+    | "metagame"
+    | "team-library";
   /**
    * The regulation currently selected on this page (each page owns its own
    * "Regulation" dropdown — see OpponentsSection/MyTeamsSection/
@@ -74,6 +75,12 @@ const NAV_LINKS = [
   { page: "damage-calc", href: "/damage-calc", labelKey: "damageCalc", flagKey: null },
   { page: "speed-tiers", href: "/speed-tiers", labelKey: "speedTiers", flagKey: "speedTiers" },
   { page: "metagame", href: "/metagame", labelKey: "metagame", flagKey: "metagame" },
+  {
+    page: "team-library",
+    href: "/team-library",
+    labelKey: "teamLibrary",
+    flagKey: "teamLibrary",
+  },
   { page: "tournaments", href: "/tournaments", labelKey: "tournaments", flagKey: "tournaments" },
 ] as const;
 

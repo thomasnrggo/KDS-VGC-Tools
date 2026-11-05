@@ -12,6 +12,8 @@ export interface FeatureFlags {
   tournaments: boolean;
   speedTiers: boolean;
   metagame: boolean;
+  /** The Team Library (VGCPastes' shared teams) — new, so off until the admin turns it on. */
+  teamLibrary: boolean;
   /**
    * Not a section: the team page's Threats tab, a preview still being
    * designed (see PLANNING.md's "Team analysis from the metagame").
@@ -31,5 +33,6 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   tournaments: true,
   speedTiers: true,
   metagame: true,
+  teamLibrary: false,
   teamThreats: false,
 };

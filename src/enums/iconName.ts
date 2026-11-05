@@ -37,6 +37,7 @@ export enum IconName {
   Search = "search",
   Share = "share",
   Star = "star",
+  StarFilled = "star_filled",
   SwapVert = "swap_vert",
   Translate = "translate",
   Unarchive = "unarchive",

@@ -21,6 +21,10 @@ export const SPECIES_ALIASES: Record<string, string> = {
   "meowstic-f-mega": "meowstic-female-mega",
   "oinkologne-f": "oinkologne-female",
   "basculegion-f": "basculegion-female",
+  // Cosmetic forms with no art of their own (seen in VGCPastes' team list):
+  // the base form's stats, so its sprite too.
+  "sinistcha-masterpiece": "sinistcha",
+  "vivillon-fancy": "vivillon",
   // Showdown drops the "-Breed" species.json keeps.
   "tauros-paldea-combat": "tauros-paldea-combat-breed",
   "tauros-paldea-blaze": "tauros-paldea-blaze-breed",

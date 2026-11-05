@@ -13,7 +13,7 @@ import {
   type SpeedMode,
   type ThreatMatchups,
 } from "./analyzeThreats";
-import { estimateSpread } from "./estimateSpread";
+import { withMetaSpread, type MetaSpreads } from "@/lib/meta/metaSpreads";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
@@ -122,7 +122,7 @@ export function speedExposure(all: ThreatMatchups[], mode: SpeedMode): number {
 }
 
 /** A setter's common set with the move: its most common full set that has it, else its most common moves with it. */
-function setterSet(entry: MetaPokemon, move: string): ParsedPokemon {
+function setterSet(entry: MetaPokemon, move: string, spreads?: MetaSpreads): ParsedPokemon {
   const set = entry.sets.find((candidate) => candidate.moves.includes(move));
   const moves =
     set?.moves ??
@@ -134,7 +134,7 @@ function setterSet(entry: MetaPokemon, move: string): ParsedPokemon {
     nature: set?.nature ?? entry.natures[0]?.name,
     moves,
   };
-  return { ...parsed, evs: estimateSpread(parsed) };
+  return withMetaSpread(parsed, entry.species, spreads).pokemon;
 }
 
 /** The metagame's common setters of a speed control, most used first — and which of yours KO them before they set it. */
@@ -142,7 +142,11 @@ export function speedControlSetters(
   meta: MetaPokemon[],
   kind: SpeedControlKind,
   team: ParsedPokemon[],
-  { minShare = 0.25, limit = 4 } = {},
+  {
+    minShare = 0.25,
+    limit = 4,
+    spreads,
+  }: { minShare?: number; limit?: number; spreads?: MetaSpreads } = {},
 ): SpeedControlSetter[] {
   const move = MOVE_NAME[kind];
   return meta
@@ -153,7 +157,7 @@ export function speedControlSetters(
     .sort((a, b) => b.entry.usage * b.share - a.entry.usage * a.share)
     .slice(0, limit)
     .map(({ entry, share }): SpeedControlSetter => {
-      const setter = setterSet(entry, move);
+      const setter = setterSet(entry, move, spreads);
       // Trick Room goes last (-7), so a KO stops it whoever's faster; a
       // Focus Sash or Sturdy holder survives one. Tailwind isn't counted:
       // it goes when its user does (Prankster first).
@@ -238,8 +242,9 @@ export function speedControlReport(
   meta: MetaPokemon[],
   all: ThreatMatchups[],
   kind: SpeedControlKind,
+  spreads?: MetaSpreads,
 ): SpeedControlReport {
-  const setters = speedControlSetters(meta, kind, team);
+  const setters = speedControlSetters(meta, kind, team, { spreads });
   const counters = speedControlCounters(team, kind, setters);
   const exposure = { normal: speedExposure(all, "normal"), under: speedExposure(all, UNDER[kind]) };
   const strongKinds = new Set(

@@ -8,6 +8,7 @@ export { getMeta, getMetaTournament } from "./meta";
 export { getPublicSets, savePublicSet, deletePublicSet } from "./publicSets";
 export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";
 export { getLearnsetOverrides, saveLearnsetOverride } from "./learnsetOverrides";
+export { getMetaSpreads, saveMetaSpread } from "./metaSpreads";
 export { publishSharedTeam, unpublishSharedTeam, getSharedTeam } from "./sharedTeams";
 export {
   createGroup,

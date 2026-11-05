@@ -35,18 +35,18 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   one per tournament/format) and switch which is active from the header. The opponent roster/label/link
   stays shared across all your teams — scouting an opponent isn't tied to which of your teams you're
   using — but each opponent's lead/back picks + notes are specific to whichever team is active, since a
-  pick is an index into *that* team's roster. See [Data model](#3-data-model)'s `plansByTeamId`.
+  pick is an index into _that_ team's roster. See [Data model](#3-data-model)'s `plansByTeamId`.
 - **One plan per opponent, not multiple named plans.** Originally each opponent could have several
   named plans ("Plan A", "Plan B") behind an expand/collapse. Reworked per a user-provided mock-up into
   a single flat row per opponent — roster, lead pair, back pair, and notes always visible, no plan name,
   no accordion. Simpler and denser; revisit if multiple strategies per opponent turns out to be needed
   after all.
-- **Showdown export paste is the only import method for now.** No manual team builder UI *(superseded
+- **Showdown export paste is the only import method for now.** No manual team builder UI _(superseded
   2026-09-16 — a Team Builder is now planned, see [docs/team-builder.md](./docs/team-builder.md); it
-  ships as a separate flow first, not replacing paste-in)*, no Poképaste API integration (the user
+  ships as a separate flow first, not replacing paste-in)_, no Poképaste API integration (the user
   pastes the exported text themselves, even if it originated from a Poképaste link). The one exception
   (2026-08-08): a **bulk import** for opponents accepts a Showdown
-  *team folder* export — multiple teams in one paste, each preceded by a `=== [format] Name ===` header
+  _team folder_ export — multiple teams in one paste, each preceded by a `=== [format] Name ===` header
   (what Showdown's teambuilder produces when exporting a whole folder) — and creates one opponent per
   team (`parseTeamFolder`, `addOpponentsFromFolder`). Entries that fail to parse into a valid 1-6
   Pokémon team are skipped with a reason shown, rather than blocking the whole import.
@@ -66,7 +66,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   loads 70+ sprites at once. `unoptimized` serves them straight from `public/` via the CDN instead —
   no re-processing needed since they're already the size/format we want.
 - **Icons are inline SVGs (`src/components/Icon/paths.ts`), not the `material-symbols` icon font.**
-  Diagnosed and fixed alongside the sprite issue above — the font shipped the *entire* Material
+  Diagnosed and fixed alongside the sprite issue above — the font shipped the _entire_ Material
   Symbols Outlined glyph set as one ~3.8MB woff2 for the 6 icons actually used (`Icon` component
   reads `IconName` → path data). Combined with the font's `font-display: block`, this meant a real
   chance of the raw icon name (e.g. "more_vert") staying visible as literal text for several seconds
@@ -98,16 +98,16 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   `candidateFormKeys(species, item)` helper). `src/constants/natures.ts` has the 25 nature
   increased/decreased-stat pairs; `src/lib/stats/calculateFinalStats.ts` applies the standard
   Pokémon stat formula at Level 50 and flags the nature-boosted/lowered stat for the hover card to
-  color red/blue. A missing EVs line defaults to 0 Stat Points per stat. This is *not* the "automatic
+  color red/blue. A missing EVs line defaults to 0 Stat Points per stat. This is _not_ the "automatic
   damage calculation" or "speed tier charts" still listed as out of scope below — it's just a single
   Pokémon's own computed stat line, no cross-matchup comparison or type-effectiveness math.
   **Held-item stat modifiers are in scope for exactly one case so far: Choice Scarf's ×1.5 Speed.**
   Per a 2026-08-11 user request. Applied in `calculateFinalStats` after the nature multiplier (its own
-  modifier slot, same as in-battle — a held Choice Scarf is invisible on the in-game stat *screen*,
+  modifier slot, same as in-battle — a held Choice Scarf is invisible on the in-game stat _screen_,
   only affects actual battle speed, which is what this hover card cares about). Sets
   `speedBoostedByChoiceScarf` on the returned `FinalStats` so the hover card can bold SPE — bold is
   independent of the existing red/blue nature coloring (a neutral-nature scarfed Pokémon shows plain
-  bold black SPE; a nature-boosted one shows bold *red*), so the two signals stack instead of
+  bold black SPE; a nature-boosted one shows bold _red_), so the two signals stack instead of
   colliding. Choice Band/Specs (Atk/SpA) aren't implemented — only Scarf was asked for.
 - **Hover card redesigned to a two-column layout** (`PokemonHoverCard`), per the same 2026-08-11
   request, mockup-driven: left column is name + Mega badge, ability (no longer labeled "Ability:",
@@ -120,9 +120,9 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   **The Mega toggle is a `<span role="button">`, not a real `<button>`.** Fixed 2026-08-11: a real
   `<button>` there triggered "`<button>` cannot be a descendant of `<button>`" and a hydration
   mismatch, because a Mega-holding Pokémon selected as a Lead/Back pick renders this whole card via
-  `PokemonHoverCard` *inside* `PokemonSlotPicker`'s own `<button>` trigger. Same pattern (role="button"
-  + tabIndex + Enter/Space handling) as elsewhere in the codebase where a button-like control has to
-  nest inside a real button.
+  `PokemonHoverCard` _inside_ `PokemonSlotPicker`'s own `<button>` trigger. Same pattern (role="button"
+  - tabIndex + Enter/Space handling) as elsewhere in the codebase where a button-like control has to
+    nest inside a real button.
 - **`OpponentCard`'s edit/delete buttons moved from an absolutely-positioned overlay in the card's
   top-right corner into the roster column's own label row, and the Poképaste link became an icon
   (`IconName.OpenInNew`) instead of underlined text.** Per 2026-08-11 user requests/mockups, in two
@@ -134,7 +134,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   height with `items-center`.** The label text and the `LEAD`/`BACK`/`GAME PLAN` headers use identical
   typography, but the label row also holds `h-7` (28px) icon buttons — a mismatched-height flex row
   (16px text next to 28px buttons) can't be made to align both "text flush with plain-text headers"
-  *and* "icon glyphs centered on the text" at the same time with alignment tricks alone (tried
+  _and_ "icon glyphs centered on the text" at the same time with alignment tricks alone (tried
   `items-start` first: fixed the text-vs-headers alignment but then the icons looked off against each
   other, since a lone icon-button sub-row and a text+icon sub-row don't share a natural center).
   Giving every header the same explicit height and centering within it sidesteps the conflict — text
@@ -143,7 +143,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   **The opponent label is capped with `max-w-28 md:max-w-36 lg:max-w-xs` + `truncate`, not just
   `truncate` alone.** Fixed 2026-08-11 — the roster column is `grid-cols-[auto_...]` (sized to the
   fixed-size sprite grid, a deliberate earlier change), and CSS Grid's `auto` track sizes to the
-  *widest* content in that column. `truncate` alone (`overflow-hidden` + `nowrap`) doesn't reduce an
+  _widest_ content in that column. `truncate` alone (`overflow-hidden` + `nowrap`) doesn't reduce an
   element's contribution to that sizing — only an actual `max-width` does — so a long opponent name
   was stretching that `<li>`'s first column past the sprite grid's own width, and since every opponent
   is a separate `<li>` (not sharing grid tracks with sibling rows), each row's columns ended up a
@@ -191,15 +191,15 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   `w-full`/`md:w-auto`/`md:items-start` entirely; the button now sizes to its actual content on every
   breakpoint. Confirmed via `getBoundingClientRect`: button width dropped from ~357px to ~236px.
   **Second follow-up:** shrinking the button didn't move it — it's wrapped in `<div ref={menuRef}>`,
-  which still had `flex-1` (a flex *item* greedily fills its container's free space regardless of the
+  which still had `flex-1` (a flex _item_ greedily fills its container's free space regardless of the
   content inside it, so `justify-end` on the parent had nothing left to redistribute). Removed
-  `flex-1`/`md:flex-none` from that wrapper and added `justify-end` to *its* parent so the now
+  `flex-1`/`md:flex-none` from that wrapper and added `justify-end` to _its_ parent so the now
   content-sized wrapper gets pushed flush against the header's right padding instead of hugging the
   left. This broke the team-select dropdown's width, which had relied on that wrapper being wide
   (`left-6 right-6` stretched it to the wrapper's width minus 24px each side) — first attempt swapped
   it for `right-0 w-72`, but that anchors the dropdown to the (now narrow) trigger, not the full page
   width — wrong per a follow-up screenshot: the dropdown is deliberately full-width on mobile
-  (independent of where the trigger sits), aligned to the *page's* padding, not the trigger's.
+  (independent of where the trigger sits), aligned to the _page's_ padding, not the trigger's.
   **Third follow-up:** moved `relative` onto the `<header>` itself (still spans the full page width
   regardless of the trigger) and repointed the dropdown at it: `left-4 right-4` on mobile (matching the
   header's own `px-4`, so the dropdown's edges land flush with where the title/sprite-row content
@@ -216,7 +216,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   to fit.** Landed 2026-08-11 after an earlier attempt (`md:grid-cols-3` only, no `lg:` tier) got
   reverted for changing desktop too. The constraint that makes this need two breakpoints: the roster
   column is a fixed `26rem` from `md:` up with no further width change on its own (`OpponentCard`'s
-  `md:grid-cols-[26rem_auto_1fr]`) — so "tablet" and "desktop" are the *same* width unless something
+  `md:grid-cols-[26rem_auto_1fr]`) — so "tablet" and "desktop" are the _same_ width unless something
   else changes it. Mobile (base, single-column stacking) keeps the original `aspect-square w-full` +
   `grid-cols-6`, which auto-shrinks to always fit exactly 1 row regardless of viewport — already
   correct, left untouched. From `md:` up, sprites switch to a real fixed size (`md:h-16 md:w-16`,
@@ -246,7 +246,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   sprite set and `species.json`/`baseStats.json` (both generated pre-Champions) wouldn't have art/stats
   for any of these — wrong: turned out every one of the 55 already has a matching sprite file and data
   entry (PokeAPI's bulk export, whenever it was pulled, already included them), so the item table was
-  the *only* missing piece — without the right key here, `candidateFormKeys` never builds the
+  the _only_ missing piece — without the right key here, `candidateFormKeys` never builds the
   `<species>-mega` candidate to look up. Extended the table to all 55, verified against Bulbapedia (each
   has its own dedicated page) and cross-checked against real pasted items from this app's own data.
   Two related `SPECIES_ALIASES` additions were needed too: Meowstic's Mega forms are gendered
@@ -255,7 +255,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   form can Mega Evolve, so it's unambiguous) while Showdown writes the species as `Floette-Eternal`.
   Also fixed a genuine bug found in the same pass: the table had `blastoisite`, but Blastoise's real
   item is `Blastoisinite` (verified against Bulbapedia) — silently broke detection for every Blastoise
-  until fixed. `isLikelyMegaStoneItem` (same file) still exists for whatever Mega Stone comes *after*
+  until fixed. `isLikelyMegaStoneItem` (same file) still exists for whatever Mega Stone comes _after_
   this table's last update — recognizes the universal `<species>ite` naming convention and the hover
   card shows a disabled "Mega?" badge with an explanatory title instead of silently showing nothing.
   One known gap that can't be fixed via this item-based approach at all: Mega Rayquaza has no held-item
@@ -263,7 +263,7 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
 - **Opponent record: label + 6 Pokémon (species+item) + paste link.** Dropped the `replicaCode` field
   from the earlier draft — it wasn't part of this request. Add it back if it turns out to be needed.
 - **`leadPair`/`backPair` are a fixed 2-tuple of independently-nullable slots, not `[number,number] |
-  null`.** The all-or-nothing shape looked cleaner on paper but silently discarded the first pick: a
+null`.** The all-or-nothing shape looked cleaner on paper but silently discarded the first pick: a
   UI that only commits the pair once both slots are set has nowhere to hold "just picked slot 1,
   haven't picked slot 2 yet" — the in-progress selection gets thrown away on the very next render.
   Caught this by actually driving the picker in a browser, not just from reading the code.
@@ -290,29 +290,29 @@ Recorded so we don't re-litigate them each session. Revisit only if something co
   and removed dark mode entirely (every `dark:` class stripped, `globals.css`'s
   `prefers-color-scheme: dark` block deleted); a 2026-09-12 request brought dark mode back on top of
   `mauve`; a same-day follow-up asked to drop `mauve` and return to the plain `zinc` default — so the
-  net result today is `zinc` + dark mode, not `mauve` + dark mode. The dark-mode *mechanism* below is
+  net result today is `zinc` + dark mode, not `mauve` + dark mode. The dark-mode _mechanism_ below is
   what "a real design pass, not a blanket `dark:` re-add" (the original removal note's ask) produced,
   and survived the mauve→zinc swap unchanged — only the color family's name and its underlying oklch
   numbers changed, via a project-wide `mauve`→`zinc` text substitution plus re-deriving the `.dark`
   block's values from zinc's own Tailwind-shipped scale (not mauve's).
   `globals.css`'s `.dark { --color-zinc-N: ... }` block overrides each Tailwind zinc step's CSS
-  variable with the *opposite* step's original value (50↔950, 100↔900, 200↔800, 300↔700, 400↔600,
+  variable with the _opposite_ step's original value (50↔950, 100↔900, 200↔800, 300↔700, 400↔600,
   500 unchanged) — so every existing `bg-zinc-*`/`text-zinc-*`/`border-zinc-*` class across the app
   theme-swaps automatically with zero per-component changes, since Tailwind utilities already resolve
   to `var(--color-zinc-N)`.
   The one place the swap alone breaks: `bg-zinc-600`/`900` + `text-white` (primary buttons, the
-  header's chrome bar, active tab pills) — swapped, those become the *light* end of the scale, which
+  header's chrome bar, active tab pills) — swapped, those become the _light_ end of the scale, which
   white text can't read against. Those specific elements carry a targeted `dark:bg-zinc-400`
   (`600`'s pair) or `dark:bg-zinc-100`/`dark:hover:bg-zinc-50` (`900`'s pair) so the chrome stays
   the same fixed dark zinc in both themes instead of inverting — see `MyTeamHeader`'s header bar and
-  every `bg-zinc-600 text-white` CTA button. Any `text-*`/`bg-*` sitting *on* that fixed chrome
+  every `bg-zinc-600 text-white` CTA button. Any `text-*`/`bg-*` sitting _on_ that fixed chrome
   (nav link text, icons, the translucent sprite backing) needed the matching inverse-lookup fix too
   (`text-zinc-200` → `dark:text-zinc-800`, etc.) — see `MyTeamHeader`'s comments for the full
   reasoning. `bg-white` used as a card/surface (not a deliberate fixed-white element like the
   AuthMenu sign-in pill) was swept to `bg-zinc-50` so it participates in the swap. Semantic accent
   colors (red for delete/errors, green/emerald for wins, amber for warnings) are Tailwind's own
   scales, untouched by the zinc swap — their saturated 500–700 shades already have enough contrast
-  for white text in both themes and needed no changes, but their *light-tint* uses (`bg-amber-50`-
+  for white text in both themes and needed no changes, but their _light-tint_ uses (`bg-amber-50`-
   style search-highlight rows in Speed Tiers, `bg-sky-100`/`bg-rose-100` SpeedLine hover highlights,
   `hover:bg-red-50`/`100` delete-button hovers) got explicit `dark:` overrides to their own
   matching-scale `-950` shade, since those don't invert on their own and the light tint reads as
@@ -360,8 +360,8 @@ working yet:
 - Cross-team speed-tier comparison charts (basic single-hit damage calculation, added 2026-08-12, is
   now in scope — see §7's Damage Calculator phase)
 - Editing a parsed Pokémon's fields in the UI (EVs, moves, etc.) — paste-in is the only way to change
-  a team; if a paste was wrong, re-paste it *(superseded 2026-09-16 — the planned Team Builder,
-  [docs/team-builder.md](./docs/team-builder.md), becomes the general editor for any team once shipped)*
+  a team; if a paste was wrong, re-paste it _(superseded 2026-09-16 — the planned Team Builder,
+  [docs/team-builder.md](./docs/team-builder.md), becomes the general editor for any team once shipped)_
 
 ## 3. Data model
 
@@ -372,8 +372,8 @@ implementation detail, not worth over-designing before Phase 1 is built).
 interface ParsedPokemon {
   species: string; // canonical Showdown species name, e.g. "Landorus-Therian" — used to resolve the sprite
   item?: string;
-  ability?: string;  // display-only, for the hover card
-  moves?: string[];  // display-only, for the hover card
+  ability?: string; // display-only, for the hover card
+  moves?: string[]; // display-only, for the hover card
   // Shown as pasted, but also fed into calculateFinalStats for the hover card's Level 50 stat line:
   nature?: string;
   // Raw EVs line as pasted, e.g. "32 HP / 4 SpD / 32 Spe" — despite the "EVs:" label, these are
@@ -396,22 +396,27 @@ interface BaseStats {
 
 interface Team {
   id: string;
-  name: string;              // user-facing label, e.g. "Regionals Team" — distinguishes your saved teams
-  rawPaste: string;          // keep the original text around, even though most of it is unparsed for now
-  pokemon: ParsedPokemon[];  // up to 6
-  calcs?: TeamCalc[];        // Team Report "Calcs" tab — see docs/team-report.md
-  creator?: string;          // Team Report details line
+  name: string; // user-facing label, e.g. "Regionals Team" — distinguishes your saved teams
+  rawPaste: string; // keep the original text around, even though most of it is unparsed for now
+  pokemon: ParsedPokemon[]; // up to 6
+  calcs?: TeamCalc[]; // Team Report "Calcs" tab — see docs/team-report.md
+  creator?: string; // Team Report details line
   pokepasteUrl?: string;
-  replicaCode?: string;      // in-game code to rent the team
-  overview?: string;         // "Team overview" rich text — included in shared reports
+  replicaCode?: string; // in-game code to rent the team
+  overview?: string; // "Team overview" rich text — included in shared reports
   share?: { sheet: "open" | "closed" }; // present = report shared; see "Shareable Team Reports" in §7
-  updatedAt: string;         // ISO timestamp
+  updatedAt: string; // ISO timestamp
 }
 
 // Firestore sharedTeams/{teamId} — public copy of a shared report (toSharedTeam).
 interface SharedTeam {
-  id: string; ownerUid: string; name: string;
-  creator?: string; pokepasteUrl?: string; replicaCode?: string; overview?: string;
+  id: string;
+  ownerUid: string;
+  name: string;
+  creator?: string;
+  pokepasteUrl?: string;
+  replicaCode?: string;
+  overview?: string;
   sheet: "open" | "closed";
   pokemon: ParsedPokemon[]; // open sheet: no evs/nature
   updatedAt: string;
@@ -419,8 +424,8 @@ interface SharedTeam {
 
 interface TeamCalc {
   id: string;
-  text: string;                               // the pasted line; attacker/defender/% parsed on display
-  species: string | null;                     // speciesIdentity of your Pokémon it's filed under
+  text: string; // the pasted line; attacker/defender/% parsed on display
+  species: string | null; // speciesIdentity of your Pokémon it's filed under
   side: "offensive" | "defensive" | null;
 }
 
@@ -431,21 +436,21 @@ interface MatchupPlan {
   backPair: [PokemonSlot, PokemonSlot];
   leadMega: [boolean, boolean]; // per-slot Mega toggle, persisted; defaults to true via EMPTY_PLAN
   backMega: [boolean, boolean];
-  backAlt?: PokemonSlot;  // Back 2's alternative ("A or B"); your own picks and TeamCombination only —
-                          // kept valid by normalizeBackAlt/withBackAlt in src/lib/slotPicks.ts
+  backAlt?: PokemonSlot; // Back 2's alternative ("A or B"); your own picks and TeamCombination only —
+  // kept valid by normalizeBackAlt/withBackAlt in src/lib/slotPicks.ts
   notes: string;
   pokemonNotes?: Record<number, string>; // matchup page: per opponent Pokémon — see docs/team-report.md
-  scoutingNotes?: string;                // matchup page "What they do" (rich text)
+  scoutingNotes?: string; // matchup page "What they do" (rich text)
 }
 
 interface Opponent {
   id: string;
-  label: string;   // e.g. "Blastoise Delphox - LenVGC"
-  team: Team;      // the 6 Pokémon (species + item, + display-only ability/moves/nature/EVs)
+  label: string; // e.g. "Blastoise Delphox - LenVGC"
+  team: Team; // the 6 Pokémon (species + item, + display-only ability/moves/nature/EVs)
   pokepasteUrl?: string;
   plansByTeamId: Record<string, MatchupPlan>; // keyed by which of your Teams is planning this matchup
   sortOrder: number; // manual list order, highest first — see docs/opponent-organization.md
-  tags: string[];    // strategy tags (rain, sun, perish, …), searchable — see docs/opponent-organization.md
+  tags: string[]; // strategy tags (rain, sun, perish, …), searchable — see docs/opponent-organization.md
   variantOf?: string; // set on a variant: its group's main opponent id
   copiedPlanFrom?: Record<string, string>; // your team id → opponent the plan was copied from ("Copied from" badge)
   createdAt: string;
@@ -487,7 +492,7 @@ parsed. The first line is one of:
 
 So `parsePokemonBlock` just needs to: take the first line, strip a leading `Nickname (` / trailing `)`
 if present (keep `Species`, discard the nickname), strip a trailing `(M)`/`(F)` gender marker (not
-stored — see [Decisions](#2-decisions)), and split on ` @ ` to separate `species` from `item`.
+stored — see [Decisions](#2-decisions)), and split on `@` to separate `species` from `item`.
 
 Write this as a small set of pure functions (`parseTeam(raw: string): ParsedPokemon[]`,
 `parsePokemonBlock(block: string): ParsedPokemon`) so they're unit-testable in isolation — nickname vs.
@@ -541,7 +546,7 @@ so the URL says what the page is, while a bare root still works for anyone's old
   list of opponent rows (`OpponentCard`), all always visible — no navigation, no expand/collapse. Each
   row is a 3-column layout (stacks to 1 column on narrow screens): **Team** (label, Poképaste link,
   Remove, compact roster), **Lead/Back** (4 `PokemonSlotPicker`s — 2 lead, 2 back — picked from the
-  *active* team's Pokémon), **Notes** (freeform textarea). The lead/back picks and notes shown are the
+  _active_ team's Pokémon), **Notes** (freeform textarea). The lead/back picks and notes shown are the
   `MatchupPlan` for whichever team is currently active (`getPlanForTeam`); switching teams in the header
   switches what's shown here, per opponent, without touching the opponent's roster/label.
 - **Hover info** — hovering (or focusing) a Pokémon sprite that has ability/moves/nature/EVs parsed
@@ -657,7 +662,7 @@ leads/backs) is complete and working end to end.
       that it didn't look good; and the search box itself is now hidden by default behind a toggle
       icon next to the "Opponents" title, rather than always shown above the list.
 - [x] **`PokemonSlotPicker` hover/click conflict fixed.** A picked slot's sprite was both the click
-      trigger for its own swap dropdown *and* (via `PokemonHoverCard`'s default `hover` trigger) the
+      trigger for its own swap dropdown _and_ (via `PokemonHoverCard`'s default `hover` trigger) the
       hover trigger for the stats/moves info popover — clicking to swap necessarily also hovers, so both
       popovers rendered at once and overlapped. Per a 2026-08-12 discussion, chose to keep click-to-swap
       as the primary action (that's what a picker's sprite click means everywhere else in this
@@ -760,7 +765,7 @@ leads/backs) is complete and working end to end.
       icons sometimes failing to load in the header's active-team sprite row, on an already-deployed
       team). Same root cause already diagnosed and fixed for `PokemonSprite` (see the sprite entry
       above): the PokeAPI item icon, though it genuinely exists (verified — e.g. Swampertite's URL
-      returns 200), comes from a *remote* host (`raw.githubusercontent.com`) and was being routed
+      returns 200), comes from a _remote_ host (`raw.githubusercontent.com`) and was being routed
       through Next's Image Optimization pipeline (`next.config.ts`'s `images.remotePatterns` allows that
       host), which re-fetches/re-encodes on demand via a serverless function subject to Vercel's
       optimization concurrency/rate limits — an intermittent failure there fires `<Image>`'s `onError`
@@ -800,18 +805,18 @@ leads/backs) is complete and working end to end.
       file): **Full Singles Accuracy** (status conditions, critical hits, weather/terrain/screens) and
       **Doubles & Matchup Planner Integration** (doubles-only mechanics like Helping Hand and spread-move
       ×0.75, plus the real end goal — loading a Lead/Back scenario straight from the matchup planner,
-      blocked on today's data model only tracking *my* Lead/Back picks, not which opponent Pokémon is the
+      blocked on today's data model only tracking _my_ Lead/Back picks, not which opponent Pokémon is the
       target).
 - [x] **Mega forms now use their own ability, not the base form's.** Per a 2026-08-13 bug report: Mega
       Raichu Y showed Lightning Rod's Electric immunity in the calculator, but Mega Raichu Y's real
       ability is No Guard — Mega Evolution always replaces the ability with a fixed one of its own, and
-      a pasted export's `Ability:` line only ever records the *base* form's (Showdown's teambuilder has
+      a pasted export's `Ability:` line only ever records the _base_ form's (Showdown's teambuilder has
       no separate slot for "ability after Mega Evolving"). Added `src/constants/megaFormAbilities.ts`
       (`MEGA_FORM_ABILITY_BY_FORM_KEY`, ~80 entries, sourced from NCP-VGC-Damage-Calculator's
       `pokedex.js`) and `src/lib/species/resolveEffectiveAbility.ts` (species+item+pasted-ability →
       the actual in-battle ability, falling back to the pasted one when there's no curated override —
       a handful of the newest Champions Megas, like Magearna and Zeraora, genuinely keep their base
-      ability by design). `calculateDamage.ts` and the damage-calc UI (which now also *displays* the
+      ability by design). `calculateDamage.ts` and the damage-calc UI (which now also _displays_ the
       resolved ability, previously invisible) both resolve through this instead of reading
       `pokemon.ability` directly. Also renamed the results panel's "Rolls:" label to "Possible damage
       rolls:" with an explanatory `title`, per the same report asking what they meant — each hit's
@@ -827,7 +832,7 @@ leads/backs) is complete and working end to end.
       out of `ParsedPokemon`, since these describe the moment of the hit, not the Pokémon's own build.
       Sand/Snow are modeled as a defender stat boost (Rock Sp.Def / Ice Def ×1.5) applied before the
       base-damage formula, not a post-hoc multiplier, matching how they actually work in-game. Terrain
-      only boosts a *grounded* attacker (`isGrounded`: not Flying-type, not Levitate, no Air Balloon); Misty
+      only boosts a _grounded_ attacker (`isGrounded`: not Flying-type, not Levitate, no Air Balloon); Misty
       Terrain instead halves Dragon damage to a grounded defender. Guts is special-cased directly in the
       engine (not added to `abilityDamageModifiers.ts`) since it both cancels burn's halving and separately
       boosts Attack — a two-part effect that doesn't fit that table's flat-multiplier shape. New "Battle
@@ -840,7 +845,7 @@ leads/backs) is complete and working end to end.
 - [x] **Damage Calculator: type-chart immunity fix, weather-Speed display, both-sides movesets.** Per a
       2026-08-13 bug report (Zap Cannon vs. Ground-type Mega Swampert showed "0-0 (0%-0%) -- not a KO in 4
       hits" instead of "immune") plus two follow-up requests. Fixed `calculateDamage.ts`'s immunity check —
-      it only short-circuited to the `"immune"` result for *ability*-granted immunity (Levitate, Water
+      it only short-circuited to the `"immune"` result for _ability_-granted immunity (Levitate, Water
       Absorb, ...); a plain type-chart 0x multiplier (e.g. Electric vs. Ground) fell through to the normal
       formula instead, producing a 0-damage roll list with misleading "not a KO" text. Now checks
       `typeMultiplier === 0` up front alongside the ability check. Added Speed display for weather-doubling
@@ -848,7 +853,7 @@ leads/backs) is complete and working end to end.
       Swim/Chlorophyll/Sand Rush/Slush Rush, small curated starting set like the other modifier tables) and
       a `weather` prop threaded from `DamageCalculator.tsx` into `RosterPokemonPicker.tsx`, which now shows
       e.g. "216 (×2 Swift Swim)" on the Spe stat when the selected weather matches. Not modeling other
-      Speed-changers (Quick Feet, Unburden, Tailwind) yet. Reworked the move UI to show *both* Pokémon's
+      Speed-changers (Quick Feet, Unburden, Tailwind) yet. Reworked the move UI to show _both_ Pokémon's
       full movesets simultaneously, each move labeled with its own damage-% range against the other side —
       closer to the reference calculator's layout and no longer requiring "pick attacker's move" as the
       only direction. `calculateDamage` now runs once per move per side up front
@@ -903,14 +908,14 @@ leads/backs) is complete and working end to end.
       addition, not just display: added `StatStages`/`attackerStages`/`defenderStages` to
       `DamageCalcOptions`, and `calculateDamage.ts` now applies the standard Gen 3+ stage fraction table
       (`STAT_STAGE_MULTIPLIERS`, e.g. +2 → ×2, -2 → ×0.5) to whichever stat the move's category actually
-      uses. Critical hits correctly ignore a *negative* attacker stage and a *positive* defender stage for
+      uses. Critical hits correctly ignore a _negative_ attacker stage and a _positive_ defender stage for
       that specific stat only (the real Gen 6+ crit mechanic) rather than ignoring stat stages entirely as
       before. A general per-Pokémon `status` dropdown (Healthy/Burned/Poisoned/Badly Poisoned/Paralyzed/
       Asleep/Frozen) replaces the old boolean "Attacker Burned" Field checkbox — deliberately kept as the
       full standard 7-value list even though only Burned (halves Physical damage) and Paralyzed (halves the
       Speed display) currently change any computed number, so the calculator can still track what's
       inflicted without pretending every status does something numeric yet. Fixed Guts while at it: it was
-      keyed to `attackerBurned` specifically, but the real ability boosts Attack ×1.5 under *any* status,
+      keyed to `attackerBurned` specifically, but the real ability boosts Attack ×1.5 under _any_ status,
       not just burn — added `attackerStatused` to `DamageCalcOptions` (burn alone still implies it even if
       a caller only sets `attackerBurned`, so the existing burn/Guts unit test needed no changes) and fixed
       the trigger.
@@ -988,7 +993,7 @@ leads/backs) is complete and working end to end.
       `DamageCalculator.tsx`, called from every place a Pokémon's identity can change (roster pick, Pokémon
       pick, Mega toggle) on both sides — selecting Sand Stream Tyranitar now sets Field weather to Sand
       immediately, without a manual click. Deliberately only sets forward (never clears weather when
-      switching to a non-weather-setter), since the ask was specifically about auto-*setting*.
+      switching to a non-weather-setter), since the ask was specifically about auto-_setting_.
       `RosterPokemonPicker.tsx`'s "Select a Pokémon…" dropdown is replaced with a sprite quick-switch row
       (all of the loaded team's Pokémon as clickable tiles with an item-icon badge, current selection
       outlined) — the same pattern the reference calculator's sidebar and this app's own header team-switcher
@@ -1010,104 +1015,104 @@ leads/backs) is complete and working end to end.
       Grimmsnarl (index 0) pre-selected and no manual clicks; the Attacker team dropdown showed only the two
       "my team" entries (opponents excluded) while the Defender dropdown still showed everything; and
       selecting the Sand Stream Tyranitar team as Defender set Field weather to "Sand" instantly.
-    - Damage Calculator: moved the move lists + result readout to the top of the page, in a 3-column
-      layout (attacker's moves | compact result card | defender's moves) matching the reference
-      calculator's own layout, ahead of the Pokémon pickers and Field panel below — per the user's
-      screenshots, this is "the important part" and shouldn't require scrolling past the setup UI first.
-      `MoveList` was restyled from bordered pill-buttons to a flat divided row list (selected row gets a
-      subtle `bg-zinc-100` highlight instead of a filled color swap) to read as a compact table, matching
-      the reference's list style; each list also grew a small "click a move to see details" hint line under
-      its heading. The previously separate full-width bottom result panel became `ResultPanel`, a new
-      component always rendered as the middle column (with a "Click a move on either side to see the
-      calculation" placeholder when nothing's selected yet) rather than only appearing after a move is
-      picked — content unchanged (SP-annotated calculation line + KO chance + possible-rolls list).
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check
-      selecting Grimmsnarl's Foul Play vs. Excadrill confirmed the 3-column layout renders correctly above
-      the pickers, with the result card updating in the middle column on move selection.
-    - Damage Calculator: the Pokémon pickers + Field panel below the move-list section were restructured
-      into the same 3-column pattern — Attacker picker | Field configuration | Defender picker — instead of
-      a 2-column picker row with the Field panel stacked full-width underneath, per the user's screenshot.
-      The Field panel's per-side conditions (`SideConditionsPanel` for the attacker's and defender's side)
-      switched from a 2-column grid to stacked vertically, since the Field column is now roughly a third of
-      the page width rather than full-width — 2 columns of checkboxes side by side would have been cramped.
-      The Field panel no longer gates on `attackerPokemon` being selected (weather/terrain/critical hit
-      don't depend on a Pokémon being picked) so its grid position stays stable even before any team loads.
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check with
-      Raichu vs. Excadrill confirmed all three columns render at comparable heights side by side.
-    - Damage Calculator: fixed two layout issues the user flagged with an annotated screenshot after the
-      two 3-column passes above. (1) The top move-list row used a custom `[1fr_1.4fr_1fr]` column template
-      while the picker/Field row below used plain equal `grid-cols-3`, so the vertical column boundaries
-      between the two rows didn't line up — changed the top row to `grid-cols-3` too, matching the bottom
-      row exactly so both rows' column edges align. (2) `ResultPanel` (the middle result card) had extra
-      empty space above its content — first attempted as a stretch/height problem (`self-start`), but a
-      follow-up screenshot from the user clarified the actual complaint: the card's *top edge* itself was
-      positioned wrong, starting level with the "MOVES" heading above the move lists rather than level with
-      the first move row, since `MoveList` has a heading+hint block above its bordered row-list that
-      `ResultPanel` didn't have an equivalent of. Fixed by adding an `invisible` spacer inside `ResultPanel`
-      with the exact same heading+hint markup/classes as `MoveList`'s, so it reserves identical height
-      without rendering, then the visible card sits right below it — guaranteed to line up with the move
-      rows by construction (same classes), not by hand-tuned margins. Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (127/127) all clean; live browser check reproducing the user's exact
-      Raichu vs. Mega Blastoise Water Pulse matchup confirmed the card's top edge now lines up with
-      "Zap Cannon"/"Water Pulse" (the top move row) instead of the headings above them.
-    - Damage Calculator: `formatCalculationLabel`'s result text now folds in each side's stat stage when
-      non-zero, e.g. "+6 19 Atk Staraptor Close Combat vs. 25 HP / +6 2 Def Staraptor" — the SP number was
-      already there, but a +6 Atk/+6 Def boost set via the Stage column wasn't reflected in the text at all,
-      only in the computed damage. `formatStatToken` prefixes the SP figure with `+N`/`-N ` when the stage
-      backing `result.attackStatKey`/`defenseStatKey` is non-zero (via new `STAGE_FIELD_BY_ATTACK_STAT`/
-      `STAGE_FIELD_BY_DEFENSE_STAT` lookups, since the stage lives on `PokemonBattleState` while the SP
-      figure comes from `calculateStatBreakdown`). Required threading the correct `PokemonBattleState` into
-      `ResultPanel` — whichever of `attackerBattleState`/`defenderBattleState` is actually "attacking" flips
-      with `selectedMove.side`, same ternary already used for `selectedAttackerMon`/`selectedDefenderMon`.
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check
-      reproducing the user's exact Staraptor-mirror matchup with +6 Atk / +6 Def set confirmed the result
-      text now reads "+6 19 Atk Staraptor Close Combat vs. 25 HP / +6 2 Def Staraptor: 50-59 (27% - 31.9%)
-      -- guaranteed 4HKO", matching the numbers from their screenshot with the stages now shown.
-    - Damage Calculator: extended `formatCalculationLabel` to fold in Helping Hand and damage-reducing
-      conditions too, following the same reference-calculator screenshot pattern (e.g. "... Helping Hand
-      Poltergeist vs. ... through Reflect: ..."). "Helping Hand " is prefixed right before the move name
-      when `options.attackerHelpingHand` is set; a new `activeDamageReducers()` helper builds a " through
-      X"/" through X and Y" suffix after the defender's species from whichever of Reflect/Light
-      Screen/Aurora Veil/Friend Guard actually applied — Reflect and Light Screen only count when they
-      match the move's own category (mirroring `screenMultiplier`'s category check in
-      `calculateDamage.ts`, derived here from `result.attackStatKey` since "atk" and "spa" always
-      correspond 1:1 to Physical/Special in this engine), Aurora Veil and Friend Guard apply regardless of
-      category, matching the engine's own precedence (Aurora Veil supersedes the other two screens).
-      `formatCalculationLabel` needed the actual resolved `DamageCalcOptions` for this calculation, not
-      just the two `PokemonBattleState`s — added a `selectedOptions` (picking `attackerMoveOptions` or
-      `defenderMoveOptions` by `selectedMove.side`, the same options objects already fed into
-      `calculateDamage` for the move list) threaded through `ResultPanel`. Deliberately left out of scope:
-      the item name and nature "+"/"-" suffix also visible in the reference screenshot — the user's ask was
-      specifically about damage modifiers being reflected, not the full Showdown-calc text convention.
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check
-      (Staraptor mirror, attacker's Helping Hand + defender's Reflect both toggled on, Close Combat
-      selected) confirmed the text reads "19 Atk Staraptor Helping Hand Close Combat vs. 25 HP / 2 Def
-      Staraptor through Reflect: 37-44 (20% - 23.8%) -- not a KO in 4 hits", with the displayed range
-      matching what Reflect's 0.5x actually did to the numbers.
-    - Damage Calculator: reworked the Field panel's controls to match the reference calculator's pill-toggle
-      style throughout, per the user's screenshots. Extracted a shared `ToggleButton` component (the same
-      `rounded-full border ...` pill style Weather/Terrain already used) and reused it for Weather, Terrain,
-      Critical Hit/Fairy Aura/Gravity (previously plain checkboxes), and every per-side condition — replacing
-      all the `<input type="checkbox">` rows in this panel. The two side-condition panels (attacker's/
-      defender's) also moved from stacked vertically (one block, then the other below it) to side by side in
-      a `grid-cols-2`, each rendering its conditions as a single column of full-width toggle buttons instead
-      of a 2-column grid of checkbox+label rows — Reflect and Light Screen share one row split in half
-      (`flex-1` each), matching the reference's own pairing, since they're mutually exclusive in practice.
-      `SIDE_CONDITION_FIELDS` (the old generic checkbox-mapping array) was removed since the explicit
-      per-button JSX needed direct control over the Reflect/Light Screen pairing anyway. Verified:
-      `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check confirmed every
-      toggle (Weather, Terrain, Critical Hit/Fairy Aura/Gravity, and both side panels' conditions) switches
-      between the pill's active (filled `bg-zinc-600`) and inactive (outlined) states correctly, and the two
-      side panels now render side by side instead of stacked.
-    - Damage Calculator: added "add any Pokémon" — a from-scratch build (species, ability, held item,
-      nature, Stat Points, up to 4 moves), gated by a new first-class "Regulation" concept, starting with
-      Regulation M-B. Sources (both user-supplied): the legal species list came from
-      [Bulbapedia's Regulation Set M-B page](https://bulbapedia.bulbagarden.net/wiki/Regulation_Set_M-B)
-      (235 species — resolved to exact `species.json` keys, including ~25 tricky regional/gender/size/Rotom-
-      forme ones, e.g. Bulbapedia's "Gourgeist (Jumbo Variety)" → `gourgeist-super`, PokeAPI/Showdown's own
-      name for it); the legal item list from [RotomPicks' item page](https://rotompicks.com/en/items/) (148
-      entries: 45 held items, 75 Mega Stones, 28 Berries). New data: `src/data/regulations/regulationMB.ts`
-      + `index.ts` (a `Regulation` registry mirroring `presets/`' one-file-per-entry pattern, so a future
+  - Damage Calculator: moved the move lists + result readout to the top of the page, in a 3-column
+    layout (attacker's moves | compact result card | defender's moves) matching the reference
+    calculator's own layout, ahead of the Pokémon pickers and Field panel below — per the user's
+    screenshots, this is "the important part" and shouldn't require scrolling past the setup UI first.
+    `MoveList` was restyled from bordered pill-buttons to a flat divided row list (selected row gets a
+    subtle `bg-zinc-100` highlight instead of a filled color swap) to read as a compact table, matching
+    the reference's list style; each list also grew a small "click a move to see details" hint line under
+    its heading. The previously separate full-width bottom result panel became `ResultPanel`, a new
+    component always rendered as the middle column (with a "Click a move on either side to see the
+    calculation" placeholder when nothing's selected yet) rather than only appearing after a move is
+    picked — content unchanged (SP-annotated calculation line + KO chance + possible-rolls list).
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check
+    selecting Grimmsnarl's Foul Play vs. Excadrill confirmed the 3-column layout renders correctly above
+    the pickers, with the result card updating in the middle column on move selection.
+  - Damage Calculator: the Pokémon pickers + Field panel below the move-list section were restructured
+    into the same 3-column pattern — Attacker picker | Field configuration | Defender picker — instead of
+    a 2-column picker row with the Field panel stacked full-width underneath, per the user's screenshot.
+    The Field panel's per-side conditions (`SideConditionsPanel` for the attacker's and defender's side)
+    switched from a 2-column grid to stacked vertically, since the Field column is now roughly a third of
+    the page width rather than full-width — 2 columns of checkboxes side by side would have been cramped.
+    The Field panel no longer gates on `attackerPokemon` being selected (weather/terrain/critical hit
+    don't depend on a Pokémon being picked) so its grid position stays stable even before any team loads.
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check with
+    Raichu vs. Excadrill confirmed all three columns render at comparable heights side by side.
+  - Damage Calculator: fixed two layout issues the user flagged with an annotated screenshot after the
+    two 3-column passes above. (1) The top move-list row used a custom `[1fr_1.4fr_1fr]` column template
+    while the picker/Field row below used plain equal `grid-cols-3`, so the vertical column boundaries
+    between the two rows didn't line up — changed the top row to `grid-cols-3` too, matching the bottom
+    row exactly so both rows' column edges align. (2) `ResultPanel` (the middle result card) had extra
+    empty space above its content — first attempted as a stretch/height problem (`self-start`), but a
+    follow-up screenshot from the user clarified the actual complaint: the card's _top edge_ itself was
+    positioned wrong, starting level with the "MOVES" heading above the move lists rather than level with
+    the first move row, since `MoveList` has a heading+hint block above its bordered row-list that
+    `ResultPanel` didn't have an equivalent of. Fixed by adding an `invisible` spacer inside `ResultPanel`
+    with the exact same heading+hint markup/classes as `MoveList`'s, so it reserves identical height
+    without rendering, then the visible card sits right below it — guaranteed to line up with the move
+    rows by construction (same classes), not by hand-tuned margins. Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (127/127) all clean; live browser check reproducing the user's exact
+    Raichu vs. Mega Blastoise Water Pulse matchup confirmed the card's top edge now lines up with
+    "Zap Cannon"/"Water Pulse" (the top move row) instead of the headings above them.
+  - Damage Calculator: `formatCalculationLabel`'s result text now folds in each side's stat stage when
+    non-zero, e.g. "+6 19 Atk Staraptor Close Combat vs. 25 HP / +6 2 Def Staraptor" — the SP number was
+    already there, but a +6 Atk/+6 Def boost set via the Stage column wasn't reflected in the text at all,
+    only in the computed damage. `formatStatToken` prefixes the SP figure with `+N`/`-N ` when the stage
+    backing `result.attackStatKey`/`defenseStatKey` is non-zero (via new `STAGE_FIELD_BY_ATTACK_STAT`/
+    `STAGE_FIELD_BY_DEFENSE_STAT` lookups, since the stage lives on `PokemonBattleState` while the SP
+    figure comes from `calculateStatBreakdown`). Required threading the correct `PokemonBattleState` into
+    `ResultPanel` — whichever of `attackerBattleState`/`defenderBattleState` is actually "attacking" flips
+    with `selectedMove.side`, same ternary already used for `selectedAttackerMon`/`selectedDefenderMon`.
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check
+    reproducing the user's exact Staraptor-mirror matchup with +6 Atk / +6 Def set confirmed the result
+    text now reads "+6 19 Atk Staraptor Close Combat vs. 25 HP / +6 2 Def Staraptor: 50-59 (27% - 31.9%)
+    -- guaranteed 4HKO", matching the numbers from their screenshot with the stages now shown.
+  - Damage Calculator: extended `formatCalculationLabel` to fold in Helping Hand and damage-reducing
+    conditions too, following the same reference-calculator screenshot pattern (e.g. "... Helping Hand
+    Poltergeist vs. ... through Reflect: ..."). "Helping Hand " is prefixed right before the move name
+    when `options.attackerHelpingHand` is set; a new `activeDamageReducers()` helper builds a " through
+    X"/" through X and Y" suffix after the defender's species from whichever of Reflect/Light
+    Screen/Aurora Veil/Friend Guard actually applied — Reflect and Light Screen only count when they
+    match the move's own category (mirroring `screenMultiplier`'s category check in
+    `calculateDamage.ts`, derived here from `result.attackStatKey` since "atk" and "spa" always
+    correspond 1:1 to Physical/Special in this engine), Aurora Veil and Friend Guard apply regardless of
+    category, matching the engine's own precedence (Aurora Veil supersedes the other two screens).
+    `formatCalculationLabel` needed the actual resolved `DamageCalcOptions` for this calculation, not
+    just the two `PokemonBattleState`s — added a `selectedOptions` (picking `attackerMoveOptions` or
+    `defenderMoveOptions` by `selectedMove.side`, the same options objects already fed into
+    `calculateDamage` for the move list) threaded through `ResultPanel`. Deliberately left out of scope:
+    the item name and nature "+"/"-" suffix also visible in the reference screenshot — the user's ask was
+    specifically about damage modifiers being reflected, not the full Showdown-calc text convention.
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check
+    (Staraptor mirror, attacker's Helping Hand + defender's Reflect both toggled on, Close Combat
+    selected) confirmed the text reads "19 Atk Staraptor Helping Hand Close Combat vs. 25 HP / 2 Def
+    Staraptor through Reflect: 37-44 (20% - 23.8%) -- not a KO in 4 hits", with the displayed range
+    matching what Reflect's 0.5x actually did to the numbers.
+  - Damage Calculator: reworked the Field panel's controls to match the reference calculator's pill-toggle
+    style throughout, per the user's screenshots. Extracted a shared `ToggleButton` component (the same
+    `rounded-full border ...` pill style Weather/Terrain already used) and reused it for Weather, Terrain,
+    Critical Hit/Fairy Aura/Gravity (previously plain checkboxes), and every per-side condition — replacing
+    all the `<input type="checkbox">` rows in this panel. The two side-condition panels (attacker's/
+    defender's) also moved from stacked vertically (one block, then the other below it) to side by side in
+    a `grid-cols-2`, each rendering its conditions as a single column of full-width toggle buttons instead
+    of a 2-column grid of checkbox+label rows — Reflect and Light Screen share one row split in half
+    (`flex-1` each), matching the reference's own pairing, since they're mutually exclusive in practice.
+    `SIDE_CONDITION_FIELDS` (the old generic checkbox-mapping array) was removed since the explicit
+    per-button JSX needed direct control over the Reflect/Light Screen pairing anyway. Verified:
+    `npx tsc --noEmit`, `npm run lint`, `npm test` (127/127) all clean; live browser check confirmed every
+    toggle (Weather, Terrain, Critical Hit/Fairy Aura/Gravity, and both side panels' conditions) switches
+    between the pill's active (filled `bg-zinc-600`) and inactive (outlined) states correctly, and the two
+    side panels now render side by side instead of stacked.
+  - Damage Calculator: added "add any Pokémon" — a from-scratch build (species, ability, held item,
+    nature, Stat Points, up to 4 moves), gated by a new first-class "Regulation" concept, starting with
+    Regulation M-B. Sources (both user-supplied): the legal species list came from
+    [Bulbapedia's Regulation Set M-B page](https://bulbapedia.bulbagarden.net/wiki/Regulation_Set_M-B)
+    (235 species — resolved to exact `species.json` keys, including ~25 tricky regional/gender/size/Rotom-
+    forme ones, e.g. Bulbapedia's "Gourgeist (Jumbo Variety)" → `gourgeist-super`, PokeAPI/Showdown's own
+    name for it); the legal item list from [RotomPicks' item page](https://rotompicks.com/en/items/) (148
+    entries: 45 held items, 75 Mega Stones, 28 Berries). New data: `src/data/regulations/regulationMB.ts`
+    - `index.ts` (a `Regulation` registry mirroring `presets/`' one-file-per-entry pattern, so a future
       Regulation M-C is one new file + one array entry), verified by `regulationMB.test.ts` — every species
       key resolves in `species.json`/`baseStats.json`/`speciesTypes.json`, and (this is the real safety net
       for a hand-typed 235-entry list) `normalizeSpeciesKey(formatSpeciesDisplayName(key)) === key` holds
@@ -1134,7 +1139,7 @@ leads/backs) is complete and working end to end.
       made the edit UI appear even for ordinary pasted Pokémon since the JSX only checked "is this callback
       present", not "is this actually the custom roster" — fixed by gating each editable section on
       `isCustomRoster && onXChange` together. A second bug caught in the same pass: `attackerPokemon`'s
-      lookup used the full `rosters` array (which holds the *defender's* "custom" pseudo-roster) instead of
+      lookup used the full `rosters` array (which holds the _defender's_ "custom" pseudo-roster) instead of
       `myTeamRosters` (the attacker's own) — both pseudo-rosters share the id `"custom"`, so this would have
       resolved the attacker's custom Pokémon from the wrong side's array. Deliberately out of scope: per-
       species move learnsets (any move stays pickable, consistent with this app's existing theorycrafting-
@@ -1147,1439 +1152,1439 @@ leads/backs) is complete and working end to end.
       Raichu-Alola Thunderbolt vs. 0 HP / 0 SpD Blastoise: 89-105 (57.8% - 68.2%) -- guaranteed 2HKO") ran
       correctly end-to-end between two from-scratch Pokémon; also confirmed the species search excludes a
       known-restricted example (Mewtwo — "No matches.") and the remove ("×") button works.
-    - Damage Calculator: reworked the Attacker/Defender pickers to select one individual Pokémon directly
-      instead of a two-step "pick a team, then pick within it" flow, per the user's screenshots. The "Select
-      a team…" `<select>` is gone; in its place, `flattenRosterOptions()` builds one flat searchable list
-      across every roster on that side (`"Staraptor (MM - Raichu Staraptor (my team))"`, etc.), reusing the
-      `SearchableSelect` combobox built earlier for species/move search — each option's id packs both the
-      roster id and the index within it (`${rosterId}#${index}`, split from the last `#` since roster ids
-      like `"team:<uuid>"` already contain colons but never `#`), unpacked by `parseFlattenedOptionId()`.
-      The old horizontal sprite row moved to a vertical strip on the *right* of the detail panel instead of
-      above it — now serving specifically as a "quick-switch to a teammate in the currently selected roster"
-      control (still wired through the existing `onPokemonChange`), while the flattened search is the
-      primary "which Pokémon, from anywhere" entry point. The always-visible "+" button (add a custom
-      Pokémon) moved next to the search input so it's reachable regardless of what's currently selected,
-      rather than only appearing inside the old sprite row once the Custom roster was already active.
-      `RosterPokemonPicker`'s `onRosterChange` prop was replaced with `onSelectPokemon(rosterId, index)` —
-      needed because the old "call onRosterChange then onPokemonChange" two-step would have read a stale
-      `attackerRosterId`/`defenderRosterId` from closure inside the second call (React state updates from
-      the first call aren't visible until the next render), silently looking up the wrong roster's Pokémon
-      for the auto-weather check; one combined callback with both values as parameters avoids that
-      entirely. Both sides now also default to the very first Pokémon across every roster the first time
-      that list is available (the Defender never auto-selected anything before this) — folded into the
-      Attacker's existing "default to the header's active team" render-time adjustment as a fallback when
-      there's no active team to prefer, and a new analogous one-shot default for the Defender. Separately
-      fixed `SearchableSelect`'s dropdown to match its input's width exactly (previously a fixed `w-64`
-      regardless of the input) — measured via `triggerRef.current?.offsetWidth` inside a `useEffect` (not
-      during render, which React Compiler's lint rule forbids for ref reads) and applied as an explicit
-      `width` style alongside `useViewportSafePosition`'s position. Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (133/133) all clean; live browser check confirmed the flattened search lists
-      individual Pokémon with team context, the dropdown width now matches the input, both sides auto-select
-      their first Pokémon on load with no manual clicks, and both the side-strip teammate switch and the
-      persistent "+" add-custom-Pokémon button still work correctly after the restructure.
-    - Damage Calculator: corrected course on the flattened-roster search above after the user clarified
-      what they actually meant — team/opponent selection is omitted entirely for now, not flattened. The
-      search dropdown on both sides is now purely the Regulation M-B species search (previously only used
-      for the "add a custom Pokémon" popup) — picking any result always builds a fresh from-scratch Pokémon
-      (`buildCustomPokemon()`, now exported from `RosterPokemonPicker.tsx`), never loads a saved team's
-      paste. The side "teammates" strip's source changed from "whichever roster is currently selected" to a
-      single fixed source: the header's active team (`useMyTeams()`'s `activeTeamId`) — the *same* strip
-      content on both Attacker and Defender, confirmed with the user rather than assumed, since Defender
-      showing "your own" team is a real behavior change from defender-picks-an-opponent. Clicking a
-      teammate loads that real pasted Pokémon (read-only ability/item/moves, as before this whole custom-
-      Pokémon feature existed); picking from the species search always builds an editable custom one.
-      This let a lot of machinery from the previous two passes disappear entirely: `flattenRosterOptions`/
-      `parseFlattenedOptionId`, the `RosterOption`/roster-array plumbing, the `onSelectPokemon(rosterId,
-      index)` two-argument callback, the array-based `attackerCustomPokemon`/`defenderCustomPokemon` state
-      (now just a single `attackerPokemon`/`defenderPokemon` object per side, since there's no longer a
-      "list of custom Pokémon" to manage — selecting a new species simply replaces whichever Pokémon was
-      showing), the always-empty "no active team" gate and its "add a team first" message, and the
-      `useOpponents()` hook entirely (opponents are no longer read anywhere in this component). Both sides
-      still default sensibly: to the active team's first Pokémon when one exists, falling back to the very
-      first Regulation M-B species (`DEFAULT_SPECIES_KEY`, i.e. Venusaur) built as a custom Pokémon when
-      there's no active team at all. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all
-      clean; live browser check confirmed both sides default to the active team's Raichu, the species search
-      builds a fully custom, editable Garchomp (correct base stats, ability/item/moves all editable) without
-      touching the teammates strip, and clicking a teammate afterward correctly swaps back to a real,
-      read-only Pokémon from the paste.
-    - Damage Calculator: made the header's team switcher persistent and visible across pages, and turned
-      the read-only "teammates strip" from the previous pass into a real, editable working roster (add/
-      remove, capped at `MAX_SIDEBAR_POKEMON` = 6) with different seeding rules per side, all per the user's
-      explicit requests.
-      - **Persistence turned out to already work** — `activeTeamId` was already written to and read from
-        IndexedDB (`src/lib/storage/db.ts`'s `meta` store) by `useMyTeams()`, so it already survived
-        navigation. The actual gap (confirmed via a research pass before implementing) was that
-        `/damage-calc/page.tsx` never rendered `MyTeamHeader` at all — it had its own bespoke header with
-        just a logo and a link back, so the active team was invisible and unreachable there even though the
-        underlying selection was intact. Fixed by having `/damage-calc/page.tsx` call `useMyTeams()` and
-        render `MyTeamHeader` exactly as `/matchup-planner/page.tsx` already does (no shared layout — this
-        repo has none for either route yet, so matching the existing per-page composition pattern was the
-        smaller, more consistent change over introducing a Next.js route group). `MyTeamHeader.tsx` needed
-        one adjustment to be reusable this way: its single nav link was hardcoded to `/damage-calc`, which
-        would have self-linked when rendered on that same page — replaced with a `currentPage:
-        "matchup-planner" | "damage-calc"` prop (via a small `NAV_LINK_BY_PAGE` lookup) so the link always
-        points at the *other* page.
-      - **Sidebar redesign**: `RosterPokemonPicker`'s `teamPokemon`/`selectedTeamIndex`/`onSelectTeamPokemon`
-        (read-only, previous pass) became `sidebar: SidebarEntry[]` (`{ pokemon, isCustom }`, exported)/
-        `selectedIndex`/`onSelectIndex`/`onAddPokemon`/`onRemovePokemon` — a full add/remove working roster,
-        capped at `MAX_SIDEBAR_POKEMON`. Adding (from either the main species search or the sidebar's own
-        "+" tile, both wired to the same `onAddPokemon`) appends a new custom entry while under the cap;
-        at the cap it replaces whichever entry is currently selected instead of blocking, so the search bar
-        never needs to be disabled. Each tile grew a remove ("×") badge (mirrors the pattern already used
-        for moves/custom-species removal elsewhere in this file). Removing the currently-selected entry
-        clears the selection; removing an entry *before* the selected one shifts the selected index down by
-        one so it keeps pointing at the same Pokémon post-splice — a straightforward but easy-to-miss
-        off-by-one that would otherwise silently show the wrong Pokémon after a remove.
-      - **Per-side seeding, per explicit instruction**: Attacker's sidebar seeds from the header's active
-        team's full roster (once, on first load) if one exists, otherwise stays empty — no fallback species,
-        unlike every other "default" in this feature so far. Defender's sidebar always starts with exactly
-        one entry, the first Regulation M-B species (Venusaur) built as a custom Pokémon, regardless of
-        whether an active team exists — it never seeds from the active team, since Defender is conceptually
-        "the other side," not a mirror of Attacker's team.
-      - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check
-        switched the header's active team to "M-Swamper" on `/matchup-planner`, navigated to `/damage-calc`,
-        and confirmed the Attacker sidebar auto-loaded all 6 of M-Swamper's Pokémon (Grimmsnarl selected)
-        while the Defender showed just Venusaur; added Tyranitar to the Defender's sidebar via its "+" tile
-        (auto-set Field weather to Sand from Sand Stream), then removed Venusaur and confirmed Tyranitar
-        correctly shifted to index 0 and stayed selected.
-    - Damage Calculator: the Moves editor (chips with remove buttons + a `SearchableSelect` to add) was
-      gated on `isCustom && onMovesChange`, so it only ever appeared for from-scratch Pokémon — a real
-      pasted team member's moves were fully computable and shown in the top move-list panel, but had no way
-      to be viewed or changed from the detail panel itself. Changed the gate to just `onMovesChange` (always
-      truthy — both sides wire it unconditionally), matching how `attackerMovesChange`/`defenderMovesChange`
-      already operated generically on `sidebar[selectedIndex].pokemon.moves` regardless of `isCustom`; ability
-      and item stayed read-only for real team members (unchanged, since those are closer to "which build is
-      this" identity than a quick swap). Editing a real team member's moves this way is local-only, same as
-      every other in-calculator override (Stat Points, nature, stat stages) — never written back to the saved
-      team. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check
-      showed Grimmsnarl's real parsed moveset (Foul Play/Parting Shot/Reflect/Light Screen) as editable
-      chips, and removing Foul Play correctly updated both the detail panel and the top move-list panel.
-    - Damage Calculator: two follow-up polish requests on that Moves editor. (1) Changing an already-picked
-      move required removing it first (clearing the slot) before a fresh empty search would appear — fixed
-      by giving `SearchableSelect` a new optional `value` prop: the input now always shows the current move
-      (instead of only rendering while empty), and clicking/focusing it selects that text and reopens the
-      dropdown with every option available (not narrowed to a self-match) — so replacing a move is click,
-      type-or-pick, done, no separate clear step. Internally this is still a local, editable text buffer
-      (not a fully controlled input) that only resyncs to `value` when the prop itself changes — e.g.
-      switching which slot/Pokémon is shown — via the same render-time "adjust state when a prop changes"
-      pattern used elsewhere in this feature, not a `useEffect`. Each slot's `onSelect` now replaces at that
-      index when it already holds a move (`next[slot] = ...`) instead of always appending, and a separate
-      "×" button next to the input still clears the slot entirely. (2) Moved the whole Moves section to
-      render after Status/Current HP instead of before the stat table, per explicit request. Verified:
-      `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check clicked
-      Grimmsnarl's "Foul Play" slot (it opened pre-selected with the full move list visible), typed "Thunder
-      Wave", and confirmed it replaced Foul Play in one step with the top move-list panel updating to match.
-    - Damage Calculator: fixed a real bug the user hit while rapidly adding/changing moves — the top
-      move-list panel would show extra, stacked/overlapping rows (duplicated move names) that didn't match
-      the 4 moves actually shown in the detail panel's editor. Root cause: `MoveList`'s rows were keyed by
-      `key={move}` (the move's own name), but nothing prevented picking the same move for two different
-      slots — a classic React duplicate-key situation, where a shared key confuses reconciliation and can
-      leave stale rows behind even after the underlying data changes again. Two-part fix: (1) `MoveList` now
-      keys each row by its array index instead of the move name — always unique regardless of value
-      duplicates, the direct fix for the reported symptom; (2) the Moves editor's per-slot options are now
-      filtered to exclude whatever's already picked in the *other* slots (still showing the slot's own
-      current move so re-opening it works normally) — since a real Pokémon can't know the same move twice
-      anyway, this closes off the root scenario rather than just patching its rendering symptom. Verified:
-      `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check reproduced the
-      original scenario on a custom Pidgeot (added Acid Armor/Bolt Strike/Acid Spray/Acid Downpour, then
-      rapidly replaced the first slot with Whirlwind) — the top move-list panel stayed in sync with exactly
-      4 correct, non-duplicated rows at every step.
-    - Damage Calculator: fixed a real bug — held item was completely absent (not just read-only, actually
-      missing from the DOM) for a real pasted team member, since it was still gated on `isCustom &&
-      onItemChange` (a leftover from before the same fix was applied to Moves) with no read-only fallback
-      the way ability had one. Same fix as Moves: dropped the `isCustom` gate, so the item `<select>` is now
-      always shown and editable regardless of source. Added one safety net beyond the moves fix: a pasted
-      team's real item might not be one of the enumerated Regulation M-B items (an older or off-meta paste)
-      — the select now injects that value as its own `<option>` when it isn't already in the Held
-      Items/Berries/Mega Stone lists, so it displays accurately instead of silently falling back to
-      "(no item)" while the underlying `pokemon.item` stays correct either way. Also confirmed and explained
-      (this was a real, fair question, not just a bug report) that item effects already do feed into the
-      calculation and always have, independent of this fix: `calculateFinalStats.ts` applies Choice Scarf's
-      ×1.5 Speed multiplier directly off `pokemon.item`; `calculateDamage.ts` applies `ITEM_DAMAGE_MODIFIERS`
-      (`src/constants/itemDamageModifiers.ts` — Choice Band/Specs, Life Orb, Expert Belt, Muscle Band, Wise
-      Glasses, Assault Vest, every type-boosting item) for both attacker and defender, plus Air Balloon's
-      Ground immunity and Focus Sash — all read straight off `ParsedPokemon.item`, so they've applied to
-      custom-built and real pasted Pokémon identically the whole time; the missing item *display* never
-      affected the actual math, only whether the user could see/change it. Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (133/133) all clean; live browser check showed Grimmsnarl's real held item
-      ("Light Clay") now rendering in an editable select, where the row was previously missing entirely.
-    - Damage Calculator: replaced the held-item `<select>` with the same `SearchableSelect` combobox already
-      used for moves, per request ("make the item select in a custom select, with autocomplete as the
-      attacks"). `itemOptions` is now built per-Pokémon in `RosterPokemonPicker.tsx` (a flat list: the
-      Pokémon's own species-specific Mega Stone(s) first, labeled `"{item} (Mega Stone)"` since the combobox
-      has no optgroup grouping, then every Regulation M-B held item/Berry; a real pasted team's off-meta item
-      is still injected as its own option first, same safety net as the previous native select) and passed to
-      `SearchableSelect` via its existing `value`/`onSelect` props — clicking the field opens the dropdown
-      with the current item selected and every option browsable/searchable, exactly like a move slot. Paired
-      with a small "×" clear button next to the field (`onItemChange(undefined)`), replacing the native
-      select's "(no item)" option. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all
-      clean; live browser check on Grimmsnarl confirmed the field shows "Light Clay", opens a searchable
-      dropdown listing every option, typing "choice s" filters to "Choice Scarf", picking it updates the
-      field and correctly re-applies the ×1.5 Speed multiplier (80 → 120 Final Spe), and the "×" button
-      clears it back to empty; also confirmed on the Defender (Venusaur) that an empty item field opens with
-      "Venusaurite (Mega Stone)" listed first ahead of the full Held Items/Berries list.
-    - Damage Calculator: converted the ability and nature `<select>`s to the same `SearchableSelect` combobox
-      as items/moves, per request ("can we make ability select and nature select the same pattern"). Added a
-      `compact` prop to `SearchableSelect.tsx` (smaller padding/font-size for both the input and the dropdown
-      rows) since ability/nature sit in a tight inline row next to each other, not a full-width form field —
-      the underlying filter/open/sync/click-outside behavior is unchanged, only the sizing. `RosterPokemonPicker.tsx`
-      gained a module-level `NATURE_OPTIONS` (all 25 natures, `id` the lowercase key `applyStatOverrides`
-      expects, `label` the existing `natureLabel()` "+/-" format) and a per-Pokémon `abilitySelectOptions`
-      (mapped from the existing form-aware `abilityOptions`). Ability keeps its existing `isCustom` gate
-      unchanged — still a read-only `<span>` for real pasted team members, only its *editable* case (custom
-      Pokémon) is now the combobox instead of a native select; nature was already always-editable for every
-      Pokémon and is now the combobox unconditionally. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
-      (133/133) all clean; live browser check on Grimmsnarl (real team member) confirmed the nature field
-      opens a searchable dropdown of all 25 natures, typing "timid" filters to it, and picking Timid correctly
-      recalculates Speed (80 → 88) and Sp. Def (119 → 109); on Venusaur (custom) confirmed the ability field
-      opens with its two real options (Overgrow, Chlorophyll) rather than the full ability list.
-    - Damage Calculator: dropped the ability field's `isCustom` gate too — same bug/fix class as the earlier
-      Moves and Item fixes ("the ability of my team appears like a text, why don't show in the a select?").
-      It had been deliberately read-only for real pasted team members (a prior design call — "closer to
-      'which build is this' identity than a quick swap") but the user now wants it editable everywhere, same
-      as everything else in this panel; the read-only `<span>` fallback stays in the component only for the
-      case where a caller doesn't pass `onAbilityChange` at all (both Attacker and Defender always do, so in
-      practice this row is always the combobox now). Removing the gate left the local `isCustom` variable in
-      `RosterPokemonPicker.tsx` unused, so it was deleted along with it. Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (133/133) all clean; live browser check confirmed Grimmsnarl's (a real pasted
-      team member) ability field now opens a searchable dropdown of its 3 real abilities (Prankster, Frisk,
-      Pickpocket) instead of rendering as plain text.
-    - Damage Calculator: gave the held-item field the same `compact` sizing as ability/nature, per request
-      ("I like the slim version of the select, can we make the item the same pattern... keep moveset select
-      the way they are") — a one-line change (added `compact` to the item `SearchableSelect` call in
-      `RosterPokemonPicker.tsx`), no other behavior change. Moves deliberately left as the larger/default
-      size, per the explicit "keep moveset select the way they are." Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (133/133) all clean; live browser check confirmed the item field now matches
-      ability/nature's slim styling while the 4 move fields are visually unchanged.
-    - Damage Calculator: fixed a real gap — type-resist Berries (Occa, Yache, Colbur, etc.) and Chilan Berry
-      weren't factored into the calculation at all, per the user's question ("there are berries that reduce
-      supereffective hits from attacks like occa berry, are we considering that for calculation"). Added 17
-      type-resist Berries (`TYPE_RESIST_BERRIES` in `src/constants/itemDamageModifiers.ts`, one per
-      attacking type except Normal) as `defender` entries in `ITEM_DAMAGE_MODIFIERS` — `{ multiplier: 0.75,
-      types: [type], onlySuperEffective: true }`, the modern Gen 6+ value (25% reduction; it was 50%
-      pre-Gen 6) — reusing the existing `onlySuperEffective` flag and `sideMultiplier()` machinery already in
-      `calculateDamage.ts` for Expert Belt, so no engine changes were needed, only new table entries. Also
-      added Chilan Berry (`{ multiplier: 0.5, types: ["Normal"] }`, no `onlySuperEffective` — it unconditionally
-      halves Normal-type damage since Normal is never actually super-effective against anything, the one
-      type with no natural "resist berry" case otherwise) — together these cover all 18 attacking types.
-      Deliberately still deferred, per the file's existing header comment: Sitrus/Oran (trigger on low HP,
-      needs a damage-simulation loop) and the 7 status-cure Berries (cure status, don't affect damage taken).
-      Added 2 unit tests to `calculateDamage.test.ts`: a type-resist Berry (Yache) cuts a confirmed 4x
-      super-effective hit by 25% but is a no-op on a neutral hit of the same type; Chilan Berry halves a
-      neutral Normal-type hit unconditionally. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
-      (135/135) all clean; live browser check with Grimmsnarl's Foul Play (Dark, super-effective) vs. a Gengar
-      (Ghost/Poison) holding Colbur Berry confirmed the shown damage range dropped from 125.9-148.9% to
-      94.1-111.1% — a 25% cut, matching the formula.
-    - Damage Calculator: the result text (`formatCalculationLabel` in `DamageCalculator.tsx`) now prefixes
-      each side's held item onto its species name — e.g. "Occa Berry Sinistcha" — the standard Showdown-calc
-      convention, per request ("can we reflect that in the calc text", referring to the previous entry's
-      resist-Berry fix: the berry affected the number but was invisible in the text explaining it). A 2-line
-      change: `attackerItemLabel`/`defenderItemLabel` (`` `${item} ` `` when present, else `""`) inserted
-      right before `attacker.species`/`defender.species` in the existing template string — no change to what
-      the label already showed (Stat Points, stat stage, Helping Hand, screens/Friend Guard). Verified:
-      `npx tsc --noEmit`, `npm run lint`, `npm test` (135/135) all clean; live browser check reproduced the
-      screenshot's exact pattern — Grimmsnarl (Light Clay) Foul Play vs. Venusaur holding Colbur Berry now
-      reads "...vs. 0 HP / 0 Def Colbur Berry Venusaur" with the item visible in the line itself.
-    - Damage Calculator: moved the item field's clear "×" from a separate button next to the combobox to
-      inline inside the input's own right edge, per request ("would like to move the clear (x button) inside
-      the input it self"). `SearchableSelect.tsx` gained a general `onClear?: () => void` prop — when set and
-      `value` is present, an absolutely-positioned "×" button renders inside the input's right edge (the
-      input gains matching right padding, `pr-5`/`pr-8` compact/default, so typed text never runs under it);
-      clicking it calls `onClear()` and closes the dropdown without triggering the input's own `onFocus`-opens
-      behavior. `RosterPokemonPicker.tsx`'s item field now passes `onClear={() => onItemChange(undefined)}`
-      instead of rendering its own adjacent button, collapsing the `flex items-center gap-1` wrapper back down
-      to just the `SearchableSelect` itself. Moves keep their existing external "×" button, unchanged (this
-      was scoped to the item field only, matching the screenshot). Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (135/135) all clean; live browser check confirmed the "×" now sits inside
-      Grimmsnarl's item input exactly like the screenshot, clicking it clears the item without opening the
-      dropdown, and clicking elsewhere in the field still opens it normally.
-    - Damage Calculator: extended the previous entry's inline "×" to the 4 move slots too, per follow-up
-      request ("I would like that to apply to the moveset inputs as well"). Each slot's `SearchableSelect` in
-      `RosterPokemonPicker.tsx` now passes `onClear` (the same splice-out-this-slot logic the old adjacent
-      button ran) instead of rendering its own external button, so the `flex items-center gap-1` wrapper
-      around each slot collapsed away — the grid's 4 children are now just the 4 `SearchableSelect`s directly
-      (keyed by `slot`, same as before). No engine or data changes; purely the same UI pattern already built
-      for the item field, reapplied here. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (135/135)
-      all clean; live browser check on Grimmsnarl confirmed all 4 move slots now show the "×" inline like the
-      item field, and clearing "Foul Play" correctly removed it and shifted the remaining 3 moves up (Parting
-      Shot/Reflect/Light Screen), matching the prior splice-based remove behavior exactly.
-    - Damage Calculator: fixed the Speed row's stage-multiplier label showing a raw repeating decimal (e.g.
-      "×0.3333333333333333 -4 stage" at a -4 stage, since 1/3 has no exact binary-float representation) — per
-      request ("this numbers needs to be round"). Added `roundedSpeedMultiplier` in `RosterPokemonPicker.tsx`
-      (`Math.round(totalSpeedMultiplier * 100) / 100`, display-only — the actual `effectiveSpe` computation
-      still uses the full-precision `totalSpeedMultiplier`, unchanged) and swapped it into both the visible
-      "(×... stage)" text and the hover title. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
-      (135/135) all clean; live browser check reproduced the screenshot's exact -4 stage on Grimmsnarl's
-      Speed — now reads "26 (×0.33 -4 stage)" instead of the long decimal.
-    - Damage Calculator: fixed a real gap — Water Spout and Eruption's base power is supposed to scale with
-      the ATTACKER's own current HP (`floor(150 * currentHP / maxHP)`), but the engine had no concept of the
-      attacker's HP at all: `DamageCalcOptions` only ever tracked the *defender's* current HP percent, and
-      `moves.json` stores a flat `150` for both moves (PokeAPI's full-HP value, since PokeAPI has no notion
-      of this scaling) — so the calculator always computed as if the attacker were at full HP regardless of
-      the Attacker panel's own "Current HP" slider, per the user's report ("how are we calculating move like
-      Water Spout? that power changes base on hp... look at the damage from our app and from the reference
-      they are different"). Added `attackerCurrentHpPercent?: number` to `DamageCalcOptions`
-      (`src/types/damage.ts`), wired it through `DamageCalculator.tsx`'s `optionsFor()` from the attacking
-      side's `PokemonBattleState.currentHpPercent` (the exact mirror of how `defenderCurrentHpPercent` was
-      already wired), and added `resolveMovePower()` in `calculateDamage.ts` — a 2-move `HP_SCALED_POWER_MOVES`
-      set (`water-spout`, `eruption`) that recomputes power as `max(1, floor(storedPower * percent / 100))`
-      before the base-damage formula runs; every other move's power is unaffected. Explicitly still out of
-      scope, and noted as such in the new code's comment: Flail/Reversal (attacker's own HP, inverted —
-      power rises as HP drops), Grass Knot/Low Kick (defender's weight), Gyro Ball/Electro Ball (relative
-      Speed) — PokeAPI already reports `power: null` for all of those, so they correctly return no result
-      today rather than a wrong one; this fix only covers the two moves PokeAPI mislabels with a fixed value.
-      Note for the specific screenshot comparison that prompted this: since the attacker was at 100% HP in
-      both tools, this particular gap wasn't the cause of the visible number difference there (100% of 150
-      is still 150 either way) — that gap is far more likely explained by the two setups using different
-      Special Defense Stat Point investment on the defending Scizor between the two separate tools, not a
-      remaining engine bug; the fix here addresses the underlying mechanic the user was correctly asking
-      about, confirmed by testing at non-100% HP where the old code was provably wrong and the new code isn't.
-      Added 4 unit tests to `calculateDamage.test.ts`: omitting the option defaults to full 150 power (same
-      result as passing 100 explicitly); 50% HP roughly halves the roll; 0% HP still produces at least 1
-      power (never fully blocked); an ordinary fixed-power move (Ice Beam) is correctly unaffected by a low
-      `attackerCurrentHpPercent`. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (139/139) all
-      clean; live browser check with a fresh Blastoise + Water Spout confirmed 23.9-28.4% at 100% HP dropping
-      to 11.6-14.2% (roughly half) when the Current HP slider was dragged down to 49%.
-    - Damage Calculator: fixed a real display bug the user spotted comparing two side-by-side screenshots
-      against the reference calculator ("do you see any reason way calc are different here") — Mega
-      Blastoise's ability field showed "Torrent" (the base form's ability) instead of "Mega Launcher" (what
-      Mega Blastoise actually has), because the now-always-editable ability `SearchableSelect` in
-      `RosterPokemonPicker.tsx` displayed `value={pokemon.ability}` (the raw pasted/base value) instead of
-      the already-computed, mega-aware `effectiveAbility` (from `resolveEffectiveAbility`, used correctly
-      elsewhere in this same component for the read-only fallback span and the Tailwind-ability-doubling
-      check). Fixed by swapping the `value` to `effectiveAbility` — picking a new option still writes to the
-      base `pokemon.ability` field via `onAbilityChange` unchanged, so this is purely a display fix, not a
-      behavior change (a Mega form only ever has one ability anyway). Confirmed this was cosmetic only: the
-      actual damage math was never affected, since `calculateDamage.ts` independently calls
-      `resolveEffectiveAbility` off the raw `ParsedPokemon.item`/`.ability`, not off anything read from this
-      UI state. For the numbers themselves in the screenshots that prompted this (Water Spout doing
-      98.3-115.8% in this app vs. 71.7-84.7% in the reference): explained to the user this isn't the
-      HP-scaling mechanic from the previous entry (both attackers were at 100% HP in both tools, so power is
-      150 either way) — working the base-damage formula backward from each tool's own displayed final stats
-      showed our number is internally consistent with the stats OUR tool actually has entered (Atk 205 /
-      Def 100 / power 150 / STAB 1.5 reproduces our exact 205 max roll by hand), while the reference's
-      required defense stat to produce its own reported 150 max roll is far higher than what's entered in our
-      tool's Scizor (Sp. Def Stat Points, not ability/item, since neither differing ability (Swarm vs.
-      Technician) nor item (none vs. Life Orb) affects damage a Pokémon *takes*) — concluded this is a
-      build/Stat-Point mismatch between the two separately-configured Scizors rather than an engine bug, and
-      recommended matching the exact Sp. Def Stat Points between the two tools to confirm. Verified: `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (139/139) all clean; live browser check confirmed a freshly-added
-      Mega Blastoise (Blastoisinite) now shows "Mega Launcher" instead of "Torrent" the moment Mega is
-      toggled on, alongside the already-correct Mega-form base stats.
-    - Damage Calculator: implemented the doubles ×0.75 spread-move damage reduction, per request ("this kind
-      of spreed moves hit diferent when is a single or double target, what approach use the calculator?" →
-      "yes, implement it") — previously not modeled at all (`moves.json` had no target-type data, so
-      Earthquake/Rock Slide/Heat Wave/Water Spout/etc. were always computed as full-power single-target
-      hits, a real accuracy gap given this app's whole purpose is a doubles format). `scripts/
-      generate-move-data.mjs` (regenerated via `npm run generate:moves`) now reads moves.csv's own
-      `target_id` column directly (no extra CSV fetch needed — ids 9 "all-other-pokemon" and 11
-      "all-opponents" are the two PokeAPI target types eligible for the reduction, confirmed against
-      move_targets.csv's stable id→name mapping) and writes `isSpread: true` onto exactly those moves in
-      `moves.json` (absent for everything else, same "only present when true" shape as `minHits`/`maxHits`).
-      `MoveData` (`src/types/damage.ts`) gained `isSpread?: boolean`; `DamageCalcOptions` gained
-      `attackerHitsMultipleTargets?: boolean` (only has an effect when the move itself `isSpread`); the
-      modifier chain in `calculateDamage.ts` gained one factor,
-      `(move.isSpread && options.attackerHitsMultipleTargets ? 0.75 : 1)`, next to the existing Friend Guard
-      entry it mirrors. `DamageResult` gained `isSpreadMove: boolean` (independent of whether the reduction
-      was actually applied, so the UI can label "spread move, 1 target" differently from "spread move, 2
-      targets") — set on all three of `calculateDamage`'s return paths (Protect-blocked, immune, and the
-      normal result). UI: `SideConditions` (`DamageCalculator.tsx`) gained a `spreadTarget` boolean, off by
-      default like every other side condition so existing calculations don't silently change; a new "Spread
-      Target (2 Pokémon)" pill sits next to Helping Hand in each side's Field panel (same
-      `SideConditionsPanel`/`ToggleButton` pattern, unconditionally visible like the rest — a no-op on a
-      non-spread move, exactly like Reflect is already a no-op on a Special move); `formatCalculationLabel`
-      appends " (spread)" after the hits label when both the move and the toggle are active, mirroring the
-      existing "Helping Hand "/" through Reflect" conditional-label pattern. Added 4 unit tests to
-      `calculateDamage.test.ts`: the reduction only applies when both `move.isSpread` and the option are
-      true (verified exactly `floor(singleTargetMaxRoll * 0.75)`); `isSpreadMove` correctly true/false per
-      move; a non-spread move is unaffected by the option; omitting the option behaves identically to
-      passing it explicitly `false`. Also updated 4 pre-existing exact-shape `toEqual` tests to include the
-      new `isSpreadMove` field. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (143/143) all clean;
-      live browser check on Grimmsnarl's Earthquake vs. Venusaur confirmed single-target damage of 46-55
-      (29.7-35.5%) drops to exactly 34-41 (21.9-26.5%, the ×0.75 factor) with "Spread Target" toggled on and
-      the result text reading "Earthquake (spread)", while the same toggle left Foul Play (non-spread)
-      completely unchanged at 67-79 (43.2-51%).
-    - Damage Calculator: replaced the previous entry's two per-side "Spread Target (2 Pokémon)" pills with a
-      single global "Singles / Doubles" segmented control at the top of the Field panel, defaulting to
-      Doubles, per explicit follow-up request ("instead of this buttoms, let's have it like this, a single
-      double buttom if one is enable the other can't, also as default it will be double... and move on top
-      of the field area"). Removed `spreadTarget` from `SideConditions`/`DEFAULT_SIDE_CONDITIONS` and its
-      `ToggleButton` in `SideConditionsPanel` entirely; added a new `battleFormat: "Singles" | "Doubles"`
-      state (default `"Doubles"`, since this app's whole context is VGC — a spread move's reduction now
-      applies out of the box instead of needing an opt-in per calc) feeding `optionsFor()`'s
-      `attackerHitsMultipleTargets: battleFormat === "Doubles"` directly via closure, for both calculation
-      directions at once (previously two independent per-side toggles). Added a new `SegmentedToggle`
-      component (`DamageCalculator.tsx`) — a single connected pill with a shared border between segments and
-      only one active at a time, visually distinct from `ToggleButton`'s separate-pill rows and matching the
-      reference calculator's own Singles/Doubles control — rendered above the Weather row. `DamageCalcOptions.
-      attackerHitsMultipleTargets` and `calculateDamage.ts`'s modifier logic are unchanged from the previous
-      entry; this was purely a UI/state-shape change in how that option gets set. Verified: `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (143/143) all clean; live browser check confirmed Doubles is
-      selected by default with Earthquake already showing the ×0.75-reduced "(spread)" result on page load,
-      and clicking Singles switches it back to full single-target damage with the segmented control's active
-      state moving accordingly.
-    - Damage Calculator: implemented recoil damage — both a move's own recoil (Wave Crash, Flare Blitz,
-      Double-Edge, Volt Tackle, Brave Bird, Wood Hammer, Head Smash, Take Down, Submission, Wild Charge, ...)
-      and Life Orb's flat 10% max HP, per request with a reference-calculator screenshot ("for damage that
-      have recoil as water crash or for pokemon that has life orb equipeted we could calculate the recoil
-      like this, can we do it"). `scripts/generate-move-data.mjs` (regenerated via `npm run generate:moves`)
-      now reads move_meta.csv's existing `drain` column (already fetched for `minHits`/`maxHits`, no new
-      request needed) — a negative value means recoil, mapped through `DRAIN_TO_RECOIL_FRACTION` to the true
-      in-game fraction (-25/-33/-50 → 1/4, 1/3, 1/2) rather than trusting the CSV's rounded integer percent
-      directly, which would have compounded a small error through the damage formula. Wave Crash (a Gen 8
-      move) has no move_meta.csv row at all — a confirmed real gap, filled via a one-entry
-      `MANUAL_RECOIL_OVERRIDES` map (0.25, per Bulbapedia), same "small starting subset, grows as gaps are
-      found" pattern as this app's other hand-curated tables. `MoveData` gained `recoilFraction?: number`
-      (absent for drain-heal moves like Giga Drain and flat-self-cost moves like Mind Blown/Steel Beam/
-      Struggle/Jump Kick's miss-only crash damage — all naturally excluded since none show a negative
-      `drain`, explicitly noted as still out of scope in the generator's file header). `calculateDamage.ts`
-      computes a parallel `recoilRolls` array alongside the existing damage `rolls` in the same per-hit loop
-      (move-recoil is `floor(dealt * recoilFraction)` per hit, based on the post-Focus-Sash-clipping damage
-      dealt — a documented simplification vs. the real games' pre-clip basis) plus Life Orb's flat
-      `ceil(attackerStats.hp / 10)` added once per roll, not per hit; `DamageResult` gained
-      `recoilMinPercent`/`recoilMaxPercent` (percent of the ATTACKER's own max HP, undefined when neither
-      source applies — omitted from the two early-return paths, Protect/immune, since no damage means no
-      recoil either). UI: `formatMoveResultLabel` appends "(N% recoil)" (Life-Orb-only, a flat cost so
-      min===max) or "(N - M% recoil)" (a real recoil move, varies with the roll) to each move-list row,
-      matching the reference screenshot's exact format; the detail `ResultPanel` gained a dedicated "Recoil
-      to {species}: ..." line. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (147/147, 4 new
-      recoil-specific tests) all clean; live browser check with a fresh Swampert (Torrent, no item) using
-      Wave Crash showed "27.7-32.9% (5.7 - 6.9% recoil)" and a "Recoil to Swampert: 5.7% - 6.9%" line;
-      switching to Life Orb bumped both damage (Life Orb's own ×1.3) and recoil to "36.1-42.6% (18.3 - 19.4%
-      recoil)" (the two sources correctly stacking); swapping to Earthquake (non-recoil) with Life Orb still
-      equipped showed a flat "45.2-53.5% (10.3% recoil)" — Life Orb alone, no range.
-    - Damage Calculator: two small requests in one turn. (1) Centered the Field panel's Weather, Terrain, and
-      Critical Hit/Fairy Aura/Gravity button rows (added `justify-center` to each, matching the reference
-      screenshot's centered layout — they were left-aligned before). (2) Added read-only "120 Water · Phys"
-      move info next to each picked move slot, per "do we have data to display moves with power and type
-      like this" — yes, `moves.json` already has `power`/`type`/`category` per move (used throughout
-      `calculateDamage.ts` already), this was purely a display gap. Changed the Moves section's layout from
-      a `grid-cols-2` (2×2) to a single-column list (`RosterPokemonPicker.tsx`) to make room for the info
-      column each row now shows via a new `CATEGORY_ABBREVIATION` lookup (Physical→"Phys", Special→"Spec",
-      Status→"Status", mirroring the reference calculator's own abbreviations); the info span only renders
-      when a move is picked (empty slots stay full-width). Kept this deliberately read-only/informational —
-      unlike the reference calculator's editable Power/Type/Category override fields, this app's move data
-      already comes from real game data (or an explicit pick from the same searchable move list), so there's
-      no legitimate case for overriding it per-slot. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
-      (147/147) all clean; live browser check confirmed the Field rows are now centered and Grimmsnarl's
-      moves show "95 Dark · Phys" (Foul Play), "Dark · Status" (Parting Shot), "Psychic · Status"
-      (Reflect/Light Screen — both Psychic-type Status moves), while empty Defender move slots correctly show
-      no info column and stay full-width.
-    - Damage Calculator: two follow-up tweaks to the move-info column from the previous entry, per request
-      with screenshots showing the problem ("let's just leave power and type, let's make the input a fixed
-      width in order to avoy this" — a screenshot of "100 Ground · Phys" wrapping onto two lines since the
-      info column's width varied row to row depending on how long each move's type/category text was).
-      Dropped the `· Phys`/`· Spec`/`· Status` category suffix entirely (now just "120 Water", "100 Ground"),
-      removing the now-unused `CATEGORY_ABBREVIATION` lookup. Fixed the wrapping by giving the move
-      `SearchableSelect`'s wrapper a fixed `w-56` (was `flex-1`, sized to fill whatever space was left after
-      the variable-width info column) instead of the other way around — the info column now gets whatever
-      fixed space remains after a stable-width input, rather than the input's width shifting row to row as
-      the info column's own text length changed. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
-      (147/147) all clean; live browser check swapping a move to "Earthquake" (100 Ground) confirmed the info
-      column no longer wraps to a second line, matching the second screenshot's example exactly.
-    - Damage Calculator: swapped the move-info column's type text for a type icon, per request — the user
-      added `public/resources/types-icons/` themselves (18 PNGs, one per standard type, filenames matching
-      the lowercased type name — e.g. `water.png`), asking to use them instead of text, icon before power.
-      New `src/components/TypeIcon/TypeIcon.tsx` (`{ type, size = 16 }` → `<Image src="/resources/types-icons/
-      {type.toLowerCase()}.png">`), same directory-per-component/`index.ts` pattern as `ItemIcon`. Verifying
-      the type coverage against `moves.json` surfaced a real edge case the "18 types, closed set" assumption
-      would have missed: `moves.json` actually has a 19th type, "Shadow" (Pokémon Colosseum/XD-exclusive
-      moves like Shadow Rush — never legal in any real VGC format, but still present as pickable data), with
-      no matching icon file — so `TypeIcon` got the same `onError` → "?" placeholder fallback pattern
-      `ItemIcon` already uses, rather than assuming the set is fully closed. `RosterPokemonPicker.tsx`'s move
-      info span now renders `<TypeIcon type={moveInfo.type} />` before the power number (was `"120 Water"`
-      text, now icon + `"95"`/`"120"` etc., matching the requested icon-then-power order). Verified: `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (147/147) all clean; live browser check confirmed Dark and
-      Psychic type icons render correctly next to Grimmsnarl's Foul Play/Parting Shot/Reflect/Light Screen.
-    - Damage Calculator: sized the type icon to match the move input's own rendered height, per follow-up
-      request ("i would like to make the icons same height as the input"). Measured the compact
-      `SearchableSelect` input's actual height live via `getBoundingClientRect()` (38px) rather than guessing
-      from Tailwind spacing values, and passed `size={38}` at this one call site in
-      `RosterPokemonPicker.tsx` (the `TypeIcon` component's own default stays 16 for any other future use).
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (147/147) all clean; live browser check
-      confirmed the icons now sit flush edge-to-edge with the move field beside them, matching the
-      screenshot.
-    - **Damage Calculator: "Open in Damage Calculator" from an opponent card.** Closes part of the
-      long-standing "real end goal" gap noted since the very first Basic Singles entry (loading a scenario
-      straight from the matchup planner) — per request, a calculator icon on each `OpponentCard` now opens
-      `/damage-calc` in a new tab with the Attacker pre-loaded from the header's active team (already the
-      existing default) and the Defender pre-loaded from *that specific opponent's* full roster. New
-      `IconName.Calculate` (`src/enums/iconName.ts` + `src/components/Icon/paths.ts` — Material Symbols
-      Outlined "calculate", fetched from the same google/material-design-icons source the other icons were
-      manually extracted from) renders as a new button in `OpponentCard.tsx`'s icon row, before Edit/Delete:
-      a plain `<a href="/damage-calc?opponentId={opponent.id}" target="_blank" rel="noopener noreferrer">`,
-      mirroring the existing "Open Poképaste" external-link pattern in the same file rather than `next/link`
-      (which has no special new-tab semantics). `DamageCalculator.tsx` reads the `opponentId` query param via
-      `useSearchParams()` (the first use of Next's URL-param hooks in this codebase — confirmed via
-      `node_modules/next/dist/docs` per AGENTS.md's directive that this Next version may differ from training
-      data) and `useOpponents()` to resolve it to the actual `Opponent`, then seeds the Defender's sidebar
-      from `opponent.team.pokemon` using the exact same render-time-adjust-state pattern already used for the
-      Attacker's active-team seed (a sentinel `defenderDefaultedForOpponentId` state, mirroring
-      `attackerDefaultedFor`) — except gated on the opponent object actually resolving (not just the sidebar
-      being empty), since `useOpponents()` loads asynchronously from IndexedDB and `opponentId` can be
-      present in the URL before the opponents list has finished loading; once applied for a given
-      `opponentId`, later manual Defender edits are never overridden, same guarantee as the Attacker side.
-      `useSearchParams()` requires a `<Suspense>` boundary around any client component that calls it or a
-      static build fails with Next's "missing Suspense boundary" error (confirmed by reading
-      `use-search-params.md` directly rather than assuming) — added `<Suspense fallback={null}>` around
-      `<DamageCalculator />` in `src/app/damage-calc/page.tsx`. Verified: `npx tsc --noEmit`, `npm run lint`,
-      `npm test` (147/147) all clean, **and `npm run build`** (the actual missing-Suspense failure mode only
-      surfaces in a production build, not `next dev` — confirmed clean, all 4 routes still prerender static);
-      live browser check clicking the new calculator icon on the "M-Staraptor-Milotic Sand" opponent opened a
-      new tab at `/damage-calc?opponentId=...` with the Attacker already showing the active team (Grimmsnarl)
-      and the Defender showing that opponent's full 6-Pokémon roster (Tyranitar first, matching the card's
-      own display order), both sidebars fully populated with sprites.
-    - Damage Calculator: fixed a real correctness gap — Foul Play was being computed with the ATTACKER's own
-      Attack stat, when its actual mechanic uses the DEFENDER's own Attack stat (and Attack stage) instead,
-      per the user's question ("does move Foul Play take consideration targets attack for damage, can you
-      take a look how we calculate that"). It had zero special-casing anywhere in `calculateDamage.ts` — just
-      a plain 95 BP Dark-type Physical move like any other, always reading `attackerStats[attackStatKey]`.
-      Added `TARGET_ATTACK_STAT_MOVES` (currently just `foul-play`) and swapped the attack-stat/stage source
-      to the defender's when the move is in that set — reusing the exact same "crit ignores an unfavorable
-      stage" logic already in place, just pointed at the other Pokémon's stat/stage. Everything else about
-      the hit (STAB from the attacker's own type, the attacker's item/ability modifiers, the defender's own
-      Defense stat) is unaffected, matching the real mechanic. This also naturally excludes the defender's
-      ability-based Attack multipliers (Huge Power, Guts, ...) from the figure used, since
-      `calculateFinalStats` already keeps those out of the raw stat everywhere in this engine — no extra
-      filtering needed. Noted Body Press (uses the ATTACKER's own Defense stat as its attack term — a
-      related but different quirk) as an explicitly out-of-scope case in the new code comment, since it
-      wasn't what was asked about. Added 6 new unit tests to `calculateDamage.test.ts`: the attacker's own
-      Attack investment/stat stage has zero effect on the damage; the defender's Attack investment/stat stage
-      does affect it (both directions); a crit ignores a negative defender Attack stage (the stat actually in
-      play); STAB still comes from the attacker's own type. Verified: `npx tsc --noEmit`, `npm run lint`,
-      `npm test` (153/153) all clean; live browser check on the existing Grimmsnarl/Venusaur matchup confirmed
-      raising Venusaur's (defender) Atk Stat Points from 102 to 134 final raised Foul Play's damage from
-      34.8-41.3% to 45.8-54.2%, while separately raising Grimmsnarl's (attacker) own Atk from 126 to 154 left
-      the damage completely unchanged at 45.8-54.2%.
-    - **Formula audit against the NCP-VGC-Damage-Calculator reference.** Per the user asking to verify our
-      math against that reference directly, rather than only spot-checking output numbers as earlier entries
-      had done — cloned the actual repo (`nerd-of-now/NCP-VGC-Damage-Calculator`, into the scratchpad, not
-      committed) and read its real formula source (`script_res/damage_SV.js`, `damage_MASTER.js`'s
-      `calcAtMods`/`calcDefMods`/`calcFinalMods`/`calcGeneralMods`/`calcBaseDamage`) line-by-line against
-      `calculateDamage.ts`, rather than treating the earlier "cross-check a few outputs" verification as
-      sufficient on its own. Found and fixed two real, confirmed value bugs:
-      - **Type-resist Berries were ×0.75, should be ×0.5.** The reference's `calcFinalMods` pushes
-        `0x800/0x1000` = exactly 0.5 for every resist Berry, unconditionally across every generation this app
-        targets — not a "50% pre-Gen 6, 25% from Gen 6 on" distinction as the code comment previously (and
-        incorrectly) claimed. That comment was this session's own mistake, introduced when the berries were
-        first added — confirmed via this audit, not something carried over from anywhere else. Fixed
-        `TYPE_RESIST_BERRIES`' multiplier in `itemDamageModifiers.ts` (Chilan Berry was already correct at
-        0.5, unaffected). Strengthened the existing berry test from a loose `toBeLessThan` check to an exact
-        `floor(fullDamage * 0.5)` assertion.
-      - **Screens (Reflect/Light Screen/Aurora Veil) don't get weaker in Doubles.** The real games use
-        ×2732/4096 (≈0.667) in Doubles/multi-battle formats instead of ×0.5 — a real, documented VGC mechanic
-        this app had simply never modeled (the very first Full Singles Accuracy plan explicitly deferred
-        "screens are 2/3 not 1/2 for spread moves" as doubles-only and out of scope at the time — but this app
-        now defaults to Doubles, per an earlier session's Singles/Doubles toggle, so the deferred gap was
-        actually live and affecting the default experience). Added `DamageCalcOptions.isDoublesFormat`
-        (field-wide, distinct from `attackerHitsMultipleTargets` which is about one specific move's target
-        count), wired from `DamageCalculator.tsx`'s existing `battleFormat` state; `screenMultiplier()` now
-        takes an `isDoublesFormat` param and picks the right fraction. Added 2 new tests (the Doubles value is
-        meaningfully weaker than Singles but still reduces damage; omitting the option matches the old
-        Singles-only default, so no existing calc silently changes).
-      - **Confirmed correct, no change needed:** the core Level-50 base-damage formula
-        (`floor(floor(floor(2L/5+2)*power*attack/defense)/50)+2`) matches exactly; every other spot-checked
-        modifier value matched ours precisely — Technician (1.5, ≤60 BP), Huge Power/Pure Power (2.0,
-        Physical), Thick Fat (0.5, Fire/Ice), Filter/Solid Rock (0.75, super-effective only), Choice Band/
-        Specs (1.5), Guts (1.5), Life Orb (1.3), Expert Belt (1.2, super-effective only), Friend Guard (0.75),
-        type-boosting items (1.2), Fairy Aura (1.33), Muscle Band/Wise Glasses (1.1), Ice Scales (0.5,
-        Special), Dry Skin (1.25 vs. Fire); and Foul Play — the reference literally has
-        `attackSource = move.name === "Foul Play" ? defender : attacker` in the same spot, independently
-        confirming the earlier fix in this same session was exactly right.
-      - **Known, deliberate structural difference, not fixed in this pass:** the reference applies damage
-        modifiers via the real games' own fixed-point "chain modifiers" system — each stage (base power mods,
-        attack-stat mods, defense-stat mods, then STAB, type effectiveness, and a combined chain of every
-        other modifier) is applied and ROUNDED SEPARATELY at each step (`pokeRound`, which rounds exactly
-        .5 DOWN — a genuine Game Freak engine quirk), and critically, the 85%-100% random roll is applied
-        immediately after `calcBaseDamage`, BEFORE STAB/type effectiveness/other modifiers — not last, as
-        `calculateDamage.ts` does. This engine instead multiplies every modifier together as plain floats and
-        floors once at the very end, then applies the roll percent. For a single modifier this rarely
-        diverges; empirically (the new Doubles-screens test) a realistic multi-step case came out 1 damage
-        point off from the reference's own step-order (99 vs. an expected 98) — small, and unlikely to
-        qualitatively flip a KO read on its own, but a real, quantifiable source of drift under enough
-        stacked modifiers, flagged here rather than silently glossed over. Fully matching this would mean
-        restructuring the modifier chain and roll loop to mirror the reference's exact stage order and
-        rounding function — a substantial rewrite of `calculateDamage.ts`'s core, not attempted unless
-        explicitly requested. Also noted for later: the reference lists a few other "uses a different stat
-        source" quirks beyond Foul Play — Body Press (attacker's own Defense as its attack stat) and Photon
-        Geyser/Light That Burns The Sky/Shell Side Arm/Tera Blast (uses whichever of Atk/SpA is higher) — none
-        modeled here yet, out of scope for this pass since they weren't what was asked about.
+  - Damage Calculator: reworked the Attacker/Defender pickers to select one individual Pokémon directly
+    instead of a two-step "pick a team, then pick within it" flow, per the user's screenshots. The "Select
+    a team…" `<select>` is gone; in its place, `flattenRosterOptions()` builds one flat searchable list
+    across every roster on that side (`"Staraptor (MM - Raichu Staraptor (my team))"`, etc.), reusing the
+    `SearchableSelect` combobox built earlier for species/move search — each option's id packs both the
+    roster id and the index within it (`${rosterId}#${index}`, split from the last `#` since roster ids
+    like `"team:<uuid>"` already contain colons but never `#`), unpacked by `parseFlattenedOptionId()`.
+    The old horizontal sprite row moved to a vertical strip on the _right_ of the detail panel instead of
+    above it — now serving specifically as a "quick-switch to a teammate in the currently selected roster"
+    control (still wired through the existing `onPokemonChange`), while the flattened search is the
+    primary "which Pokémon, from anywhere" entry point. The always-visible "+" button (add a custom
+    Pokémon) moved next to the search input so it's reachable regardless of what's currently selected,
+    rather than only appearing inside the old sprite row once the Custom roster was already active.
+    `RosterPokemonPicker`'s `onRosterChange` prop was replaced with `onSelectPokemon(rosterId, index)` —
+    needed because the old "call onRosterChange then onPokemonChange" two-step would have read a stale
+    `attackerRosterId`/`defenderRosterId` from closure inside the second call (React state updates from
+    the first call aren't visible until the next render), silently looking up the wrong roster's Pokémon
+    for the auto-weather check; one combined callback with both values as parameters avoids that
+    entirely. Both sides now also default to the very first Pokémon across every roster the first time
+    that list is available (the Defender never auto-selected anything before this) — folded into the
+    Attacker's existing "default to the header's active team" render-time adjustment as a fallback when
+    there's no active team to prefer, and a new analogous one-shot default for the Defender. Separately
+    fixed `SearchableSelect`'s dropdown to match its input's width exactly (previously a fixed `w-64`
+    regardless of the input) — measured via `triggerRef.current?.offsetWidth` inside a `useEffect` (not
+    during render, which React Compiler's lint rule forbids for ref reads) and applied as an explicit
+    `width` style alongside `useViewportSafePosition`'s position. Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (133/133) all clean; live browser check confirmed the flattened search lists
+    individual Pokémon with team context, the dropdown width now matches the input, both sides auto-select
+    their first Pokémon on load with no manual clicks, and both the side-strip teammate switch and the
+    persistent "+" add-custom-Pokémon button still work correctly after the restructure.
+  - Damage Calculator: corrected course on the flattened-roster search above after the user clarified
+    what they actually meant — team/opponent selection is omitted entirely for now, not flattened. The
+    search dropdown on both sides is now purely the Regulation M-B species search (previously only used
+    for the "add a custom Pokémon" popup) — picking any result always builds a fresh from-scratch Pokémon
+    (`buildCustomPokemon()`, now exported from `RosterPokemonPicker.tsx`), never loads a saved team's
+    paste. The side "teammates" strip's source changed from "whichever roster is currently selected" to a
+    single fixed source: the header's active team (`useMyTeams()`'s `activeTeamId`) — the _same_ strip
+    content on both Attacker and Defender, confirmed with the user rather than assumed, since Defender
+    showing "your own" team is a real behavior change from defender-picks-an-opponent. Clicking a
+    teammate loads that real pasted Pokémon (read-only ability/item/moves, as before this whole custom-
+    Pokémon feature existed); picking from the species search always builds an editable custom one.
+    This let a lot of machinery from the previous two passes disappear entirely: `flattenRosterOptions`/
+    `parseFlattenedOptionId`, the `RosterOption`/roster-array plumbing, the `onSelectPokemon(rosterId,
+index)` two-argument callback, the array-based `attackerCustomPokemon`/`defenderCustomPokemon` state
+    (now just a single `attackerPokemon`/`defenderPokemon` object per side, since there's no longer a
+    "list of custom Pokémon" to manage — selecting a new species simply replaces whichever Pokémon was
+    showing), the always-empty "no active team" gate and its "add a team first" message, and the
+    `useOpponents()` hook entirely (opponents are no longer read anywhere in this component). Both sides
+    still default sensibly: to the active team's first Pokémon when one exists, falling back to the very
+    first Regulation M-B species (`DEFAULT_SPECIES_KEY`, i.e. Venusaur) built as a custom Pokémon when
+    there's no active team at all. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all
+    clean; live browser check confirmed both sides default to the active team's Raichu, the species search
+    builds a fully custom, editable Garchomp (correct base stats, ability/item/moves all editable) without
+    touching the teammates strip, and clicking a teammate afterward correctly swaps back to a real,
+    read-only Pokémon from the paste.
+  - Damage Calculator: made the header's team switcher persistent and visible across pages, and turned
+    the read-only "teammates strip" from the previous pass into a real, editable working roster (add/
+    remove, capped at `MAX_SIDEBAR_POKEMON` = 6) with different seeding rules per side, all per the user's
+    explicit requests.
+    - **Persistence turned out to already work** — `activeTeamId` was already written to and read from
+      IndexedDB (`src/lib/storage/db.ts`'s `meta` store) by `useMyTeams()`, so it already survived
+      navigation. The actual gap (confirmed via a research pass before implementing) was that
+      `/damage-calc/page.tsx` never rendered `MyTeamHeader` at all — it had its own bespoke header with
+      just a logo and a link back, so the active team was invisible and unreachable there even though the
+      underlying selection was intact. Fixed by having `/damage-calc/page.tsx` call `useMyTeams()` and
+      render `MyTeamHeader` exactly as `/matchup-planner/page.tsx` already does (no shared layout — this
+      repo has none for either route yet, so matching the existing per-page composition pattern was the
+      smaller, more consistent change over introducing a Next.js route group). `MyTeamHeader.tsx` needed
+      one adjustment to be reusable this way: its single nav link was hardcoded to `/damage-calc`, which
+      would have self-linked when rendered on that same page — replaced with a `currentPage:
+"matchup-planner" | "damage-calc"` prop (via a small `NAV_LINK_BY_PAGE` lookup) so the link always
+      points at the _other_ page.
+    - **Sidebar redesign**: `RosterPokemonPicker`'s `teamPokemon`/`selectedTeamIndex`/`onSelectTeamPokemon`
+      (read-only, previous pass) became `sidebar: SidebarEntry[]` (`{ pokemon, isCustom }`, exported)/
+      `selectedIndex`/`onSelectIndex`/`onAddPokemon`/`onRemovePokemon` — a full add/remove working roster,
+      capped at `MAX_SIDEBAR_POKEMON`. Adding (from either the main species search or the sidebar's own
+      "+" tile, both wired to the same `onAddPokemon`) appends a new custom entry while under the cap;
+      at the cap it replaces whichever entry is currently selected instead of blocking, so the search bar
+      never needs to be disabled. Each tile grew a remove ("×") badge (mirrors the pattern already used
+      for moves/custom-species removal elsewhere in this file). Removing the currently-selected entry
+      clears the selection; removing an entry _before_ the selected one shifts the selected index down by
+      one so it keeps pointing at the same Pokémon post-splice — a straightforward but easy-to-miss
+      off-by-one that would otherwise silently show the wrong Pokémon after a remove.
+    - **Per-side seeding, per explicit instruction**: Attacker's sidebar seeds from the header's active
+      team's full roster (once, on first load) if one exists, otherwise stays empty — no fallback species,
+      unlike every other "default" in this feature so far. Defender's sidebar always starts with exactly
+      one entry, the first Regulation M-B species (Venusaur) built as a custom Pokémon, regardless of
+      whether an active team exists — it never seeds from the active team, since Defender is conceptually
+      "the other side," not a mirror of Attacker's team.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check
+      switched the header's active team to "M-Swamper" on `/matchup-planner`, navigated to `/damage-calc`,
+      and confirmed the Attacker sidebar auto-loaded all 6 of M-Swamper's Pokémon (Grimmsnarl selected)
+      while the Defender showed just Venusaur; added Tyranitar to the Defender's sidebar via its "+" tile
+      (auto-set Field weather to Sand from Sand Stream), then removed Venusaur and confirmed Tyranitar
+      correctly shifted to index 0 and stayed selected.
+  - Damage Calculator: the Moves editor (chips with remove buttons + a `SearchableSelect` to add) was
+    gated on `isCustom && onMovesChange`, so it only ever appeared for from-scratch Pokémon — a real
+    pasted team member's moves were fully computable and shown in the top move-list panel, but had no way
+    to be viewed or changed from the detail panel itself. Changed the gate to just `onMovesChange` (always
+    truthy — both sides wire it unconditionally), matching how `attackerMovesChange`/`defenderMovesChange`
+    already operated generically on `sidebar[selectedIndex].pokemon.moves` regardless of `isCustom`; ability
+    and item stayed read-only for real team members (unchanged, since those are closer to "which build is
+    this" identity than a quick swap). Editing a real team member's moves this way is local-only, same as
+    every other in-calculator override (Stat Points, nature, stat stages) — never written back to the saved
+    team. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check
+    showed Grimmsnarl's real parsed moveset (Foul Play/Parting Shot/Reflect/Light Screen) as editable
+    chips, and removing Foul Play correctly updated both the detail panel and the top move-list panel.
+  - Damage Calculator: two follow-up polish requests on that Moves editor. (1) Changing an already-picked
+    move required removing it first (clearing the slot) before a fresh empty search would appear — fixed
+    by giving `SearchableSelect` a new optional `value` prop: the input now always shows the current move
+    (instead of only rendering while empty), and clicking/focusing it selects that text and reopens the
+    dropdown with every option available (not narrowed to a self-match) — so replacing a move is click,
+    type-or-pick, done, no separate clear step. Internally this is still a local, editable text buffer
+    (not a fully controlled input) that only resyncs to `value` when the prop itself changes — e.g.
+    switching which slot/Pokémon is shown — via the same render-time "adjust state when a prop changes"
+    pattern used elsewhere in this feature, not a `useEffect`. Each slot's `onSelect` now replaces at that
+    index when it already holds a move (`next[slot] = ...`) instead of always appending, and a separate
+    "×" button next to the input still clears the slot entirely. (2) Moved the whole Moves section to
+    render after Status/Current HP instead of before the stat table, per explicit request. Verified:
+    `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check clicked
+    Grimmsnarl's "Foul Play" slot (it opened pre-selected with the full move list visible), typed "Thunder
+    Wave", and confirmed it replaced Foul Play in one step with the top move-list panel updating to match.
+  - Damage Calculator: fixed a real bug the user hit while rapidly adding/changing moves — the top
+    move-list panel would show extra, stacked/overlapping rows (duplicated move names) that didn't match
+    the 4 moves actually shown in the detail panel's editor. Root cause: `MoveList`'s rows were keyed by
+    `key={move}` (the move's own name), but nothing prevented picking the same move for two different
+    slots — a classic React duplicate-key situation, where a shared key confuses reconciliation and can
+    leave stale rows behind even after the underlying data changes again. Two-part fix: (1) `MoveList` now
+    keys each row by its array index instead of the move name — always unique regardless of value
+    duplicates, the direct fix for the reported symptom; (2) the Moves editor's per-slot options are now
+    filtered to exclude whatever's already picked in the _other_ slots (still showing the slot's own
+    current move so re-opening it works normally) — since a real Pokémon can't know the same move twice
+    anyway, this closes off the root scenario rather than just patching its rendering symptom. Verified:
+    `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all clean; live browser check reproduced the
+    original scenario on a custom Pidgeot (added Acid Armor/Bolt Strike/Acid Spray/Acid Downpour, then
+    rapidly replaced the first slot with Whirlwind) — the top move-list panel stayed in sync with exactly
+    4 correct, non-duplicated rows at every step.
+  - Damage Calculator: fixed a real bug — held item was completely absent (not just read-only, actually
+    missing from the DOM) for a real pasted team member, since it was still gated on `isCustom &&
+onItemChange` (a leftover from before the same fix was applied to Moves) with no read-only fallback
+    the way ability had one. Same fix as Moves: dropped the `isCustom` gate, so the item `<select>` is now
+    always shown and editable regardless of source. Added one safety net beyond the moves fix: a pasted
+    team's real item might not be one of the enumerated Regulation M-B items (an older or off-meta paste)
+    — the select now injects that value as its own `<option>` when it isn't already in the Held
+    Items/Berries/Mega Stone lists, so it displays accurately instead of silently falling back to
+    "(no item)" while the underlying `pokemon.item` stays correct either way. Also confirmed and explained
+    (this was a real, fair question, not just a bug report) that item effects already do feed into the
+    calculation and always have, independent of this fix: `calculateFinalStats.ts` applies Choice Scarf's
+    ×1.5 Speed multiplier directly off `pokemon.item`; `calculateDamage.ts` applies `ITEM_DAMAGE_MODIFIERS`
+    (`src/constants/itemDamageModifiers.ts` — Choice Band/Specs, Life Orb, Expert Belt, Muscle Band, Wise
+    Glasses, Assault Vest, every type-boosting item) for both attacker and defender, plus Air Balloon's
+    Ground immunity and Focus Sash — all read straight off `ParsedPokemon.item`, so they've applied to
+    custom-built and real pasted Pokémon identically the whole time; the missing item _display_ never
+    affected the actual math, only whether the user could see/change it. Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (133/133) all clean; live browser check showed Grimmsnarl's real held item
+    ("Light Clay") now rendering in an editable select, where the row was previously missing entirely.
+  - Damage Calculator: replaced the held-item `<select>` with the same `SearchableSelect` combobox already
+    used for moves, per request ("make the item select in a custom select, with autocomplete as the
+    attacks"). `itemOptions` is now built per-Pokémon in `RosterPokemonPicker.tsx` (a flat list: the
+    Pokémon's own species-specific Mega Stone(s) first, labeled `"{item} (Mega Stone)"` since the combobox
+    has no optgroup grouping, then every Regulation M-B held item/Berry; a real pasted team's off-meta item
+    is still injected as its own option first, same safety net as the previous native select) and passed to
+    `SearchableSelect` via its existing `value`/`onSelect` props — clicking the field opens the dropdown
+    with the current item selected and every option browsable/searchable, exactly like a move slot. Paired
+    with a small "×" clear button next to the field (`onItemChange(undefined)`), replacing the native
+    select's "(no item)" option. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (133/133) all
+    clean; live browser check on Grimmsnarl confirmed the field shows "Light Clay", opens a searchable
+    dropdown listing every option, typing "choice s" filters to "Choice Scarf", picking it updates the
+    field and correctly re-applies the ×1.5 Speed multiplier (80 → 120 Final Spe), and the "×" button
+    clears it back to empty; also confirmed on the Defender (Venusaur) that an empty item field opens with
+    "Venusaurite (Mega Stone)" listed first ahead of the full Held Items/Berries list.
+  - Damage Calculator: converted the ability and nature `<select>`s to the same `SearchableSelect` combobox
+    as items/moves, per request ("can we make ability select and nature select the same pattern"). Added a
+    `compact` prop to `SearchableSelect.tsx` (smaller padding/font-size for both the input and the dropdown
+    rows) since ability/nature sit in a tight inline row next to each other, not a full-width form field —
+    the underlying filter/open/sync/click-outside behavior is unchanged, only the sizing. `RosterPokemonPicker.tsx`
+    gained a module-level `NATURE_OPTIONS` (all 25 natures, `id` the lowercase key `applyStatOverrides`
+    expects, `label` the existing `natureLabel()` "+/-" format) and a per-Pokémon `abilitySelectOptions`
+    (mapped from the existing form-aware `abilityOptions`). Ability keeps its existing `isCustom` gate
+    unchanged — still a read-only `<span>` for real pasted team members, only its _editable_ case (custom
+    Pokémon) is now the combobox instead of a native select; nature was already always-editable for every
+    Pokémon and is now the combobox unconditionally. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+    (133/133) all clean; live browser check on Grimmsnarl (real team member) confirmed the nature field
+    opens a searchable dropdown of all 25 natures, typing "timid" filters to it, and picking Timid correctly
+    recalculates Speed (80 → 88) and Sp. Def (119 → 109); on Venusaur (custom) confirmed the ability field
+    opens with its two real options (Overgrow, Chlorophyll) rather than the full ability list.
+  - Damage Calculator: dropped the ability field's `isCustom` gate too — same bug/fix class as the earlier
+    Moves and Item fixes ("the ability of my team appears like a text, why don't show in the a select?").
+    It had been deliberately read-only for real pasted team members (a prior design call — "closer to
+    'which build is this' identity than a quick swap") but the user now wants it editable everywhere, same
+    as everything else in this panel; the read-only `<span>` fallback stays in the component only for the
+    case where a caller doesn't pass `onAbilityChange` at all (both Attacker and Defender always do, so in
+    practice this row is always the combobox now). Removing the gate left the local `isCustom` variable in
+    `RosterPokemonPicker.tsx` unused, so it was deleted along with it. Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (133/133) all clean; live browser check confirmed Grimmsnarl's (a real pasted
+    team member) ability field now opens a searchable dropdown of its 3 real abilities (Prankster, Frisk,
+    Pickpocket) instead of rendering as plain text.
+  - Damage Calculator: gave the held-item field the same `compact` sizing as ability/nature, per request
+    ("I like the slim version of the select, can we make the item the same pattern... keep moveset select
+    the way they are") — a one-line change (added `compact` to the item `SearchableSelect` call in
+    `RosterPokemonPicker.tsx`), no other behavior change. Moves deliberately left as the larger/default
+    size, per the explicit "keep moveset select the way they are." Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (133/133) all clean; live browser check confirmed the item field now matches
+    ability/nature's slim styling while the 4 move fields are visually unchanged.
+  - Damage Calculator: fixed a real gap — type-resist Berries (Occa, Yache, Colbur, etc.) and Chilan Berry
+    weren't factored into the calculation at all, per the user's question ("there are berries that reduce
+    supereffective hits from attacks like occa berry, are we considering that for calculation"). Added 17
+    type-resist Berries (`TYPE_RESIST_BERRIES` in `src/constants/itemDamageModifiers.ts`, one per
+    attacking type except Normal) as `defender` entries in `ITEM_DAMAGE_MODIFIERS` — `{ multiplier: 0.75,
+types: [type], onlySuperEffective: true }`, the modern Gen 6+ value (25% reduction; it was 50%
+    pre-Gen 6) — reusing the existing `onlySuperEffective` flag and `sideMultiplier()` machinery already in
+    `calculateDamage.ts` for Expert Belt, so no engine changes were needed, only new table entries. Also
+    added Chilan Berry (`{ multiplier: 0.5, types: ["Normal"] }`, no `onlySuperEffective` — it unconditionally
+    halves Normal-type damage since Normal is never actually super-effective against anything, the one
+    type with no natural "resist berry" case otherwise) — together these cover all 18 attacking types.
+    Deliberately still deferred, per the file's existing header comment: Sitrus/Oran (trigger on low HP,
+    needs a damage-simulation loop) and the 7 status-cure Berries (cure status, don't affect damage taken).
+    Added 2 unit tests to `calculateDamage.test.ts`: a type-resist Berry (Yache) cuts a confirmed 4x
+    super-effective hit by 25% but is a no-op on a neutral hit of the same type; Chilan Berry halves a
+    neutral Normal-type hit unconditionally. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+    (135/135) all clean; live browser check with Grimmsnarl's Foul Play (Dark, super-effective) vs. a Gengar
+    (Ghost/Poison) holding Colbur Berry confirmed the shown damage range dropped from 125.9-148.9% to
+    94.1-111.1% — a 25% cut, matching the formula.
+  - Damage Calculator: the result text (`formatCalculationLabel` in `DamageCalculator.tsx`) now prefixes
+    each side's held item onto its species name — e.g. "Occa Berry Sinistcha" — the standard Showdown-calc
+    convention, per request ("can we reflect that in the calc text", referring to the previous entry's
+    resist-Berry fix: the berry affected the number but was invisible in the text explaining it). A 2-line
+    change: `attackerItemLabel`/`defenderItemLabel` (`` `${item} ` `` when present, else `""`) inserted
+    right before `attacker.species`/`defender.species` in the existing template string — no change to what
+    the label already showed (Stat Points, stat stage, Helping Hand, screens/Friend Guard). Verified:
+    `npx tsc --noEmit`, `npm run lint`, `npm test` (135/135) all clean; live browser check reproduced the
+    screenshot's exact pattern — Grimmsnarl (Light Clay) Foul Play vs. Venusaur holding Colbur Berry now
+    reads "...vs. 0 HP / 0 Def Colbur Berry Venusaur" with the item visible in the line itself.
+  - Damage Calculator: moved the item field's clear "×" from a separate button next to the combobox to
+    inline inside the input's own right edge, per request ("would like to move the clear (x button) inside
+    the input it self"). `SearchableSelect.tsx` gained a general `onClear?: () => void` prop — when set and
+    `value` is present, an absolutely-positioned "×" button renders inside the input's right edge (the
+    input gains matching right padding, `pr-5`/`pr-8` compact/default, so typed text never runs under it);
+    clicking it calls `onClear()` and closes the dropdown without triggering the input's own `onFocus`-opens
+    behavior. `RosterPokemonPicker.tsx`'s item field now passes `onClear={() => onItemChange(undefined)}`
+    instead of rendering its own adjacent button, collapsing the `flex items-center gap-1` wrapper back down
+    to just the `SearchableSelect` itself. Moves keep their existing external "×" button, unchanged (this
+    was scoped to the item field only, matching the screenshot). Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (135/135) all clean; live browser check confirmed the "×" now sits inside
+    Grimmsnarl's item input exactly like the screenshot, clicking it clears the item without opening the
+    dropdown, and clicking elsewhere in the field still opens it normally.
+  - Damage Calculator: extended the previous entry's inline "×" to the 4 move slots too, per follow-up
+    request ("I would like that to apply to the moveset inputs as well"). Each slot's `SearchableSelect` in
+    `RosterPokemonPicker.tsx` now passes `onClear` (the same splice-out-this-slot logic the old adjacent
+    button ran) instead of rendering its own external button, so the `flex items-center gap-1` wrapper
+    around each slot collapsed away — the grid's 4 children are now just the 4 `SearchableSelect`s directly
+    (keyed by `slot`, same as before). No engine or data changes; purely the same UI pattern already built
+    for the item field, reapplied here. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (135/135)
+    all clean; live browser check on Grimmsnarl confirmed all 4 move slots now show the "×" inline like the
+    item field, and clearing "Foul Play" correctly removed it and shifted the remaining 3 moves up (Parting
+    Shot/Reflect/Light Screen), matching the prior splice-based remove behavior exactly.
+  - Damage Calculator: fixed the Speed row's stage-multiplier label showing a raw repeating decimal (e.g.
+    "×0.3333333333333333 -4 stage" at a -4 stage, since 1/3 has no exact binary-float representation) — per
+    request ("this numbers needs to be round"). Added `roundedSpeedMultiplier` in `RosterPokemonPicker.tsx`
+    (`Math.round(totalSpeedMultiplier * 100) / 100`, display-only — the actual `effectiveSpe` computation
+    still uses the full-precision `totalSpeedMultiplier`, unchanged) and swapped it into both the visible
+    "(×... stage)" text and the hover title. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+    (135/135) all clean; live browser check reproduced the screenshot's exact -4 stage on Grimmsnarl's
+    Speed — now reads "26 (×0.33 -4 stage)" instead of the long decimal.
+  - Damage Calculator: fixed a real gap — Water Spout and Eruption's base power is supposed to scale with
+    the ATTACKER's own current HP (`floor(150 * currentHP / maxHP)`), but the engine had no concept of the
+    attacker's HP at all: `DamageCalcOptions` only ever tracked the _defender's_ current HP percent, and
+    `moves.json` stores a flat `150` for both moves (PokeAPI's full-HP value, since PokeAPI has no notion
+    of this scaling) — so the calculator always computed as if the attacker were at full HP regardless of
+    the Attacker panel's own "Current HP" slider, per the user's report ("how are we calculating move like
+    Water Spout? that power changes base on hp... look at the damage from our app and from the reference
+    they are different"). Added `attackerCurrentHpPercent?: number` to `DamageCalcOptions`
+    (`src/types/damage.ts`), wired it through `DamageCalculator.tsx`'s `optionsFor()` from the attacking
+    side's `PokemonBattleState.currentHpPercent` (the exact mirror of how `defenderCurrentHpPercent` was
+    already wired), and added `resolveMovePower()` in `calculateDamage.ts` — a 2-move `HP_SCALED_POWER_MOVES`
+    set (`water-spout`, `eruption`) that recomputes power as `max(1, floor(storedPower * percent / 100))`
+    before the base-damage formula runs; every other move's power is unaffected. Explicitly still out of
+    scope, and noted as such in the new code's comment: Flail/Reversal (attacker's own HP, inverted —
+    power rises as HP drops), Grass Knot/Low Kick (defender's weight), Gyro Ball/Electro Ball (relative
+    Speed) — PokeAPI already reports `power: null` for all of those, so they correctly return no result
+    today rather than a wrong one; this fix only covers the two moves PokeAPI mislabels with a fixed value.
+    Note for the specific screenshot comparison that prompted this: since the attacker was at 100% HP in
+    both tools, this particular gap wasn't the cause of the visible number difference there (100% of 150
+    is still 150 either way) — that gap is far more likely explained by the two setups using different
+    Special Defense Stat Point investment on the defending Scizor between the two separate tools, not a
+    remaining engine bug; the fix here addresses the underlying mechanic the user was correctly asking
+    about, confirmed by testing at non-100% HP where the old code was provably wrong and the new code isn't.
+    Added 4 unit tests to `calculateDamage.test.ts`: omitting the option defaults to full 150 power (same
+    result as passing 100 explicitly); 50% HP roughly halves the roll; 0% HP still produces at least 1
+    power (never fully blocked); an ordinary fixed-power move (Ice Beam) is correctly unaffected by a low
+    `attackerCurrentHpPercent`. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (139/139) all
+    clean; live browser check with a fresh Blastoise + Water Spout confirmed 23.9-28.4% at 100% HP dropping
+    to 11.6-14.2% (roughly half) when the Current HP slider was dragged down to 49%.
+  - Damage Calculator: fixed a real display bug the user spotted comparing two side-by-side screenshots
+    against the reference calculator ("do you see any reason way calc are different here") — Mega
+    Blastoise's ability field showed "Torrent" (the base form's ability) instead of "Mega Launcher" (what
+    Mega Blastoise actually has), because the now-always-editable ability `SearchableSelect` in
+    `RosterPokemonPicker.tsx` displayed `value={pokemon.ability}` (the raw pasted/base value) instead of
+    the already-computed, mega-aware `effectiveAbility` (from `resolveEffectiveAbility`, used correctly
+    elsewhere in this same component for the read-only fallback span and the Tailwind-ability-doubling
+    check). Fixed by swapping the `value` to `effectiveAbility` — picking a new option still writes to the
+    base `pokemon.ability` field via `onAbilityChange` unchanged, so this is purely a display fix, not a
+    behavior change (a Mega form only ever has one ability anyway). Confirmed this was cosmetic only: the
+    actual damage math was never affected, since `calculateDamage.ts` independently calls
+    `resolveEffectiveAbility` off the raw `ParsedPokemon.item`/`.ability`, not off anything read from this
+    UI state. For the numbers themselves in the screenshots that prompted this (Water Spout doing
+    98.3-115.8% in this app vs. 71.7-84.7% in the reference): explained to the user this isn't the
+    HP-scaling mechanic from the previous entry (both attackers were at 100% HP in both tools, so power is
+    150 either way) — working the base-damage formula backward from each tool's own displayed final stats
+    showed our number is internally consistent with the stats OUR tool actually has entered (Atk 205 /
+    Def 100 / power 150 / STAB 1.5 reproduces our exact 205 max roll by hand), while the reference's
+    required defense stat to produce its own reported 150 max roll is far higher than what's entered in our
+    tool's Scizor (Sp. Def Stat Points, not ability/item, since neither differing ability (Swarm vs.
+    Technician) nor item (none vs. Life Orb) affects damage a Pokémon _takes_) — concluded this is a
+    build/Stat-Point mismatch between the two separately-configured Scizors rather than an engine bug, and
+    recommended matching the exact Sp. Def Stat Points between the two tools to confirm. Verified: `npx tsc
+--noEmit`, `npm run lint`, `npm test` (139/139) all clean; live browser check confirmed a freshly-added
+    Mega Blastoise (Blastoisinite) now shows "Mega Launcher" instead of "Torrent" the moment Mega is
+    toggled on, alongside the already-correct Mega-form base stats.
+  - Damage Calculator: implemented the doubles ×0.75 spread-move damage reduction, per request ("this kind
+    of spreed moves hit diferent when is a single or double target, what approach use the calculator?" →
+    "yes, implement it") — previously not modeled at all (`moves.json` had no target-type data, so
+    Earthquake/Rock Slide/Heat Wave/Water Spout/etc. were always computed as full-power single-target
+    hits, a real accuracy gap given this app's whole purpose is a doubles format). `scripts/
+generate-move-data.mjs` (regenerated via `npm run generate:moves`) now reads moves.csv's own
+    `target_id` column directly (no extra CSV fetch needed — ids 9 "all-other-pokemon" and 11
+    "all-opponents" are the two PokeAPI target types eligible for the reduction, confirmed against
+    move_targets.csv's stable id→name mapping) and writes `isSpread: true` onto exactly those moves in
+    `moves.json` (absent for everything else, same "only present when true" shape as `minHits`/`maxHits`).
+    `MoveData` (`src/types/damage.ts`) gained `isSpread?: boolean`; `DamageCalcOptions` gained
+    `attackerHitsMultipleTargets?: boolean` (only has an effect when the move itself `isSpread`); the
+    modifier chain in `calculateDamage.ts` gained one factor,
+    `(move.isSpread && options.attackerHitsMultipleTargets ? 0.75 : 1)`, next to the existing Friend Guard
+    entry it mirrors. `DamageResult` gained `isSpreadMove: boolean` (independent of whether the reduction
+    was actually applied, so the UI can label "spread move, 1 target" differently from "spread move, 2
+    targets") — set on all three of `calculateDamage`'s return paths (Protect-blocked, immune, and the
+    normal result). UI: `SideConditions` (`DamageCalculator.tsx`) gained a `spreadTarget` boolean, off by
+    default like every other side condition so existing calculations don't silently change; a new "Spread
+    Target (2 Pokémon)" pill sits next to Helping Hand in each side's Field panel (same
+    `SideConditionsPanel`/`ToggleButton` pattern, unconditionally visible like the rest — a no-op on a
+    non-spread move, exactly like Reflect is already a no-op on a Special move); `formatCalculationLabel`
+    appends " (spread)" after the hits label when both the move and the toggle are active, mirroring the
+    existing "Helping Hand "/" through Reflect" conditional-label pattern. Added 4 unit tests to
+    `calculateDamage.test.ts`: the reduction only applies when both `move.isSpread` and the option are
+    true (verified exactly `floor(singleTargetMaxRoll * 0.75)`); `isSpreadMove` correctly true/false per
+    move; a non-spread move is unaffected by the option; omitting the option behaves identically to
+    passing it explicitly `false`. Also updated 4 pre-existing exact-shape `toEqual` tests to include the
+    new `isSpreadMove` field. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (143/143) all clean;
+    live browser check on Grimmsnarl's Earthquake vs. Venusaur confirmed single-target damage of 46-55
+    (29.7-35.5%) drops to exactly 34-41 (21.9-26.5%, the ×0.75 factor) with "Spread Target" toggled on and
+    the result text reading "Earthquake (spread)", while the same toggle left Foul Play (non-spread)
+    completely unchanged at 67-79 (43.2-51%).
+  - Damage Calculator: replaced the previous entry's two per-side "Spread Target (2 Pokémon)" pills with a
+    single global "Singles / Doubles" segmented control at the top of the Field panel, defaulting to
+    Doubles, per explicit follow-up request ("instead of this buttoms, let's have it like this, a single
+    double buttom if one is enable the other can't, also as default it will be double... and move on top
+    of the field area"). Removed `spreadTarget` from `SideConditions`/`DEFAULT_SIDE_CONDITIONS` and its
+    `ToggleButton` in `SideConditionsPanel` entirely; added a new `battleFormat: "Singles" | "Doubles"`
+    state (default `"Doubles"`, since this app's whole context is VGC — a spread move's reduction now
+    applies out of the box instead of needing an opt-in per calc) feeding `optionsFor()`'s
+    `attackerHitsMultipleTargets: battleFormat === "Doubles"` directly via closure, for both calculation
+    directions at once (previously two independent per-side toggles). Added a new `SegmentedToggle`
+    component (`DamageCalculator.tsx`) — a single connected pill with a shared border between segments and
+    only one active at a time, visually distinct from `ToggleButton`'s separate-pill rows and matching the
+    reference calculator's own Singles/Doubles control — rendered above the Weather row. `DamageCalcOptions.
+attackerHitsMultipleTargets` and `calculateDamage.ts`'s modifier logic are unchanged from the previous
+    entry; this was purely a UI/state-shape change in how that option gets set. Verified: `npx tsc
+--noEmit`, `npm run lint`, `npm test` (143/143) all clean; live browser check confirmed Doubles is
+    selected by default with Earthquake already showing the ×0.75-reduced "(spread)" result on page load,
+    and clicking Singles switches it back to full single-target damage with the segmented control's active
+    state moving accordingly.
+  - Damage Calculator: implemented recoil damage — both a move's own recoil (Wave Crash, Flare Blitz,
+    Double-Edge, Volt Tackle, Brave Bird, Wood Hammer, Head Smash, Take Down, Submission, Wild Charge, ...)
+    and Life Orb's flat 10% max HP, per request with a reference-calculator screenshot ("for damage that
+    have recoil as water crash or for pokemon that has life orb equipeted we could calculate the recoil
+    like this, can we do it"). `scripts/generate-move-data.mjs` (regenerated via `npm run generate:moves`)
+    now reads move_meta.csv's existing `drain` column (already fetched for `minHits`/`maxHits`, no new
+    request needed) — a negative value means recoil, mapped through `DRAIN_TO_RECOIL_FRACTION` to the true
+    in-game fraction (-25/-33/-50 → 1/4, 1/3, 1/2) rather than trusting the CSV's rounded integer percent
+    directly, which would have compounded a small error through the damage formula. Wave Crash (a Gen 8
+    move) has no move_meta.csv row at all — a confirmed real gap, filled via a one-entry
+    `MANUAL_RECOIL_OVERRIDES` map (0.25, per Bulbapedia), same "small starting subset, grows as gaps are
+    found" pattern as this app's other hand-curated tables. `MoveData` gained `recoilFraction?: number`
+    (absent for drain-heal moves like Giga Drain and flat-self-cost moves like Mind Blown/Steel Beam/
+    Struggle/Jump Kick's miss-only crash damage — all naturally excluded since none show a negative
+    `drain`, explicitly noted as still out of scope in the generator's file header). `calculateDamage.ts`
+    computes a parallel `recoilRolls` array alongside the existing damage `rolls` in the same per-hit loop
+    (move-recoil is `floor(dealt * recoilFraction)` per hit, based on the post-Focus-Sash-clipping damage
+    dealt — a documented simplification vs. the real games' pre-clip basis) plus Life Orb's flat
+    `ceil(attackerStats.hp / 10)` added once per roll, not per hit; `DamageResult` gained
+    `recoilMinPercent`/`recoilMaxPercent` (percent of the ATTACKER's own max HP, undefined when neither
+    source applies — omitted from the two early-return paths, Protect/immune, since no damage means no
+    recoil either). UI: `formatMoveResultLabel` appends "(N% recoil)" (Life-Orb-only, a flat cost so
+    min===max) or "(N - M% recoil)" (a real recoil move, varies with the roll) to each move-list row,
+    matching the reference screenshot's exact format; the detail `ResultPanel` gained a dedicated "Recoil
+    to {species}: ..." line. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (147/147, 4 new
+    recoil-specific tests) all clean; live browser check with a fresh Swampert (Torrent, no item) using
+    Wave Crash showed "27.7-32.9% (5.7 - 6.9% recoil)" and a "Recoil to Swampert: 5.7% - 6.9%" line;
+    switching to Life Orb bumped both damage (Life Orb's own ×1.3) and recoil to "36.1-42.6% (18.3 - 19.4%
+    recoil)" (the two sources correctly stacking); swapping to Earthquake (non-recoil) with Life Orb still
+    equipped showed a flat "45.2-53.5% (10.3% recoil)" — Life Orb alone, no range.
+  - Damage Calculator: two small requests in one turn. (1) Centered the Field panel's Weather, Terrain, and
+    Critical Hit/Fairy Aura/Gravity button rows (added `justify-center` to each, matching the reference
+    screenshot's centered layout — they were left-aligned before). (2) Added read-only "120 Water · Phys"
+    move info next to each picked move slot, per "do we have data to display moves with power and type
+    like this" — yes, `moves.json` already has `power`/`type`/`category` per move (used throughout
+    `calculateDamage.ts` already), this was purely a display gap. Changed the Moves section's layout from
+    a `grid-cols-2` (2×2) to a single-column list (`RosterPokemonPicker.tsx`) to make room for the info
+    column each row now shows via a new `CATEGORY_ABBREVIATION` lookup (Physical→"Phys", Special→"Spec",
+    Status→"Status", mirroring the reference calculator's own abbreviations); the info span only renders
+    when a move is picked (empty slots stay full-width). Kept this deliberately read-only/informational —
+    unlike the reference calculator's editable Power/Type/Category override fields, this app's move data
+    already comes from real game data (or an explicit pick from the same searchable move list), so there's
+    no legitimate case for overriding it per-slot. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+    (147/147) all clean; live browser check confirmed the Field rows are now centered and Grimmsnarl's
+    moves show "95 Dark · Phys" (Foul Play), "Dark · Status" (Parting Shot), "Psychic · Status"
+    (Reflect/Light Screen — both Psychic-type Status moves), while empty Defender move slots correctly show
+    no info column and stay full-width.
+  - Damage Calculator: two follow-up tweaks to the move-info column from the previous entry, per request
+    with screenshots showing the problem ("let's just leave power and type, let's make the input a fixed
+    width in order to avoy this" — a screenshot of "100 Ground · Phys" wrapping onto two lines since the
+    info column's width varied row to row depending on how long each move's type/category text was).
+    Dropped the `· Phys`/`· Spec`/`· Status` category suffix entirely (now just "120 Water", "100 Ground"),
+    removing the now-unused `CATEGORY_ABBREVIATION` lookup. Fixed the wrapping by giving the move
+    `SearchableSelect`'s wrapper a fixed `w-56` (was `flex-1`, sized to fill whatever space was left after
+    the variable-width info column) instead of the other way around — the info column now gets whatever
+    fixed space remains after a stable-width input, rather than the input's width shifting row to row as
+    the info column's own text length changed. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+    (147/147) all clean; live browser check swapping a move to "Earthquake" (100 Ground) confirmed the info
+    column no longer wraps to a second line, matching the second screenshot's example exactly.
+  - Damage Calculator: swapped the move-info column's type text for a type icon, per request — the user
+    added `public/resources/types-icons/` themselves (18 PNGs, one per standard type, filenames matching
+    the lowercased type name — e.g. `water.png`), asking to use them instead of text, icon before power.
+    New `src/components/TypeIcon/TypeIcon.tsx` (`{ type, size = 16 }` → `<Image src="/resources/types-icons/
+{type.toLowerCase()}.png">`), same directory-per-component/`index.ts` pattern as `ItemIcon`. Verifying
+    the type coverage against `moves.json` surfaced a real edge case the "18 types, closed set" assumption
+    would have missed: `moves.json` actually has a 19th type, "Shadow" (Pokémon Colosseum/XD-exclusive
+    moves like Shadow Rush — never legal in any real VGC format, but still present as pickable data), with
+    no matching icon file — so `TypeIcon` got the same `onError` → "?" placeholder fallback pattern
+    `ItemIcon` already uses, rather than assuming the set is fully closed. `RosterPokemonPicker.tsx`'s move
+    info span now renders `<TypeIcon type={moveInfo.type} />` before the power number (was `"120 Water"`
+    text, now icon + `"95"`/`"120"` etc., matching the requested icon-then-power order). Verified: `npx tsc
+--noEmit`, `npm run lint`, `npm test` (147/147) all clean; live browser check confirmed Dark and
+    Psychic type icons render correctly next to Grimmsnarl's Foul Play/Parting Shot/Reflect/Light Screen.
+  - Damage Calculator: sized the type icon to match the move input's own rendered height, per follow-up
+    request ("i would like to make the icons same height as the input"). Measured the compact
+    `SearchableSelect` input's actual height live via `getBoundingClientRect()` (38px) rather than guessing
+    from Tailwind spacing values, and passed `size={38}` at this one call site in
+    `RosterPokemonPicker.tsx` (the `TypeIcon` component's own default stays 16 for any other future use).
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (147/147) all clean; live browser check
+    confirmed the icons now sit flush edge-to-edge with the move field beside them, matching the
+    screenshot.
+  - **Damage Calculator: "Open in Damage Calculator" from an opponent card.** Closes part of the
+    long-standing "real end goal" gap noted since the very first Basic Singles entry (loading a scenario
+    straight from the matchup planner) — per request, a calculator icon on each `OpponentCard` now opens
+    `/damage-calc` in a new tab with the Attacker pre-loaded from the header's active team (already the
+    existing default) and the Defender pre-loaded from _that specific opponent's_ full roster. New
+    `IconName.Calculate` (`src/enums/iconName.ts` + `src/components/Icon/paths.ts` — Material Symbols
+    Outlined "calculate", fetched from the same google/material-design-icons source the other icons were
+    manually extracted from) renders as a new button in `OpponentCard.tsx`'s icon row, before Edit/Delete:
+    a plain `<a href="/damage-calc?opponentId={opponent.id}" target="_blank" rel="noopener noreferrer">`,
+    mirroring the existing "Open Poképaste" external-link pattern in the same file rather than `next/link`
+    (which has no special new-tab semantics). `DamageCalculator.tsx` reads the `opponentId` query param via
+    `useSearchParams()` (the first use of Next's URL-param hooks in this codebase — confirmed via
+    `node_modules/next/dist/docs` per AGENTS.md's directive that this Next version may differ from training
+    data) and `useOpponents()` to resolve it to the actual `Opponent`, then seeds the Defender's sidebar
+    from `opponent.team.pokemon` using the exact same render-time-adjust-state pattern already used for the
+    Attacker's active-team seed (a sentinel `defenderDefaultedForOpponentId` state, mirroring
+    `attackerDefaultedFor`) — except gated on the opponent object actually resolving (not just the sidebar
+    being empty), since `useOpponents()` loads asynchronously from IndexedDB and `opponentId` can be
+    present in the URL before the opponents list has finished loading; once applied for a given
+    `opponentId`, later manual Defender edits are never overridden, same guarantee as the Attacker side.
+    `useSearchParams()` requires a `<Suspense>` boundary around any client component that calls it or a
+    static build fails with Next's "missing Suspense boundary" error (confirmed by reading
+    `use-search-params.md` directly rather than assuming) — added `<Suspense fallback={null}>` around
+    `<DamageCalculator />` in `src/app/damage-calc/page.tsx`. Verified: `npx tsc --noEmit`, `npm run lint`,
+    `npm test` (147/147) all clean, **and `npm run build`** (the actual missing-Suspense failure mode only
+    surfaces in a production build, not `next dev` — confirmed clean, all 4 routes still prerender static);
+    live browser check clicking the new calculator icon on the "M-Staraptor-Milotic Sand" opponent opened a
+    new tab at `/damage-calc?opponentId=...` with the Attacker already showing the active team (Grimmsnarl)
+    and the Defender showing that opponent's full 6-Pokémon roster (Tyranitar first, matching the card's
+    own display order), both sidebars fully populated with sprites.
+  - Damage Calculator: fixed a real correctness gap — Foul Play was being computed with the ATTACKER's own
+    Attack stat, when its actual mechanic uses the DEFENDER's own Attack stat (and Attack stage) instead,
+    per the user's question ("does move Foul Play take consideration targets attack for damage, can you
+    take a look how we calculate that"). It had zero special-casing anywhere in `calculateDamage.ts` — just
+    a plain 95 BP Dark-type Physical move like any other, always reading `attackerStats[attackStatKey]`.
+    Added `TARGET_ATTACK_STAT_MOVES` (currently just `foul-play`) and swapped the attack-stat/stage source
+    to the defender's when the move is in that set — reusing the exact same "crit ignores an unfavorable
+    stage" logic already in place, just pointed at the other Pokémon's stat/stage. Everything else about
+    the hit (STAB from the attacker's own type, the attacker's item/ability modifiers, the defender's own
+    Defense stat) is unaffected, matching the real mechanic. This also naturally excludes the defender's
+    ability-based Attack multipliers (Huge Power, Guts, ...) from the figure used, since
+    `calculateFinalStats` already keeps those out of the raw stat everywhere in this engine — no extra
+    filtering needed. Noted Body Press (uses the ATTACKER's own Defense stat as its attack term — a
+    related but different quirk) as an explicitly out-of-scope case in the new code comment, since it
+    wasn't what was asked about. Added 6 new unit tests to `calculateDamage.test.ts`: the attacker's own
+    Attack investment/stat stage has zero effect on the damage; the defender's Attack investment/stat stage
+    does affect it (both directions); a crit ignores a negative defender Attack stage (the stat actually in
+    play); STAB still comes from the attacker's own type. Verified: `npx tsc --noEmit`, `npm run lint`,
+    `npm test` (153/153) all clean; live browser check on the existing Grimmsnarl/Venusaur matchup confirmed
+    raising Venusaur's (defender) Atk Stat Points from 102 to 134 final raised Foul Play's damage from
+    34.8-41.3% to 45.8-54.2%, while separately raising Grimmsnarl's (attacker) own Atk from 126 to 154 left
+    the damage completely unchanged at 45.8-54.2%.
+  - **Formula audit against the NCP-VGC-Damage-Calculator reference.** Per the user asking to verify our
+    math against that reference directly, rather than only spot-checking output numbers as earlier entries
+    had done — cloned the actual repo (`nerd-of-now/NCP-VGC-Damage-Calculator`, into the scratchpad, not
+    committed) and read its real formula source (`script_res/damage_SV.js`, `damage_MASTER.js`'s
+    `calcAtMods`/`calcDefMods`/`calcFinalMods`/`calcGeneralMods`/`calcBaseDamage`) line-by-line against
+    `calculateDamage.ts`, rather than treating the earlier "cross-check a few outputs" verification as
+    sufficient on its own. Found and fixed two real, confirmed value bugs:
+    - **Type-resist Berries were ×0.75, should be ×0.5.** The reference's `calcFinalMods` pushes
+      `0x800/0x1000` = exactly 0.5 for every resist Berry, unconditionally across every generation this app
+      targets — not a "50% pre-Gen 6, 25% from Gen 6 on" distinction as the code comment previously (and
+      incorrectly) claimed. That comment was this session's own mistake, introduced when the berries were
+      first added — confirmed via this audit, not something carried over from anywhere else. Fixed
+      `TYPE_RESIST_BERRIES`' multiplier in `itemDamageModifiers.ts` (Chilan Berry was already correct at
+      0.5, unaffected). Strengthened the existing berry test from a loose `toBeLessThan` check to an exact
+      `floor(fullDamage * 0.5)` assertion.
+    - **Screens (Reflect/Light Screen/Aurora Veil) don't get weaker in Doubles.** The real games use
+      ×2732/4096 (≈0.667) in Doubles/multi-battle formats instead of ×0.5 — a real, documented VGC mechanic
+      this app had simply never modeled (the very first Full Singles Accuracy plan explicitly deferred
+      "screens are 2/3 not 1/2 for spread moves" as doubles-only and out of scope at the time — but this app
+      now defaults to Doubles, per an earlier session's Singles/Doubles toggle, so the deferred gap was
+      actually live and affecting the default experience). Added `DamageCalcOptions.isDoublesFormat`
+      (field-wide, distinct from `attackerHitsMultipleTargets` which is about one specific move's target
+      count), wired from `DamageCalculator.tsx`'s existing `battleFormat` state; `screenMultiplier()` now
+      takes an `isDoublesFormat` param and picks the right fraction. Added 2 new tests (the Doubles value is
+      meaningfully weaker than Singles but still reduces damage; omitting the option matches the old
+      Singles-only default, so no existing calc silently changes).
+    - **Confirmed correct, no change needed:** the core Level-50 base-damage formula
+      (`floor(floor(floor(2L/5+2)*power*attack/defense)/50)+2`) matches exactly; every other spot-checked
+      modifier value matched ours precisely — Technician (1.5, ≤60 BP), Huge Power/Pure Power (2.0,
+      Physical), Thick Fat (0.5, Fire/Ice), Filter/Solid Rock (0.75, super-effective only), Choice Band/
+      Specs (1.5), Guts (1.5), Life Orb (1.3), Expert Belt (1.2, super-effective only), Friend Guard (0.75),
+      type-boosting items (1.2), Fairy Aura (1.33), Muscle Band/Wise Glasses (1.1), Ice Scales (0.5,
+      Special), Dry Skin (1.25 vs. Fire); and Foul Play — the reference literally has
+      `attackSource = move.name === "Foul Play" ? defender : attacker` in the same spot, independently
+      confirming the earlier fix in this same session was exactly right.
+    - **Known, deliberate structural difference, not fixed in this pass:** the reference applies damage
+      modifiers via the real games' own fixed-point "chain modifiers" system — each stage (base power mods,
+      attack-stat mods, defense-stat mods, then STAB, type effectiveness, and a combined chain of every
+      other modifier) is applied and ROUNDED SEPARATELY at each step (`pokeRound`, which rounds exactly
+      .5 DOWN — a genuine Game Freak engine quirk), and critically, the 85%-100% random roll is applied
+      immediately after `calcBaseDamage`, BEFORE STAB/type effectiveness/other modifiers — not last, as
+      `calculateDamage.ts` does. This engine instead multiplies every modifier together as plain floats and
+      floors once at the very end, then applies the roll percent. For a single modifier this rarely
+      diverges; empirically (the new Doubles-screens test) a realistic multi-step case came out 1 damage
+      point off from the reference's own step-order (99 vs. an expected 98) — small, and unlikely to
+      qualitatively flip a KO read on its own, but a real, quantifiable source of drift under enough
+      stacked modifiers, flagged here rather than silently glossed over. Fully matching this would mean
+      restructuring the modifier chain and roll loop to mirror the reference's exact stage order and
+      rounding function — a substantial rewrite of `calculateDamage.ts`'s core, not attempted unless
+      explicitly requested. Also noted for later: the reference lists a few other "uses a different stat
+      source" quirks beyond Foul Play — Body Press (attacker's own Defense as its attack stat) and Photon
+      Geyser/Light That Burns The Sky/Shell Side Arm/Tera Blast (uses whichever of Atk/SpA is higher) — none
+      modeled here yet, out of scope for this pass since they weren't what was asked about.
       Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (155/155) all clean; live browser check on the
       existing Grimmsnarl/Venusaur matchup (Foul Play, Reflect up on the defender's side) confirmed Singles
       shows exactly half damage (17.4-20.6%, down from 34.8-41.3% with no screen) while Doubles shows the
       weaker ~2/3 reduction (23.2-27.7%) — matching the reference's own distinction precisely.
-    - **Precision rewrite: matched the real games' exact fixed-point damage algorithm.** Per explicit
-      follow-up to the formula audit above ("let's try to be as precise as we can") — the audit had flagged
-      one remaining structural gap (this engine applied every modifier as one combined float multiplication,
-      floored once at the end, instead of the real games' own step-by-step fixed-point "chain modifiers"
-      system) as a known limitation rather than fixing it; this entry closes that gap. Read
-      `damage_SV.js`/`damage_MASTER.js`'s full `calcBPMods`/`calcAtMods`/`calcDefMods`/`calcFinalMods`/
-      `calcGeneralMods`/`calcBaseDamage`/`chainMods`/`pokeRound` from the reference and reimplemented
-      `calculateDamage.ts`'s core to match exactly:
-      - `pokeRound(num)` — Game Freak's own rounding rule (exactly .5 rounds DOWN, not up like
-        `Math.round`) — and `chainMods(mods)` — combines a list of 4096ths (`0x1000`) fixed-point modifiers
-        via the real games' own sequential algorithm (`Math.round` at each intermediate step, skipping
-        neutral/`×1` entries) — added as the two core primitives, ported faithfully from the reference.
-      - Every modifier now applies at its OWN correct stage, not one flat end-of-calc multiplier: base power
-        (`bp` — Technician, Helping Hand, terrain, type-boosting items, Muscle Band/Wise Glasses, Fairy Aura,
-        Dry Skin), the attack stat (`at` — Choice Band/Specs, Guts, Huge Power/Pure Power, and — surprisingly,
-        confirmed against the reference rather than assumed — Thick Fat/Heatproof, which reduce the
-        ATTACKER's effective attack stat even though they're defender-side abilities), the defense stat
-        (`df` — Assault Vest, Fur Coat; Sand/Snow's boost applies as its own separate direct step first, "unlike
-        all other defense modifiers" per the reference's own comment), and a `final` stage applied once per
-        85-100% roll alongside STAB/type effectiveness/burn (screens, Friend Guard, Filter/Solid Rock, Ice
-        Scales, Expert Belt, Life Orb, resist Berries). `AbilityDamageModifierSide`/`ItemDamageModifier`
-        gained `multiplier4096` (the exact hex constant, not a re-derived decimal — Life Orb's real value is
-        `0x14CC` = 1.2998..., which is NOT what `round(1.3 * 4096)` gives, `0x14CD` — a precision loss the
-        old plain-float approach was already silently carrying) and a `stage` field; every ability/item
-        entry was individually re-verified and re-bucketed against the reference's source, not just
-        decimal-converted.
-      - The 85-100% random roll now applies immediately after `calcBaseDamage` — BEFORE STAB, type
-        effectiveness, burn, and every `final`-stage modifier — matching the reference's exact order
-        (previously last, after everything). Spread (×0.75)/Weather (×1.5 or ×0.5)/Critical hit (×1.5) apply
-        directly to `baseDamage`, each as its own step, before the roll — Spread and Weather via `pokeRound`,
-        but Critical hit via plain `Math.floor` (confirmed as a deliberate distinction in the reference's own
-        `calcGeneralMods`, not an oversight to normalize away). STAB is its own dedicated `pokeRound` step
-        (not chained with anything), and — a genuine, previously-nonexistent gap — **Adaptability is now
-        actually implemented** (STAB ×2.0 instead of ×1.5): a prior code comment in
-        `abilityDamageModifiers.ts` claimed this was "special-cased" in `calculateDamage.ts`, but no such
-        code actually existed anywhere in the file before this pass — Adaptability had zero effect.
-      - Also picked up, while re-deriving each terrain modifier's exact stage/value from the reference:
-        Grassy Terrain halves Earthquake/Bulldoze specifically against a grounded defender (a real, separate
-        mechanic from its general Grass-move boost, not previously modeled) — and confirmed the terrain
-        attack-boost value is `0x14CD` (≈1.3, the modern Gen 8+ value this app already had) rather than the
-        older `0x1800` (1.5) pre-Gen-8 value, so no change needed there, just confirmation.
-      - Updated the one pre-existing test whose hardcoded roll list actually changed (the very first
-        Garchomp/Ditto Earthquake test — recomputed and independently hand-verified via a throwaway Node
-        script using the documented new algorithm, not just accepted from the code's own output) and
-        strengthened the Doubles-vs-Singles screens test from an approximate `toBeCloseTo` check to an exact
-        `toEqual` on the full 16-roll list (also independently hand-verified). Added new coverage for
-        Adaptability (2 tests) and for every ability/item whose stage bucket the rewrite actually touched —
-        Technician, Huge Power, Thick Fat, Fur Coat, Assault Vest, and the new Grassy Terrain/Earthquake
-        case (7 tests) — since none of these had ANY dedicated test before this pass despite being
-        real, shipped behavior.
-      - One self-caught bug during the rewrite itself: the base-power modifier chain (`bpMods`) was computed
-        but never actually multiplied into the damage formula on the first pass — caught immediately by an
-        unused-variable ESLint warning (`finalBasePower` assigned but never read) before it ever reached a
-        test run, not by a wrong test result.
+  - **Precision rewrite: matched the real games' exact fixed-point damage algorithm.** Per explicit
+    follow-up to the formula audit above ("let's try to be as precise as we can") — the audit had flagged
+    one remaining structural gap (this engine applied every modifier as one combined float multiplication,
+    floored once at the end, instead of the real games' own step-by-step fixed-point "chain modifiers"
+    system) as a known limitation rather than fixing it; this entry closes that gap. Read
+    `damage_SV.js`/`damage_MASTER.js`'s full `calcBPMods`/`calcAtMods`/`calcDefMods`/`calcFinalMods`/
+    `calcGeneralMods`/`calcBaseDamage`/`chainMods`/`pokeRound` from the reference and reimplemented
+    `calculateDamage.ts`'s core to match exactly:
+    - `pokeRound(num)` — Game Freak's own rounding rule (exactly .5 rounds DOWN, not up like
+      `Math.round`) — and `chainMods(mods)` — combines a list of 4096ths (`0x1000`) fixed-point modifiers
+      via the real games' own sequential algorithm (`Math.round` at each intermediate step, skipping
+      neutral/`×1` entries) — added as the two core primitives, ported faithfully from the reference.
+    - Every modifier now applies at its OWN correct stage, not one flat end-of-calc multiplier: base power
+      (`bp` — Technician, Helping Hand, terrain, type-boosting items, Muscle Band/Wise Glasses, Fairy Aura,
+      Dry Skin), the attack stat (`at` — Choice Band/Specs, Guts, Huge Power/Pure Power, and — surprisingly,
+      confirmed against the reference rather than assumed — Thick Fat/Heatproof, which reduce the
+      ATTACKER's effective attack stat even though they're defender-side abilities), the defense stat
+      (`df` — Assault Vest, Fur Coat; Sand/Snow's boost applies as its own separate direct step first, "unlike
+      all other defense modifiers" per the reference's own comment), and a `final` stage applied once per
+      85-100% roll alongside STAB/type effectiveness/burn (screens, Friend Guard, Filter/Solid Rock, Ice
+      Scales, Expert Belt, Life Orb, resist Berries). `AbilityDamageModifierSide`/`ItemDamageModifier`
+      gained `multiplier4096` (the exact hex constant, not a re-derived decimal — Life Orb's real value is
+      `0x14CC` = 1.2998..., which is NOT what `round(1.3 * 4096)` gives, `0x14CD` — a precision loss the
+      old plain-float approach was already silently carrying) and a `stage` field; every ability/item
+      entry was individually re-verified and re-bucketed against the reference's source, not just
+      decimal-converted.
+    - The 85-100% random roll now applies immediately after `calcBaseDamage` — BEFORE STAB, type
+      effectiveness, burn, and every `final`-stage modifier — matching the reference's exact order
+      (previously last, after everything). Spread (×0.75)/Weather (×1.5 or ×0.5)/Critical hit (×1.5) apply
+      directly to `baseDamage`, each as its own step, before the roll — Spread and Weather via `pokeRound`,
+      but Critical hit via plain `Math.floor` (confirmed as a deliberate distinction in the reference's own
+      `calcGeneralMods`, not an oversight to normalize away). STAB is its own dedicated `pokeRound` step
+      (not chained with anything), and — a genuine, previously-nonexistent gap — **Adaptability is now
+      actually implemented** (STAB ×2.0 instead of ×1.5): a prior code comment in
+      `abilityDamageModifiers.ts` claimed this was "special-cased" in `calculateDamage.ts`, but no such
+      code actually existed anywhere in the file before this pass — Adaptability had zero effect.
+    - Also picked up, while re-deriving each terrain modifier's exact stage/value from the reference:
+      Grassy Terrain halves Earthquake/Bulldoze specifically against a grounded defender (a real, separate
+      mechanic from its general Grass-move boost, not previously modeled) — and confirmed the terrain
+      attack-boost value is `0x14CD` (≈1.3, the modern Gen 8+ value this app already had) rather than the
+      older `0x1800` (1.5) pre-Gen-8 value, so no change needed there, just confirmation.
+    - Updated the one pre-existing test whose hardcoded roll list actually changed (the very first
+      Garchomp/Ditto Earthquake test — recomputed and independently hand-verified via a throwaway Node
+      script using the documented new algorithm, not just accepted from the code's own output) and
+      strengthened the Doubles-vs-Singles screens test from an approximate `toBeCloseTo` check to an exact
+      `toEqual` on the full 16-roll list (also independently hand-verified). Added new coverage for
+      Adaptability (2 tests) and for every ability/item whose stage bucket the rewrite actually touched —
+      Technician, Huge Power, Thick Fat, Fur Coat, Assault Vest, and the new Grassy Terrain/Earthquake
+      case (7 tests) — since none of these had ANY dedicated test before this pass despite being
+      real, shipped behavior.
+    - One self-caught bug during the rewrite itself: the base-power modifier chain (`bpMods`) was computed
+      but never actually multiplied into the damage formula on the first pass — caught immediately by an
+      unused-variable ESLint warning (`finalBasePower` assigned but never read) before it ever reached a
+      test run, not by a wrong test result.
       Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163, 8 new tests) all clean, **and
       `npm run build`** (confirmed the rewrite doesn't affect the earlier Suspense-boundary requirement; all
       4 routes still prerender static); live browser re-check of the exact scenario from the "audit" entry
       above (Foul Play, still 34.8-41.3% baseline, unchanged) plus a fresh Colbur Berry vs. Gengar check
       (Dark is 2x super-effective against Ghost) showing 85.9-102.2% drop to exactly 43-51.1% — a clean half,
       confirming the corrected 0.5 resist-Berry multiplier survived the full rewrite intact.
-    - `MyTeamHeader.tsx`: replaced the single pill-button-styled nav link (only showed the *other* page —
-      "Damage Calc" on the Matchup Planner, "Matchup Planner" on the Damage Calc page, never both at once)
-      with real navigation — both "Matchup Planner" and "Damage Calculator" always visible side by side, per
-      request ("lets hava acutual navigation links, not buttoms, first link 'Matchup Planner', 'damage
-      calculator'"). `NAV_LINK_BY_PAGE` (a single swap-target lookup) became `NAV_LINKS` (a 2-item array in
-      that fixed order); the current page renders as plain non-interactive text (`aria-current="page"`, the
-      conventional "you are here" pattern — avoids a no-op click reloading the same page), the other as a
-      real `next/link` `<Link>`. Dropped the pill/border/background button styling entirely in favor of
-      plain text links (muted `text-zinc-200` inactive, `text-white` active, underline-free per "not
-      buttoms"). Kept the existing mobile/desktop short-label split ("Planner"/"Calc" vs. full names).
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check on
-      `/matchup-planner` confirmed both links render with "Matchup Planner" active (white) and "Damage
-      Calculator" muted, and clicking "Damage Calculator" navigated to `/damage-calc` with the active state
-      correctly swapping.
-    - `MyTeamHeader.tsx` follow-up: moved the nav links from the header's center to sit directly beside the
-      logo/wordmark, and switched the active-page highlight from color-only to bold, per request ("can we
-      align then to the left, close to the logo? also can we make bold or resalt could be bold"). Wrapped the
-      logo block and the `<nav>` in one shared flex container (`gap-3 md:gap-6`) so they sit as one
-      left-aligned group; the header's own `justify-between` now just splits that group from the
-      right-side team switcher, instead of splitting 3 separate items across the full width. Active link:
-      `font-bold text-white`; inactive: `font-medium text-zinc-200` (unchanged from the previous entry).
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check
-      confirmed both links now sit immediately right of the "VGCTools" wordmark, with "Matchup Planner"
-      rendering visibly bold against the muted "Damage Calculator".
-    - `MyTeamHeader.tsx`: added a proper mobile nav, per a screenshot showing the two nav links' abbreviated
-      "Planner"/"Calc" labels squeezing the header on a narrow viewport and crowding the team sprite
-      row/switcher next to them — explicit requirement: "I want to keep the team selection visible alwasy".
-      The desktop `<nav>` (both links inline, full labels) is now `hidden md:flex`; a new mobile-only
-      (`md:hidden`) hamburger button opens a dropdown with the same two links (full labels, stacked), using
-      the exact same click-outside/Escape-to-close pattern already used for the team-switcher dropdown (a
-      second independent `isMobileNavOpen` state + ref pair, not a shared/generalized one — kept simple over
-      DRY since the two menus' trigger/content shapes differ). Picking a link in the mobile dropdown also
-      closes it (`onClick` calls `setIsMobileNavOpen(false)` in addition to navigating). The team
-      sprite row/switcher itself needed no changes at all — it was never gated behind any responsive class,
-      so it was already "always visible"; the actual fix was giving the nav links somewhere else to go on
-      narrow screens instead of fighting the switcher for space. Added `IconName.Menu` (Material Symbols
-      Outlined "menu" — the standard 3-bar hamburger glyph, fetched from the same
-      google/material-design-icons source the other icons were extracted from) since no menu icon existed
-      yet. Dropped the now-unused `shortLabel` field from `NAV_LINKS` entirely (both mobile and desktop show
-      full labels now — mobile just relocated them rather than abbreviating). Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (163/163) all clean; live browser check at a 420px-wide viewport (matching
-      the screenshot's cramped width) confirmed the header now shows logo, hamburger, and the full
-      unobstructed team sprite switcher with no crowding, the hamburger opens a dropdown with "Matchup
-      Planner" (bold, active) and "Damage Calculator", and clicking "Damage Calculator" navigates to
-      `/damage-calc` and auto-closes the menu, with the team switcher staying visible throughout.
-    - **Damage Calculator: Import/Export a Pokémon in Showdown format.** Per request ("can we add a way to
-      import and export a pokemon, using showdown format"), added both directions to `RosterPokemonPicker.tsx`.
-      Import reuses `parsePokemonBlock` (`parseTeam.ts`) outright — it already tolerates the extra lines a
-      Showdown export carries that this app doesn't track (Shiny, Tera Type, IVs, gender marker), so no new
-      parsing logic was needed, only UI wiring: a paste-icon "Import" toggle next to the species search opens a
-      textarea + Import/Cancel buttons, calling the existing `onAddPokemon` prop (same path species-search picks
-      already use). Export needed a genuinely new serializer since nothing existed: `src/lib/formatPokemonPaste.ts`
-      is the inverse of `parsePokemonBlock` — always writes `Level: 50` (this app's only supported level), omits
-      Shiny/Tera Type/IVs (untracked), and only lists non-zero Stat Points in standard HP/Atk/Def/SpA/SpD/Spe
-      order (unlike `applyStatOverrides`'s own internal `evs` string, which always lists all 6). A copy icon
-      next to the species name/Mega-button row copies the formatted export text straight to the clipboard on a
-      single click (`navigator.clipboard.writeText`) — no intermediate popup — with the icon itself swapping to
-      a checkmark (new `IconName.Check`) for ~2s as feedback, per a follow-up request for a smoother one-click
-      experience over the original open-panel-then-click-copy two-step flow. Added `IconName.ContentCopy`/
-      `ContentPaste`/`Check` (Material Symbols Outlined, same extraction pattern as the other icons). Verified:
-      `src/lib/formatPokemonPaste.test.ts` round-trips the user's own Charizard example exactly; `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (167/167) all clean. Live browser check: pasted the user's exact
-      Charizard (M) @ Charizardite Y / Blaze / Shiny / EVs / Modest / 4-move example into Import — correctly
-      populated species, Mega form (with Drought resolving as the effective ability and Sun weather
-      auto-applying), nature, Stat Points, and all 4 moves. Also verified the Import error path (empty/
-      whitespace-only paste correctly shows "Paste a Pokémon's Showdown export text first." instead of silently
-      no-oping). The copy icon's click didn't visibly flip to a checkmark under CDP-driven automation in either
-      the original popup version or this simplified version — traced to the Clipboard API's write call itself
-      hanging (confirmed via a manual `javascript_tool` call to `navigator.clipboard.writeText` timing out)
-      rather than an app bug: Chrome's clipboard-write permission needs a trusted user gesture, which synthetic
-      automation clicks don't reliably provide, so this doesn't reflect real mouse-click usage.
-    - **Damage Calculator: Import a full team, not just one Pokémon.** Per follow-up request ("the pokemon
-      import that we add in the calculator could work for a team as well?"), Import now accepts a full
-      Showdown team paste (multiple Pokémon separated by a blank line), reusing `parseTeam` (`parseTeam.ts`) —
-      the same plural function that already powers full-team pasting elsewhere in the app — instead of the
-      singular `parsePokemonBlock`. Agreed with the user's own proposal that importing more than one Pokémon
-      should replace this side's whole sidebar rather than append (a multi-mon paste means "this is my team,"
-      not "add one more"): `RosterPokemonPicker` gained a new required `onImportTeam: (pokemon: ParsedPokemon[])
-      => void` prop, wired to new `attackerImportTeam`/`defenderImportTeam` functions in `DamageCalculator.tsx`
-      that replace the sidebar outright (capped at `MAX_SIDEBAR_POKEMON`), select the first parsed Pokémon, and
-      reset battle state/stat overrides/auto-weather the same way every other roster-changing action already
-      does. A single-Pokémon paste is unaffected — still goes through the existing `onAddPokemon` (append-or-
-      replace-selected) path. Added a hint line above the Import textarea ("Paste one Pokémon, or a full team
-      … to replace this side's whole roster") so the replace behavior is visible before submitting, not a
-      surprise after. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (167/167) all clean. Live browser
-      check: pasted a 3-Pokémon team (Pikachu/Incineroar/Rillaboom) into the Attacker side that already had a
-      different single Pokémon (Grimmsnarl) selected — confirmed the old entry was fully replaced (not appended
-      alongside), all 3 new sprites appeared in the sidebar, Pikachu (the first) auto-selected with correct
-      item/ability/nature/Stat Points/moves, and Incineroar (the second) also checked out correct when selected.
-    - Damage Calculator: switched Import from an inline expanding panel to the shared `Modal` component, per
-      request ("can we use a modal as we do for adding a own team") — matching `MyTeamSection`'s "Add a team"
-      modal pattern (`Modal` + a heading + textarea + Import/Cancel buttons) rather than a bespoke inline
-      layout. Reused the existing `Modal` component as-is (click-outside/Escape-to-close already built in); the
-      textarea grew from `rows={6}` to `rows={12}` (`resize-y` instead of `resize-none`) now that it has a full
-      modal's vertical room, matching `TeamPasteForm`'s sizing. No behavior changed beyond presentation — same
-      `submitImport`/`onImportTeam`/`onAddPokemon` logic, same hint text and error handling, just triggered from
-      a centered dialog instead of an inline panel pushing the rest of the panel down. Verified: `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (167/167) all clean; live browser check confirmed the modal opens
-      centered with a backdrop (visually matching the "Add a team" modal), Cancel and clicking outside both
-      close it without side effects, and submitting a 2-Pokémon team (Landorus-Therian/Flutter Mane) through it
-      still correctly replaced the sidebar and closed the modal.
-    - Damage Calculator: added "Export Team" alongside the existing single-Pokémon Export, per request ("can we
-      have an option to export all team from calc as well") — the natural counterpart to Import already
-      accepting a full team. New `formatTeamPaste(pokemon: ParsedPokemon[])` in `formatPokemonPaste.ts` joins
-      each Pokémon's own `formatPokemonPaste` block with a blank line (the same separator `parseTeam`'s
-      `splitIntoBlocks` expects), so an exported team round-trips straight back through Import's team-paste
-      path — asserted directly in `formatPokemonPaste.test.ts` (`parseTeam(formatTeamPaste(team))` equals the
-      original `team`). An "Export Team" text link (next to Import, only shown once the sidebar has at least
-      one Pokémon) opens a `Modal` — same pattern as the Import modal just added — with a read-only textarea of
-      the whole roster's export text and a "Copy to clipboard" button (swaps to "Copied!" for ~2s, same as the
-      single-Pokémon Export icon). Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169, +2 new)
-      all clean; live browser check with a 6-Pokémon Attacker sidebar confirmed the modal opens with the
-      heading "Export Attacker Team," the count line reads "The whole attacker roster (6 Pokémon)," and
-      scrolling the textarea shows all 6 Pokémon correctly serialized and blank-line-separated in sidebar order.
-    - **Toast notification component.** Per request ("can we create a toast notification component, we can look
-      for and npm package that is secure and compatible with the project"), evaluated three candidates —
-      `sonner`, `react-hot-toast`, `react-toastify` — against React 19/Next.js 16 compatibility and supply-chain
-      footprint: `sonner` was the only one with zero runtime dependencies (the other two pull in `goober`/
-      `csstype` and `clsx` respectively), an explicit `react: '^18.0.0 || ^19.0.0'` peer range, and the most
-      recent publish of the three. Confirmed via `npm audit` before/after installing that `sonner` adds zero new
-      vulnerabilities — the app's pre-existing 6 high-severity findings (`brace-expansion`, `js-yaml`, `nanoid`,
-      `next`, `postcss`, `sharp`, all dev-tooling/build transitive deps, unrelated to this change) were identical
-      with and without it. Added `src/components/Toast/` (mirroring the `Modal`/`Icon` folder-per-component
-      pattern): `Toast.tsx` wraps sonner's `<Toaster />`, pre-styled via `toastOptions.classNames` to match this
-      app's zinc palette/card look (`border-zinc-200`, `rounded-lg`, `shadow-lg`) instead of sonner's default
-      theme, with success/error keeping the `green-600`/`red-600` this app already uses elsewhere (the Damage
-      Calculator's copy-confirmation checkmark, import error text); `index.ts` re-exports `Toaster` plus `toast`
-      straight from `sonner` so callers `import { toast } from "@/components/Toast"` rather than reaching into
-      the package directly. `<Toaster />` is mounted once in the root layout (`src/app/layout.tsx`), positioned
-      `bottom-right` with `closeButton` enabled, so `toast(...)`/`toast.success(...)`/`toast.error(...)` work
-      from anywhere in the app with no further setup — not yet wired into any existing feature (e.g. the Export/
-      Export Team copy confirmations), left for a follow-up request rather than assumed in scope here. Verified:
-      `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser
-      check temporarily fired one of each toast type (default/success/error) to confirm the zinc styling,
-      stacking, hover-to-expand, and close button all render correctly, then the temporary test code was
-      removed, leaving the component wired but unused.
-    - Wired the new toast component into the Export/Export Team copy confirmations, per follow-up request.
-      Both `copyExportText` and `copyTeamExportText` (`RosterPokemonPicker.tsx`) now wrap the clipboard write in
-      try/catch — `toast.success` (e.g. "Copied Grimmsnarl to clipboard", "Copied Attacker team (6 Pokémon) to
-      clipboard") on success, `toast.error("Couldn't copy to clipboard.")` if the write throws — replacing the
-      previous local `exportCopied`/`teamExportCopied` state and its icon-swap (copy icon → green checkmark) /
-      button-text-swap ("Copy to clipboard" → "Copied!") feedback, which is now redundant with the toast. Net
-      simplification: two fewer `useState` calls, no `setTimeout` cleanup, and the export copy icon no longer
-      needs `IconName.Check` (still defined in the shared icon set, just unused by this file now). The Export
-      Team modal's copy button also benefits from the switch — its old "Copied!" text was only visible while the
-      modal stayed open, whereas the toast confirms even after the user closes the modal right after copying.
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169) all clean; live browser check stubbed
-      `navigator.clipboard.writeText` to resolve instantly (working around the same CDP-automation clipboard-
-      permission limitation noted in the Import/Export entry above) and confirmed both buttons fire the correct
-      green success toast with the right message.
-    - **Damage Calculator: "Load Team" for the Defender, sourced from the Matchup Planner's saved opponents.**
-      Per request ("I want an option to load existing opposite team that exist on the matchup planner" for "the
-      defenser side (b side)"), added a new `loadableOpponents?: Opponent[]` prop to `RosterPokemonPicker` —
-      only passed for the Defender instance in `DamageCalculator.tsx` (`loadableOpponents={opponents}`, from the
-      `useOpponents()` call already used for the `?opponentId=` URL-param seed), so the button only renders on
-      that side; the Attacker doesn't need it since it already auto-seeds from the header's active team. A new
-      "Load Team" text link (new `IconName.Download`, Material Symbols Outlined "download") sits next to Export
-      Team/Import in the Defender panel's header row, opening a `Modal` that lists every saved opponent by
-      `label` with its Pokémon count, sourced straight from the same `opponents` array the Matchup Planner
-      itself renders (confirmed matching, same 9 names/order in both places during verification). Picking one
-      calls the *existing* `onImportTeam` prop with `opponent.team.pokemon` — no new replace-sidebar logic
-      needed, since this is exactly the same "load a whole team, wholesale-replacing this side's roster"
-      operation the team-paste Import path already does, just sourced from saved data instead of pasted text —
-      then fires `toast.success("Loaded {label} onto Defender")` and closes the modal. Handles the empty-state
-      case ("No opponents saved yet — add one in the Matchup Planner first.") for a fresh install with no
-      opponents yet. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all
-      clean; live browser check confirmed "Load Team" appears only on the Defender (not Attacker), the modal
-      lists all 9 existing saved opponents with correct Pokémon counts, and picking "M-Staraptor-Milotic Sand"
-      correctly replaced the Defender's sidebar with that opponent's full 6-Pokémon roster (Tyranitar first,
-      Mega-toggled, Sand Stream resolving and auto-applying Sand weather, moves populated), the damage
-      calculation panel recalculating live against the new matchup, and the success toast confirming the load.
-    - **Damage Calculator: reworked the per-Pokémon detail panel layout, per an annotated screenshot.** Five
-      changes, all in `RosterPokemonPicker.tsx`: (1) removed the detail panel's `h-16 w-16` `PokemonSprite`
-      thumbnail entirely — freed the row for the fields it already had, no new element added in its place. (2)
-      The top species search (`SearchableSelect`) now shows the selected Pokémon's species as its `value`
-      instead of a separate `<span>{pokemon.species}</span>` heading repeating the same text — picking a new
-      species there now reads as "change this Pokémon," not "add another," so it needed different wiring than
-      the existing `onAddPokemon`: a new `onReplacePokemon` prop (`attackerReplacePokemon`/
-      `defenderReplacePokemon` in `DamageCalculator.tsx`) swaps the species at the currently selected sidebar
-      index in place, falling back to `onAddPokemon`'s append behavior only when nothing is selected yet (empty
-      sidebar). The sidebar's own "+" tile is unaffected — still always appends a new entry via the original
-      `onAddPokemon`, since "add another Pokémon to my roster" and "change which Pokémon this slot is" are
-      genuinely different actions once the top search doubles as the current-species display. (3) Added a
-      `border-b` under the top Regulation/search block and a `border-l` on the sidebar strip, splitting the
-      panel into three visually distinct sections (team-level controls / selected Pokémon detail / roster
-      strip) per the request for "a division to give the team section display better." (4) Each sidebar tile's
-      "×" remove button moved off the sprite (was `absolute -right-1 -top-1`, overlapping the artwork's corner)
-      to a small icon column beside it. (5) Added a matching copy icon above the remove button in that same
-      column, so any individual saved Pokémon can be copied as Showdown export text directly from the sidebar
-      strip without first selecting it — reusing the existing single-Pokémon export machinery
-      (`formatPokemonPaste` + `toast.success`/`toast.error`), refactored from `copyExportText()` (bound to
-      whichever Pokémon was selected) into `copyPokemonExportText(target: ParsedPokemon)` so both the detail
-      panel's own copy icon and every sidebar tile's new one share one implementation. (The request's closing
-      line about "an icon to save an individual set in the team sidebar" was read as reinforcing this same
-      per-tile copy icon — i.e. "save" meaning "copy so I can save it elsewhere" — rather than a separate
-      persistence feature, matching the request's own summary that sidebar tiles end up with exactly two icons.)
-      Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live
-      browser check confirmed the sprite is gone, the search input shows "Raichu" then updates live as
-      different sidebar tiles are clicked, typing a new *legal* species there (Grimmsnarl) replaced only that
-      one slot in place (the other 5 sidebar entries untouched) while an *illegal* species (Landorus, Flutter
-      Mane — both absent from Regulation M-B's list) correctly showed "No matches" same as the search always
-      has, both dividers render, each sidebar tile shows its copy/remove icons beside (not overlapping) the
-      sprite, clicking a tile's copy icon fires the correct per-Pokémon toast ("Copied Grimmsnarl to clipboard"
-      while Staraptor was the selected Pokémon, proving it copies that tile's own data, not the selection), and
-      the repositioned remove button still removes the correct tile.
-    - **Damage Calculator: replaced the "+" add-to-sidebar tile with a "Save" icon, per follow-up request** ("i
-      want to remove the + section, i dont like that experience for adding a new pokemon to the sidebar" /
-      "add a save button (icon) to save the current set to the team sidebar"). Removed `isAddingToSidebar`
-      state and its whole popup (the dashed "+" tile plus the bottom "Regulation + search" box it opened) from
-      `RosterPokemonPicker.tsx` entirely. In its place, a new "Save" icon (reusing `IconName.Add`, since it's
-      still fundamentally "add this as a new entry") sits in the detail panel's header row next to the existing
-      copy icon — clicking it appends a copy of whatever's *currently* shown (species, ability, item, nature,
-      Stat Points, moves, all as currently configured) as a new sidebar entry and selects it, via a new
-      `onSaveToSidebar` prop (`attackerSaveCurrentToSidebar`/`defenderSaveCurrentToSidebar` in
-      `DamageCalculator.tsx`) — hidden once `sidebar.length >= MAX_SIDEBAR_POKEMON`, same cap the old "+" tile
-      respected. This makes Save (plus Import/Load Team) the only way left to grow a roster past one entry,
-      which only works cleanly *because* of the previous entry's change to the main species search: picking a
-      species there now replaces the *currently selected* slot in place rather than always appending, so the
-      new intended flow is pick/tweak a Pokémon via the search + ability/item/moves fields, hit Save to lock it
-      into the roster (which duplicates it into a fresh selected slot), then use the search again on that new
-      slot to turn it into a different Pokémon for the next spot — repeatable up to 6, entirely within the one
-      unified detail-panel editing surface instead of a separate bare species-picker popup. Fires
-      `toast.success("Saved {species} to the {title} roster")` on click, consistent with every other
-      roster-mutating action in this session. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
-      (169/169), and `npm run build` all clean; live browser check confirmed the "+" tile and its popup are
-      gone, clicking Save duplicated the Defender's Venusaur into a new selected second slot with the correct
-      toast, changing that new slot's species via the search to Incineroar left the original Venusaur slot
-      untouched, and clicking Save four more times filled the Defender roster to the 6-Pokémon cap and made the
-      Save icon disappear (only the copy icon remained) exactly as intended.
-    - Damage Calculator: dropped the move-info column (type icon + power) and returned the Moves section to a
-      `grid-cols-2` (2×2) layout, per request — reverting the single-column-plus-info-column change from
-      earlier in the session now that the info column's own reason for existing (fitting next to the type
-      icon) no longer applies. Each of the 4 move slots is now just its `SearchableSelect`, nothing else;
-      dropped the now-unused `moveInfo` lookup and the `TypeIcon` import along with it. Verified: `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser check
-      confirmed the Moves section renders as a compact 2×2 grid of move names only, with no type icons or power
-      numbers.
-    - Damage Calculator: relocated the Mega toggle and the single-Pokémon export action, per feedback that the
-      Mega badge "feels out of place" sitting alone above the ability/nature fields. The Mega toggle now sits
-      directly beside the main species search input (same row, to its right) instead of its own row below —
-      incorporated into "the pokemon select" per the request's own suggestion, since `hasMegaForm` is already
-      computed unconditionally from `pokemon` and was trivially referenceable there. The single-Pokémon copy
-      icon moved out of that now-mostly-empty row entirely, up into the top Regulation/Export Team/Import row,
-      given a visible text label to match its new neighbors, and renamed from an icon-only "copy" to "Export
-      Set" (paired with "Export Team," the same `copyPokemonExportText` function, just relabeled and
-      relocated — no behavior change). What's left of the old row (Mega and the copy icon both moved out) is
-      just the "Save" icon, now alone and right-aligned via `justify-end` rather than the previous
-      Mega-left/Save-and-copy-right split. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169),
-      and `npm run build` all clean; live browser check confirmed "Export Set" appears in the top row next to
-      "Export Team"/"Import" and fires the correct "Copied {species} to clipboard" toast, the Mega badge sits
-      cleanly beside the search input and still toggles correctly (Raichu's ability/stats/damage numbers all
-      updated on toggle, same as before the move), and the detail row below now shows only the Save icon.
+  - `MyTeamHeader.tsx`: replaced the single pill-button-styled nav link (only showed the _other_ page —
+    "Damage Calc" on the Matchup Planner, "Matchup Planner" on the Damage Calc page, never both at once)
+    with real navigation — both "Matchup Planner" and "Damage Calculator" always visible side by side, per
+    request ("lets hava acutual navigation links, not buttoms, first link 'Matchup Planner', 'damage
+    calculator'"). `NAV_LINK_BY_PAGE` (a single swap-target lookup) became `NAV_LINKS` (a 2-item array in
+    that fixed order); the current page renders as plain non-interactive text (`aria-current="page"`, the
+    conventional "you are here" pattern — avoids a no-op click reloading the same page), the other as a
+    real `next/link` `<Link>`. Dropped the pill/border/background button styling entirely in favor of
+    plain text links (muted `text-zinc-200` inactive, `text-white` active, underline-free per "not
+    buttoms"). Kept the existing mobile/desktop short-label split ("Planner"/"Calc" vs. full names).
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check on
+    `/matchup-planner` confirmed both links render with "Matchup Planner" active (white) and "Damage
+    Calculator" muted, and clicking "Damage Calculator" navigated to `/damage-calc` with the active state
+    correctly swapping.
+  - `MyTeamHeader.tsx` follow-up: moved the nav links from the header's center to sit directly beside the
+    logo/wordmark, and switched the active-page highlight from color-only to bold, per request ("can we
+    align then to the left, close to the logo? also can we make bold or resalt could be bold"). Wrapped the
+    logo block and the `<nav>` in one shared flex container (`gap-3 md:gap-6`) so they sit as one
+    left-aligned group; the header's own `justify-between` now just splits that group from the
+    right-side team switcher, instead of splitting 3 separate items across the full width. Active link:
+    `font-bold text-white`; inactive: `font-medium text-zinc-200` (unchanged from the previous entry).
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (163/163) all clean; live browser check
+    confirmed both links now sit immediately right of the "VGCTools" wordmark, with "Matchup Planner"
+    rendering visibly bold against the muted "Damage Calculator".
+  - `MyTeamHeader.tsx`: added a proper mobile nav, per a screenshot showing the two nav links' abbreviated
+    "Planner"/"Calc" labels squeezing the header on a narrow viewport and crowding the team sprite
+    row/switcher next to them — explicit requirement: "I want to keep the team selection visible alwasy".
+    The desktop `<nav>` (both links inline, full labels) is now `hidden md:flex`; a new mobile-only
+    (`md:hidden`) hamburger button opens a dropdown with the same two links (full labels, stacked), using
+    the exact same click-outside/Escape-to-close pattern already used for the team-switcher dropdown (a
+    second independent `isMobileNavOpen` state + ref pair, not a shared/generalized one — kept simple over
+    DRY since the two menus' trigger/content shapes differ). Picking a link in the mobile dropdown also
+    closes it (`onClick` calls `setIsMobileNavOpen(false)` in addition to navigating). The team
+    sprite row/switcher itself needed no changes at all — it was never gated behind any responsive class,
+    so it was already "always visible"; the actual fix was giving the nav links somewhere else to go on
+    narrow screens instead of fighting the switcher for space. Added `IconName.Menu` (Material Symbols
+    Outlined "menu" — the standard 3-bar hamburger glyph, fetched from the same
+    google/material-design-icons source the other icons were extracted from) since no menu icon existed
+    yet. Dropped the now-unused `shortLabel` field from `NAV_LINKS` entirely (both mobile and desktop show
+    full labels now — mobile just relocated them rather than abbreviating). Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (163/163) all clean; live browser check at a 420px-wide viewport (matching
+    the screenshot's cramped width) confirmed the header now shows logo, hamburger, and the full
+    unobstructed team sprite switcher with no crowding, the hamburger opens a dropdown with "Matchup
+    Planner" (bold, active) and "Damage Calculator", and clicking "Damage Calculator" navigates to
+    `/damage-calc` and auto-closes the menu, with the team switcher staying visible throughout.
+  - **Damage Calculator: Import/Export a Pokémon in Showdown format.** Per request ("can we add a way to
+    import and export a pokemon, using showdown format"), added both directions to `RosterPokemonPicker.tsx`.
+    Import reuses `parsePokemonBlock` (`parseTeam.ts`) outright — it already tolerates the extra lines a
+    Showdown export carries that this app doesn't track (Shiny, Tera Type, IVs, gender marker), so no new
+    parsing logic was needed, only UI wiring: a paste-icon "Import" toggle next to the species search opens a
+    textarea + Import/Cancel buttons, calling the existing `onAddPokemon` prop (same path species-search picks
+    already use). Export needed a genuinely new serializer since nothing existed: `src/lib/formatPokemonPaste.ts`
+    is the inverse of `parsePokemonBlock` — always writes `Level: 50` (this app's only supported level), omits
+    Shiny/Tera Type/IVs (untracked), and only lists non-zero Stat Points in standard HP/Atk/Def/SpA/SpD/Spe
+    order (unlike `applyStatOverrides`'s own internal `evs` string, which always lists all 6). A copy icon
+    next to the species name/Mega-button row copies the formatted export text straight to the clipboard on a
+    single click (`navigator.clipboard.writeText`) — no intermediate popup — with the icon itself swapping to
+    a checkmark (new `IconName.Check`) for ~2s as feedback, per a follow-up request for a smoother one-click
+    experience over the original open-panel-then-click-copy two-step flow. Added `IconName.ContentCopy`/
+    `ContentPaste`/`Check` (Material Symbols Outlined, same extraction pattern as the other icons). Verified:
+    `src/lib/formatPokemonPaste.test.ts` round-trips the user's own Charizard example exactly; `npx tsc
+--noEmit`, `npm run lint`, `npm test` (167/167) all clean. Live browser check: pasted the user's exact
+    Charizard (M) @ Charizardite Y / Blaze / Shiny / EVs / Modest / 4-move example into Import — correctly
+    populated species, Mega form (with Drought resolving as the effective ability and Sun weather
+    auto-applying), nature, Stat Points, and all 4 moves. Also verified the Import error path (empty/
+    whitespace-only paste correctly shows "Paste a Pokémon's Showdown export text first." instead of silently
+    no-oping). The copy icon's click didn't visibly flip to a checkmark under CDP-driven automation in either
+    the original popup version or this simplified version — traced to the Clipboard API's write call itself
+    hanging (confirmed via a manual `javascript_tool` call to `navigator.clipboard.writeText` timing out)
+    rather than an app bug: Chrome's clipboard-write permission needs a trusted user gesture, which synthetic
+    automation clicks don't reliably provide, so this doesn't reflect real mouse-click usage.
+  - **Damage Calculator: Import a full team, not just one Pokémon.** Per follow-up request ("the pokemon
+    import that we add in the calculator could work for a team as well?"), Import now accepts a full
+    Showdown team paste (multiple Pokémon separated by a blank line), reusing `parseTeam` (`parseTeam.ts`) —
+    the same plural function that already powers full-team pasting elsewhere in the app — instead of the
+    singular `parsePokemonBlock`. Agreed with the user's own proposal that importing more than one Pokémon
+    should replace this side's whole sidebar rather than append (a multi-mon paste means "this is my team,"
+    not "add one more"): `RosterPokemonPicker` gained a new required `onImportTeam: (pokemon: ParsedPokemon[])
+=> void` prop, wired to new `attackerImportTeam`/`defenderImportTeam` functions in `DamageCalculator.tsx`
+    that replace the sidebar outright (capped at `MAX_SIDEBAR_POKEMON`), select the first parsed Pokémon, and
+    reset battle state/stat overrides/auto-weather the same way every other roster-changing action already
+    does. A single-Pokémon paste is unaffected — still goes through the existing `onAddPokemon` (append-or-
+    replace-selected) path. Added a hint line above the Import textarea ("Paste one Pokémon, or a full team
+    … to replace this side's whole roster") so the replace behavior is visible before submitting, not a
+    surprise after. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (167/167) all clean. Live browser
+    check: pasted a 3-Pokémon team (Pikachu/Incineroar/Rillaboom) into the Attacker side that already had a
+    different single Pokémon (Grimmsnarl) selected — confirmed the old entry was fully replaced (not appended
+    alongside), all 3 new sprites appeared in the sidebar, Pikachu (the first) auto-selected with correct
+    item/ability/nature/Stat Points/moves, and Incineroar (the second) also checked out correct when selected.
+  - Damage Calculator: switched Import from an inline expanding panel to the shared `Modal` component, per
+    request ("can we use a modal as we do for adding a own team") — matching `MyTeamSection`'s "Add a team"
+    modal pattern (`Modal` + a heading + textarea + Import/Cancel buttons) rather than a bespoke inline
+    layout. Reused the existing `Modal` component as-is (click-outside/Escape-to-close already built in); the
+    textarea grew from `rows={6}` to `rows={12}` (`resize-y` instead of `resize-none`) now that it has a full
+    modal's vertical room, matching `TeamPasteForm`'s sizing. No behavior changed beyond presentation — same
+    `submitImport`/`onImportTeam`/`onAddPokemon` logic, same hint text and error handling, just triggered from
+    a centered dialog instead of an inline panel pushing the rest of the panel down. Verified: `npx tsc
+--noEmit`, `npm run lint`, `npm test` (167/167) all clean; live browser check confirmed the modal opens
+    centered with a backdrop (visually matching the "Add a team" modal), Cancel and clicking outside both
+    close it without side effects, and submitting a 2-Pokémon team (Landorus-Therian/Flutter Mane) through it
+    still correctly replaced the sidebar and closed the modal.
+  - Damage Calculator: added "Export Team" alongside the existing single-Pokémon Export, per request ("can we
+    have an option to export all team from calc as well") — the natural counterpart to Import already
+    accepting a full team. New `formatTeamPaste(pokemon: ParsedPokemon[])` in `formatPokemonPaste.ts` joins
+    each Pokémon's own `formatPokemonPaste` block with a blank line (the same separator `parseTeam`'s
+    `splitIntoBlocks` expects), so an exported team round-trips straight back through Import's team-paste
+    path — asserted directly in `formatPokemonPaste.test.ts` (`parseTeam(formatTeamPaste(team))` equals the
+    original `team`). An "Export Team" text link (next to Import, only shown once the sidebar has at least
+    one Pokémon) opens a `Modal` — same pattern as the Import modal just added — with a read-only textarea of
+    the whole roster's export text and a "Copy to clipboard" button (swaps to "Copied!" for ~2s, same as the
+    single-Pokémon Export icon). Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169, +2 new)
+    all clean; live browser check with a 6-Pokémon Attacker sidebar confirmed the modal opens with the
+    heading "Export Attacker Team," the count line reads "The whole attacker roster (6 Pokémon)," and
+    scrolling the textarea shows all 6 Pokémon correctly serialized and blank-line-separated in sidebar order.
+  - **Toast notification component.** Per request ("can we create a toast notification component, we can look
+    for and npm package that is secure and compatible with the project"), evaluated three candidates —
+    `sonner`, `react-hot-toast`, `react-toastify` — against React 19/Next.js 16 compatibility and supply-chain
+    footprint: `sonner` was the only one with zero runtime dependencies (the other two pull in `goober`/
+    `csstype` and `clsx` respectively), an explicit `react: '^18.0.0 || ^19.0.0'` peer range, and the most
+    recent publish of the three. Confirmed via `npm audit` before/after installing that `sonner` adds zero new
+    vulnerabilities — the app's pre-existing 6 high-severity findings (`brace-expansion`, `js-yaml`, `nanoid`,
+    `next`, `postcss`, `sharp`, all dev-tooling/build transitive deps, unrelated to this change) were identical
+    with and without it. Added `src/components/Toast/` (mirroring the `Modal`/`Icon` folder-per-component
+    pattern): `Toast.tsx` wraps sonner's `<Toaster />`, pre-styled via `toastOptions.classNames` to match this
+    app's zinc palette/card look (`border-zinc-200`, `rounded-lg`, `shadow-lg`) instead of sonner's default
+    theme, with success/error keeping the `green-600`/`red-600` this app already uses elsewhere (the Damage
+    Calculator's copy-confirmation checkmark, import error text); `index.ts` re-exports `Toaster` plus `toast`
+    straight from `sonner` so callers `import { toast } from "@/components/Toast"` rather than reaching into
+    the package directly. `<Toaster />` is mounted once in the root layout (`src/app/layout.tsx`), positioned
+    `bottom-right` with `closeButton` enabled, so `toast(...)`/`toast.success(...)`/`toast.error(...)` work
+    from anywhere in the app with no further setup — not yet wired into any existing feature (e.g. the Export/
+    Export Team copy confirmations), left for a follow-up request rather than assumed in scope here. Verified:
+    `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser
+    check temporarily fired one of each toast type (default/success/error) to confirm the zinc styling,
+    stacking, hover-to-expand, and close button all render correctly, then the temporary test code was
+    removed, leaving the component wired but unused.
+  - Wired the new toast component into the Export/Export Team copy confirmations, per follow-up request.
+    Both `copyExportText` and `copyTeamExportText` (`RosterPokemonPicker.tsx`) now wrap the clipboard write in
+    try/catch — `toast.success` (e.g. "Copied Grimmsnarl to clipboard", "Copied Attacker team (6 Pokémon) to
+    clipboard") on success, `toast.error("Couldn't copy to clipboard.")` if the write throws — replacing the
+    previous local `exportCopied`/`teamExportCopied` state and its icon-swap (copy icon → green checkmark) /
+    button-text-swap ("Copy to clipboard" → "Copied!") feedback, which is now redundant with the toast. Net
+    simplification: two fewer `useState` calls, no `setTimeout` cleanup, and the export copy icon no longer
+    needs `IconName.Check` (still defined in the shared icon set, just unused by this file now). The Export
+    Team modal's copy button also benefits from the switch — its old "Copied!" text was only visible while the
+    modal stayed open, whereas the toast confirms even after the user closes the modal right after copying.
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169) all clean; live browser check stubbed
+    `navigator.clipboard.writeText` to resolve instantly (working around the same CDP-automation clipboard-
+    permission limitation noted in the Import/Export entry above) and confirmed both buttons fire the correct
+    green success toast with the right message.
+  - **Damage Calculator: "Load Team" for the Defender, sourced from the Matchup Planner's saved opponents.**
+    Per request ("I want an option to load existing opposite team that exist on the matchup planner" for "the
+    defenser side (b side)"), added a new `loadableOpponents?: Opponent[]` prop to `RosterPokemonPicker` —
+    only passed for the Defender instance in `DamageCalculator.tsx` (`loadableOpponents={opponents}`, from the
+    `useOpponents()` call already used for the `?opponentId=` URL-param seed), so the button only renders on
+    that side; the Attacker doesn't need it since it already auto-seeds from the header's active team. A new
+    "Load Team" text link (new `IconName.Download`, Material Symbols Outlined "download") sits next to Export
+    Team/Import in the Defender panel's header row, opening a `Modal` that lists every saved opponent by
+    `label` with its Pokémon count, sourced straight from the same `opponents` array the Matchup Planner
+    itself renders (confirmed matching, same 9 names/order in both places during verification). Picking one
+    calls the _existing_ `onImportTeam` prop with `opponent.team.pokemon` — no new replace-sidebar logic
+    needed, since this is exactly the same "load a whole team, wholesale-replacing this side's roster"
+    operation the team-paste Import path already does, just sourced from saved data instead of pasted text —
+    then fires `toast.success("Loaded {label} onto Defender")` and closes the modal. Handles the empty-state
+    case ("No opponents saved yet — add one in the Matchup Planner first.") for a fresh install with no
+    opponents yet. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all
+    clean; live browser check confirmed "Load Team" appears only on the Defender (not Attacker), the modal
+    lists all 9 existing saved opponents with correct Pokémon counts, and picking "M-Staraptor-Milotic Sand"
+    correctly replaced the Defender's sidebar with that opponent's full 6-Pokémon roster (Tyranitar first,
+    Mega-toggled, Sand Stream resolving and auto-applying Sand weather, moves populated), the damage
+    calculation panel recalculating live against the new matchup, and the success toast confirming the load.
+  - **Damage Calculator: reworked the per-Pokémon detail panel layout, per an annotated screenshot.** Five
+    changes, all in `RosterPokemonPicker.tsx`: (1) removed the detail panel's `h-16 w-16` `PokemonSprite`
+    thumbnail entirely — freed the row for the fields it already had, no new element added in its place. (2)
+    The top species search (`SearchableSelect`) now shows the selected Pokémon's species as its `value`
+    instead of a separate `<span>{pokemon.species}</span>` heading repeating the same text — picking a new
+    species there now reads as "change this Pokémon," not "add another," so it needed different wiring than
+    the existing `onAddPokemon`: a new `onReplacePokemon` prop (`attackerReplacePokemon`/
+    `defenderReplacePokemon` in `DamageCalculator.tsx`) swaps the species at the currently selected sidebar
+    index in place, falling back to `onAddPokemon`'s append behavior only when nothing is selected yet (empty
+    sidebar). The sidebar's own "+" tile is unaffected — still always appends a new entry via the original
+    `onAddPokemon`, since "add another Pokémon to my roster" and "change which Pokémon this slot is" are
+    genuinely different actions once the top search doubles as the current-species display. (3) Added a
+    `border-b` under the top Regulation/search block and a `border-l` on the sidebar strip, splitting the
+    panel into three visually distinct sections (team-level controls / selected Pokémon detail / roster
+    strip) per the request for "a division to give the team section display better." (4) Each sidebar tile's
+    "×" remove button moved off the sprite (was `absolute -right-1 -top-1`, overlapping the artwork's corner)
+    to a small icon column beside it. (5) Added a matching copy icon above the remove button in that same
+    column, so any individual saved Pokémon can be copied as Showdown export text directly from the sidebar
+    strip without first selecting it — reusing the existing single-Pokémon export machinery
+    (`formatPokemonPaste` + `toast.success`/`toast.error`), refactored from `copyExportText()` (bound to
+    whichever Pokémon was selected) into `copyPokemonExportText(target: ParsedPokemon)` so both the detail
+    panel's own copy icon and every sidebar tile's new one share one implementation. (The request's closing
+    line about "an icon to save an individual set in the team sidebar" was read as reinforcing this same
+    per-tile copy icon — i.e. "save" meaning "copy so I can save it elsewhere" — rather than a separate
+    persistence feature, matching the request's own summary that sidebar tiles end up with exactly two icons.)
+    Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live
+    browser check confirmed the sprite is gone, the search input shows "Raichu" then updates live as
+    different sidebar tiles are clicked, typing a new _legal_ species there (Grimmsnarl) replaced only that
+    one slot in place (the other 5 sidebar entries untouched) while an _illegal_ species (Landorus, Flutter
+    Mane — both absent from Regulation M-B's list) correctly showed "No matches" same as the search always
+    has, both dividers render, each sidebar tile shows its copy/remove icons beside (not overlapping) the
+    sprite, clicking a tile's copy icon fires the correct per-Pokémon toast ("Copied Grimmsnarl to clipboard"
+    while Staraptor was the selected Pokémon, proving it copies that tile's own data, not the selection), and
+    the repositioned remove button still removes the correct tile.
+  - **Damage Calculator: replaced the "+" add-to-sidebar tile with a "Save" icon, per follow-up request** ("i
+    want to remove the + section, i dont like that experience for adding a new pokemon to the sidebar" /
+    "add a save button (icon) to save the current set to the team sidebar"). Removed `isAddingToSidebar`
+    state and its whole popup (the dashed "+" tile plus the bottom "Regulation + search" box it opened) from
+    `RosterPokemonPicker.tsx` entirely. In its place, a new "Save" icon (reusing `IconName.Add`, since it's
+    still fundamentally "add this as a new entry") sits in the detail panel's header row next to the existing
+    copy icon — clicking it appends a copy of whatever's _currently_ shown (species, ability, item, nature,
+    Stat Points, moves, all as currently configured) as a new sidebar entry and selects it, via a new
+    `onSaveToSidebar` prop (`attackerSaveCurrentToSidebar`/`defenderSaveCurrentToSidebar` in
+    `DamageCalculator.tsx`) — hidden once `sidebar.length >= MAX_SIDEBAR_POKEMON`, same cap the old "+" tile
+    respected. This makes Save (plus Import/Load Team) the only way left to grow a roster past one entry,
+    which only works cleanly _because_ of the previous entry's change to the main species search: picking a
+    species there now replaces the _currently selected_ slot in place rather than always appending, so the
+    new intended flow is pick/tweak a Pokémon via the search + ability/item/moves fields, hit Save to lock it
+    into the roster (which duplicates it into a fresh selected slot), then use the search again on that new
+    slot to turn it into a different Pokémon for the next spot — repeatable up to 6, entirely within the one
+    unified detail-panel editing surface instead of a separate bare species-picker popup. Fires
+    `toast.success("Saved {species} to the {title} roster")` on click, consistent with every other
+    roster-mutating action in this session. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test`
+    (169/169), and `npm run build` all clean; live browser check confirmed the "+" tile and its popup are
+    gone, clicking Save duplicated the Defender's Venusaur into a new selected second slot with the correct
+    toast, changing that new slot's species via the search to Incineroar left the original Venusaur slot
+    untouched, and clicking Save four more times filled the Defender roster to the 6-Pokémon cap and made the
+    Save icon disappear (only the copy icon remained) exactly as intended.
+  - Damage Calculator: dropped the move-info column (type icon + power) and returned the Moves section to a
+    `grid-cols-2` (2×2) layout, per request — reverting the single-column-plus-info-column change from
+    earlier in the session now that the info column's own reason for existing (fitting next to the type
+    icon) no longer applies. Each of the 4 move slots is now just its `SearchableSelect`, nothing else;
+    dropped the now-unused `moveInfo` lookup and the `TypeIcon` import along with it. Verified: `npx tsc
+--noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean; live browser check
+    confirmed the Moves section renders as a compact 2×2 grid of move names only, with no type icons or power
+    numbers.
+  - Damage Calculator: relocated the Mega toggle and the single-Pokémon export action, per feedback that the
+    Mega badge "feels out of place" sitting alone above the ability/nature fields. The Mega toggle now sits
+    directly beside the main species search input (same row, to its right) instead of its own row below —
+    incorporated into "the pokemon select" per the request's own suggestion, since `hasMegaForm` is already
+    computed unconditionally from `pokemon` and was trivially referenceable there. The single-Pokémon copy
+    icon moved out of that now-mostly-empty row entirely, up into the top Regulation/Export Team/Import row,
+    given a visible text label to match its new neighbors, and renamed from an icon-only "copy" to "Export
+    Set" (paired with "Export Team," the same `copyPokemonExportText` function, just relabeled and
+    relocated — no behavior change). What's left of the old row (Mega and the copy icon both moved out) is
+    just the "Save" icon, now alone and right-aligned via `justify-end` rather than the previous
+    Mega-left/Save-and-copy-right split. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169),
+    and `npm run build` all clean; live browser check confirmed "Export Set" appears in the top row next to
+    "Export Team"/"Import" and fires the correct "Copied {species} to clipboard" toast, the Mega badge sits
+    cleanly beside the search input and still toggles correctly (Raichu's ability/stats/damage numbers all
+    updated on toggle, same as before the move), and the detail row below now shows only the Save icon.
 - [x] **Firebase: SDK setup, Google Sign-In, and cross-device sync for My Teams/Opponents.** Per a
-    2026-08-22 request to make My Teams and Opponents data available across devices. Three parts, done as
-    one continuous effort:
-    - **SDK setup.** `src/lib/firebase/config.ts` initializes the app from `NEXT_PUBLIC_FIREBASE_*` env
-      vars (`.env.example` documents the 7 required names; real values live in the gitignored
-      `.env.local`) — guarded with `getApps()[0] ?? initializeApp(...)` against Next's Fast Refresh
-      re-running the module. `src/lib/firebase/analytics.ts` lazily initializes Analytics client-side only
-      (`getAnalytics` touches `window`, which breaks SSR if called eagerly at module scope the way the
-      console's own setup snippet does) behind an `isSupported()` check, mounted via a tiny
-      `<FirebaseAnalytics>` client component in `layout.tsx`. Note: a Firebase web app's config values
-      (`apiKey` etc.) aren't actually secret — they're designed to ship in the client bundle, real security
-      comes from Firestore/Auth rules — env vars are still used for per-environment config hygiene, not to
-      hide anything.
-    - **Google Sign-In.** `src/lib/firebase/auth.ts` (`auth`, `signInWithGoogle` via
-      `signInWithPopup`/`GoogleAuthProvider`, `signOutUser`) and `src/hooks/useAuth.ts`
-      (`onAuthStateChanged`-backed, swallows the "user closed the popup" error codes rather than treating
-      them as failures, everything else surfaces a `sonner` toast). `src/components/AuthMenu` renders a
-      "Sign in" pill with Google's official multicolor G mark when signed out, or a circular avatar
-      (initial-letter fallback if no photo) opening a name/email/"Sign out" dropdown when signed in —
-      mounted in `MyTeamHeader`, with both `/matchup-planner` and `/damage-calc` pages owning `useAuth()`
-      and passing it down (mirroring how they already own `useMyTeams()`), since the sync work below needs
-      `user` at the page level too. `next.config.ts` gained a `**.googleusercontent.com` remote pattern for
-      `next/image` to render Google profile photos. Chose Google-only over email/password: zero password-
-      security surface to maintain, and this app doesn't need email as a first-class identity — just a
-      stable id to key synced data by.
-    - **Cross-device sync.** Scoped explicitly to keep IndexedDB as the source of truth for everyone,
-      signed in or not — the app stays fully local-first/offline by default, and Firestore is a sync layer
-      bolted on only for signed-in users, not a replacement. Structure mirrors the existing IndexedDB stores
-      1:1: `users/{uid}/teams/{teamId}`, `users/{uid}/opponents/{opponentId}`, `users/{uid}/meta/state`
-      (`activeTeamId`) — reusing `Team`/`Opponent`/`MatchupPlan` as-is with zero new types or mapping layer,
-      since `updatedAt`/`createdAt` are already ISO strings and every id is already a `crypto.randomUUID()`
-      globally unique across devices. `src/lib/firebase/cloudSync.ts`'s `createCollectionSync<T>` is the
-      generic engine both `teams` and `opponents` share: `push`/`remove` mirror one local mutation to the
-      cloud (called from `src/lib/storage/db.ts`'s `saveMyTeam`/`deleteMyTeam`/`saveOpponent`/
-      `deleteOpponent`/`clearOpponents`, fire-and-forget, only when `auth.currentUser` is set — so nothing
-      changes for signed-out users, and a signed-in-but-offline push just silently no-ops via `.catch(() =>
-      {})` until the next successful sync); `pullAndMerge` reconciles a full local list against the cloud,
-      last-write-wins per record by `updatedAt`. Deletions use a parallel `{collection}_deleted` tombstone
-      collection (`{ deletedAt }`) — without it, a device that missed a delete (offline at the time) would
-      see "don't have this record" as indistinguishable from "never had it," and push the deleted record
-      right back on its next sync; editing a record after it was deleted elsewhere "undeletes" it, simply
-      because the edit's `updatedAt` then outranks the tombstone. `syncMyTeamsWithCloud`/
-      `syncOpponentsWithCloud` run the full pull-and-merge once per sign-in (not per mutation — everyday
-      saves/deletes already push incrementally) from `useMyTeams`/`useOpponents`'s load effect, keyed on
-      `user` from a `useAuth()` call each hook now makes internally (rather than threading `user` through
-      every call site — both hooks are already independently instantiated in multiple places, e.g.
-      `DamageCalculator.tsx` and `OpponentsSection.tsx` beyond the two pages) — wrapped in `.catch(() =>
-      getMyTeams()/getOpponents())` so a signed-in-but-offline load falls back to local-only data instead of
-      failing. Deliberately deferred: real-time `onSnapshot` listeners (sync-on-sign-in plus the existing
-      tab-focus remount is enough for "see it on my other device next time I open the app," without the
-      complexity of guarding a live listener against re-triggering its own just-pushed writes) and JSON
-      import/export backup (set aside per the same conversation, as a separate smaller follow-up).
-      `firestore.rules` (checked in for reference/deploy) scopes all reads/writes to
-      `request.auth.uid == uid` under that user's own `users/{uid}/**` tree.
-    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean.
-      Live browser check with a real signed-in Google account (session already established from testing the
-      Sign-In work) showed clean `firestore.googleapis.com` traffic (200s) and zero console errors on load,
-      confirming the pull-and-merge path executes successfully against the real project — a database already
-      exists and Google Sign-In is enabled there. Signed-out behavior double-checked separately: local
-      add/remove team and opponent flows still work with zero Firestore calls attempted, confirming the sync
-      layer is fully inert until sign-in. Fixed one bug found through real use after this shipped:
-      Firestore's `setDoc()` throws on any field whose value is literally `undefined` (not `null`) —
-      several optional fields across Team/Opponent/ParsedPokemon (`pokepasteUrl`, `item`, `ability`,
-      `nature`, `evs`, ...) are exactly that when unset, so any record missing one tripped this the
-      moment it tried to sync. Fixed by initializing Firestore with `ignoreUndefinedProperties: true`
-      (`src/lib/firebase/firestore.ts`) rather than sanitizing every optional field at every call site —
-      it silently omits `undefined` fields instead, matching how they already behave in IndexedDB. Also
-      swapped the cloud-sync `.catch(() => {})` blocks (`db.ts`, both hooks) for `console.error` logging
-      — non-blocking either way, but silently swallowing failures is exactly why the above bug went
-      unnoticed until a real permissions-rule gap surfaced it. Verified live against the real project both
-      times: first catching the exact `Missing or insufficient permissions` error via the new logging
-      (rules hadn't been deployed yet), then confirming a real edit (opponent with no `pokepasteUrl`) saved
-      cleanly after the `ignoreUndefinedProperties` fix, and separately confirming a lead/back pick + game
-      plan note round-tripped into `Opponent.plansByTeamId` in the live Firestore console exactly as set in
-      the UI (proving matchup plans sync as part of the same Opponent document, not a separate concern).
+      2026-08-22 request to make My Teams and Opponents data available across devices. Three parts, done as
+      one continuous effort:
+  - **SDK setup.** `src/lib/firebase/config.ts` initializes the app from `NEXT_PUBLIC_FIREBASE_*` env
+    vars (`.env.example` documents the 7 required names; real values live in the gitignored
+    `.env.local`) — guarded with `getApps()[0] ?? initializeApp(...)` against Next's Fast Refresh
+    re-running the module. `src/lib/firebase/analytics.ts` lazily initializes Analytics client-side only
+    (`getAnalytics` touches `window`, which breaks SSR if called eagerly at module scope the way the
+    console's own setup snippet does) behind an `isSupported()` check, mounted via a tiny
+    `<FirebaseAnalytics>` client component in `layout.tsx`. Note: a Firebase web app's config values
+    (`apiKey` etc.) aren't actually secret — they're designed to ship in the client bundle, real security
+    comes from Firestore/Auth rules — env vars are still used for per-environment config hygiene, not to
+    hide anything.
+  - **Google Sign-In.** `src/lib/firebase/auth.ts` (`auth`, `signInWithGoogle` via
+    `signInWithPopup`/`GoogleAuthProvider`, `signOutUser`) and `src/hooks/useAuth.ts`
+    (`onAuthStateChanged`-backed, swallows the "user closed the popup" error codes rather than treating
+    them as failures, everything else surfaces a `sonner` toast). `src/components/AuthMenu` renders a
+    "Sign in" pill with Google's official multicolor G mark when signed out, or a circular avatar
+    (initial-letter fallback if no photo) opening a name/email/"Sign out" dropdown when signed in —
+    mounted in `MyTeamHeader`, with both `/matchup-planner` and `/damage-calc` pages owning `useAuth()`
+    and passing it down (mirroring how they already own `useMyTeams()`), since the sync work below needs
+    `user` at the page level too. `next.config.ts` gained a `**.googleusercontent.com` remote pattern for
+    `next/image` to render Google profile photos. Chose Google-only over email/password: zero password-
+    security surface to maintain, and this app doesn't need email as a first-class identity — just a
+    stable id to key synced data by.
+  - **Cross-device sync.** Scoped explicitly to keep IndexedDB as the source of truth for everyone,
+    signed in or not — the app stays fully local-first/offline by default, and Firestore is a sync layer
+    bolted on only for signed-in users, not a replacement. Structure mirrors the existing IndexedDB stores
+    1:1: `users/{uid}/teams/{teamId}`, `users/{uid}/opponents/{opponentId}`, `users/{uid}/meta/state`
+    (`activeTeamId`) — reusing `Team`/`Opponent`/`MatchupPlan` as-is with zero new types or mapping layer,
+    since `updatedAt`/`createdAt` are already ISO strings and every id is already a `crypto.randomUUID()`
+    globally unique across devices. `src/lib/firebase/cloudSync.ts`'s `createCollectionSync<T>` is the
+    generic engine both `teams` and `opponents` share: `push`/`remove` mirror one local mutation to the
+    cloud (called from `src/lib/storage/db.ts`'s `saveMyTeam`/`deleteMyTeam`/`saveOpponent`/
+    `deleteOpponent`/`clearOpponents`, fire-and-forget, only when `auth.currentUser` is set — so nothing
+    changes for signed-out users, and a signed-in-but-offline push just silently no-ops via `.catch(() =>
+{})` until the next successful sync); `pullAndMerge` reconciles a full local list against the cloud,
+    last-write-wins per record by `updatedAt`. Deletions use a parallel `{collection}_deleted` tombstone
+    collection (`{ deletedAt }`) — without it, a device that missed a delete (offline at the time) would
+    see "don't have this record" as indistinguishable from "never had it," and push the deleted record
+    right back on its next sync; editing a record after it was deleted elsewhere "undeletes" it, simply
+    because the edit's `updatedAt` then outranks the tombstone. `syncMyTeamsWithCloud`/
+    `syncOpponentsWithCloud` run the full pull-and-merge once per sign-in (not per mutation — everyday
+    saves/deletes already push incrementally) from `useMyTeams`/`useOpponents`'s load effect, keyed on
+    `user` from a `useAuth()` call each hook now makes internally (rather than threading `user` through
+    every call site — both hooks are already independently instantiated in multiple places, e.g.
+    `DamageCalculator.tsx` and `OpponentsSection.tsx` beyond the two pages) — wrapped in `.catch(() =>
+getMyTeams()/getOpponents())` so a signed-in-but-offline load falls back to local-only data instead of
+    failing. Deliberately deferred: real-time `onSnapshot` listeners (sync-on-sign-in plus the existing
+    tab-focus remount is enough for "see it on my other device next time I open the app," without the
+    complexity of guarding a live listener against re-triggering its own just-pushed writes) and JSON
+    import/export backup (set aside per the same conversation, as a separate smaller follow-up).
+    `firestore.rules` (checked in for reference/deploy) scopes all reads/writes to
+    `request.auth.uid == uid` under that user's own `users/{uid}/**` tree.
+  - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169), and `npm run build` all clean.
+    Live browser check with a real signed-in Google account (session already established from testing the
+    Sign-In work) showed clean `firestore.googleapis.com` traffic (200s) and zero console errors on load,
+    confirming the pull-and-merge path executes successfully against the real project — a database already
+    exists and Google Sign-In is enabled there. Signed-out behavior double-checked separately: local
+    add/remove team and opponent flows still work with zero Firestore calls attempted, confirming the sync
+    layer is fully inert until sign-in. Fixed one bug found through real use after this shipped:
+    Firestore's `setDoc()` throws on any field whose value is literally `undefined` (not `null`) —
+    several optional fields across Team/Opponent/ParsedPokemon (`pokepasteUrl`, `item`, `ability`,
+    `nature`, `evs`, ...) are exactly that when unset, so any record missing one tripped this the
+    moment it tried to sync. Fixed by initializing Firestore with `ignoreUndefinedProperties: true`
+    (`src/lib/firebase/firestore.ts`) rather than sanitizing every optional field at every call site —
+    it silently omits `undefined` fields instead, matching how they already behave in IndexedDB. Also
+    swapped the cloud-sync `.catch(() => {})` blocks (`db.ts`, both hooks) for `console.error` logging
+    — non-blocking either way, but silently swallowing failures is exactly why the above bug went
+    unnoticed until a real permissions-rule gap surfaced it. Verified live against the real project both
+    times: first catching the exact `Missing or insufficient permissions` error via the new logging
+    (rules hadn't been deployed yet), then confirming a real edit (opponent with no `pokepasteUrl`) saved
+    cleanly after the `ignoreUndefinedProperties` fix, and separately confirming a lead/back pick + game
+    plan note round-tripped into `Opponent.plansByTeamId` in the live Firestore console exactly as set in
+    the UI (proving matchup plans sync as part of the same Opponent document, not a separate concern).
 - [x] **Regulation → Season data model, and an admin-editable default-team-set list.** Per a 2026-08-22
-    request: formalizes a relationship that already existed informally — `Regulation` (M-A, M-B; already
-    modeled in `src/data/regulations/regulationMB.ts` as static, hand-authored legality data — confirmed
-    with the user that legality doesn't vary within a regulation, so this stays untouched) contains
-    multiple **Seasons** (M-1, M-2, ... M-5 — Aug 5–Sep 9 2026 being current), each a dated snapshot
-    carrying its own default "meta" team-set. This *replaces* `src/data/presets/`'s old flat, ad-hoc
-    `TeamPreset` (`{id, label, rawPaste}`, one static entry, `regulation-m-b-m-4`, requiring a code change
-    + redeploy to update) rather than adding a parallel concept — a preset was really just an unlabeled
+      request: formalizes a relationship that already existed informally — `Regulation` (M-A, M-B; already
+      modeled in `src/data/regulations/regulationMB.ts` as static, hand-authored legality data — confirmed
+      with the user that legality doesn't vary within a regulation, so this stays untouched) contains
+      multiple **Seasons** (M-1, M-2, ... M-5 — Aug 5–Sep 9 2026 being current), each a dated snapshot
+      carrying its own default "meta" team-set. This _replaces_ `src/data/presets/`'s old flat, ad-hoc
+      `TeamPreset` (`{id, label, rawPaste}`, one static entry, `regulation-m-b-m-4`, requiring a code change
+  - redeploy to update) rather than adding a parallel concept — a preset was really just an unlabeled
     season snapshot all along, so `Season` (`src/types/season.ts`: `{id, regulationId, label, startDate,
-    endDate, rawPaste}`) absorbs it directly.
-    - **Storage**: new top-level (not `users/{uid}/`-scoped — shared/global, not per-user) Firestore
-      collection `seasons/{seasonId}` — public read (every visitor needs it for the existing "Load/Use
-      default set" buttons, signed in or not), write locked to a single hardcoded admin uid in
-      `firestore.rules` (kept in sync with a new `NEXT_PUBLIC_ADMIN_UID` env var used for the client-side
-      page gate — real enforcement is the rule, the env var only hides the page from everyone else).
-      `src/lib/firebase/seasons.ts` (`getSeasons`/`saveSeason`/`deleteSeason`) is plain CRUD, no
-      tombstone/merge logic — unlike the per-user sync work above, this is a single admin-managed list,
-      not something reconciled across devices.
-    - **Admin page**: `/admin/seasons` (`src/app/admin/seasons/page.tsx`) — gated on
-      `user?.uid === NEXT_PUBLIC_ADMIN_UID`, shows a sign-in prompt if signed out and a plain "Not
-      authorized" message for any other signed-in account. A form (regulation dropdown from
-      `REGULATIONS`, label, start/end date, rawPaste textarea) plus a list of existing seasons with
-      Edit/Delete (Delete behind the existing `Modal`-based confirm pattern).
-    - **Matchup Planner UX**: `useSeasons()` (`src/hooks/useSeasons.ts`) loads the public season list,
-      falling back to a small static seed (`src/data/seasons/index.ts`'s `FALLBACK_SEASONS`, carrying the
-      old M-4 raw data forward with placeholder dates — real dates weren't tracked before this) if the
-      read fails, so the buttons never just disappear offline. Computes `currentSeasonId` — whichever
-      season's `[startDate, endDate]` covers today, or the most recently-started one if today falls in a
-      gap between seasons. `OpponentsSection.tsx`'s two "Load/Use default set" button rows now render one
-      button per season (sorted newest-first) labeled with the season, current one marked "(current)" —
-      switching seasons is just clicking a different season's button, rather than a separate selector
-      control, since loading that season's team set is the only season-dependent behavior in the Matchup
-      Planner today.
-    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169 — includes the relocated
-      `regulationMbM4.test.ts`, confirming the data-directory move didn't break anything), and `npm run
-      build` (new `/admin/seasons` route builds and prerenders) all clean. Live browser check: signed in
-      as the admin account, confirmed the page renders the form (client-side gate passes); before the
-      updated `firestore.rules` were deployed, confirmed the exact `Missing or insufficient permissions`
-      error surfaces via the new console logging (same verification pattern as the sync-rules bug above)
-      rather than failing silently.
-    - **Fast follow, same day, found through real use once rules were deployed and a real M-5 season was
-      added**: two bugs. (1) `OpponentsSection.tsx`'s "Load default set" button in the "⋮" menu had
-      inherited the old `TeamPreset` code's `opponents.length === 0` gate unchanged — meaning the season
-      switcher was invisible the moment you had even one opponent already, which defeats the entire point
-      of a switcher. Removed that condition (the onboarding empty-state's copy of the buttons keeps it
-      correctly, since that block itself only renders with zero opponents) — loading a season is additive
-      (`addOpponentsFromFolder` prepends, never replaces), so showing it unconditionally is safe. (2) The
-      real M-5 data entered via the admin form turned out to be a plain single-team Showdown paste, not
-      the "Team Folder" format (`=== [format] Title ===` headers) `parseTeamFolder` requires — it saved
-      successfully (valid as far as the Season type/Firestore write were concerned) but silently produced
-      zero importable teams the moment someone tried to load it, surfacing only as the pre-existing
-      generic "Couldn't import any teams from that paste" message with no indication of *why*. Rather than
-      leave this as a trap for the next season entry, `/admin/seasons` now: runs the pasted text through
-      `parseTeamFolder` live and shows a "N teams detected" hint under the textarea as you type, and
-      blocks the save entirely with a specific error message (not just the generic one) if that comes back
-      zero — catching the mistake at data-entry time instead of at import time. Verified: `npx tsc
-      --noEmit`, `npm run lint` clean; live browser check reproduced both bugs first (season switcher
-      confirmed invisible with existing opponents present, "0 teams detected" confirmed live against the
-      real malformed M-5 doc via its Edit form) before fixing, then confirmed the switcher now appears
-      unconditionally and correctly loads M-5's data once re-entered in the right format (left the actual
-      re-entry to the user, since only they know the real M-5 team list).
+endDate, rawPaste}`) absorbs it directly.
+  * **Storage**: new top-level (not `users/{uid}/`-scoped — shared/global, not per-user) Firestore
+    collection `seasons/{seasonId}` — public read (every visitor needs it for the existing "Load/Use
+    default set" buttons, signed in or not), write locked to a single hardcoded admin uid in
+    `firestore.rules` (kept in sync with a new `NEXT_PUBLIC_ADMIN_UID` env var used for the client-side
+    page gate — real enforcement is the rule, the env var only hides the page from everyone else).
+    `src/lib/firebase/seasons.ts` (`getSeasons`/`saveSeason`/`deleteSeason`) is plain CRUD, no
+    tombstone/merge logic — unlike the per-user sync work above, this is a single admin-managed list,
+    not something reconciled across devices.
+  * **Admin page**: `/admin/seasons` (`src/app/admin/seasons/page.tsx`) — gated on
+    `user?.uid === NEXT_PUBLIC_ADMIN_UID`, shows a sign-in prompt if signed out and a plain "Not
+    authorized" message for any other signed-in account. A form (regulation dropdown from
+    `REGULATIONS`, label, start/end date, rawPaste textarea) plus a list of existing seasons with
+    Edit/Delete (Delete behind the existing `Modal`-based confirm pattern).
+  * **Matchup Planner UX**: `useSeasons()` (`src/hooks/useSeasons.ts`) loads the public season list,
+    falling back to a small static seed (`src/data/seasons/index.ts`'s `FALLBACK_SEASONS`, carrying the
+    old M-4 raw data forward with placeholder dates — real dates weren't tracked before this) if the
+    read fails, so the buttons never just disappear offline. Computes `currentSeasonId` — whichever
+    season's `[startDate, endDate]` covers today, or the most recently-started one if today falls in a
+    gap between seasons. `OpponentsSection.tsx`'s two "Load/Use default set" button rows now render one
+    button per season (sorted newest-first) labeled with the season, current one marked "(current)" —
+    switching seasons is just clicking a different season's button, rather than a separate selector
+    control, since loading that season's team set is the only season-dependent behavior in the Matchup
+    Planner today.
+  * Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169 — includes the relocated
+    `regulationMbM4.test.ts`, confirming the data-directory move didn't break anything), and `npm run
+build` (new `/admin/seasons` route builds and prerenders) all clean. Live browser check: signed in
+    as the admin account, confirmed the page renders the form (client-side gate passes); before the
+    updated `firestore.rules` were deployed, confirmed the exact `Missing or insufficient permissions`
+    error surfaces via the new console logging (same verification pattern as the sync-rules bug above)
+    rather than failing silently.
+  * **Fast follow, same day, found through real use once rules were deployed and a real M-5 season was
+    added**: two bugs. (1) `OpponentsSection.tsx`'s "Load default set" button in the "⋮" menu had
+    inherited the old `TeamPreset` code's `opponents.length === 0` gate unchanged — meaning the season
+    switcher was invisible the moment you had even one opponent already, which defeats the entire point
+    of a switcher. Removed that condition (the onboarding empty-state's copy of the buttons keeps it
+    correctly, since that block itself only renders with zero opponents) — loading a season is additive
+    (`addOpponentsFromFolder` prepends, never replaces), so showing it unconditionally is safe. (2) The
+    real M-5 data entered via the admin form turned out to be a plain single-team Showdown paste, not
+    the "Team Folder" format (`=== [format] Title ===` headers) `parseTeamFolder` requires — it saved
+    successfully (valid as far as the Season type/Firestore write were concerned) but silently produced
+    zero importable teams the moment someone tried to load it, surfacing only as the pre-existing
+    generic "Couldn't import any teams from that paste" message with no indication of _why_. Rather than
+    leave this as a trap for the next season entry, `/admin/seasons` now: runs the pasted text through
+    `parseTeamFolder` live and shows a "N teams detected" hint under the textarea as you type, and
+    blocks the save entirely with a specific error message (not just the generic one) if that comes back
+    zero — catching the mistake at data-entry time instead of at import time. Verified: `npx tsc
+--noEmit`, `npm run lint` clean; live browser check reproduced both bugs first (season switcher
+    confirmed invisible with existing opponents present, "0 teams detected" confirmed live against the
+    real malformed M-5 doc via its Edit form) before fixing, then confirmed the switcher now appears
+    unconditionally and correctly loads M-5's data once re-entered in the right format (left the actual
+    re-entry to the user, since only they know the real M-5 team list).
 - [x] **Regulation tagging on opponents, and a visual regulation switcher.** Per a 2026-08-22 request:
-    "switching regulation/season" so far only meant loading a season's default team-set — this adds the
-    other half, filtering *existing* opponents (and their per-team game-plan notes, which live nested
-    inside the same Opponent document) by which regulation they belong to, since nothing tagged opponents
-    by regulation at all before this. Confirmed scope with the user first: tag by **regulation only**
-    (M-A/M-B), not per-season — legality doesn't vary by season, and this is the coarser, rarer-changing
-    axis; and existing untagged opponents get **migrated to the current regulation** rather than left
-    unfiltered, so nothing looks like it silently vanished.
-    - `Opponent` gained a required `regulationId: string` field (`src/types/opponent.ts`).
-      `createOpponent` (`src/lib/opponent.ts`) now takes it as a required parameter, and
-      `normalizeOpponent` backfills it to `REGULATIONS[0].id` for any record missing it — same
-      "storage should always read through this" migration pattern the pre-existing `plansByTeamId`
-      backfill already established.
-    - `OpponentsSection.tsx` gained a regulation switcher next to the "Opposing Teams" heading — a
-      `<select>` once more than one `Regulation` is registered, a plain static badge today since M-B is
-      still the only one (`REGULATIONS.length > 1` ternary — the switcher exists and is wired correctly
-      end-to-end now, but has nothing to actually switch *to* until a second regulation is added under
-      `src/data/regulations/`, which the user was told plainly). Every list derived from `opponents` —
-      the visible list, search, the empty-state check, "Clear all data," the season buttons — now filters
-      through `regulationOpponents`/`regulationSeasons` (opponents/seasons matching
-      `selectedRegulationId`) first, local `useState` only (no persistence needed with one regulation).
-      New opponents (manual add, bulk import, or loading a season's default set) get tagged with
-      whichever regulation is currently selected — or, for a season's default set specifically, that
-      season's own `regulationId`, which is more precise than "whatever's selected" even though they'd
-      always agree today.
-    - **"Clear all data" behavior change, worth flagging on its own**: it used to wipe the *entire*
-      opponents store unconditionally (`db.clear()`). Now that opponents can belong to different
-      regulations, that would silently delete opponents under regulations you weren't even looking at —
-      so it's now scoped to exactly the currently-viewed regulation's opponents.
-      `src/lib/storage/db.ts`'s `clearOpponents()` (blanket local `db.clear()` + tombstone-every-key) was
-      replaced with `deleteOpponents(ids: string[])` (tombstone + delete exactly the given ids);
-      `useOpponents.ts`'s `removeAllOpponents()` became `removeOpponents(ids)`, with the caller
-      (`OpponentsSection`) deciding scope. The confirm dialog's copy was updated to say so explicitly
-      ("removes all N opponents under this regulation... opponents under other regulations aren't
-      affected").
-    - **Bug found and fixed during live verification, not from a code review — a real one**: after
-      shipping, existing opponents (added earlier this session, already synced to Firestore) vanished
-      entirely from the Opponents list once the regulation filter went live, despite `normalizeOpponent`
-      correctly backfilling `regulationId` for locally-read data. Root cause: `syncOpponentsWithCloud`
-      calls `opponentsSync.pullAndMerge`, which — on a tie or a remote-wins comparison by `updatedAt` —
-      substitutes in the *raw remote Firestore document* in place of the locally-normalized one, and that
-      merged result was returned/persisted **without ever passing back through `normalizeOpponent`**.
-      Every opponent synced to the cloud before `regulationId` existed had no such field in its stored
-      Firestore document, so the merge could silently reintroduce an un-backfilled record even after a
-      correct local read had just fixed it. This was a latent gap in the sync architecture itself (the
-      same would already have been true for the older `plansByTeamId` migration, just never exercised
-      because that field predates cloud sync entirely) — not specific to this feature. Fixed by mapping
-      `merged` through `normalizeOpponent` in `syncOpponentsWithCloud` before persisting/returning it, so
-      every opponent is normalized regardless of which path (local read vs. cloud merge) it arrived
-      through. Deliberately not re-pushing the backfilled value to Firestore proactively — the record
-      self-heals locally on every load, and picks up the real fix in the cloud the next time it's
-      genuinely edited (any `saveOpponent` call pushes the full, now-normalized object) — not worth the
-      complexity of diffing pre/post-normalization to force an immediate re-push for what's a one-time
-      legacy-data gap.
-    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169 — `opponent.test.ts` updated for
-      `createOpponent`'s new required `regulationId` parameter), and `npm run build` all clean. Live
-      browser check against the real signed-in project: reproduced the vanishing-opponents bug first
-      (confirmed via the empty "Prepare against your rivals" state despite opponents genuinely existing),
-      fixed it, then confirmed all opponents reappeared correctly tagged under the "Regulation M-B" badge,
-      the "⋮" menu's season/clear-data items still work, and no console errors on load.
+      "switching regulation/season" so far only meant loading a season's default team-set — this adds the
+      other half, filtering _existing_ opponents (and their per-team game-plan notes, which live nested
+      inside the same Opponent document) by which regulation they belong to, since nothing tagged opponents
+      by regulation at all before this. Confirmed scope with the user first: tag by **regulation only**
+      (M-A/M-B), not per-season — legality doesn't vary by season, and this is the coarser, rarer-changing
+      axis; and existing untagged opponents get **migrated to the current regulation** rather than left
+      unfiltered, so nothing looks like it silently vanished.
+  - `Opponent` gained a required `regulationId: string` field (`src/types/opponent.ts`).
+    `createOpponent` (`src/lib/opponent.ts`) now takes it as a required parameter, and
+    `normalizeOpponent` backfills it to `REGULATIONS[0].id` for any record missing it — same
+    "storage should always read through this" migration pattern the pre-existing `plansByTeamId`
+    backfill already established.
+  - `OpponentsSection.tsx` gained a regulation switcher next to the "Opposing Teams" heading — a
+    `<select>` once more than one `Regulation` is registered, a plain static badge today since M-B is
+    still the only one (`REGULATIONS.length > 1` ternary — the switcher exists and is wired correctly
+    end-to-end now, but has nothing to actually switch _to_ until a second regulation is added under
+    `src/data/regulations/`, which the user was told plainly). Every list derived from `opponents` —
+    the visible list, search, the empty-state check, "Clear all data," the season buttons — now filters
+    through `regulationOpponents`/`regulationSeasons` (opponents/seasons matching
+    `selectedRegulationId`) first, local `useState` only (no persistence needed with one regulation).
+    New opponents (manual add, bulk import, or loading a season's default set) get tagged with
+    whichever regulation is currently selected — or, for a season's default set specifically, that
+    season's own `regulationId`, which is more precise than "whatever's selected" even though they'd
+    always agree today.
+  - **"Clear all data" behavior change, worth flagging on its own**: it used to wipe the _entire_
+    opponents store unconditionally (`db.clear()`). Now that opponents can belong to different
+    regulations, that would silently delete opponents under regulations you weren't even looking at —
+    so it's now scoped to exactly the currently-viewed regulation's opponents.
+    `src/lib/storage/db.ts`'s `clearOpponents()` (blanket local `db.clear()` + tombstone-every-key) was
+    replaced with `deleteOpponents(ids: string[])` (tombstone + delete exactly the given ids);
+    `useOpponents.ts`'s `removeAllOpponents()` became `removeOpponents(ids)`, with the caller
+    (`OpponentsSection`) deciding scope. The confirm dialog's copy was updated to say so explicitly
+    ("removes all N opponents under this regulation... opponents under other regulations aren't
+    affected").
+  - **Bug found and fixed during live verification, not from a code review — a real one**: after
+    shipping, existing opponents (added earlier this session, already synced to Firestore) vanished
+    entirely from the Opponents list once the regulation filter went live, despite `normalizeOpponent`
+    correctly backfilling `regulationId` for locally-read data. Root cause: `syncOpponentsWithCloud`
+    calls `opponentsSync.pullAndMerge`, which — on a tie or a remote-wins comparison by `updatedAt` —
+    substitutes in the _raw remote Firestore document_ in place of the locally-normalized one, and that
+    merged result was returned/persisted **without ever passing back through `normalizeOpponent`**.
+    Every opponent synced to the cloud before `regulationId` existed had no such field in its stored
+    Firestore document, so the merge could silently reintroduce an un-backfilled record even after a
+    correct local read had just fixed it. This was a latent gap in the sync architecture itself (the
+    same would already have been true for the older `plansByTeamId` migration, just never exercised
+    because that field predates cloud sync entirely) — not specific to this feature. Fixed by mapping
+    `merged` through `normalizeOpponent` in `syncOpponentsWithCloud` before persisting/returning it, so
+    every opponent is normalized regardless of which path (local read vs. cloud merge) it arrived
+    through. Deliberately not re-pushing the backfilled value to Firestore proactively — the record
+    self-heals locally on every load, and picks up the real fix in the cloud the next time it's
+    genuinely edited (any `saveOpponent` call pushes the full, now-normalized object) — not worth the
+    complexity of diffing pre/post-normalization to force an immediate re-push for what's a one-time
+    legacy-data gap.
+  - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (169/169 — `opponent.test.ts` updated for
+    `createOpponent`'s new required `regulationId` parameter), and `npm run build` all clean. Live
+    browser check against the real signed-in project: reproduced the vanishing-opponents bug first
+    (confirmed via the empty "Prepare against your rivals" state despite opponents genuinely existing),
+    fixed it, then confirmed all opponents reappeared correctly tagged under the "Regulation M-B" badge,
+    the "⋮" menu's season/clear-data items still work, and no console errors on load.
 - [x] **Regulation M-A added — the regulation switcher's first real second option.** Per a 2026-08-22
-    request, after being told adding a regulation is a real data-authoring task (not something that fits
-    an admin form the way Seasons do — it needs the same sourcing-and-verification rigor M-B originally
-    got, not a paste-in blob). Delegated the research/authoring to a background fork to keep a ~280-entry
-    species list out of the main conversation; reviewed and independently re-verified its output
-    (`npx tsc --noEmit`/`npm run lint`/`npm test`/`npm run build` all re-run fresh, plus a live browser
-    check) before reporting it done.
-    - New `src/data/regulations/regulationMA.ts` + `regulationMA.test.ts`, registered as a second entry
-      in `index.ts`'s `REGULATIONS` array (M-B stays index 0/"current" — M-A, 2026-04-08–2026-06-17, is
-      already-ended and registered for reference/theorycrafting against past-season opponent data).
-    - **Species**: 213 keys, independently re-verified against Bulbapedia's Regulation Set M-A page
-      (fetched twice, not trusted from a single pass) and confirmed to be an **exact subset** of M-B's
-      235 — M-A adds nothing M-B lacks; M-B added 22 species M-A never had (Vileplume, Qwilfish, Sceptile,
-      Blaziken, Swampert, Mawile, Metagross, Staraptor, Musharna, Scolipede, Scrafty, Eelektross, Pyroar,
-      Malamar, Barbaracle, Dragalge, Grimmsnarl, Falinks, Overqwil, Houndstone, Annihilape, Gholdengo).
-      Derived as M-B's already-verified list filtered down, rather than 213 keys re-resolved from scratch
-      by hand — lower transcription risk, and `regulationMA.test.ts` still independently verifies every
-      key resolves in `species.json`/`baseStats.json`/`speciesTypes.json` and round-trips through
-      `normalizeSpeciesKey(formatSpeciesDisplayName(key))`, plus asserts the subset relationship holds
-      (so it'd fail loudly if that assumption ever turned out wrong).
-    - **Items**: shared with M-B, re-exported rather than duplicated — Bulbapedia's M-A page has no
-      separate item list (only a "no duplicate held items" mechanic rule, not a banlist), and nothing
-      found suggests item legality is regulation-specific in this game the way species are.
-    - **Mega Stones — a known, explicitly-documented gap, not silently resolved**: derived as M-B's
-      species→stone map filtered to M-A-legal species (61 stones/59 species), but Bulbapedia states M-A
-      had "76 Mega Evolution forms" — this filtered-subset approach is a verified **lower bound**, since a
-      species that stayed base-legal into M-B but lost Mega access specifically wouldn't be caught by a
-      pure species-list diff, and no per-mega M-A source was found to close that gap. Documented plainly
-      in both the code header and a named test case rather than fudged to look complete.
-    - Verified (independently re-run by me, not just trusted from the fork's own report): `npx tsc
-      --noEmit`, `npm run lint`, `npm test` (176/176, +7 new), and `npm run build` all clean. Live browser
-      check: the Opponents section's regulation switcher is now a real `<select>` with both options
-      (previously a static badge with nothing to switch to); selecting "Regulation M-A" correctly shows
-      the empty "Prepare against your rivals" state (no M-A opponents exist yet — everything pre-dating
-      this feature was migrated to M-B) with no default-set buttons (no M-A seasons exist yet either);
-      the Damage Calculator's "Add Any Pokémon" regulation-gated picker (a separate, static
-      `REGULATIONS[0]` display, unaffected by this change) still works correctly; zero console errors.
-    - **Correction, same day, from a user who actually played M-A**: the assumption above ("nothing found
-      suggests item legality is regulation-specific," the Mega Stone list flagged only as an incomplete
-      lower bound) turned out to be genuinely wrong in two specific, now-fixed ways, not just
-      under-verified. (1) **Life Orb was banned in M-A**, only legalized starting M-B — confirmed via web
-      search (multiple independent sources agree); `REGULATION_M_A_HELD_ITEMS` is now M-B's held items
-      with Life Orb filtered out, not a blind re-export. (2) **Mega Raichu was a M-B addition, not legal
-      in M-A** — confirmed two ways: metavgc.com's M-B item list explicitly names "Raichunite X/Y" among
-      M-B's newly-added stones, and Bulbapedia's own dedicated "Mega Evolutions" list for M-A (distinct
-      from its general eligible-species list) doesn't include Raichu either, despite Raichu itself being
-      a legal M-A species — `REGULATION_M_A_MEGA_STONE_SPECIES` no longer includes it (61→59 stones,
-      59→58 species). One figure was investigated and deliberately left unresolved rather than forced to
-      match: some sources cite "59 species capable of Mega Evolution" for M-A, one above this file's 58 —
-      that's a bare count with no enumerated list behind it, so it can't be reconciled against this file's
-      species-by-species derivation; flagged in the code as a known, unresolved source disagreement rather
-      than silently overridden or silently ignored. Both fixes' root cause was the same: treating "no
-      evidence of a difference" as "confirmed identical" instead of positively verifying — worth
-      remembering the next time a sibling regulation's data is assumed to carry over unchanged. Verified:
-      `npx tsc --noEmit`, `npm run lint`, `npm test` (178/178, +2 new — one asserting Life Orb's absence
-      byte-for-byte against a filtered M-B list, one asserting Raichu's absence from the Mega map), and
-      `npm run build` all clean.
+      request, after being told adding a regulation is a real data-authoring task (not something that fits
+      an admin form the way Seasons do — it needs the same sourcing-and-verification rigor M-B originally
+      got, not a paste-in blob). Delegated the research/authoring to a background fork to keep a ~280-entry
+      species list out of the main conversation; reviewed and independently re-verified its output
+      (`npx tsc --noEmit`/`npm run lint`/`npm test`/`npm run build` all re-run fresh, plus a live browser
+      check) before reporting it done.
+  - New `src/data/regulations/regulationMA.ts` + `regulationMA.test.ts`, registered as a second entry
+    in `index.ts`'s `REGULATIONS` array (M-B stays index 0/"current" — M-A, 2026-04-08–2026-06-17, is
+    already-ended and registered for reference/theorycrafting against past-season opponent data).
+  - **Species**: 213 keys, independently re-verified against Bulbapedia's Regulation Set M-A page
+    (fetched twice, not trusted from a single pass) and confirmed to be an **exact subset** of M-B's
+    235 — M-A adds nothing M-B lacks; M-B added 22 species M-A never had (Vileplume, Qwilfish, Sceptile,
+    Blaziken, Swampert, Mawile, Metagross, Staraptor, Musharna, Scolipede, Scrafty, Eelektross, Pyroar,
+    Malamar, Barbaracle, Dragalge, Grimmsnarl, Falinks, Overqwil, Houndstone, Annihilape, Gholdengo).
+    Derived as M-B's already-verified list filtered down, rather than 213 keys re-resolved from scratch
+    by hand — lower transcription risk, and `regulationMA.test.ts` still independently verifies every
+    key resolves in `species.json`/`baseStats.json`/`speciesTypes.json` and round-trips through
+    `normalizeSpeciesKey(formatSpeciesDisplayName(key))`, plus asserts the subset relationship holds
+    (so it'd fail loudly if that assumption ever turned out wrong).
+  - **Items**: shared with M-B, re-exported rather than duplicated — Bulbapedia's M-A page has no
+    separate item list (only a "no duplicate held items" mechanic rule, not a banlist), and nothing
+    found suggests item legality is regulation-specific in this game the way species are.
+  - **Mega Stones — a known, explicitly-documented gap, not silently resolved**: derived as M-B's
+    species→stone map filtered to M-A-legal species (61 stones/59 species), but Bulbapedia states M-A
+    had "76 Mega Evolution forms" — this filtered-subset approach is a verified **lower bound**, since a
+    species that stayed base-legal into M-B but lost Mega access specifically wouldn't be caught by a
+    pure species-list diff, and no per-mega M-A source was found to close that gap. Documented plainly
+    in both the code header and a named test case rather than fudged to look complete.
+  - Verified (independently re-run by me, not just trusted from the fork's own report): `npx tsc
+--noEmit`, `npm run lint`, `npm test` (176/176, +7 new), and `npm run build` all clean. Live browser
+    check: the Opponents section's regulation switcher is now a real `<select>` with both options
+    (previously a static badge with nothing to switch to); selecting "Regulation M-A" correctly shows
+    the empty "Prepare against your rivals" state (no M-A opponents exist yet — everything pre-dating
+    this feature was migrated to M-B) with no default-set buttons (no M-A seasons exist yet either);
+    the Damage Calculator's "Add Any Pokémon" regulation-gated picker (a separate, static
+    `REGULATIONS[0]` display, unaffected by this change) still works correctly; zero console errors.
+  - **Correction, same day, from a user who actually played M-A**: the assumption above ("nothing found
+    suggests item legality is regulation-specific," the Mega Stone list flagged only as an incomplete
+    lower bound) turned out to be genuinely wrong in two specific, now-fixed ways, not just
+    under-verified. (1) **Life Orb was banned in M-A**, only legalized starting M-B — confirmed via web
+    search (multiple independent sources agree); `REGULATION_M_A_HELD_ITEMS` is now M-B's held items
+    with Life Orb filtered out, not a blind re-export. (2) **Mega Raichu was a M-B addition, not legal
+    in M-A** — confirmed two ways: metavgc.com's M-B item list explicitly names "Raichunite X/Y" among
+    M-B's newly-added stones, and Bulbapedia's own dedicated "Mega Evolutions" list for M-A (distinct
+    from its general eligible-species list) doesn't include Raichu either, despite Raichu itself being
+    a legal M-A species — `REGULATION_M_A_MEGA_STONE_SPECIES` no longer includes it (61→59 stones,
+    59→58 species). One figure was investigated and deliberately left unresolved rather than forced to
+    match: some sources cite "59 species capable of Mega Evolution" for M-A, one above this file's 58 —
+    that's a bare count with no enumerated list behind it, so it can't be reconciled against this file's
+    species-by-species derivation; flagged in the code as a known, unresolved source disagreement rather
+    than silently overridden or silently ignored. Both fixes' root cause was the same: treating "no
+    evidence of a difference" as "confirmed identical" instead of positively verifying — worth
+    remembering the next time a sibling regulation's data is assumed to carry over unchanged. Verified:
+    `npx tsc --noEmit`, `npm run lint`, `npm test` (178/178, +2 new — one asserting Life Orb's absence
+    byte-for-byte against a filtered M-B list, one asserting Raichu's absence from the Mega map), and
+    `npm run build` all clean.
 - [x] **Regulation select's arrow padding; duplicate-opponent prevention.** Two small fixes from a
-    2026-08-22 report.
-    - **Select arrow padding.** The regulation `<select>`'s dropdown chevron sat flush against the pill's
-      edge. First attempt (`pr-7` padding on the native select) visibly did nothing — native `<select>`
-      arrows are drawn by the browser itself and don't reliably reposition from CSS padding alone, a fact
-      worth remembering next time a native form control looks "almost right" after a padding tweak. Fixed
-      properly with `appearance-none` (hides the native arrow) plus a manually-positioned `ExpandMore`
-      icon from the app's existing Icon set, absolutely positioned inside a `relative` wrapper — the same
-      custom-chevron pattern already used elsewhere (e.g. `MyTeamHeader`'s team switcher), which is the
-      reason this should have been the first approach, not the second.
-    - **Duplicate opponents.** Root cause: `addOpponent`/`addOpponentsFromFolder` never checked for
-      existing content before creating a new opponent — every call makes a fresh `crypto.randomUUID()`,
-      so importing the same season's default set twice (once per device, or just repeated testing/habit)
-      creates two opponents with different ids but identical content. Cloud sync's merge is by id only
-      (see the Firebase entries above), so it has no way to know two different ids are "the same"
-      opponent — both survive and both render, which is exactly the bug reported (two identical
-      "M-Staraptor-Milotic Sand" cards). Fixed at creation time, before sync is even involved: a new
-      `findDuplicate` helper in `useOpponents.ts` checks for an existing opponent under the same
-      `regulationId` with byte-identical `team.rawPaste`; `addOpponent` now returns an error string for a
-      single duplicate paste, and `addOpponentsFromFolder` skips duplicate entries individually (including
-      duplicates within the same pasted folder, not just against already-existing opponents) and reports
-      them through the existing `skipped` mechanism. Also fixed a messaging bug this surfaced:
-      `reportImportResult` unconditionally showed a generic "check the format" message whenever
-      `importedCount` was 0, even when `skipped` had specific per-team reasons — reproducing the bug (Load
-      default set: M-5 a second time) showed exactly that misleading message before the fix, correctly
-      showing "Skipped 14: ... already exists under this regulation" for every entry after. Doesn't
-      retroactively clean up the already-existing duplicate from the report — deleting one copy is a
-      single click on its own trash icon, and auto-merging two opponents that might have diverging
-      game-plan notes by now isn't a safe thing to do silently. Verified: `npx tsc --noEmit`,
-      `npm run lint`, `npm test` (178/178) clean; live browser check reproduced the exact bug (clicking
-      "Load default set: M-5" a second time against data that already had it loaded) before the fix, then
-      confirmed after the fix it correctly imported 0 and skipped all 14 with the specific reason, and
-      confirmed the custom chevron renders correctly and the select still functions (switching between
-      M-B/M-A) after the `appearance-none` change.
+      2026-08-22 report.
+  - **Select arrow padding.** The regulation `<select>`'s dropdown chevron sat flush against the pill's
+    edge. First attempt (`pr-7` padding on the native select) visibly did nothing — native `<select>`
+    arrows are drawn by the browser itself and don't reliably reposition from CSS padding alone, a fact
+    worth remembering next time a native form control looks "almost right" after a padding tweak. Fixed
+    properly with `appearance-none` (hides the native arrow) plus a manually-positioned `ExpandMore`
+    icon from the app's existing Icon set, absolutely positioned inside a `relative` wrapper — the same
+    custom-chevron pattern already used elsewhere (e.g. `MyTeamHeader`'s team switcher), which is the
+    reason this should have been the first approach, not the second.
+  - **Duplicate opponents.** Root cause: `addOpponent`/`addOpponentsFromFolder` never checked for
+    existing content before creating a new opponent — every call makes a fresh `crypto.randomUUID()`,
+    so importing the same season's default set twice (once per device, or just repeated testing/habit)
+    creates two opponents with different ids but identical content. Cloud sync's merge is by id only
+    (see the Firebase entries above), so it has no way to know two different ids are "the same"
+    opponent — both survive and both render, which is exactly the bug reported (two identical
+    "M-Staraptor-Milotic Sand" cards). Fixed at creation time, before sync is even involved: a new
+    `findDuplicate` helper in `useOpponents.ts` checks for an existing opponent under the same
+    `regulationId` with byte-identical `team.rawPaste`; `addOpponent` now returns an error string for a
+    single duplicate paste, and `addOpponentsFromFolder` skips duplicate entries individually (including
+    duplicates within the same pasted folder, not just against already-existing opponents) and reports
+    them through the existing `skipped` mechanism. Also fixed a messaging bug this surfaced:
+    `reportImportResult` unconditionally showed a generic "check the format" message whenever
+    `importedCount` was 0, even when `skipped` had specific per-team reasons — reproducing the bug (Load
+    default set: M-5 a second time) showed exactly that misleading message before the fix, correctly
+    showing "Skipped 14: ... already exists under this regulation" for every entry after. Doesn't
+    retroactively clean up the already-existing duplicate from the report — deleting one copy is a
+    single click on its own trash icon, and auto-merging two opponents that might have diverging
+    game-plan notes by now isn't a safe thing to do silently. Verified: `npx tsc --noEmit`,
+    `npm run lint`, `npm test` (178/178) clean; live browser check reproduced the exact bug (clicking
+    "Load default set: M-5" a second time against data that already had it loaded) before the fix, then
+    confirmed after the fix it correctly imported 0 and skipped all 14 with the specific reason, and
+    confirmed the custom chevron renders correctly and the select still functions (switching between
+    M-B/M-A) after the `appearance-none` change.
 - [x] **Phase 11 — My Teams list + Team Report pages.** Per a 2026-08-23 request, with two reference
-    mockups. Confirmed scope up front on three points before building: the mockup's extra nav items
-    ("Speed tier," "Builder") are placeholder, not real pages to build — only "My Teams" was added as a
-    third nav link; the Team Report mockup's "Add Opponent" button and search icon were mockup artifacts
-    (reused from the Opponents page as a starting point) and skipped; the Notes/Weaknesses boxes below
-    the combinations panel are one-per-team (shown once), not one per combination.
-    - **Data model**: `Team` gained `regulationId: string` (same tagging/backfill treatment Opponent got
-      — `normalizeTeam` in `src/lib/team.ts` backfills it to `REGULATIONS[0].id`, applied in both
-      `getMyTeams()` and, after the same cloud-merge gap found and fixed for opponents, `syncMyTeamsWithCloud`
-      too — added proactively this time instead of waiting to rediscover it live) plus four new optional
-      fields for the Team Report page: `notes?`, `weaknesses?` (both team-level, free text),
-      `pokemonNotes?: Record<number, string>` (per-Pokémon, keyed by roster index), and
-      `combinations?: TeamCombination[]` (new type: `{id, leadPair, backPair, leadMega, backMega, notes}`
-      — structurally `MatchupPlan` plus an `id`, since a team can have any number of these, not one per
-      opponent). `createTeam`/`createOpponent`'s nested team, and every existing call site
-      (`MyTeamHeader`, `MyTeamSection`, `editOpponentTeam`) updated to thread a `regulationId` through —
-      editing preserves the team's existing regulation rather than needing one re-specified.
-    - **Duplicate prevention added proactively**: `addTeam` in `useMyTeams.ts` got the same
-      same-regulation-plus-byte-identical-rawPaste duplicate check `addOpponent` got fixed with
-      yesterday, rather than waiting to hit the same bug on Teams too.
-    - **`/teams`** (`src/components/MyTeamsSection`) — mirrors `OpponentsSection`'s structure
-      (search, regulation switcher, add/edit/remove) but simplified: no bulk import or mass-clear, since
-      this is a handful of your own teams, not a big opponent list. Each row navigates to
-      `/teams/[teamId]` on click (`role="link"`, whole row, not just the mockup's chevron — edit/delete
-      icons `stopPropagation` so they don't also trigger navigation); the chevron itself is
-      `IconName.ExpandMore` rotated -90°, since the icon set has no dedicated chevron-right and fetching
-      one for a single use wasn't worth it. Sprites render plain/static (not `TeamRoster`'s
-      hover-card-wrapped version) specifically to avoid a click-conflict — a hover-card's own click-to-open
-      would otherwise fight the row's click-to-navigate.
-    - **`/teams/[teamId]`** ("Team report") — left column: `PokemonReportRow` (new component) per
-      Pokémon — sprite/ability/item, a read-only Base/Points/Final stat table (reusing
-      `calculateStatBreakdown`, the same source the Damage Calculator's editable version uses, just
-      rendered plain here since this isn't a battle calculator), its moveset as pasted, and a notes box
-      bound to `pokemonNotes[index]`. Right column: "Common combinations" — `TeamCombinationCard` (new
-      component) per combination, each a Lead pair + Back pair reusing the exact `PokemonSlotPicker`
-      component the Matchup Planner's opponent cards already use, just pointed at this team's own roster
-      instead of an opponent-planning context — plus the team-level Notes and Weaknesses boxes below.
-      `params` read via React's `use()` (this Next version's Client Component pattern for dynamic route
-      params — see AGENTS.md's directive to check the bundled docs rather than assume).
-    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180, +2 new — `normalizeTeam`'s
-      backfill), and `npm run build` (new `/teams` and `/teams/[teamId]` routes, the latter correctly
-      dynamic) all clean. Live browser check against real existing team data: confirmed existing teams
-      correctly auto-backfilled under "Regulation M-B" on first load with zero data loss, clicked into a
-      real team's report and confirmed the stat table/moveset render correctly from real pasted data,
-      added a combination and picked a real Mega-capable Pokémon (Raichu) as a lead — confirmed its Mega
-      sprite rendered correctly in the picker — typed a combination note and a per-Pokémon note, reloaded
-      the page fully, and confirmed both persisted exactly as entered; zero console errors throughout.
-    - **Layout/visual fast follow, same day**: both new pages stretched full-bleed on wide viewports,
-      spreading sprites/columns out with large gaps rather than staying compact like the reference
-      mockups. `MyTeamsSection` capped at `max-w-3xl`; the Team Report's two-column grid capped at
-      `max-w-6xl`. The cap alone caused a second bug — `PokemonReportRow`'s stat table had a hardcoded
-      `min-w-[220px]` that no longer fit the now-narrower inner column, clipping the Final column behind a
-      horizontal scrollbar; reduced to `min-w-[150px]`. Also added alternating row backgrounds
-      (`bg-zinc-200`/`bg-zinc-100`) to Team Report's per-Pokémon rows, matching the pattern
-      `OpponentsSection`/`MyTeamsSection` already use — `PokemonReportRow` itself stays
-      presentation-agnostic (background applied by the parent's `.map()`, same division of responsibility
-      as `OpponentCard`) — and bumped the notes/textarea backgrounds (combination notes, team notes,
-      team weaknesses) from `bg-zinc-50` to `bg-zinc-100` so they read as clearer input boxes, per the
-      mockup; the per-Pokémon notes box went the other way, to `bg-white/60`, since it now sits on an
-      alternating-colored row rather than a plain white card (mirrors `OpponentCard`'s own
-      `bg-transparent` game-plan notes field sitting on its row's color). Moveset pills switched from
-      `bg-zinc-100` to `bg-white` so they don't blend into the row on the alternating background's
-      lighter half. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180), `npm run build`
-      all clean; live browser check confirmed both pages are now compact instead of full-bleed, the stat
-      table's Final column is fully visible again, and the combination panel's notes box reads clearly
-      against its white card.
+      mockups. Confirmed scope up front on three points before building: the mockup's extra nav items
+      ("Speed tier," "Builder") are placeholder, not real pages to build — only "My Teams" was added as a
+      third nav link; the Team Report mockup's "Add Opponent" button and search icon were mockup artifacts
+      (reused from the Opponents page as a starting point) and skipped; the Notes/Weaknesses boxes below
+      the combinations panel are one-per-team (shown once), not one per combination.
+  - **Data model**: `Team` gained `regulationId: string` (same tagging/backfill treatment Opponent got
+    — `normalizeTeam` in `src/lib/team.ts` backfills it to `REGULATIONS[0].id`, applied in both
+    `getMyTeams()` and, after the same cloud-merge gap found and fixed for opponents, `syncMyTeamsWithCloud`
+    too — added proactively this time instead of waiting to rediscover it live) plus four new optional
+    fields for the Team Report page: `notes?`, `weaknesses?` (both team-level, free text),
+    `pokemonNotes?: Record<number, string>` (per-Pokémon, keyed by roster index), and
+    `combinations?: TeamCombination[]` (new type: `{id, leadPair, backPair, leadMega, backMega, notes}`
+    — structurally `MatchupPlan` plus an `id`, since a team can have any number of these, not one per
+    opponent). `createTeam`/`createOpponent`'s nested team, and every existing call site
+    (`MyTeamHeader`, `MyTeamSection`, `editOpponentTeam`) updated to thread a `regulationId` through —
+    editing preserves the team's existing regulation rather than needing one re-specified.
+  - **Duplicate prevention added proactively**: `addTeam` in `useMyTeams.ts` got the same
+    same-regulation-plus-byte-identical-rawPaste duplicate check `addOpponent` got fixed with
+    yesterday, rather than waiting to hit the same bug on Teams too.
+  - **`/teams`** (`src/components/MyTeamsSection`) — mirrors `OpponentsSection`'s structure
+    (search, regulation switcher, add/edit/remove) but simplified: no bulk import or mass-clear, since
+    this is a handful of your own teams, not a big opponent list. Each row navigates to
+    `/teams/[teamId]` on click (`role="link"`, whole row, not just the mockup's chevron — edit/delete
+    icons `stopPropagation` so they don't also trigger navigation); the chevron itself is
+    `IconName.ExpandMore` rotated -90°, since the icon set has no dedicated chevron-right and fetching
+    one for a single use wasn't worth it. Sprites render plain/static (not `TeamRoster`'s
+    hover-card-wrapped version) specifically to avoid a click-conflict — a hover-card's own click-to-open
+    would otherwise fight the row's click-to-navigate.
+  - **`/teams/[teamId]`** ("Team report") — left column: `PokemonReportRow` (new component) per
+    Pokémon — sprite/ability/item, a read-only Base/Points/Final stat table (reusing
+    `calculateStatBreakdown`, the same source the Damage Calculator's editable version uses, just
+    rendered plain here since this isn't a battle calculator), its moveset as pasted, and a notes box
+    bound to `pokemonNotes[index]`. Right column: "Common combinations" — `TeamCombinationCard` (new
+    component) per combination, each a Lead pair + Back pair reusing the exact `PokemonSlotPicker`
+    component the Matchup Planner's opponent cards already use, just pointed at this team's own roster
+    instead of an opponent-planning context — plus the team-level Notes and Weaknesses boxes below.
+    `params` read via React's `use()` (this Next version's Client Component pattern for dynamic route
+    params — see AGENTS.md's directive to check the bundled docs rather than assume).
+  - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180, +2 new — `normalizeTeam`'s
+    backfill), and `npm run build` (new `/teams` and `/teams/[teamId]` routes, the latter correctly
+    dynamic) all clean. Live browser check against real existing team data: confirmed existing teams
+    correctly auto-backfilled under "Regulation M-B" on first load with zero data loss, clicked into a
+    real team's report and confirmed the stat table/moveset render correctly from real pasted data,
+    added a combination and picked a real Mega-capable Pokémon (Raichu) as a lead — confirmed its Mega
+    sprite rendered correctly in the picker — typed a combination note and a per-Pokémon note, reloaded
+    the page fully, and confirmed both persisted exactly as entered; zero console errors throughout.
+  - **Layout/visual fast follow, same day**: both new pages stretched full-bleed on wide viewports,
+    spreading sprites/columns out with large gaps rather than staying compact like the reference
+    mockups. `MyTeamsSection` capped at `max-w-3xl`; the Team Report's two-column grid capped at
+    `max-w-6xl`. The cap alone caused a second bug — `PokemonReportRow`'s stat table had a hardcoded
+    `min-w-[220px]` that no longer fit the now-narrower inner column, clipping the Final column behind a
+    horizontal scrollbar; reduced to `min-w-[150px]`. Also added alternating row backgrounds
+    (`bg-zinc-200`/`bg-zinc-100`) to Team Report's per-Pokémon rows, matching the pattern
+    `OpponentsSection`/`MyTeamsSection` already use — `PokemonReportRow` itself stays
+    presentation-agnostic (background applied by the parent's `.map()`, same division of responsibility
+    as `OpponentCard`) — and bumped the notes/textarea backgrounds (combination notes, team notes,
+    team weaknesses) from `bg-zinc-50` to `bg-zinc-100` so they read as clearer input boxes, per the
+    mockup; the per-Pokémon notes box went the other way, to `bg-white/60`, since it now sits on an
+    alternating-colored row rather than a plain white card (mirrors `OpponentCard`'s own
+    `bg-transparent` game-plan notes field sitting on its row's color). Moveset pills switched from
+    `bg-zinc-100` to `bg-white` so they don't blend into the row on the alternating background's
+    lighter half. Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (180/180), `npm run build`
+    all clean; live browser check confirmed both pages are now compact instead of full-bleed, the stat
+    table's Final column is fully visible again, and the combination panel's notes box reads clearly
+    against its white card.
 - [x] **Phase 12 — Tournament Mode.** Per a 2026-08-23 request, with one reference mockup for the Round
-    page. Confirmed two real design forks up front before building: how a Round's opponent roster gets
-    entered (chose the existing paste-box pattern, EVs optional — `parseTeam` already tolerates a block
-    with no EVs line, since a real tournament team sheet rarely reveals Stat Points — over a per-slot
-    manual-entry form the mockup showed but which would've meant a wholly new entry UX), and where the
-    accumulated Pokémon usage/win-loss stats surface (a new section on the existing Team Report page,
-    matching the request's own "accumulating those stats on my team" wording, over a separate page).
-    - **Data model** (`src/types/tournament.ts`): `Tournament {id, name, teamId, regulationId, rounds,
-      createdAt, updatedAt}` → `TournamentRound {id, label, opponentRawPaste, opponentTeam:
-      ParsedPokemon[], opponentPokemonNotes?, games}` (opponent roster reuses `ParsedPokemon` as-is —
-      every field is already optional except species, so "however much of a build you know" needed no
-      new type) → exactly 3 fixed `TournamentGame {id, result: "win"|"loss"|null, opponentPicks: [4],
-      myPicks: [4], notes}` per round (Bo3; a round ending 2-0 just leaves game 3 unplayed, no
-      add/remove-game UI needed, unlike Combinations' variable-length list). Picks are 4-tuples of
-      indices into the round's opponentTeam / the tournament's own team roster — "which 4 of 6," not a
-      lead/back-ordered pair like MatchupPlan/TeamCombination.
-    - **`src/lib/tournament.ts`**: `createTournament`/`createRound` (factories), `getRoundResult` (first
-      to 2 game wins decides a Bo3 round, `"in-progress"` otherwise), `getTournamentRecord` (rounds W-L,
-      only counting decided ones), and `computeTeamUsageStats(tournaments, team)` — the actual "usage
-      stats" ask: for a given team, rolls up every decided game across every given tournament into a
-      per-roster-slot `{timesPicked, wins, losses}`, keyed by roster index (same "index is a stable
-      identity" assumption Combinations/MatchupPlan's leadPair/backPair already make). All four are pure
-      functions with their own unit tests (`tournament.test.ts`) — this is exactly the kind of
-      logic-heavy code this codebase always covers directly, not just through UI verification.
-    - **Storage/sync**: `tournaments` gets the identical treatment as `teams`/`opponents` —
-      `TOURNAMENTS_STORE` in IndexedDB (`DB_VERSION` 3→4), `getTournaments`/`saveTournament`/
-      `deleteTournament`/`syncTournamentsWithCloud` in `db.ts`, `useTournaments()` hook mirroring
-      `useOpponents.ts`'s shape. No new Firestore rule needed — `tournaments` lives under
-      `users/{uid}/tournaments`, already covered by the existing recursive `users/{uid}/{document=**}`
-      rule. Skipped the duplicate-content check `addOpponent`/`addTeam` both got — a tournament is a
-      one-off named event you type a name for each time, not a pasted blob you might accidentally
-      re-paste, so the same accidental-duplication risk doesn't really apply.
-    - **Pages**: `/tournaments` (list, mirrors `MyTeamsSection` minus search/regulation-switcher — nothing
-      to filter yet with one regulation) → `/tournaments/[id]` (name, team, W-L record, rounds list,
-      "Add round") → `/tournaments/[id]/rounds/[id]` (the mockup's page: opponent roster as
-      `OpponentPokemonCard`s in a responsive 3-column grid — deliberately no stat table on these unlike
-      `PokemonReportRow`, since without Stat Points there's no real Final stat to compute, and showing one
-      anyway would be misleading — plus 3 `TournamentGameCard`s, each Win/Loss + both sides' picks
-      (reusing `PokemonSlotPicker` again) + notes). "Tournaments" added as a 4th real nav link. Mega-toggle
-      state per pick slot is deliberately local-only, not persisted to `TournamentGame` — usage stats only
-      care *which* Pokémon was brought, not its Mega state that specific game, so widening the data model
-      for it wasn't worth it.
-    - **Team Report addition**: a new "Tournament stats" card, computed via `computeTeamUsageStats`
-      against every tournament using that team — a table of Picked/Wins/Losses/Win% per roster Pokémon,
-      with an empty-state pointing at `/tournaments` when nothing's logged yet.
-    - **Found and fixed during verification, not from a code review**: `DB_VERSION`'s 3→4 bump (adding
-      `TOURNAMENTS_STORE`) had no `blocked`/`blocking` handling — `idb`'s default is to silently wait
-      forever if another tab holds an older-version connection open during a schema upgrade, which would
-      read to a real user as a permanently-stuck "Loading…" with zero error, not an obvious bug report.
-      Added both: `blocking` (fires on an old connection when a newer version wants in) now closes that
-      connection proactively instead of leaving it to block forever; `blocked` at least logs clearly if a
-      case still can't self-resolve. This is a general robustness fix for *any* future `DB_VERSION` bump,
-      not specific to this feature.
-    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (191/191, +11 new — every pure function in
-      `tournament.ts`), and `npm run build` (three new routes, all correctly dynamic) all clean. Live
-      browser verification was cut short by a genuine automation-environment limitation, not a demonstrated
-      app bug: the test tab wasn't the OS-focused window (`document.visibilityState` stayed `"hidden"`
-      even after a synthetic click), and Chrome throttles IndexedDB hard for unfocused windows — confirmed
-      via raw `indexedDB.open()`/`deleteDatabase()` calls that got zero events at all within 3 seconds,
-      not even the `blocked` event that fires near-instantly for a genuine same-origin lock conflict, and
-      zero Firestore network requests fired either (execution never got past the IndexedDB layer). Same
-      category of issue as this session's earlier clipboard-API hangs under CDP automation. The `/teams`
-      and `/matchup-planner` nav links, the "Tournaments" nav link's presence, and the Tournaments list
-      page's initial render (name, Add tournament button, layout) were confirmed live before hitting this;
-      full create-a-tournament-through-log-a-game-through-see-usage-stats flow verification is left for
-      the user to confirm in their own actively-focused browser, where this class of throttling doesn't
-      apply.
+      page. Confirmed two real design forks up front before building: how a Round's opponent roster gets
+      entered (chose the existing paste-box pattern, EVs optional — `parseTeam` already tolerates a block
+      with no EVs line, since a real tournament team sheet rarely reveals Stat Points — over a per-slot
+      manual-entry form the mockup showed but which would've meant a wholly new entry UX), and where the
+      accumulated Pokémon usage/win-loss stats surface (a new section on the existing Team Report page,
+      matching the request's own "accumulating those stats on my team" wording, over a separate page).
+  - **Data model** (`src/types/tournament.ts`): `Tournament {id, name, teamId, regulationId, rounds,
+createdAt, updatedAt}` → `TournamentRound {id, label, opponentRawPaste, opponentTeam:
+ParsedPokemon[], opponentPokemonNotes?, games}` (opponent roster reuses `ParsedPokemon` as-is —
+    every field is already optional except species, so "however much of a build you know" needed no
+    new type) → exactly 3 fixed `TournamentGame {id, result: "win"|"loss"|null, opponentPicks: [4],
+myPicks: [4], notes}` per round (Bo3; a round ending 2-0 just leaves game 3 unplayed, no
+    add/remove-game UI needed, unlike Combinations' variable-length list). Picks are 4-tuples of
+    indices into the round's opponentTeam / the tournament's own team roster — "which 4 of 6," not a
+    lead/back-ordered pair like MatchupPlan/TeamCombination.
+  - **`src/lib/tournament.ts`**: `createTournament`/`createRound` (factories), `getRoundResult` (first
+    to 2 game wins decides a Bo3 round, `"in-progress"` otherwise), `getTournamentRecord` (rounds W-L,
+    only counting decided ones), and `computeTeamUsageStats(tournaments, team)` — the actual "usage
+    stats" ask: for a given team, rolls up every decided game across every given tournament into a
+    per-roster-slot `{timesPicked, wins, losses}`, keyed by roster index (same "index is a stable
+    identity" assumption Combinations/MatchupPlan's leadPair/backPair already make). All four are pure
+    functions with their own unit tests (`tournament.test.ts`) — this is exactly the kind of
+    logic-heavy code this codebase always covers directly, not just through UI verification.
+  - **Storage/sync**: `tournaments` gets the identical treatment as `teams`/`opponents` —
+    `TOURNAMENTS_STORE` in IndexedDB (`DB_VERSION` 3→4), `getTournaments`/`saveTournament`/
+    `deleteTournament`/`syncTournamentsWithCloud` in `db.ts`, `useTournaments()` hook mirroring
+    `useOpponents.ts`'s shape. No new Firestore rule needed — `tournaments` lives under
+    `users/{uid}/tournaments`, already covered by the existing recursive `users/{uid}/{document=**}`
+    rule. Skipped the duplicate-content check `addOpponent`/`addTeam` both got — a tournament is a
+    one-off named event you type a name for each time, not a pasted blob you might accidentally
+    re-paste, so the same accidental-duplication risk doesn't really apply.
+  - **Pages**: `/tournaments` (list, mirrors `MyTeamsSection` minus search/regulation-switcher — nothing
+    to filter yet with one regulation) → `/tournaments/[id]` (name, team, W-L record, rounds list,
+    "Add round") → `/tournaments/[id]/rounds/[id]` (the mockup's page: opponent roster as
+    `OpponentPokemonCard`s in a responsive 3-column grid — deliberately no stat table on these unlike
+    `PokemonReportRow`, since without Stat Points there's no real Final stat to compute, and showing one
+    anyway would be misleading — plus 3 `TournamentGameCard`s, each Win/Loss + both sides' picks
+    (reusing `PokemonSlotPicker` again) + notes). "Tournaments" added as a 4th real nav link. Mega-toggle
+    state per pick slot is deliberately local-only, not persisted to `TournamentGame` — usage stats only
+    care _which_ Pokémon was brought, not its Mega state that specific game, so widening the data model
+    for it wasn't worth it.
+  - **Team Report addition**: a new "Tournament stats" card, computed via `computeTeamUsageStats`
+    against every tournament using that team — a table of Picked/Wins/Losses/Win% per roster Pokémon,
+    with an empty-state pointing at `/tournaments` when nothing's logged yet.
+  - **Found and fixed during verification, not from a code review**: `DB_VERSION`'s 3→4 bump (adding
+    `TOURNAMENTS_STORE`) had no `blocked`/`blocking` handling — `idb`'s default is to silently wait
+    forever if another tab holds an older-version connection open during a schema upgrade, which would
+    read to a real user as a permanently-stuck "Loading…" with zero error, not an obvious bug report.
+    Added both: `blocking` (fires on an old connection when a newer version wants in) now closes that
+    connection proactively instead of leaving it to block forever; `blocked` at least logs clearly if a
+    case still can't self-resolve. This is a general robustness fix for _any_ future `DB_VERSION` bump,
+    not specific to this feature.
+  - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (191/191, +11 new — every pure function in
+    `tournament.ts`), and `npm run build` (three new routes, all correctly dynamic) all clean. Live
+    browser verification was cut short by a genuine automation-environment limitation, not a demonstrated
+    app bug: the test tab wasn't the OS-focused window (`document.visibilityState` stayed `"hidden"`
+    even after a synthetic click), and Chrome throttles IndexedDB hard for unfocused windows — confirmed
+    via raw `indexedDB.open()`/`deleteDatabase()` calls that got zero events at all within 3 seconds,
+    not even the `blocked` event that fires near-instantly for a genuine same-origin lock conflict, and
+    zero Firestore network requests fired either (execution never got past the IndexedDB layer). Same
+    category of issue as this session's earlier clipboard-API hangs under CDP automation. The `/teams`
+    and `/matchup-planner` nav links, the "Tournaments" nav link's presence, and the Tournaments list
+    page's initial render (name, Add tournament button, layout) were confirmed live before hitting this;
+    full create-a-tournament-through-log-a-game-through-see-usage-stats flow verification is left for
+    the user to confirm in their own actively-focused browser, where this class of throttling doesn't
+    apply.
 - [x] **Phase 13 — Speed Tiers.** Per a 2026-09-08 request modeled on pikalytics.com/speed-tiers: a
       static reference table, scoped to one regulation, listing every legal species' Speed at the
       handful of spreads that actually matter for outspeed math — Base, Max (32 Stat Points + a
       Speed-boosting nature), Neutral +32 (32 SP, neutral nature), Neutral 0 (0 SP, neutral nature), Max
-      Scarf, and Neutral +32 Scarf (the same two ×1.5 Choice Scarf). This is deliberately *not* the
+      Scarf, and Neutral +32 Scarf (the same two ×1.5 Choice Scarf). This is deliberately _not_ the
       still-out-of-scope "cross-team speed-tier comparison charts" bullet above (§2's "Deliberately out
       of scope" list) — that one means overlaying a user's own team/opponent builds on the chart; this
       is a plain per-regulation lookup table, no team data involved.
-    - Confirmed two scope forks up front via AskUserQuestion rather than guessing: Mega Evolution forms
-      initially didn't get their own row (a Mega Stone and Choice Scarf can't be held at once, which
-      would leave both Scarf columns meaningless on a Mega row), and the page is a full `/speed-tiers`
-      route with its own nav link, not folded into an existing page or left unlinked. **Same-day
-      follow-up:** Mega rows added after all, per a direct request — one extra row per legal Mega Stone
-      a species can hold, both Scarf columns rendered as "–" (`null` in `SpeedTierRow`) rather than
-      omitted, since a Mega row still has a real answer for every other column.
-    - **`src/lib/stats/computeSpeedTiers.ts`** (`computeSpeedTierRows(speciesKeys,
-      megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation — it calls the existing
-      `calculateFinalStats` once per column per row with a synthetic `ParsedPokemon` (Jolly for the
-      "positive Speed nature" columns, Hardy for "neutral" — arbitrary representatives, since every
-      Speed-boosting/neutral nature is equivalent for the Speed stat alone) and reads `.spe` off each
-      result, rather than duplicating the Level 50 stat formula. A Mega row reuses the exact same
-      species+item resolution `calculateFinalStats`/`PokemonSprite` already use elsewhere (base species
-      name + the Mega Stone as `item`), so its stats and sprite always agree on the form — no new
-      Mega-specific lookup logic. `resolveBaseStats` (previously private to `calculateFinalStats.ts`)
-      is now exported, reused here to read a Mega form's own base Speed (e.g. Mega Garchomp's 92 vs.
-      base Garchomp's 102) for the Base column, rather than duplicating that resolution. `Regulation`
-      (`src/data/regulations/index.ts`) gained a `megaStoneItemsForSpecies` field — each regulation
-      already had its own same-shaped function (`regulationMB.ts`'s `megaStoneItemsForSpecies`,
-      `regulationMA.ts`'s `megaStoneItemsForSpeciesMA`) that nothing before this wired into the
-      `REGULATIONS` array itself; putting it on the `Regulation` object means any per-regulation caller
-      (this table, and `RosterPokemonPicker` in the future) can call `regulation.megaStoneItemsForSpecies(key)`
-      instead of branching on which regulation it is. Own unit tests (`computeSpeedTiers.test.ts`) cover
-      a no-Mega species, a single-Mega species (Garchomp, cross-checked against
-      `calculateFinalStats.test.ts`'s existing reference values), and an X/Y two-Mega species
-      (Charizard).
-    - **`SpeedTiersTable`** (`src/components/SpeedTiersTable/`): sortable by any column (click to sort,
-      click again to flip direction), defaulting to Max Speed descending like pikalytics' own default;
-      a `SearchField` (reused from Opponents/My Teams) filters by species name. Wrapped in a
-      horizontally-scrolling container (7 columns doesn't fit narrow viewports) with a vertically
-      scrolling, sticky-header inner container so a ~235-row table stays navigable without pushing the
-      whole page's scroll around.
-    - **`/speed-tiers` page**: same `MyTeamHeader` + regulation `<select>` pattern as
-      `OpponentsSection`'s regulation dropdown (reused directly, not reinvented). `MyTeamHeader`'s
-      `currentPage` union and `NAV_LINKS` both gained a `"speed-tiers"` entry, labeled "Speed Tiers".
-    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (195/195, +4 new) all clean, plus live
-      browser checks both before and after the Mega follow-up — sorted rendering, sorting, search, the
-      Garchomp row matching the unit test's hand-computed values, and (after the follow-up) searching
-      "charizard" showing Charizard/Mega Charizard X/Mega Charizard Y with matching Base/Max/Neutral
-      columns and "–" in both Scarf columns on the two Mega rows.
-    - **Same-day second follow-up — a "List" view.** Per a direct request to try an alternate layout:
-      instead of one row per Pokémon with every config as its own column, a "List" view puts one row per
-      *(Pokémon, config)* record, all sorted together by raw Speed value — so you can see e.g. exactly
-      where a Neutral +32 Alakazam falls relative to a Max Scarf Talonflame, which the wide table can't
-      show directly. Confirmed one new-metric question up front via AskUserQuestion rather than
-      guessing: the user's own "min speed" example wasn't just the existing Neutral 0 column, it meant a
-      genuinely new floor metric (0 Stat Points + a Speed-*lowering* nature, ×0.9) — added as `minSpeed`
-      on `SpeedTierRow` itself (computed via the same `NEGATIVE_SPEED_NATURE = "Brave"` arbitrary-
-      representative pattern as the existing Jolly/Hardy constants), so both views gained a 7th metric,
-      not just the new one.
-      - **`SpeedTiersList`** (`src/components/SpeedTiersList/`): flattens `computeSpeedTierRows`'
-        output client-side (no new lib function needed — reshaping is a view concern, not a computation
-        one) into one entry per non-null metric per row, `id` = `${row.id}-${metricKey}`. Sorted by raw
-        value (ties broken by name) with a single direction toggle, since there's only one numeric
-        column here unlike the wide table's per-column sort. A `role="group"` row of toggle chips (all
-        7 metrics on by default) lets you isolate e.g. "only Max Scarf" comparisons — necessary once
-        every config is mixed into one list, since ~235 species × up to 7 metrics (5 on Mega rows,
-        no Scarf columns) is close to 1,900 rows unfiltered.
-      - **Page**: `/speed-tiers` gained a Table/List `role="tablist"` toggle (same pill-tab styling as
-        `MyTeamsSection`'s Active/Archived tabs, reused directly), defaulting to Table — List is
-        explicitly the newer, less-proven layout, so it doesn't become the surprise default.
-      - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` clean, plus a live browser check of
-        both tabs — Table now shows the added Min Speed column, and List's default sort correctly leads
-        with Dragapult's 319 Max Scarf, with the Max Scarf filter chip toggling those rows out live and
-        Neutral +32 Scarf's 291 correctly becoming the new top entry.
-    - **Same-day third follow-up — a "Special" column for conditional Speed-doubling abilities.** Per a
-      request naming four concrete examples: Mega Swampert in Rain, Venusaur in Sun, Excadrill in Sand,
-      Sneasler once Unburden activates. Table view only (the List view's generic per-field `METRICS`
-      iteration doesn't fit an object-shaped value the way it fits a plain number, and this wasn't asked
-      for there) — the wide table gained an 8th column, "Special," showing Max Speed doubled + the
-      condition (e.g. "268 in Rain" for Mega Swampert) on any row with legal access to a Speed-doubling
-      ability, "–" everywhere else.
-      - **The hard part was *whose* ability list to check, not the doubling math itself** (×2 is
-        trivial once you know the ability applies). `src/data/abilities.json` (generated by
-        `generate:species`, previously only consumed by the Damage Calculator's Custom-Pokémon builder
-        in `RosterPokemonPicker.tsx`) gives every species' full legal-ability list — but Speed Tiers has
-        no per-row "chosen ability" the way a pasted/built team does, so a base row checks its *entire*
-        ability list (any of them could apply, this is a reference table, not one build) while a Mega
-        row must check the Mega form's own fixed ability instead — Mega Evolution replaces the ability
-        entirely, so Mega Swampert's Swift Swim has nothing to do with base Swampert's Torrent/Damp
-        (neither of which double Speed at all, confirmed live: searching "swampert" shows base Swampert
-        with "–" in Special and Mega Swampert with "268 in Rain", right next to each other). Reused
-        `MEGA_FORM_ABILITY_BY_FORM_KEY` (`src/constants/megaFormAbilities.ts`, previously only consumed
-        by `resolveEffectiveAbility.ts` for the Damage Calculator's single-Pokémon battle state) via the
-        same `candidateFormKeys` lookup that function uses, falling back to the base species' full
-        ability list when a given Mega form has no curated override yet (same fallback
-        `resolveEffectiveAbility` itself uses).
-      - **Unburden had zero prior implementation anywhere in the app** — `speedModifiers.ts`'s own doc
-        comment explicitly listed it as out of scope for the Damage Calculator ("not battle conditions
-        this calculator tracks"). Added directly in `computeSpeedTiers.ts` rather than extending
-        `WEATHER_SPEED_DOUBLING_ABILITIES` (which is keyed by *weather*, and Unburden isn't one) — a
-        small `SPECIAL_CONDITIONS_BY_ABILITY` map built once at module scope from
-        `WEATHER_SPEED_DOUBLING_ABILITIES`'s entries plus one Unburden entry, so both cases share one
-        lookup path (`findSpecialCondition`) instead of two parallel special-cases.
-      - `SpeedTierRow.special` is `{ label, descriptor, value } | null` — `value` is Max Speed doubled
-        (32 Stat Points + a Speed-boosting nature, no held item, since the doubling ability is already
-        doing the job a Choice Scarf normally would), consistent with how Max Scarf itself is Max Speed
-        × 1.5. Sorting the Special column required a small `valueForSort` indirection in
-        `SpeedTiersTable.tsx` — every other sortable column is a plain number/string field directly
-        indexable off `SpeedTierRow`, but `special` is a nested object, so its sort value has to be
-        read off `row.special?.value` instead; nulls still sort last regardless of direction via the
-        same comparator logic the Scarf columns already used.
-      - Own unit tests (`computeSpeedTiers.test.ts`, a new `describe("special ...")` block) cover all
-        four requested examples directly — Venusaur/Sun, Excadrill/Sand, and Sneasler/Unburden as
-        base-form ability-list matches, plus Swampert's base-vs-Mega row disagreeing (`null` vs. Rain)
-        as its own dedicated case, since that's the one place the two resolution paths (full ability
-        list vs. fixed Mega override) actually diverge.
-      - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (197/197, +2 new) all clean, plus live
-        browser checks of all four named examples — Mega Swampert 268 in Rain (base Swampert "–"),
-        Sneasler 378 once Unburden activates, Excadrill 308 in Sand (Mega Excadrill "–", since its
-        curated Champions ability is Piercing Drill, not Sand Rush) — matching the unit tests exactly.
-    - **Same-day fourth follow-up — row numbering.** A leading "#" column (rank in the current
-      sorted/filtered order, 1-indexed, recomputed from the row's position in `visibleRows`/
-      `visibleRecords`) added to both `SpeedTiersTable` and `SpeedTiersList` — asked generically
-      ("numeration at the beginning of the row") without naming a view, so applied to both rather than
-      guessing it meant only the one just discussed. Purely presentational, no new data — no unit test
-      needed (nothing computational to break), verified live in both tabs.
-    - **Fifth follow-up: tightened the "#" column's width** (`w-10`/`w-12` + `pl-3 pr-1` on both the
-      header and body cells, replacing the plain `px-3` both were sharing) — without an explicit width
-      hint, the browser's default (`table-layout: auto`) column-sizing algorithm was giving the numeric
-      column far more room than its 1-3 digit content needed, since nothing on that column constrained
-      it. Confirmed via `zoom` screenshot after the fix that the gap between the number and the sprite
-      closed up.
-    - **Sixth follow-up: `SpeedTiersList`'s "Base" metric chip now starts unchecked.** Per feedback that
-      the raw base stat isn't a real in-battle value — no Pokémon is ever actually *at* its base Speed,
-      since Champions always applies IV 31 (never 0) plus whatever Stat Points/nature a build has; the
-      "real floor" is Neutral 0 (0 Stat Points, neutral nature, still IV 31), which was already checked
-      by default and stays that way. `METRICS` gained a `defaultActive` field per entry (`true` for
-      everything except `baseSpe`) instead of hardcoding the initial `activeMetrics` Set to "all of
-      them," so future metrics can each declare their own sensible default instead of always defaulting
-      to on.
+  - Confirmed two scope forks up front via AskUserQuestion rather than guessing: Mega Evolution forms
+    initially didn't get their own row (a Mega Stone and Choice Scarf can't be held at once, which
+    would leave both Scarf columns meaningless on a Mega row), and the page is a full `/speed-tiers`
+    route with its own nav link, not folded into an existing page or left unlinked. **Same-day
+    follow-up:** Mega rows added after all, per a direct request — one extra row per legal Mega Stone
+    a species can hold, both Scarf columns rendered as "–" (`null` in `SpeedTierRow`) rather than
+    omitted, since a Mega row still has a real answer for every other column.
+  - **`src/lib/stats/computeSpeedTiers.ts`** (`computeSpeedTierRows(speciesKeys,
+megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation — it calls the existing
+    `calculateFinalStats` once per column per row with a synthetic `ParsedPokemon` (Jolly for the
+    "positive Speed nature" columns, Hardy for "neutral" — arbitrary representatives, since every
+    Speed-boosting/neutral nature is equivalent for the Speed stat alone) and reads `.spe` off each
+    result, rather than duplicating the Level 50 stat formula. A Mega row reuses the exact same
+    species+item resolution `calculateFinalStats`/`PokemonSprite` already use elsewhere (base species
+    name + the Mega Stone as `item`), so its stats and sprite always agree on the form — no new
+    Mega-specific lookup logic. `resolveBaseStats` (previously private to `calculateFinalStats.ts`)
+    is now exported, reused here to read a Mega form's own base Speed (e.g. Mega Garchomp's 92 vs.
+    base Garchomp's 102) for the Base column, rather than duplicating that resolution. `Regulation`
+    (`src/data/regulations/index.ts`) gained a `megaStoneItemsForSpecies` field — each regulation
+    already had its own same-shaped function (`regulationMB.ts`'s `megaStoneItemsForSpecies`,
+    `regulationMA.ts`'s `megaStoneItemsForSpeciesMA`) that nothing before this wired into the
+    `REGULATIONS` array itself; putting it on the `Regulation` object means any per-regulation caller
+    (this table, and `RosterPokemonPicker` in the future) can call `regulation.megaStoneItemsForSpecies(key)`
+    instead of branching on which regulation it is. Own unit tests (`computeSpeedTiers.test.ts`) cover
+    a no-Mega species, a single-Mega species (Garchomp, cross-checked against
+    `calculateFinalStats.test.ts`'s existing reference values), and an X/Y two-Mega species
+    (Charizard).
+  - **`SpeedTiersTable`** (`src/components/SpeedTiersTable/`): sortable by any column (click to sort,
+    click again to flip direction), defaulting to Max Speed descending like pikalytics' own default;
+    a `SearchField` (reused from Opponents/My Teams) filters by species name. Wrapped in a
+    horizontally-scrolling container (7 columns doesn't fit narrow viewports) with a vertically
+    scrolling, sticky-header inner container so a ~235-row table stays navigable without pushing the
+    whole page's scroll around.
+  - **`/speed-tiers` page**: same `MyTeamHeader` + regulation `<select>` pattern as
+    `OpponentsSection`'s regulation dropdown (reused directly, not reinvented). `MyTeamHeader`'s
+    `currentPage` union and `NAV_LINKS` both gained a `"speed-tiers"` entry, labeled "Speed Tiers".
+  - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (195/195, +4 new) all clean, plus live
+    browser checks both before and after the Mega follow-up — sorted rendering, sorting, search, the
+    Garchomp row matching the unit test's hand-computed values, and (after the follow-up) searching
+    "charizard" showing Charizard/Mega Charizard X/Mega Charizard Y with matching Base/Max/Neutral
+    columns and "–" in both Scarf columns on the two Mega rows.
+  - **Same-day second follow-up — a "List" view.** Per a direct request to try an alternate layout:
+    instead of one row per Pokémon with every config as its own column, a "List" view puts one row per
+    _(Pokémon, config)_ record, all sorted together by raw Speed value — so you can see e.g. exactly
+    where a Neutral +32 Alakazam falls relative to a Max Scarf Talonflame, which the wide table can't
+    show directly. Confirmed one new-metric question up front via AskUserQuestion rather than
+    guessing: the user's own "min speed" example wasn't just the existing Neutral 0 column, it meant a
+    genuinely new floor metric (0 Stat Points + a Speed-_lowering_ nature, ×0.9) — added as `minSpeed`
+    on `SpeedTierRow` itself (computed via the same `NEGATIVE_SPEED_NATURE = "Brave"` arbitrary-
+    representative pattern as the existing Jolly/Hardy constants), so both views gained a 7th metric,
+    not just the new one.
+    - **`SpeedTiersList`** (`src/components/SpeedTiersList/`): flattens `computeSpeedTierRows`'
+      output client-side (no new lib function needed — reshaping is a view concern, not a computation
+      one) into one entry per non-null metric per row, `id` = `${row.id}-${metricKey}`. Sorted by raw
+      value (ties broken by name) with a single direction toggle, since there's only one numeric
+      column here unlike the wide table's per-column sort. A `role="group"` row of toggle chips (all
+      7 metrics on by default) lets you isolate e.g. "only Max Scarf" comparisons — necessary once
+      every config is mixed into one list, since ~235 species × up to 7 metrics (5 on Mega rows,
+      no Scarf columns) is close to 1,900 rows unfiltered.
+    - **Page**: `/speed-tiers` gained a Table/List `role="tablist"` toggle (same pill-tab styling as
+      `MyTeamsSection`'s Active/Archived tabs, reused directly), defaulting to Table — List is
+      explicitly the newer, less-proven layout, so it doesn't become the surprise default.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` clean, plus a live browser check of
+      both tabs — Table now shows the added Min Speed column, and List's default sort correctly leads
+      with Dragapult's 319 Max Scarf, with the Max Scarf filter chip toggling those rows out live and
+      Neutral +32 Scarf's 291 correctly becoming the new top entry.
+  - **Same-day third follow-up — a "Special" column for conditional Speed-doubling abilities.** Per a
+    request naming four concrete examples: Mega Swampert in Rain, Venusaur in Sun, Excadrill in Sand,
+    Sneasler once Unburden activates. Table view only (the List view's generic per-field `METRICS`
+    iteration doesn't fit an object-shaped value the way it fits a plain number, and this wasn't asked
+    for there) — the wide table gained an 8th column, "Special," showing Max Speed doubled + the
+    condition (e.g. "268 in Rain" for Mega Swampert) on any row with legal access to a Speed-doubling
+    ability, "–" everywhere else.
+    - **The hard part was _whose_ ability list to check, not the doubling math itself** (×2 is
+      trivial once you know the ability applies). `src/data/abilities.json` (generated by
+      `generate:species`, previously only consumed by the Damage Calculator's Custom-Pokémon builder
+      in `RosterPokemonPicker.tsx`) gives every species' full legal-ability list — but Speed Tiers has
+      no per-row "chosen ability" the way a pasted/built team does, so a base row checks its _entire_
+      ability list (any of them could apply, this is a reference table, not one build) while a Mega
+      row must check the Mega form's own fixed ability instead — Mega Evolution replaces the ability
+      entirely, so Mega Swampert's Swift Swim has nothing to do with base Swampert's Torrent/Damp
+      (neither of which double Speed at all, confirmed live: searching "swampert" shows base Swampert
+      with "–" in Special and Mega Swampert with "268 in Rain", right next to each other). Reused
+      `MEGA_FORM_ABILITY_BY_FORM_KEY` (`src/constants/megaFormAbilities.ts`, previously only consumed
+      by `resolveEffectiveAbility.ts` for the Damage Calculator's single-Pokémon battle state) via the
+      same `candidateFormKeys` lookup that function uses, falling back to the base species' full
+      ability list when a given Mega form has no curated override yet (same fallback
+      `resolveEffectiveAbility` itself uses).
+    - **Unburden had zero prior implementation anywhere in the app** — `speedModifiers.ts`'s own doc
+      comment explicitly listed it as out of scope for the Damage Calculator ("not battle conditions
+      this calculator tracks"). Added directly in `computeSpeedTiers.ts` rather than extending
+      `WEATHER_SPEED_DOUBLING_ABILITIES` (which is keyed by _weather_, and Unburden isn't one) — a
+      small `SPECIAL_CONDITIONS_BY_ABILITY` map built once at module scope from
+      `WEATHER_SPEED_DOUBLING_ABILITIES`'s entries plus one Unburden entry, so both cases share one
+      lookup path (`findSpecialCondition`) instead of two parallel special-cases.
+    - `SpeedTierRow.special` is `{ label, descriptor, value } | null` — `value` is Max Speed doubled
+      (32 Stat Points + a Speed-boosting nature, no held item, since the doubling ability is already
+      doing the job a Choice Scarf normally would), consistent with how Max Scarf itself is Max Speed
+      × 1.5. Sorting the Special column required a small `valueForSort` indirection in
+      `SpeedTiersTable.tsx` — every other sortable column is a plain number/string field directly
+      indexable off `SpeedTierRow`, but `special` is a nested object, so its sort value has to be
+      read off `row.special?.value` instead; nulls still sort last regardless of direction via the
+      same comparator logic the Scarf columns already used.
+    - Own unit tests (`computeSpeedTiers.test.ts`, a new `describe("special ...")` block) cover all
+      four requested examples directly — Venusaur/Sun, Excadrill/Sand, and Sneasler/Unburden as
+      base-form ability-list matches, plus Swampert's base-vs-Mega row disagreeing (`null` vs. Rain)
+      as its own dedicated case, since that's the one place the two resolution paths (full ability
+      list vs. fixed Mega override) actually diverge.
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm test` (197/197, +2 new) all clean, plus live
+      browser checks of all four named examples — Mega Swampert 268 in Rain (base Swampert "–"),
+      Sneasler 378 once Unburden activates, Excadrill 308 in Sand (Mega Excadrill "–", since its
+      curated Champions ability is Piercing Drill, not Sand Rush) — matching the unit tests exactly.
+  - **Same-day fourth follow-up — row numbering.** A leading "#" column (rank in the current
+    sorted/filtered order, 1-indexed, recomputed from the row's position in `visibleRows`/
+    `visibleRecords`) added to both `SpeedTiersTable` and `SpeedTiersList` — asked generically
+    ("numeration at the beginning of the row") without naming a view, so applied to both rather than
+    guessing it meant only the one just discussed. Purely presentational, no new data — no unit test
+    needed (nothing computational to break), verified live in both tabs.
+  - **Fifth follow-up: tightened the "#" column's width** (`w-10`/`w-12` + `pl-3 pr-1` on both the
+    header and body cells, replacing the plain `px-3` both were sharing) — without an explicit width
+    hint, the browser's default (`table-layout: auto`) column-sizing algorithm was giving the numeric
+    column far more room than its 1-3 digit content needed, since nothing on that column constrained
+    it. Confirmed via `zoom` screenshot after the fix that the gap between the number and the sprite
+    closed up.
+  - **Sixth follow-up: `SpeedTiersList`'s "Base" metric chip now starts unchecked.** Per feedback that
+    the raw base stat isn't a real in-battle value — no Pokémon is ever actually _at_ its base Speed,
+    since Champions always applies IV 31 (never 0) plus whatever Stat Points/nature a build has; the
+    "real floor" is Neutral 0 (0 Stat Points, neutral nature, still IV 31), which was already checked
+    by default and stays that way. `METRICS` gained a `defaultActive` field per entry (`true` for
+    everything except `baseSpe`) instead of hardcoding the initial `activeMetrics` Set to "all of
+    them," so future metrics can each declare their own sensible default instead of always defaulting
+    to on.
 
 - [x] **Opponent organization** — manual order + Reverse, tags, semantic duplicate detection, and
       team variants. Scope/decisions in [docs/opponent-organization.md](./docs/opponent-organization.md).
@@ -2598,57 +2603,57 @@ leads/backs) is complete and working end to end.
       `Team.pokemonNotes` stays saved, just not shown. `resolveTypes` is now exported from
       `calculateDamage.ts` for the card's typing.
 - [x] **Team Report header, team details, shareable reports.** Per a 2026-10-12 request.
-    - **Header / team post**: a "‹ My Teams" back link left, tabs right. Under it, on every tab, the
-      team's **post** (`TeamPost`): the team name as the title (h1); a quiet details line — creator,
-      Poképaste, replica code (copy button); and the
-      **Team overview** (`Team.overview`) as formatted text (`RichTextView`), no label. The owner gets
-      two outline icons: Share (opens the Share dialog; a green dot marks a shared report, the tooltip
-      names the sheet — no status text on the owner's page) and Edit, which turns the whole card into a
-      form — the title becomes a name field (a blank name keeps the current one), plus creator /
-      Poképaste / replica code fields, the overview's rich-text editor, and below it a **Team paste**
-      box (Showdown export, or a Poképaste link that's fetched on save and fills in an empty Poképaste
-      field; a changed paste is reparsed through `editTeam`, and its errors — e.g. an empty paste —
-      show in the form, which stays open). While the paste differs from the saved one, the Pokémon
-      cards below preview the draft live, under a "Preview — not saved yet" note — rather than hiding
-      or shrinking them during editing — until
-      Save or Cancel (a draft, so Cancel discards). With nothing filled in, the card is just the title
-      and an "Add a creator, links and an overview…" prompt. Replaced the earlier details line + "Edit
-      details" dialog + separate overview editor, which felt off: blank rows when empty, two different
-      edit buttons, and a heavy filled Share button. The Pokémon cards no longer show a name header
-      (screen-reader only), on trial.
-    - **Strategy tab**: no post here — the team post (and its edit mode) shows only on the Team
-      report tab; on Strategy and Tournament stats the team name joins the top row's breadcrumb
-      ("‹ My Teams / Team name", the name being the page's h1) instead of a separate heading. Strategy is two columns
-      on desktop (stacked below `lg`): "Common combinations" left, one general **Notes** editor right
-      (`RichTextEditor size="tall"`). The Weaknesses box is gone — `Team.weaknesses` stays saved but
-      isn't shown. Switching tabs mid-edit drops the post's unsaved edit and its paste preview.
-    - **Move pills**: the Pokémon cards' moves are 22px pills (rounded, light background, the type icon
-      filling the left edge), matching the old report rows' style, instead of a plain icon + text list.
-    - **Z Mega abilities** (fix, 2026-10-12): `MEGA_FORM_ABILITY_BY_FORM_KEY` had left out the Z Megas
-      as "keeping their base ability", so Mega Garchomp Z showed Rough Skin. Added from the Regulation
-      M-C reveal: Garchomp-Mega-Z → Levitate, Absol-Mega-Z → Sharpness, Lucario-Mega-Z → Aura Guard
-      (official name; some coverage says "Aura Break"). The damage calculator uses the same table, so
-      Mega Garchomp Z is now Ground-immune there too; Sharpness/Aura Guard need slicing/contact move
-      flags the calculator doesn't have yet, so they display but don't change damage.
-    - **My Teams rows**: the ⋮ menu is just Archive/Unarchive and Remove — the "Edit team" dialog
-      (name + paste) is gone, since the row opens the team's page, where the post's edit mode covers
-      both. `RowActionsMenu`'s `onEdit` is now optional.
-    - **Sharing**: a "Share" dialog sets the report Private or Shareable, and for shareable an **open
-      team sheet** (Pokémon, items, abilities, moves — no Stat Points, nature, or stats, and no
-      Poképaste link since the paste would reveal them) or a **closed team sheet** (everything the
-      report shows). Sharing needs sign-in. The public copy is a separate Firestore doc,
-      `sharedTeams/{teamId}`, built by `toSharedTeam` (src/lib/sharedTeam.ts) — never the owner's
-      notes, combinations, plans, calcs or tournament stats. `firestore.rules` gives it public read,
-      and create/update/delete only by the `ownerUid` in the doc. **The rules change must be deployed
-      before sharing works.**
-    - The copy follows edits: `saveMyTeam`'s debounced cloud push also republishes a shared team
-      (`publishTeamShare`, skipped when nothing public changed), deleting a shared team unpublishes it,
-      and the Share dialog publishes/unpublishes immediately and shows any failure.
-    - **Public page** `/shared/[teamId]` (no sign-in, outside the `teams` feature gate): the owner's
-      `TeamPost` read-only (no Share/Edit; the sheet type ends its details line; the overview renders
-      via TipTap read-only, never raw HTML, since another user wrote it), then `PokemonReportCard`s — with `sheet="open"` the cards leave out nature and
-      stats. A Poképaste link only renders if it's an http(s) URL, since on this page it's text someone
-      else typed.
+  - **Header / team post**: a "‹ My Teams" back link left, tabs right. Under it, on every tab, the
+    team's **post** (`TeamPost`): the team name as the title (h1); a quiet details line — creator,
+    Poképaste, replica code (copy button); and the
+    **Team overview** (`Team.overview`) as formatted text (`RichTextView`), no label. The owner gets
+    two outline icons: Share (opens the Share dialog; a green dot marks a shared report, the tooltip
+    names the sheet — no status text on the owner's page) and Edit, which turns the whole card into a
+    form — the title becomes a name field (a blank name keeps the current one), plus creator /
+    Poképaste / replica code fields, the overview's rich-text editor, and below it a **Team paste**
+    box (Showdown export, or a Poképaste link that's fetched on save and fills in an empty Poképaste
+    field; a changed paste is reparsed through `editTeam`, and its errors — e.g. an empty paste —
+    show in the form, which stays open). While the paste differs from the saved one, the Pokémon
+    cards below preview the draft live, under a "Preview — not saved yet" note — rather than hiding
+    or shrinking them during editing — until
+    Save or Cancel (a draft, so Cancel discards). With nothing filled in, the card is just the title
+    and an "Add a creator, links and an overview…" prompt. Replaced the earlier details line + "Edit
+    details" dialog + separate overview editor, which felt off: blank rows when empty, two different
+    edit buttons, and a heavy filled Share button. The Pokémon cards no longer show a name header
+    (screen-reader only), on trial.
+  - **Strategy tab**: no post here — the team post (and its edit mode) shows only on the Team
+    report tab; on Strategy and Tournament stats the team name joins the top row's breadcrumb
+    ("‹ My Teams / Team name", the name being the page's h1) instead of a separate heading. Strategy is two columns
+    on desktop (stacked below `lg`): "Common combinations" left, one general **Notes** editor right
+    (`RichTextEditor size="tall"`). The Weaknesses box is gone — `Team.weaknesses` stays saved but
+    isn't shown. Switching tabs mid-edit drops the post's unsaved edit and its paste preview.
+  - **Move pills**: the Pokémon cards' moves are 22px pills (rounded, light background, the type icon
+    filling the left edge), matching the old report rows' style, instead of a plain icon + text list.
+  - **Z Mega abilities** (fix, 2026-10-12): `MEGA_FORM_ABILITY_BY_FORM_KEY` had left out the Z Megas
+    as "keeping their base ability", so Mega Garchomp Z showed Rough Skin. Added from the Regulation
+    M-C reveal: Garchomp-Mega-Z → Levitate, Absol-Mega-Z → Sharpness, Lucario-Mega-Z → Aura Guard
+    (official name; some coverage says "Aura Break"). The damage calculator uses the same table, so
+    Mega Garchomp Z is now Ground-immune there too; Sharpness/Aura Guard need slicing/contact move
+    flags the calculator doesn't have yet, so they display but don't change damage.
+  - **My Teams rows**: the ⋮ menu is just Archive/Unarchive and Remove — the "Edit team" dialog
+    (name + paste) is gone, since the row opens the team's page, where the post's edit mode covers
+    both. `RowActionsMenu`'s `onEdit` is now optional.
+  - **Sharing**: a "Share" dialog sets the report Private or Shareable, and for shareable an **open
+    team sheet** (Pokémon, items, abilities, moves — no Stat Points, nature, or stats, and no
+    Poképaste link since the paste would reveal them) or a **closed team sheet** (everything the
+    report shows). Sharing needs sign-in. The public copy is a separate Firestore doc,
+    `sharedTeams/{teamId}`, built by `toSharedTeam` (src/lib/sharedTeam.ts) — never the owner's
+    notes, combinations, plans, calcs or tournament stats. `firestore.rules` gives it public read,
+    and create/update/delete only by the `ownerUid` in the doc. **The rules change must be deployed
+    before sharing works.**
+  - The copy follows edits: `saveMyTeam`'s debounced cloud push also republishes a shared team
+    (`publishTeamShare`, skipped when nothing public changed), deleting a shared team unpublishes it,
+    and the Share dialog publishes/unpublishes immediately and shows any failure.
+  - **Public page** `/shared/[teamId]` (no sign-in, outside the `teams` feature gate): the owner's
+    `TeamPost` read-only (no Share/Edit; the sheet type ends its details line; the overview renders
+    via TipTap read-only, never raw HTML, since another user wrote it), then `PokemonReportCard`s — with `sheet="open"` the cards leave out nature and
+    stats. A Poképaste link only renders if it's an http(s) URL, since on this page it's text someone
+    else typed.
 - [x] **Localization, phase 1** (2026-10-13): English (default) and Spanish. Two independent
       settings in the header's language menu: the **app language** (the app's own text, typed
       dictionaries in `src/lib/i18n/messages/`) and the **Pokémon names** language (official game
@@ -2719,158 +2724,187 @@ leads/backs) is complete and working end to end.
       A **Coverage** tab on the team page: a quick view of what the team is weak to and what it can
       hit. Design agreed in chat, from two reference screenshots (a type-defense/coverage tally and
       a type × member effectiveness table):
-    - **Engine** — `src/lib/teamCoverage.ts`, pure and unit-tested, so threat detection (below) can
-      reuse it. Each member's types and ability resolve through `resolveTypes` /
-      `resolveEffectiveAbility`, so a held Mega Stone gives the Mega's typing and ability.
-    - **Defense**: per attacking type × member, the type chart multiplied across both types (exact
-      for dual types — 4×, ¼×, and cancellations like Steel/Dragon taking 1× from Dragon), then:
-      ability immunities (the calculator's `TYPE_IMMUNITY_ABILITIES` — Levitate, Water Absorb, Flash
-      Fire, …), type-scoped ability modifiers derived from `ABILITY_DAMAGE_MODIFIERS` (Thick Fat,
-      Heatproof, Water Bubble, Purifying Salt, Dry Skin's Fire, Fluffy's Fire), Wonder Guard, and Air
-      Balloon. A changed cell records why (shown as its tooltip). Per type: members **weak** (>1×),
-      **resist** (<1×, immunities included) and **net** (resist − weak).
-    - **Offense**: per type × member, the best multiplier among the member's damaging moves (Status
-      and fixed-damage moves — Seismic Toss, Super Fang, OHKO moves, … — don't count). A move's type
-      follows -ate abilities, Liquid Voice, and Weather Ball (the weather of any setter on the team —
-      Drizzle makes it Water); Freeze-Dry hits Water 2×, Flying Press adds Flying, Scrappy / Mind's
-      Eye hit Ghosts with Normal and Fighting, Thousand Arrows hits Flying. Per type: how many members
-      hit it super effectively.
-    - **Summary first**: "Weak spots" (more members weak than resisting, or 3+ weak) and "Coverage
-      gaps" (types nothing hits super effectively), above the tables.
-    - **Out of scope**: battle state — Gravity, Roost, Tar Shot, Delta Stream, Soak, Filter-style
-      damage reduction. The tab shows the team as built, and says so.
-    - **Layout — answer first** (revised the same day: the owner found two 18-row tables
-      overwhelming): "Watch out" rows name the Pokémon — the sprites of who's weak and who resists
-      or is immune (badges mark 4×, ¼× and 0) — then "Can't hit super effectively" rows with the
-      sprites of whoever has the best hit (the move in each one's tooltip). Then **every type** as
-      a tile with a tally (a red tick per weak member, green per resisting one — or, on Offense,
-      per member hitting it super effectively; weak spots and gaps outlined red), Defense/Offense
-      chips, and a tapped tile's breakdown (members grouped by multiplier, or each one's best move).
-      The full type × member table is last, collapsed under "Show full table".
-    - **Future — threat detection**: for a given threat (e.g. Kommo-o against a rain team), which
-      members it endangers (damage calc + speed) and which check it (resist its STABs and hit it
-      hard, or outspeed it), measured with sets from the user's own Matchup Planner opponents.
+  - **Engine** — `src/lib/teamCoverage.ts`, pure and unit-tested, so threat detection (below) can
+    reuse it. Each member's types and ability resolve through `resolveTypes` /
+    `resolveEffectiveAbility`, so a held Mega Stone gives the Mega's typing and ability.
+  - **Defense**: per attacking type × member, the type chart multiplied across both types (exact
+    for dual types — 4×, ¼×, and cancellations like Steel/Dragon taking 1× from Dragon), then:
+    ability immunities (the calculator's `TYPE_IMMUNITY_ABILITIES` — Levitate, Water Absorb, Flash
+    Fire, …), type-scoped ability modifiers derived from `ABILITY_DAMAGE_MODIFIERS` (Thick Fat,
+    Heatproof, Water Bubble, Purifying Salt, Dry Skin's Fire, Fluffy's Fire), Wonder Guard, and Air
+    Balloon. A changed cell records why (shown as its tooltip). Per type: members **weak** (>1×),
+    **resist** (<1×, immunities included) and **net** (resist − weak).
+  - **Offense**: per type × member, the best multiplier among the member's damaging moves (Status
+    and fixed-damage moves — Seismic Toss, Super Fang, OHKO moves, … — don't count). A move's type
+    follows -ate abilities, Liquid Voice, and Weather Ball (the weather of any setter on the team —
+    Drizzle makes it Water); Freeze-Dry hits Water 2×, Flying Press adds Flying, Scrappy / Mind's
+    Eye hit Ghosts with Normal and Fighting, Thousand Arrows hits Flying. Per type: how many members
+    hit it super effectively.
+  - **Summary first**: "Weak spots" (more members weak than resisting, or 3+ weak) and "Coverage
+    gaps" (types nothing hits super effectively), above the tables.
+  - **Out of scope**: battle state — Gravity, Roost, Tar Shot, Delta Stream, Soak, Filter-style
+    damage reduction. The tab shows the team as built, and says so.
+  - **Layout — answer first** (revised the same day: the owner found two 18-row tables
+    overwhelming): "Watch out" rows name the Pokémon — the sprites of who's weak and who resists
+    or is immune (badges mark 4×, ¼× and 0) — then "Can't hit super effectively" rows with the
+    sprites of whoever has the best hit (the move in each one's tooltip). Then **every type** as
+    a tile with a tally (a red tick per weak member, green per resisting one — or, on Offense,
+    per member hitting it super effectively; weak spots and gaps outlined red), Defense/Offense
+    chips, and a tapped tile's breakdown (members grouped by multiplier, or each one's best move).
+    The full type × member table is last, collapsed under "Show full table".
+  - **Future — threat detection**: for a given threat (e.g. Kommo-o against a rain team), which
+    members it endangers (damage calc + speed) and which check it (resist its STABs and hit it
+    hard, or outspeed it), measured with sets from the user's own Matchup Planner opponents.
 
 - [ ] **Metagame data** (planned 2026-10-30). What's being used and what wins, so the app can
       rank threats by the real field instead of treating every type and Pokémon the same. Agreed in
       chat after comparing sources:
-    - **Sources**, each labelled wherever its data shows, credited, and switchable off on its own:
-        1. **Official tournaments — the main source.** Regionals, Internationals and Worlds, from
-           [pokedata.ovh](https://www.pokedata.ovh/standings2/), which mirrors RK9's published team
-           lists: `standings2/RosterData/{id}.json` (every player's open team sheet — species, form,
-           item, ability, nature, 4 moves) and `standings2/standings/{id}_{division}.json` (final
-           order, W-L-T, points, every round's opponent and result, top-cut seed). The event list is
-           the HTML index (`standings2/`). Undocumented and run by one person: no published terms
-           (its `robots.txt` allows general access; its content signals say `use=reference`,
-           `ai-train=no`). The owner couldn't be reached first, so we use it **respectfully**: only
-           finished VGC events, each fetched once (a finished event never changes), weekly, seconds
-           apart, an honest user agent naming the app; **only our own aggregates leave the job —
-           never their files, never player names**; and we stop if the owner objects. Keep trying
-           to contact them.
-        2. **Online tournaments, 100+ players** — the Limitless public API
-           (`play.limitlesstcg.com/api`, no key): current regulation, 100+ players, team lists
-           required, Bo3. Fresher and larger, community-run. ~30 such events in Reg M-C's first 7
-           weeks (~4,200 players).
-        3. **Ladder** — Smogon's monthly usage files
-           (`smogon.com/stats/{month}/chaos/gen9championsvgc2026regmcbo3-1760.json`): the only source
-           with **Stat Point spreads** (team sheets don't show them), plus checks and counters.
-        Not used: Pikalytics (no public API, stale); Limitless VGC's site (official top teams, but
-        HTML only, and pokedata has every team); RK9 directly (no API).
-    - **Official data, raw → processed.** Raw: teams + results. Joined on the roster's `#`, which is
-      the final placing (= index + 1 in the standings list) — names aren't unique (two "Ricardo
-      Rodriguez, MX" at Puebla). *(Corrected: `#` turned out not to be reliable on live data —
-      the join is by name and country, see step 2.)* Round entries are `[opponent id, result, …]`: 3 win, 0 loss,
-      opponent −1 a bye. Form names map to the app's species ("Basculegion [Female]" →
-      Basculegion-F, "Tauros [Paldean Form - Blaze Breed]" → Tauros-Paldea-Blaze, "Sinistcha
-      [Masterpiece Form]" → Sinistcha, …). Calculated in the job: **usage** (all players, and the
-      top N by placing — e.g. Puebla: Rillaboom 42% of teams but 12.5% of the top 32, Charizard
-      28% → 47%), **win rate** of teams carrying a Pokémon (with sample sizes), **common sets**
-      (item / ability / nature / moves), **cores** (Pokémon on the same team), and later
-      **head-to-head** results from the round pairings (threat detection). **Not in the data**:
-      Stat Points (→ Smogon), and leads / which 4 were brought — so "combinations" in the app's
-      lead/back sense can't come from tournaments, only cores.
-    - **Job**: a GitHub Actions workflow (daily for Limitless and Smogon, weekly for official
-      events, plus a manual "Run workflow") runs `scripts/update-meta` and writes one processed
-      document per regulation to Firestore (`meta/{regulationId}`, ~100–300KB: update time,
-      windows, sample sizes, top ~60 Pokémon with usage / win rate / sets / teammates), public read,
-      written only by the job's service account. Not committed to the repo: every push to main is a
-      release. Not a Vercel cron: no server-side Firebase in the app, and the Smogon file is 16MB.
-      Optional monthly snapshots for trends. The app reads the document once and caches it.
-    - **Metagame page** (built 2026-10-30, the owner's pick for the first visible use):
-      `/metagame` (`MetagameSection`, `metagame` feature flag, nav link) — regulation picker, the
-      events it's based on, a searchable ranked list (usage with a bar, top-32 usage with ▲▼ at a
-      5-point difference, win rate faded under 100 rounds), each row opening to its top 3 sets and
-      its items, abilities, moves and teammates.
-    - **Recent vs whole regulation, and trends** (2026-10-30, the owner's point: pooling every
-      event lets a regulation's early, outdated weeks weigh on the numbers, and the biggest event
-      dominates). The job writes two slices — `official` (whole regulation) and `official.recent`
-      (the newest `RECENT_EVENTS` = 4 events; by count, not weeks, so a quiet month doesn't empty
-      it) — and a per-event `history` (usage, top usage) for each Pokémon, aligned with
-      `tournaments` (oldest first). `--rebuild` (workflow input "rebuild") recomputes summaries
-      from stored events without fetching. The page defaults to the recent slice, adds a Latest
-      column (newest event, ▲▼ vs the one before at a 2-point change), sorting (usage, top 32,
-      win rate, rising, falling) and a usage-by-event chart. Documents without `recent` still
-      work (no chips, no trend).
-    - **Megas, cores, teams, one tournament** (2026-10-30, the owner's asks): entries are keyed by
-      **form** — a species holding its own Mega Stone is `megaFormSpecies` ("Garchomp-Mega-Z",
-      shown "Mega Garchomp Z"), its own entry (Puebla: Garchomp 67 teams, Mega Garchomp Z 75).
-      Most teams carry two stones and only one Mega Evolves per battle (the data doesn't say
-      which), so Mega usage = brought as an option. `aggregateCombinations`: top 20 pairs, trios,
-      quads and full teams (at least two players; with best finish), **by species** so a core
-      isn't split by which Mega was brought. Per-tournament summaries are separate documents,
-      `meta/{reg}/tournaments/{id}` (public read; ~116KB each — all in the main document would pass
-      1MB), loaded only when that chip is picked (`useMetaTournament`). The aggregation now
-      imports app code (`@/lib/species/megaForm`), so the job runs under `tsx` (dev dependency),
-      which resolves the `@/` paths and JSON imports. Page: an events select (last 4 events, then
-      each tournament newest first; "whole regulation" only as the fallback for a document with no
-      recent slice — chips stopped scaling with weekly events, 2026-11-04) on the same row as the
-      tabs Overview | Pokémon | Megas | Cores | Teams.
-    - **Winning teams** (2026-11-04): each `tournaments[]` entry (and each per-tournament document)
-      carries `finalists` — placings 1 and 2 with record and team sheet (~2KB per event), never
-      the player, same as everything published. The Overview shows a card per event in view;
-      each team opens its sheet with a copy-as-paste. Older documents lack the field (section
-      hidden) until the job runs with `--rebuild`.
-    - **Overview** (2026-10-30, the owner's sketch): the default tab — the top 20 Pokémon as
-      cards and the top 5 pairs, trios and quads side by side ("See all" → the Cores tab). Details
-      open in a dialog (full screen on phones) instead of an expanding row: a Pokémon's numbers,
-      usage by event, sets, items, moves, teammates; a core's numbers and its Pokémon, each linked
-      to its most-used form (cores count plain species, the list keeps Megas apart).
-    - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
-      Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
-      picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder
-      suggestions ordered by usage.
-    - **Steps**: (1) **done 2026-10-30** — the official-event parser
-      (`src/lib/meta/officialTournament.ts`: form names, the placing join, rounds/byes, no names
-      kept) and aggregation (`src/lib/meta/aggregateMeta.ts`: usage overall and in the top N, win
-      rate from round results with byes left out, sets, items, moves, teammates), tested offline
-      against an anonymized fixture of the Puebla Regional (2026-10-24, 333 Masters;
-      `src/lib/meta/__fixtures__/`); (2) **built 2026-10-30, not yet run live** — the job
-      (`scripts/update-meta.mjs`, `npm run update:meta`; `--dry-run`, `--fixtures` for offline,
-      `--max-events N`), the event index parser (`src/lib/meta/pokedataIndex.ts` — HTML, VGC
-      only, finished a day ago, regulation by start date via `REGULATION_PERIODS`, since the
-      registry has no dates), newest events first so the current regulation fills before
-      backfill; `metaEvents/{id}` (anonymized parsed events, private — the job's record of what
-      it has fetched) and `meta/{regulationId}` (public, ~100KB) with rules; the workflow
-      (`.github/workflows/update-meta.yml`, Mondays 06:00 UTC + manual run, dry run by
-      default when manual). The first live dry run (2026-10-30) found no events: the index parser
-      had been guessed from an event page's markup (`class="date"`); the index uses `"dates"`
-      and wraps each event in `<div class="tournament vg|tcg">`, now parsed block by block (VGC
-      = the "vg" block) and tested against an excerpt of the real page. The job also logs what
-      came back when nothing parses, and skips an event whose standings title doesn't match the
-      index's. Second dry run: Puebla and Recife stopped on a name mismatch — the roster's `#`
-      isn't reliably the final placing (pokedata re-sorts standings) — and Nice and Louisville
-      parsed 0 teams, which a real run would have saved as done, plus an empty summary. Now the
-      join is by name and country (name alone as a fallback), `#` only choosing between players
-      who share a name; an event counts as done only when ≥90% of the players match a sheet (else
-      it's retried, with counts — never names — logged); an empty summary is never written.
-      First real run 2026-10-30: Brisbane, Recife, Nice and Puebla (1,740 Masters teams).
-      **The app side**: `MetaDocument` (`src/lib/meta/metaDocument.ts`, the shared shape),
-      `getMeta` (`src/lib/firebase/meta.ts`), a local copy in IndexedDB's new `metagame` store
-      (DB v6 — not the `meta` store, which is app state), and `useMeta(regulationId)`: the
-      device's copy at once, one Firestore read per regulation per session shared across pages,
-      `meta: null` whenever there's nothing, so every use must work without it. First use: the
-      Coverage tab's "Metagame: N official tournaments, N teams · updated … · via …" line; (3) Limitless
-      and Smogon sources; (4) meta-weighted Coverage; then threat detection.
+  - **Sources**, each labelled wherever its data shows, credited, and switchable off on its own:
+    1. **Official tournaments — the main source.** Regionals, Internationals and Worlds, from
+       [pokedata.ovh](https://www.pokedata.ovh/standings2/), which mirrors RK9's published team
+       lists: `standings2/RosterData/{id}.json` (every player's open team sheet — species, form,
+       item, ability, nature, 4 moves) and `standings2/standings/{id}_{division}.json` (final
+       order, W-L-T, points, every round's opponent and result, top-cut seed). The event list is
+       the HTML index (`standings2/`). Undocumented and run by one person: no published terms
+       (its `robots.txt` allows general access; its content signals say `use=reference`,
+       `ai-train=no`). The owner couldn't be reached first, so we use it **respectfully**: only
+       finished VGC events, each fetched once (a finished event never changes), weekly, seconds
+       apart, an honest user agent naming the app; **only our own aggregates leave the job —
+       never their files, never player names**; and we stop if the owner objects. Keep trying
+       to contact them.
+    2. **Online tournaments, 100+ players** — the Limitless public API
+       (`play.limitlesstcg.com/api`, no key): current regulation, 100+ players, team lists
+       required, Bo3. Fresher and larger, community-run. ~30 such events in Reg M-C's first 7
+       weeks (~4,200 players).
+    3. **Ladder** — Smogon's monthly usage files
+       (`smogon.com/stats/{month}/chaos/gen9championsvgc2026regmcbo3-1760.json`): the only source
+       with **Stat Point spreads** (team sheets don't show them), plus checks and counters.
+       Not used: Pikalytics (no public API, stale); Limitless VGC's site (official top teams, but
+       HTML only, and pokedata has every team); RK9 directly (no API).
+  - **Official data, raw → processed.** Raw: teams + results. Joined on the roster's `#`, which is
+    the final placing (= index + 1 in the standings list) — names aren't unique (two "Ricardo
+    Rodriguez, MX" at Puebla). _(Corrected: `#` turned out not to be reliable on live data —
+    the join is by name and country, see step 2.)_ Round entries are `[opponent id, result, …]`: 3 win, 0 loss,
+    opponent −1 a bye. Form names map to the app's species ("Basculegion [Female]" →
+    Basculegion-F, "Tauros [Paldean Form - Blaze Breed]" → Tauros-Paldea-Blaze, "Sinistcha
+    [Masterpiece Form]" → Sinistcha, …). Calculated in the job: **usage** (all players, and the
+    top N by placing — e.g. Puebla: Rillaboom 42% of teams but 12.5% of the top 32, Charizard
+    28% → 47%), **win rate** of teams carrying a Pokémon (with sample sizes), **common sets**
+    (item / ability / nature / moves), **cores** (Pokémon on the same team), and later
+    **head-to-head** results from the round pairings (threat detection). **Not in the data**:
+    Stat Points (→ Smogon), and leads / which 4 were brought — so "combinations" in the app's
+    lead/back sense can't come from tournaments, only cores.
+  - **Job**: a GitHub Actions workflow (daily for Limitless and Smogon, weekly for official
+    events, plus a manual "Run workflow") runs `scripts/update-meta` and writes one processed
+    document per regulation to Firestore (`meta/{regulationId}`, ~100–300KB: update time,
+    windows, sample sizes, top ~60 Pokémon with usage / win rate / sets / teammates), public read,
+    written only by the job's service account. Not committed to the repo: every push to main is a
+    release. Not a Vercel cron: no server-side Firebase in the app, and the Smogon file is 16MB.
+    Optional monthly snapshots for trends. The app reads the document once and caches it.
+  - **Metagame page** (built 2026-10-30, the owner's pick for the first visible use):
+    `/metagame` (`MetagameSection`, `metagame` feature flag, nav link) — regulation picker, the
+    events it's based on, a searchable ranked list (usage with a bar, top-32 usage with ▲▼ at a
+    5-point difference, win rate faded under 100 rounds), each row opening to its top 3 sets and
+    its items, abilities, moves and teammates.
+  - **Recent vs whole regulation, and trends** (2026-10-30, the owner's point: pooling every
+    event lets a regulation's early, outdated weeks weigh on the numbers, and the biggest event
+    dominates). The job writes two slices — `official` (whole regulation) and `official.recent`
+    (the newest `RECENT_EVENTS` = 4 events; by count, not weeks, so a quiet month doesn't empty
+    it) — and a per-event `history` (usage, top usage) for each Pokémon, aligned with
+    `tournaments` (oldest first). `--rebuild` (workflow input "rebuild") recomputes summaries
+    from stored events without fetching. The page defaults to the recent slice, adds a Latest
+    column (newest event, ▲▼ vs the one before at a 2-point change), sorting (usage, top 32,
+    win rate, rising, falling) and a usage-by-event chart. Documents without `recent` still
+    work (no chips, no trend).
+  - **Megas, cores, teams, one tournament** (2026-10-30, the owner's asks): entries are keyed by
+    **form** — a species holding its own Mega Stone is `megaFormSpecies` ("Garchomp-Mega-Z",
+    shown "Mega Garchomp Z"), its own entry (Puebla: Garchomp 67 teams, Mega Garchomp Z 75).
+    Most teams carry two stones and only one Mega Evolves per battle (the data doesn't say
+    which), so Mega usage = brought as an option. `aggregateCombinations`: top 20 pairs, trios,
+    quads and full teams (at least two players; with best finish), **by species** so a core
+    isn't split by which Mega was brought. Per-tournament summaries are separate documents,
+    `meta/{reg}/tournaments/{id}` (public read; ~116KB each — all in the main document would pass
+    1MB), loaded only when that chip is picked (`useMetaTournament`). The aggregation now
+    imports app code (`@/lib/species/megaForm`), so the job runs under `tsx` (dev dependency),
+    which resolves the `@/` paths and JSON imports. Page: an events select (last 4 events, then
+    each tournament newest first; "whole regulation" only as the fallback for a document with no
+    recent slice — chips stopped scaling with weekly events, 2026-11-04) on the same row as the
+    tabs Overview | Pokémon | Megas | Cores | Teams.
+  - **Winning teams** (2026-11-04): each `tournaments[]` entry (and each per-tournament document)
+    carries `finalists` — placings 1 and 2 with record and team sheet (~2KB per event), never
+    the player, same as everything published. The Overview shows a card per event in view;
+    each team opens its sheet with a copy-as-paste. Older documents lack the field (section
+    hidden) until the job runs with `--rebuild`.
+  - **Meta spreads** (2026-11-04): team sheets have the nature but no Stat Points, so the
+    analysis estimates each meta set's spread (`estimateSpread`). At `/admin/meta-sets` the admin
+    sets the spread players actually run (nature + Stat Points) for a Pokémon's "All sets" or one
+    item's set (which wins) — the 40 most used of the recent events, the same sets
+    `metaThreatSets` calcs. Saved per regulation to `appConfig/metaSpreads_{regulationId}`
+    (public read, admin write — the existing appConfig rule, no rules change), keyed
+    `species` / `species|item` (`src/lib/meta/metaSpreads.ts`); `withMetaSpread` applies it to
+    the threat sets and the speed-control setters, else falls back to the estimate. A spread
+    can carry `publicSetId`: the public Damage Calculator set it's shared as — created from the
+    whole meta set on save, or an existing one picked ("Use", copies its nature and Stat
+    Points); later saves write the spread into that set too, so the calc and the analysis agree.
+  - **Team Library** (2026-11-05, owner's request: "make it easy to find teams" — not metagame
+    data): the VGCPastes Repository (a public Google Sheet, one tab per regulation, ~2,700 teams)
+    as a searchable list. `src/app/api/team-library/[regulationId]/route.ts` reads a tab's CSV
+    export (public, no key), parses it by header name (`src/lib/teamLibrary`; a missing column
+    throws, so a layout change keeps the last good copy instead of a wrong one) and serves compact
+    JSON — `force-static`, `revalidate` one day, so Vercel refreshes it in the background and
+    keeps serving the old copy if a read fails. No GitHub job, no Firestore. Pastes are linked,
+    and fetched only when the user adds a team to My Teams (client-side, via
+    `fetchPokepaste` — pokepast.es is CORS-open), keeping its creator, Pokepaste and rental
+    code; an already-added Pokepaste URL isn't added twice. Favorites are sheet team ids
+    ("MC780") in IndexedDB's meta store and `users/{uid}/meta/libraryFavorites` (the cloud copy
+    wins once signed in; see `useLibraryFavorites`). Same Pokémon + items (any slot order) are
+    grouped under the newest (`groupTeams.ts`) — not deduplicated: they're mostly different
+    players' pastes and results (M-C: 85 groups, 166 folded teams; identical Pokepaste links only 2). Credit: the page names and links VGCPastes and shows each team's
+    creator (and sharer) as the sheet does — this is self-shared, attributed content, unlike the
+    official team sheets whose player names we never publish. Tabs map regulation → `gid` in
+    `sources.ts`; add the next when VGCPastes opens it. Behind the `teamLibrary` flag (off by
+    default).
+  - **Overview** (2026-10-30, the owner's sketch): the default tab — the top 20 Pokémon as
+    cards and the top 5 pairs, trios and quads side by side ("See all" → the Cores tab). Details
+    open in a dialog (full screen on phones) instead of an expanding row: a Pokémon's numbers,
+    usage by event, sets, items, moves, teammates; a core's numbers and its Pokémon, each linked
+    to its most-used form (cores count plain species, the list keeps Megas apart).
+  - **Uses, in order**: (1) Coverage weighted by the meta — weak spots ranked by what top
+    Pokémon actually carry; (2) threat detection; (3) common sets in the Damage Calculator's set
+    picker; (4) likely spreads for an opponent pasted from an open team sheet; (5) Team Builder
+    suggestions ordered by usage.
+  - **Steps**: (1) **done 2026-10-30** — the official-event parser
+    (`src/lib/meta/officialTournament.ts`: form names, the placing join, rounds/byes, no names
+    kept) and aggregation (`src/lib/meta/aggregateMeta.ts`: usage overall and in the top N, win
+    rate from round results with byes left out, sets, items, moves, teammates), tested offline
+    against an anonymized fixture of the Puebla Regional (2026-10-24, 333 Masters;
+    `src/lib/meta/__fixtures__/`); (2) **built 2026-10-30, not yet run live** — the job
+    (`scripts/update-meta.mjs`, `npm run update:meta`; `--dry-run`, `--fixtures` for offline,
+    `--max-events N`), the event index parser (`src/lib/meta/pokedataIndex.ts` — HTML, VGC
+    only, finished a day ago, regulation by start date via `REGULATION_PERIODS`, since the
+    registry has no dates), newest events first so the current regulation fills before
+    backfill; `metaEvents/{id}` (anonymized parsed events, private — the job's record of what
+    it has fetched) and `meta/{regulationId}` (public, ~100KB) with rules; the workflow
+    (`.github/workflows/update-meta.yml`, Mondays 06:00 UTC + manual run, dry run by
+    default when manual). The first live dry run (2026-10-30) found no events: the index parser
+    had been guessed from an event page's markup (`class="date"`); the index uses `"dates"`
+    and wraps each event in `<div class="tournament vg|tcg">`, now parsed block by block (VGC
+    = the "vg" block) and tested against an excerpt of the real page. The job also logs what
+    came back when nothing parses, and skips an event whose standings title doesn't match the
+    index's. Second dry run: Puebla and Recife stopped on a name mismatch — the roster's `#`
+    isn't reliably the final placing (pokedata re-sorts standings) — and Nice and Louisville
+    parsed 0 teams, which a real run would have saved as done, plus an empty summary. Now the
+    join is by name and country (name alone as a fallback), `#` only choosing between players
+    who share a name; an event counts as done only when ≥90% of the players match a sheet (else
+    it's retried, with counts — never names — logged); an empty summary is never written.
+    First real run 2026-10-30: Brisbane, Recife, Nice and Puebla (1,740 Masters teams).
+    **The app side**: `MetaDocument` (`src/lib/meta/metaDocument.ts`, the shared shape),
+    `getMeta` (`src/lib/firebase/meta.ts`), a local copy in IndexedDB's new `metagame` store
+    (DB v6 — not the `meta` store, which is app state), and `useMeta(regulationId)`: the
+    device's copy at once, one Firestore read per regulation per session shared across pages,
+    `meta: null` whenever there's nothing, so every use must work without it. First use: the
+    Coverage tab's "Metagame: N official tournaments, N teams · updated … · via …" line; (3) Limitless
+    and Smogon sources; (4) meta-weighted Coverage; then threat detection.
 
 - [ ] **Team analysis from the metagame — 0.3** (planned 2026-10-31, building 2026-11-01). The
       owner approved 0.3 for it. The goal: analyze the team as a whole (sets, items, abilities,
@@ -2879,172 +2913,173 @@ leads/backs) is complete and working end to end.
       writing it up and calling calc tools), but this is a free project and paying per analysis for
       every user isn't affordable. So everything is computed in the browser. A prototype against the
       real M-C data and the owner's team came first, to see how far that gets. It got far.
-    - **Engine** — `src/lib/threats/`, pure and unit-tested:
-        - **Meta sets** (`metaThreatSets`): each of the 40 most-used Pokémon split by common item
-          (≥15% of its teams, up to 3). The item is what changes the threat: Choice Scarf
-          outspeeds, Life Orb hits harder, Sitrus Berry stays around. Moves, ability and nature
-          come from the most common full set with that item, else the Pokémon's most common ones. A
-          Mega is calced as its base species holding the stone. Uses `official.recent` (the newest
-          4 events), like the Metagame page.
-        - **Estimated spreads** (`estimateSpread`): team sheets have no Stat Points. Spreads are
-          32/32/2, read from the nature and item:
-            - a defensive nature: HP and that defense;
-            - −Speed (Trick Room): HP and the attacking stat;
-            - +Speed or Choice Scarf: the attacking stat and Speed;
-            - a bulky item: HP and the attacking stat;
-            - else the attacking stat and Speed.
+  - **Engine** — `src/lib/threats/`, pure and unit-tested:
+    - **Meta sets** (`metaThreatSets`): each of the 40 most-used Pokémon split by common item
+      (≥15% of its teams, up to 3). The item is what changes the threat: Choice Scarf
+      outspeeds, Life Orb hits harder, Sitrus Berry stays around. Moves, ability and nature
+      come from the most common full set with that item, else the Pokémon's most common ones. A
+      Mega is calced as its base species holding the stone. Uses `official.recent` (the newest
+      4 events), like the Metagame page.
+    - **Estimated spreads** (`estimateSpread`): team sheets have no Stat Points. Spreads are
+      32/32/2, read from the nature and item:
+      - a defensive nature: HP and that defense;
+      - −Speed (Trick Room): HP and the attacking stat;
+      - +Speed or Choice Scarf: the attacking stat and Speed;
+      - a bulky item: HP and the attacking stat;
+      - else the attacking stat and Speed.
 
-          The user's own Pokémon without Stat Points get one too, and the tab says which.
-        - **Threats** (`analyzeThreats`): every set against each of the team's Pokémon, both ways,
-          through the damage calculator.
-            - The field is the set's own weather or terrain if it sets one, else the team's.
-            - Spread moves are at ×0.75, and Intimidate holders take −1 Attack hits.
-            - Accuracy weights a hit (No Guard on either side makes it sure). Recharge moves are
-              left out.
-            - Who moves first: priority, then Speed through `computeBattleStat` (Scarf, weather
-              abilities). Priority comes from Showdown's data (`moveFlags.json`'s new `priority`,
-              via `npm run generate:calc-data`). Grassy Glide's +1 only applies in Grassy Terrain.
-            - **Pressure**: OHKO 1, high-roll OHKO 0.75, 2HKO 0.4, × accuracy, ×1.3 if it moves
-              first.
-            - **Your best answer**: KO 1, high-roll KO 0.7, 2HKO while taking under half 0.5. It
-              counts when it lands before the threat moves, or after surviving the threat's hit.
-            - **Danger** = pressure × (1 − 0.7 × answer). The ranking is danger × √usage, so a
-              common set ranks above a rare one, but a rare set that sweeps still shows.
-            - **Speed modes**: as built, with your Tailwind, or under Trick Room.
-        - **Team checks** (`teamRoles`, `setIssues`):
-            - Roles: speed control, Trick Room, Fake Out, redirection, Intimidate, weather, terrain,
-              spread damage, and Protect count.
-            - Sets that can't work as built: a Terrain Seed or terrain/weather ability nobody on
-              the team sets up for (the owner's Electric Seed Sneasler on a Grassy Surge team), a
-              Choice item with Protect, an Assault Vest with a status move.
-    - **Threats tab** on the team page (`TeamThreats`), after Coverage, in this order:
-      1. Set problems.
-      2. The ranked threats, 10 then "Show more". Each card shows sprite, item, danger level,
-            ability (a Mega's own), nature, moves, "on N% of teams (M% of that Pokémon)", the field,
-            and how many of yours it moves first against. Then "KOs" (your Pokémon with
-            OHKO / OHKO? / 2HKO, marked "first") and "Answered by" (KO / KO? / 2HKO, marked "after
-            it" when slower; "Nobody" in red). Each chip's tooltip has the move and damage range.
-      3. Roles.
-      4. The method and the metagame source.
-    - **Calmer layout** (2026-11-01, the owner found the cards overwhelming): answer first.
-        - **In short**: biggest threats, nothing answers (from the top 15 sets), faster than the
-          whole team (sprites only past 3; "your Tailwind fixes N" when it does), Trick Room
-          and Tailwind verdicts, set problems.
-        - **One row per Pokémon**, top 5 then "Show more": danger dots, usage, and sprite-only
-          chips (the owner's pick over sprite + OHKO mark). A red ring means it OHKOs that one
-          (sure or high roll; 2HKOs only in the details). A green ring means that one answers it.
-          Sets are pills (one per common item), and a chevron opens the set and both best hits
-          per Pokémon of yours.
-        - Roles become one row of chips (missing ones dashed). The method and source go under
-          "How this is calculated".
-        - The engine is split into `threatMatchups` (the calcs, ~80ms for 58 sets × 6) and
-          `rankThreats(matchups, mode)` (~0.3ms), so the four speed modes (as built, your
-          Tailwind, their Tailwind, Trick Room) cost one calc pass.
-    - **Speed control** (2026-11-01, the owner's ask: "is my team weak against Trick Room or a
-      speed control, and can I stop it?") — `src/lib/threats/speedControl.ts`:
-        - **Exposure**: the share of your team the 20 most-used sets move first against, as
-          built and under their Trick Room or Tailwind.
-        - **Common setters**: meta Pokémon running the move on ≥25% of their teams, top 4.
-        - **Counters** — Trick Room: Taunt, Imprison (with Trick Room of its own), your own Trick
-          Room, Fake Out, and a KO on a common setter's set (Trick Room goes at −7, so a KO stops
-          it whoever's faster; not through Focus Sash or Sturdy). Tailwind: your own Tailwind or
-          Trick Room, speed drops (Icy Wind, Electroweb, …), damaging priority, Choice Scarf.
-        - **Fake Out only counts when it works** on a common setter. Armor Tail, Queenly Majesty,
-          Dazzling and Inner Focus block it, and so does Psychic Terrain on grounded Pokémon. On
-          M-C the top two Trick Room setters, Farigiraf and Indeedee, both block it.
-        - **Verdict**: barely matters (exposure up under 15 points), covered (two or more kinds of
-          strong counter), some answers, exposed.
-    - **Behind a feature flag** (2026-11-01, the owner: "I think we need more discussion over the
-      feature"): `teamThreats` in `FeatureFlags`, **off by default** (unlike the section flags,
-      which fail open — a preview must not show to everyone on a missing key or a failed read),
-      toggled in /admin/features. The tab is shown when the flag is on or to the admin; a
-      `?tab=threats` link opens the report otherwise. Still open for discussion before it's
-      switched on.
-    - **In the Team Builder** (2026-11-01, the owner's ask): an "Analyze" button beside Import /
-      Export (a toggle, filled while open) shows `TeamThreats` for the team as built so far.
-        - **Desktop: a panel that pushes the layout**, not an overlay (the owner: use both
-          sections at the same time). The builder and a sticky `<aside>` (45%, up to 42rem, its own
-          scroll) sit side by side, with no backdrop. The builder's keyboard shortcuts stay on. The
-          analysis follows every edit; its ~80ms of calcs run on `useDeferredValue(pokemon)`, so
-          dragging a Stat Points slider doesn't wait on them.
-        - **Slide in / out** (same day): not the Base UI drawer. It's always `position: fixed` over
-          the page. `modal={false}` plus `Drawer.Indent` padding could fake a push, but it would
-          cover the app header and need the padding kept in sync with the drawer's width. Instead
-          the `<aside>` animates its own width (and margin, opacity) over 300ms, from 0 on mount
-          via `@starting-style` (Tailwind's `starting:`). It stays mounted until the width
-          transition ends when closing. The panel inside keeps its width, so it's revealed, not
-          squeezed. Reduced motion: no transition, removed at once.
-        - **Phones**: no room beside the builder, so a full-screen drawer from the right
-          (`swipeDirection="right"`), with the builder's shortcuts paused like for its dialogs. The
-          button is an icon (`IconName.BarChart`, three bars drawn in the 960 grid) in the
-          header row beside Import / Export's. It was first a text action under the tiles, which
-          the owner found out of place.
-        - Same flag (and the admin), and the team needs a Pokémon. `TeamThreats` lays out by
-          **container queries** (`@container`, `@xl:` / `@4xl:`) instead of screen breakpoints,
-          so the narrower panel gets the stacked layout.
-    - **"Based on" banner** (2026-11-01, the owner's ask): a short note above the analysis, in the
-      tab and the Team Builder's panel alike. It says the number of team sheets and the
-      tournaments by name (the recent slice, else the whole regulation), when the data was
-      updated, and that spreads are estimated and matchups one-on-one: "a guide, not a verdict".
-      The footer keeps the method and the source credit.
-    - **Your team's style and roles** (2026-11-01, the owner's ask) — `src/lib/threats/teamStyle.ts`,
-      the first section under the banner:
-        - **Roles**, measured against the 20 most-used sets (from `threatMatchups`):
-            - **offensive pressure**: OHKOs (on a high roll at least) ≥30% of them;
-            - **revenge killer**: KOs ≥30% of them before they move;
-            - **support**: Fake Out alone (a lead support's job in doubles), two support moves
-              (redirection, speed control, Helping Hand, Wide Guard, Will-O-Wisp, …), or one with a
-              support ability (Intimidate, Prankster, Lightning Rod, …);
-            - **setup**: a boosting move.
-        - A Pokémon with none is listed under **"No clear job"** with its OHKO count — a slot to
-          look at.
-        - **Archetype**, the first that fits:
-            1. Trick Room: a setter and 3+ slow Pokémon (base Speed ≤65 or a −Speed nature).
-            2. Weather: a setter and 2+ Pokémon using it — its abilities and moves, or the attacks
-               it boosts (Water in rain, Fire in sun). One Water attacker beside a Pelipper isn't
-               a rain team.
-            3. Setup: 3+ setup users.
-            4. Hyper offense: 4+ applying pressure, at most one support.
-            5. Else balance.
-        - **"Also"** names what else it leans on: Tailwind, a Trick Room mode, setup options, a
-          terrain.
-        - Tuned on the owner's two teams. A first pass counted 2HKOs as pressure (every Pokémon
-          qualified, so "Ychu balance" came out as hyper offense), and only weather abilities as
-          weather users (the rain team read as balance).
-    - **Calculator in the Team Builder's panel** (2026-11-03, the owner's ask): the panel has
-      two modes, Analysis | Calculator. They're switched in its header, and each header button
-      (Analyze, Calculator; chart and calculator icons on phones) opens it on its own mode.
-        - **Your side is the builder's open Pokémon**, edited there and not in the panel. A Stat
-          Points, nature, item or move change shows in the calcs at once (checked: 0 → 32 Atk
-          Garchomp, Earthquake on Venusaur 39.4–47.1% → 48.4–56.8%). Crits and hit counts on
-          its move rows reset when another Pokémon is opened. It's shown in its Mega form when
-          it holds its stone.
-        - **One opponent** (the owner's pick: one at a time): the Damage Calculator's
-          `RosterPokemonPicker` with a new `single` prop. That hides the roster strip, "add to
-          the roster" and team import/export, and keeps the species search, saved sets, item,
-          ability, nature, Stat Points, boosts, status and moves.
-        - **Field**: format, weather, terrain, Fairy Aura, Gravity, and each side's conditions,
-          collapsed under "Field". Weather and Fairy Aura switch on from abilities, as on the
-          calculator page.
-        - **Results**: both sides' move lists and the result readout, as on the calculator
-          page. **Save** files the calc on the team's Calcs tab under your Pokémon: offensive
-          for your move, defensive for theirs (checked: it appears on the Calcs tab).
-        - To share one implementation, the calculator's pieces moved verbatim into
-          `src/components/DamageCalculator/calcShared.tsx`: `ResultPanel`, `MoveList`,
-          `SideConditionsPanel`, the calc-line formatter, `toEffectivePokemon`, auto weather,
-          and the options (`calcOptions(field, …)`, `forMove`, from the page's `optionsFor`).
-          The calculator page imports them back.
-        - The calculator stays mounted once opened, so the opponent survives a switch to
-          Analysis. The analysis is only built while it shows.
-        - **Next** (agreed): suggest the biggest threats as opponents.
-    - **Limits, said on the tab**: one-on-one matchups, so partners, redirection and focus fire
-      aren't modelled, and opposing spreads are estimates.
-    - **Next**:
-        - head-to-head records from the round pairings, so rankings can be checked against real
-          results;
-        - Pokémon suggestions that answer the top threats, ranked by usage and win rate;
-        - teammate suggestions from cores in the Team Builder;
-        - a set check against common meta sets.
+      The user's own Pokémon without Stat Points get one too, and the tab says which.
+
+    - **Threats** (`analyzeThreats`): every set against each of the team's Pokémon, both ways,
+      through the damage calculator.
+      - The field is the set's own weather or terrain if it sets one, else the team's.
+      - Spread moves are at ×0.75, and Intimidate holders take −1 Attack hits.
+      - Accuracy weights a hit (No Guard on either side makes it sure). Recharge moves are
+        left out.
+      - Who moves first: priority, then Speed through `computeBattleStat` (Scarf, weather
+        abilities). Priority comes from Showdown's data (`moveFlags.json`'s new `priority`,
+        via `npm run generate:calc-data`). Grassy Glide's +1 only applies in Grassy Terrain.
+      - **Pressure**: OHKO 1, high-roll OHKO 0.75, 2HKO 0.4, × accuracy, ×1.3 if it moves
+        first.
+      - **Your best answer**: KO 1, high-roll KO 0.7, 2HKO while taking under half 0.5. It
+        counts when it lands before the threat moves, or after surviving the threat's hit.
+      - **Danger** = pressure × (1 − 0.7 × answer). The ranking is danger × √usage, so a
+        common set ranks above a rare one, but a rare set that sweeps still shows.
+      - **Speed modes**: as built, with your Tailwind, or under Trick Room.
+    - **Team checks** (`teamRoles`, `setIssues`):
+      - Roles: speed control, Trick Room, Fake Out, redirection, Intimidate, weather, terrain,
+        spread damage, and Protect count.
+      - Sets that can't work as built: a Terrain Seed or terrain/weather ability nobody on
+        the team sets up for (the owner's Electric Seed Sneasler on a Grassy Surge team), a
+        Choice item with Protect, an Assault Vest with a status move.
+  - **Threats tab** on the team page (`TeamThreats`), after Coverage, in this order:
+    1. Set problems.
+    2. The ranked threats, 10 then "Show more". Each card shows sprite, item, danger level,
+       ability (a Mega's own), nature, moves, "on N% of teams (M% of that Pokémon)", the field,
+       and how many of yours it moves first against. Then "KOs" (your Pokémon with
+       OHKO / OHKO? / 2HKO, marked "first") and "Answered by" (KO / KO? / 2HKO, marked "after
+       it" when slower; "Nobody" in red). Each chip's tooltip has the move and damage range.
+    3. Roles.
+    4. The method and the metagame source.
+  - **Calmer layout** (2026-11-01, the owner found the cards overwhelming): answer first.
+    - **In short**: biggest threats, nothing answers (from the top 15 sets), faster than the
+      whole team (sprites only past 3; "your Tailwind fixes N" when it does), Trick Room
+      and Tailwind verdicts, set problems.
+    - **One row per Pokémon**, top 5 then "Show more": danger dots, usage, and sprite-only
+      chips (the owner's pick over sprite + OHKO mark). A red ring means it OHKOs that one
+      (sure or high roll; 2HKOs only in the details). A green ring means that one answers it.
+      Sets are pills (one per common item), and a chevron opens the set and both best hits
+      per Pokémon of yours.
+    - Roles become one row of chips (missing ones dashed). The method and source go under
+      "How this is calculated".
+    - The engine is split into `threatMatchups` (the calcs, ~80ms for 58 sets × 6) and
+      `rankThreats(matchups, mode)` (~0.3ms), so the four speed modes (as built, your
+      Tailwind, their Tailwind, Trick Room) cost one calc pass.
+  - **Speed control** (2026-11-01, the owner's ask: "is my team weak against Trick Room or a
+    speed control, and can I stop it?") — `src/lib/threats/speedControl.ts`:
+    - **Exposure**: the share of your team the 20 most-used sets move first against, as
+      built and under their Trick Room or Tailwind.
+    - **Common setters**: meta Pokémon running the move on ≥25% of their teams, top 4.
+    - **Counters** — Trick Room: Taunt, Imprison (with Trick Room of its own), your own Trick
+      Room, Fake Out, and a KO on a common setter's set (Trick Room goes at −7, so a KO stops
+      it whoever's faster; not through Focus Sash or Sturdy). Tailwind: your own Tailwind or
+      Trick Room, speed drops (Icy Wind, Electroweb, …), damaging priority, Choice Scarf.
+    - **Fake Out only counts when it works** on a common setter. Armor Tail, Queenly Majesty,
+      Dazzling and Inner Focus block it, and so does Psychic Terrain on grounded Pokémon. On
+      M-C the top two Trick Room setters, Farigiraf and Indeedee, both block it.
+    - **Verdict**: barely matters (exposure up under 15 points), covered (two or more kinds of
+      strong counter), some answers, exposed.
+  - **Behind a feature flag** (2026-11-01, the owner: "I think we need more discussion over the
+    feature"): `teamThreats` in `FeatureFlags`, **off by default** (unlike the section flags,
+    which fail open — a preview must not show to everyone on a missing key or a failed read),
+    toggled in /admin/features. The tab is shown when the flag is on or to the admin; a
+    `?tab=threats` link opens the report otherwise. Still open for discussion before it's
+    switched on.
+  - **In the Team Builder** (2026-11-01, the owner's ask): an "Analyze" button beside Import /
+    Export (a toggle, filled while open) shows `TeamThreats` for the team as built so far.
+    - **Desktop: a panel that pushes the layout**, not an overlay (the owner: use both
+      sections at the same time). The builder and a sticky `<aside>` (45%, up to 42rem, its own
+      scroll) sit side by side, with no backdrop. The builder's keyboard shortcuts stay on. The
+      analysis follows every edit; its ~80ms of calcs run on `useDeferredValue(pokemon)`, so
+      dragging a Stat Points slider doesn't wait on them.
+    - **Slide in / out** (same day): not the Base UI drawer. It's always `position: fixed` over
+      the page. `modal={false}` plus `Drawer.Indent` padding could fake a push, but it would
+      cover the app header and need the padding kept in sync with the drawer's width. Instead
+      the `<aside>` animates its own width (and margin, opacity) over 300ms, from 0 on mount
+      via `@starting-style` (Tailwind's `starting:`). It stays mounted until the width
+      transition ends when closing. The panel inside keeps its width, so it's revealed, not
+      squeezed. Reduced motion: no transition, removed at once.
+    - **Phones**: no room beside the builder, so a full-screen drawer from the right
+      (`swipeDirection="right"`), with the builder's shortcuts paused like for its dialogs. The
+      button is an icon (`IconName.BarChart`, three bars drawn in the 960 grid) in the
+      header row beside Import / Export's. It was first a text action under the tiles, which
+      the owner found out of place.
+    - Same flag (and the admin), and the team needs a Pokémon. `TeamThreats` lays out by
+      **container queries** (`@container`, `@xl:` / `@4xl:`) instead of screen breakpoints,
+      so the narrower panel gets the stacked layout.
+  - **"Based on" banner** (2026-11-01, the owner's ask): a short note above the analysis, in the
+    tab and the Team Builder's panel alike. It says the number of team sheets and the
+    tournaments by name (the recent slice, else the whole regulation), when the data was
+    updated, and that spreads are estimated and matchups one-on-one: "a guide, not a verdict".
+    The footer keeps the method and the source credit.
+  - **Your team's style and roles** (2026-11-01, the owner's ask) — `src/lib/threats/teamStyle.ts`,
+    the first section under the banner:
+    - **Roles**, measured against the 20 most-used sets (from `threatMatchups`):
+      - **offensive pressure**: OHKOs (on a high roll at least) ≥30% of them;
+      - **revenge killer**: KOs ≥30% of them before they move;
+      - **support**: Fake Out alone (a lead support's job in doubles), two support moves
+        (redirection, speed control, Helping Hand, Wide Guard, Will-O-Wisp, …), or one with a
+        support ability (Intimidate, Prankster, Lightning Rod, …);
+      - **setup**: a boosting move.
+    - A Pokémon with none is listed under **"No clear job"** with its OHKO count — a slot to
+      look at.
+    - **Archetype**, the first that fits:
+      1. Trick Room: a setter and 3+ slow Pokémon (base Speed ≤65 or a −Speed nature).
+      2. Weather: a setter and 2+ Pokémon using it — its abilities and moves, or the attacks
+         it boosts (Water in rain, Fire in sun). One Water attacker beside a Pelipper isn't
+         a rain team.
+      3. Setup: 3+ setup users.
+      4. Hyper offense: 4+ applying pressure, at most one support.
+      5. Else balance.
+    - **"Also"** names what else it leans on: Tailwind, a Trick Room mode, setup options, a
+      terrain.
+    - Tuned on the owner's two teams. A first pass counted 2HKOs as pressure (every Pokémon
+      qualified, so "Ychu balance" came out as hyper offense), and only weather abilities as
+      weather users (the rain team read as balance).
+  - **Calculator in the Team Builder's panel** (2026-11-03, the owner's ask): the panel has
+    two modes, Analysis | Calculator. They're switched in its header, and each header button
+    (Analyze, Calculator; chart and calculator icons on phones) opens it on its own mode.
+    - **Your side is the builder's open Pokémon**, edited there and not in the panel. A Stat
+      Points, nature, item or move change shows in the calcs at once (checked: 0 → 32 Atk
+      Garchomp, Earthquake on Venusaur 39.4–47.1% → 48.4–56.8%). Crits and hit counts on
+      its move rows reset when another Pokémon is opened. It's shown in its Mega form when
+      it holds its stone.
+    - **One opponent** (the owner's pick: one at a time): the Damage Calculator's
+      `RosterPokemonPicker` with a new `single` prop. That hides the roster strip, "add to
+      the roster" and team import/export, and keeps the species search, saved sets, item,
+      ability, nature, Stat Points, boosts, status and moves.
+    - **Field**: format, weather, terrain, Fairy Aura, Gravity, and each side's conditions,
+      collapsed under "Field". Weather and Fairy Aura switch on from abilities, as on the
+      calculator page.
+    - **Results**: both sides' move lists and the result readout, as on the calculator
+      page. **Save** files the calc on the team's Calcs tab under your Pokémon: offensive
+      for your move, defensive for theirs (checked: it appears on the Calcs tab).
+    - To share one implementation, the calculator's pieces moved verbatim into
+      `src/components/DamageCalculator/calcShared.tsx`: `ResultPanel`, `MoveList`,
+      `SideConditionsPanel`, the calc-line formatter, `toEffectivePokemon`, auto weather,
+      and the options (`calcOptions(field, …)`, `forMove`, from the page's `optionsFor`).
+      The calculator page imports them back.
+    - The calculator stays mounted once opened, so the opponent survives a switch to
+      Analysis. The analysis is only built while it shows.
+    - **Next** (agreed): suggest the biggest threats as opponents.
+  - **Limits, said on the tab**: one-on-one matchups, so partners, redirection and focus fire
+    aren't modelled, and opposing spreads are estimates.
+  - **Next**:
+    - head-to-head records from the round pairings, so rankings can be checked against real
+      results;
+    - Pokémon suggestions that answer the top threats, ranked by usage and win rate;
+    - teammate suggestions from cores in the Team Builder;
+    - a set check against common meta sets.
 
 ## 8. Attribution
 

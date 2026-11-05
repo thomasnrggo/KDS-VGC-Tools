@@ -182,6 +182,20 @@ describe("metaThreatSets", () => {
     expect(set.species).toBe("Garchomp-Mega-Z");
     expect(set.pokemon).toMatchObject({ species: "Garchomp", item: "Garchompite Z" });
   });
+
+  it("uses the admin's spread and nature — an item's own over the Pokémon's", () => {
+    const spreads = {
+      Garchomp: { nature: "Jolly", evs: "2 HP / 32 Atk / 32 Spe", updatedAt: "" },
+      "Garchomp|Life Orb": { nature: "Adamant", evs: "32 Atk / 32 Spe / 2 Def", updatedAt: "" },
+    };
+    const [scarf, lifeOrb] = metaThreatSets([GARCHOMP], { spreads });
+    expect(scarf.pokemon).toMatchObject({ nature: "Jolly", evs: "2 HP / 32 Atk / 32 Spe" });
+    expect(lifeOrb.pokemon).toMatchObject({ nature: "Adamant", evs: "32 Atk / 32 Spe / 2 Def" });
+    expect([scarf.spreadFromAdmin, metaThreatSets([GARCHOMP])[0].spreadFromAdmin]).toEqual([
+      true,
+      false,
+    ]);
+  });
 });
 
 describe("bestHit", () => {

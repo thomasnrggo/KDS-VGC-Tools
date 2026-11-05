@@ -23,6 +23,7 @@ export const es: Messages = {
     tournaments: "Torneos",
     speedTiers: "Velocidades",
     metagame: "Metajuego",
+    teamLibrary: "Biblioteca de equipos",
     damageCalc: "Calculadora de daño",
     openMenu: "Abrir menú de navegación",
     closeMenu: "Cerrar menú de navegación",
@@ -650,7 +651,7 @@ export const es: Messages = {
     estimated: (names) =>
       `Sin puntos de estadística en ${names}: calculado con un reparto estimado.`,
     method:
-      "Los repartos de los rivales se estiman por su naturaleza y objeto (las hojas de equipo no los incluyen). Cada enfrentamiento es uno contra uno, con el clima o campo del rival si lo pone (si no, el tuyo), con los movimientos a ambos a ×0,75, Intimidación y prioridad. No se cuentan compañeros, redirección ni ataques dobles.",
+      "Los repartos de los rivales son los habituales de su set donde los hemos fijado; si no, se estiman por su naturaleza y objeto (las hojas de equipo no los incluyen). Cada enfrentamiento es uno contra uno, con el clima o campo del rival si lo pone (si no, el tuyo), con los movimientos a ambos a ×0,75, Intimidación y prioridad. No se cuentan compañeros, redirección ni ataques dobles.",
     basedOn: (teams, events, names, date) =>
       `Basado en ${teams} hojas de equipo de ${events === 1 ? "el último torneo oficial" : `los ${events} últimos torneos oficiales`} (${names}), actualizado el ${date}.`,
     style: {
@@ -695,9 +696,62 @@ export const es: Messages = {
         `La presión y los remates se cuentan contra los ${total} sets más comunes.`,
     },
     caveat:
-      "Los puntos de estadística de los rivales son estimados y cada enfrentamiento es uno contra uno: úsalo como guía, no como veredicto.",
+      "Los puntos de estadística de los rivales son repartos habituales o estimados, y cada enfrentamiento es uno contra uno: úsalo como guía, no como veredicto.",
     noMeta: "Aún no hay datos del metajuego para esta regulación.",
     empty: "Añade Pokémon al equipo para ver qué lo amenaza.",
+  },
+  teamLibrary: {
+    title: "Biblioteca de equipos",
+    intro: "Equipos que la comunidad ha compartido, recopilados por el VGCPastes Repository.",
+    credit: "Todos los equipos y datos son del",
+    creditSheet: "VGCPastes Repository",
+    creditRest: "— todo el mérito es de VGCPastes y del creador de cada equipo.",
+    searchPlaceholder: "Busca Pokémon, objeto, creador o evento",
+    searchLabel: "Buscar equipos",
+    withStatPoints: "Con puntos de estadística",
+    withOwnersEvs: "EVs del propietario",
+    count: (shown, total) =>
+      shown === total
+        ? `${total.toLocaleString("es")} equipos`
+        : `${shown.toLocaleString("es")} de ${total.toLocaleString("es")} equipos`,
+    updated: (date) => `actualizado el ${date}`,
+    columns: {
+      team: "Equipo",
+      owner: "Propietario",
+      results: "Resultados",
+      evs: "EVs",
+      paste: "Paste",
+      links: "Alquiler y enlaces",
+    },
+    owner: "Propietario",
+    favorites: (count) => (count > 0 ? `Favoritos (${count})` : "Favoritos"),
+    addFavorite: "Añadir a favoritos",
+    removeFavorite: "Quitar de favoritos",
+    addToMyTeams: "Añadir a mis equipos",
+    adding: "Añadiendo…",
+    added: (name) => `"${name}" añadido a tus equipos`,
+    alreadyAdded: (name) => `Ya está en tus equipos como "${name}"`,
+    evsOwner: "Del propietario",
+    evsOwnerHint: "Puntos de estadística del propio paste del propietario",
+    evsExtracted: "Extraídos",
+    evsExtractedHint:
+      "Puntos de estadística extraídos por VGCPastes de la publicación o del alquiler del equipo",
+    evsNone: "Ninguno",
+    evsNoneHint: "El paste no tiene puntos de estadística",
+    pokepaste: "Pokepaste",
+    source: "Fuente",
+    report: "Reporte",
+    copyCode: (code) => `Copiar código de alquiler ${code}`,
+    codeCopied: "Código de alquiler copiado",
+    sameTeams: (count) =>
+      count === 1
+        ? "1 más con los mismos Pokémon y objetos"
+        : `${count} más con los mismos Pokémon y objetos`,
+    hideSameTeams: "Ocultar los mismos equipos",
+    showMore: "Ver más",
+    empty: "Ningún equipo coincide.",
+    unavailable: "No se pudieron cargar los equipos ahora.",
+    noTab: "VGCPastes no tiene equipos para esta regulación.",
   },
   metagame: {
     title: "Metajuego",
@@ -706,7 +760,7 @@ export const es: Messages = {
     updated: (date) => `actualizado el ${date}`,
     source: "Listas de equipos de torneos oficiales, vía pokedata.ovh (de RK9).",
     tournaments: "Torneos",
-    searchPlaceholder: "Busca un Pokémon",
+    searchPlaceholder: "Busca un Pokémon o tipo",
     searchLabel: "Buscar en el metajuego",
     pokemon: "Pokémon",
     usage: "Uso",
@@ -772,6 +826,14 @@ export const es: Messages = {
     finalistPlacing: (placing) => (placing === 1 ? "Campeón" : "Subcampeón"),
     copyTeam: "Copiar equipo",
     teamCopied: "Equipo copiado como texto — impórtalo en el Constructor de equipos o en Showdown.",
+    alsoMatching: (query) => `También coinciden con “${query}”`,
+    noCoresMatch: (query) => `Ningún núcleo con “${query}”.`,
+    noWinnersMatch: (query) => `Ningún equipo ganador tenía “${query}”.`,
+    topTeams: "Equipos destacados",
+    winners: "Ganadores",
+    mostUsed: "Más usados",
+    trendLegend: (event, previous) =>
+      `▲▼ Cambio de uso en ${event} respecto a ${previous}, en puntos.`,
     commonCores: "Núcleos comunes",
     commonCoresHint:
       "Pokémon que aparecen juntos en el mismo equipo con más frecuencia. Toca uno para ver cómo le va.",

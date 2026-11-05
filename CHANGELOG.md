@@ -10,6 +10,45 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## Unreleased
+
+### Added
+
+- Team Library (`/team-library`, behind its own feature flag, off until turned on in
+  /admin/features): the VGCPastes Repository's shared teams for each regulation (about 2,700),
+  searchable by Pokémon, item, creator or event — every word has to match ("incineroar sitrus") —
+  with filters for teams with Stat Points or with the owner's own EVs. Columns for the team, its owner (with the creator's name), its results (placing and event), its EVs (the owner's, extracted by VGCPastes, or none), its Pokepaste, and
+  its rental code, source and report. Teams can be starred (a Favorites filter; synced to your
+  account when signed in) and added to My Teams in one click — read from the team's Pokepaste,
+  with its creator, link and rental code kept. Nothing is re-hosted, and the page credits
+  VGCPastes and each creator. Read from the public sheet on the server, refreshed daily, in the
+  sheet's order (newest first). Teams with the same six Pokémon and items (usually different
+  players' takes on one team) are grouped: the newest shows, the rest fold under it ("3 more with
+  the same Pokémon and items").
+- Metagame: the search now works on the Overview too. Type a Pokémon (e.g. "incineroar") and the
+  top 20 stay but highlight it (the rest dimmed), matching Pokémon outside the top 20 show below
+  with their rank, and Winning teams and the cores show only those that include it (with its sprite
+  ringed and each core keeping its overall rank).
+- Metagame: search by type too — a type's full name ("fairy", or "hada" in Spanish) finds every
+  Pokémon of that type, on every tab (Megas by their Mega form's types).
+- Metagame Overview: each Pokémon card shows how its usage moved at the event in view against the
+  one before (▲3 green, ▼5 red, in points; hover for both numbers) — the newest event in "Last 4
+  events", or the picked one — with a line under "Top 20 Pokémon" saying which two events.
+- Admin: a Meta sets page (`/admin/meta-sets`) to set the common spread (nature and Stat Points)
+  of the metagame's top 40 Pokémon, for all their sets or one item's set. The team analysis
+  (Threats, speed control) calcs with these instead of spreads estimated from the nature and item.
+  Each spread can be shared as a public Damage Calculator set (the whole meta set: item, ability,
+  moves, nature, Stat Points), or taken from an existing public set of that Pokémon — linked, so
+  later saves update that set too.
+
+### Changed
+
+- Metagame Overview: Common cores is one card with Pairs / Trios / Quads pills instead of three
+  columns, showing the top 10 of the picked size in two columns (#1–5, then #6–10).
+- Metagame Overview: Winning teams became **Top teams**, one card with Winners / Most used pills:
+  each event's winner and runner-up in a list (event, placing, record, date, the six with their
+  items), or the 10 most-used full teams with usage and best finish ("See all" → the Teams tab).
+
 ## 0.3.0 — 2026-11-04
 
 ### Added

@@ -24,6 +24,7 @@ import {
 } from "@/lib/threats";
 import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { useMeta } from "@/hooks/useMeta";
+import { useMetaSpreads } from "@/hooks/useMetaSpreads";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import { speciesLabel } from "@/lib/species/speciesLabel";
 import { shortTournamentName } from "@/lib/meta/metaDocument";
@@ -108,11 +109,13 @@ export function TeamThreats({ pokemon: current, regulationId }: TeamThreatsProps
   const text = usePokemonText();
   const { appLanguage } = useLanguageSettings();
   const { meta, isLoading } = useMeta(regulationId);
+  // The admin's common spreads for the meta's sets, in place of estimates.
+  const { spreads: metaSpreads, isLoading: spreadsLoading } = useMetaSpreads(regulationId);
   const [mode, setMode] = useState<SpeedMode>("normal");
   const [showAll, setShowAll] = useState(false);
 
   if (pokemon.length === 0) return <p className="text-sm text-zinc-500">{t.threats.empty}</p>;
-  if (isLoading && !meta) return <LoadingState />;
+  if ((isLoading && !meta) || spreadsLoading) return <LoadingState />;
 
   const spreads = pokemon.map(withSpread);
   const team = spreads.map((entry) => entry.pokemon);
@@ -122,12 +125,12 @@ export function TeamThreats({ pokemon: current, regulationId }: TeamThreatsProps
   // The recent events, like the Metagame page's default — the metagame as it is now.
   const metaPokemon = meta ? (meta.official.recent?.pokemon ?? meta.official.pokemon) : [];
   // The calcs once; each speed mode only re-ranks them.
-  const matchups = threatMatchups(team, metaThreatSets(metaPokemon));
+  const matchups = threatMatchups(team, metaThreatSets(metaPokemon, { spreads: metaSpreads }));
   const asBuilt = rankThreats(matchups, "normal");
   const groups = groupBySpecies(mode === "normal" ? asBuilt : rankThreats(matchups, mode));
   const shown = showAll ? groups : groups.slice(0, SHOWN);
   const reports = (["trickRoom", "tailwind"] as const).map((kind) =>
-    speedControlReport(team, metaPokemon, matchups, kind),
+    speedControlReport(team, metaPokemon, matchups, kind, metaSpreads),
   );
   const style = teamStyle(team, matchups);
   const noMeta = groups.length === 0;

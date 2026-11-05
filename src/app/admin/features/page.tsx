@@ -15,6 +15,7 @@ const SECTION_FLAGS: { flagKey: keyof FeatureFlags; label: string }[] = [
   { flagKey: "tournaments", label: "Tournaments" },
   { flagKey: "speedTiers", label: "Speed Tiers" },
   { flagKey: "metagame", label: "Metagame" },
+  { flagKey: "teamLibrary", label: "Team Library (VGCPastes teams)" },
   { flagKey: "teamThreats", label: "Team analysis: Threats tab + Team Builder panel (preview)" },
 ];
 
@@ -122,6 +123,12 @@ export default function AdminFeaturesPage() {
             className="text-sm font-medium text-zinc-100 hover:text-white"
           >
             Learnsets →
+          </Link>
+          <Link
+            href="/admin/meta-sets"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
+            Meta sets →
           </Link>
         </div>
         <AuthMenu
