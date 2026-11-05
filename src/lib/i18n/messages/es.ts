@@ -186,6 +186,8 @@ export const es: Messages = {
     otherPokemon: "Otros",
     removeCalc: "Quitar cálculo",
     ability: "Habilidad:",
+    nature: "Naturaleza:",
+    speedWithItem: (item, value) => `${value} de Velocidad con ${item}`,
     mega: "Mega",
     showingMega: "Mostrando la megaevolución — haz clic para ver la forma base",
     showMega: "Mostrar la megaevolución",

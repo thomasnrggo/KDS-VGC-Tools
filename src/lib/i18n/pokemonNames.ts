@@ -66,7 +66,8 @@ export const ENGLISH_POKEMON_TEXT: PokemonText = {
   item: identity,
   ability: identity,
   type: identity,
-  nature: identity,
+  // Pastes often write it in lowercase ("timid").
+  nature: (name) => name.charAt(0).toUpperCase() + name.slice(1),
 };
 
 export function createPokemonText(language: PokemonLanguage, names: PokemonNames): PokemonText {

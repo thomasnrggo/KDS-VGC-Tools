@@ -184,6 +184,8 @@ export const en = {
     otherPokemon: "Other",
     removeCalc: "Remove calc",
     ability: "Ability:",
+    nature: "Nature:",
+    speedWithItem: (item: string, value: number) => `${value} Speed with ${item}`,
     mega: "Mega",
     showingMega: "Showing the Mega form — click for the base form",
     showMega: "Show the Mega form",

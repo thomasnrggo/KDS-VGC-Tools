@@ -10,6 +10,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.2 — 2026-11-05
+
+### Fixed
+
+- Team Report cards: the nature now shows by name under the ability, and Speed shows the stat as
+  it is (not boosted by a held Choice Scarf or halved by an Iron Ball) — a `*` before it marks it, and
+  hovering shows the Speed with the item.
+- Team Report cards: the values (ability, nature, moves, Stat Points) are bold and the final stats darker,
+  the labels stay regular; a nature pasted in lowercase ("timid") shows capitalized.
+
 ## 0.3.1 — 2026-11-05
 
 ### Added

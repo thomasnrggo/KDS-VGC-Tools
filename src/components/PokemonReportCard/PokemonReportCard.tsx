@@ -212,7 +212,17 @@ export function PokemonReportCard({
       >
         {ability && (
           <p className="truncate">
-            <span className="text-zinc-500">{t.pokemonCard.ability}</span> {text.ability(ability)}
+            <span className="text-zinc-500">{t.pokemonCard.ability}</span>{" "}
+            <span className="font-semibold text-zinc-900">{text.ability(ability)}</span>
+          </p>
+        )}
+
+        {/* The nature by name — the stat table only marks it with +/−. Left
+            to the fallback below when there's no table, and to the open sheet. */}
+        {sheet !== "open" && breakdown && pokemon.nature && (
+          <p className="-mt-1.5 truncate">
+            <span className="text-zinc-500">{t.pokemonCard.nature}</span>{" "}
+            <span className="font-semibold text-zinc-900">{text.nature(pokemon.nature)}</span>
           </p>
         )}
 
@@ -231,7 +241,9 @@ export function PokemonReportCard({
                   ) : (
                     <span className="h-[22px] w-[22px] shrink-0 bg-zinc-300" />
                   )}
-                  <span className="truncate px-2 text-[13px]">{text.move(move)}</span>
+                  <span className="truncate px-2 text-[13px] font-semibold text-zinc-900">
+                    {text.move(move)}
+                  </span>
                 </li>
               );
             })}
@@ -252,6 +264,14 @@ export function PokemonReportCard({
               const lowered = breakdown.final.decreasedStat === stat;
               const tone = boosted ? "text-red-600" : lowered ? "text-blue-600" : "";
               const points = breakdown.statPoints[stat];
+              // The stat screen's Speed, not the in-battle one: an item that
+              // changes it (Choice Scarf, Iron Ball) is noted with a * instead.
+              const itemSpeed =
+                stat === "spe" &&
+                breakdown.final.speedBeforeItem !== undefined &&
+                breakdown.final.spe !== breakdown.final.speedBeforeItem
+                  ? breakdown.final.spe
+                  : undefined;
               return (
                 <div
                   key={stat}
@@ -267,12 +287,22 @@ export function PokemonReportCard({
                       }}
                     />
                   </span>
-                  <span className="text-right">{points}</span>
+                  <span className="text-right font-semibold text-zinc-900">{points}</span>
                   <span className={cn("text-center", tone)}>
                     {boosted ? "+" : lowered ? "-" : ""}
                   </span>
-                  <span className="self-stretch border-l border-zinc-300 py-0.5 text-right text-zinc-600">
-                    {breakdown.final[stat]}
+                  <span className="self-stretch border-l border-zinc-300 py-0.5 text-right text-zinc-800">
+                    {itemSpeed !== undefined && formPokemon.item ? (
+                      <span
+                        title={t.pokemonCard.speedWithItem(text.item(formPokemon.item), itemSpeed)}
+                        className="cursor-help"
+                      >
+                        <span className="text-zinc-400">*</span>
+                        {breakdown.final.speedBeforeItem}
+                      </span>
+                    ) : (
+                      breakdown.final[stat]
+                    )}
                   </span>
                 </div>
               );
