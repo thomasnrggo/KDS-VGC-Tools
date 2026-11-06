@@ -13,11 +13,8 @@ service cloud.firestore {
     // Roles (src/lib/admin.ts, /admin/users): staff have a roles/{uid} doc —
     // "moderator" keeps the shared data (seasons, public calc sets, meta
     // sets, learnsets); "admin" also manages feature flags and roles. The
-    // owner (keep in sync with NEXT_PUBLIC_ADMIN_UID) is always an admin,
-    // doc or not, so the site can't be locked out of its admin pages.
-    function isOwner() {
-      return request.auth != null && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
-    }
+    // first admin's doc is created outside the app (`npm run set-role`, or
+    // the console), which these rules don't apply to.
     function roleDoc() {
       return /databases/$(database)/documents/roles/$(request.auth.uid);
     }
@@ -25,10 +22,10 @@ service cloud.firestore {
       return request.auth != null && exists(roleDoc()) && get(roleDoc()).data.role in roles;
     }
     function isAdmin() {
-      return isOwner() || hasRole(['admin']);
+      return hasRole(['admin']);
     }
     function isStaff() {
-      return isOwner() || hasRole(['admin', 'moderator']);
+      return hasRole(['admin', 'moderator']);
     }
 
     // Each person reads their own role (that's how the app knows it);

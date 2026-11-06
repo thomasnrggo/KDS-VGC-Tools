@@ -1,33 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { isAdminRole, isOwnerUid, isStaffRole, parseRole } from "./admin";
-
-afterEach(() => {
-  vi.unstubAllEnvs();
-});
-
-describe("isOwnerUid", () => {
-  it("is true when the uid matches NEXT_PUBLIC_ADMIN_UID", () => {
-    vi.stubEnv("NEXT_PUBLIC_ADMIN_UID", "admin-123");
-    expect(isOwnerUid("admin-123")).toBe(true);
-  });
-
-  it("is false when the uid doesn't match", () => {
-    vi.stubEnv("NEXT_PUBLIC_ADMIN_UID", "admin-123");
-    expect(isOwnerUid("someone-else")).toBe(false);
-  });
-
-  it("is false for a null or undefined uid", () => {
-    vi.stubEnv("NEXT_PUBLIC_ADMIN_UID", "admin-123");
-    expect(isOwnerUid(null)).toBe(false);
-    expect(isOwnerUid(undefined)).toBe(false);
-  });
-
-  it("is false when NEXT_PUBLIC_ADMIN_UID isn't set, even for an empty-string uid", () => {
-    vi.stubEnv("NEXT_PUBLIC_ADMIN_UID", "");
-    expect(isOwnerUid("")).toBe(false);
-    expect(isOwnerUid("anything")).toBe(false);
-  });
-});
+import { describe, expect, it } from "vitest";
+import { isAdminRole, isStaffRole, parseRole } from "./admin";
 
 describe("roles", () => {
   it("reads a role doc's value, anything unknown as a regular user", () => {

@@ -7,11 +7,11 @@
  *   sections that are switched off for everyone else.
  * - "admin": all of that, plus feature flags and everyone's roles.
  *
- * The owner (`NEXT_PUBLIC_ADMIN_UID`, also hard-coded in firestore.rules)
- * is always an admin, with or without a role doc, so nobody can lock the
- * site out of its admin pages. These checks only decide what the app
- * shows; firestore.rules' isStaff()/isAdmin() are what actually allow a
- * write.
+ * No one is special-cased: the first admin's doc is created outside the
+ * app (`npm run set-role`, or the Firebase console), and no admin can
+ * change their own role, so there's always one left. These checks only
+ * decide what the app shows; firestore.rules' isStaff()/isAdmin() are what
+ * actually allow a write.
  */
 export type Role = "admin" | "moderator" | "user";
 
@@ -19,16 +19,6 @@ export type Role = "admin" | "moderator" | "user";
 export type StaffRole = Exclude<Role, "user">;
 
 export const STAFF_ROLES: readonly StaffRole[] = ["moderator", "admin"];
-
-/**
- * Whether `uid` is the site's owner. Reads the env var inside the function
- * (not cached at module scope) so it's stubbable per-test — Next.js inlines
- * `process.env.NEXT_PUBLIC_*` at build time wherever the reference sits.
- */
-export function isOwnerUid(uid: string | null | undefined): boolean {
-  const ownerUid = process.env.NEXT_PUBLIC_ADMIN_UID;
-  return Boolean(uid) && Boolean(ownerUid) && uid === ownerUid;
-}
 
 /** Keeps the shared data (meta sets, calc sets, seasons, learnsets) and sees previews. */
 export function isStaffRole(role: Role): boolean {

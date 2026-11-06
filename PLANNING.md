@@ -3105,9 +3105,10 @@ The single hard-coded admin became roles, managed at `/admin/users` instead of b
   member has `roles/{uid}` `{role, email, displayName?, setBy, setAt}`. Moderators keep the shared
   data — meta sets, public calc sets, seasons, learnset overrides — and see preview sections whose
   flag is off (FeatureGate, nav links, the Threats tab, the builder panel, the speedline). Admins
-  also manage feature flags (`appConfig/featureFlags`) and roles. The owner
-  (`NEXT_PUBLIC_ADMIN_UID`, also the one uid left in `firestore.rules`' `isOwner()`) is always an
-  admin, doc or not — nobody can lock the site out.
+  also manage feature flags (`appConfig/featureFlags`) and roles. Nobody is special-cased (no uid
+  in code, env or rules): the first admin's doc is made with `npm run set-role -- <email> admin`
+  (Admin SDK, the meta job's service account) or in the console; no admin can change their own
+  role, so one always remains, and the script is the way back in.
 - **Rules**: `isStaff()` / `isAdmin()` helpers (an `exists` + `get` on `roles/{uid}` per staff
   write). Each person reads their own role doc (how `useIsAdmin` learns it); admins read and write
   all, except their own — no self-demotion.

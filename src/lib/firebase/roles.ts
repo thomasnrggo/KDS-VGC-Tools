@@ -70,11 +70,14 @@ export async function removeStaffRole(uid: string): Promise<void> {
 }
 
 export async function saveProfile(user: User): Promise<void> {
-  if (!user.email) return;
+  // Google always shares the email; Firebase can keep it on the provider
+  // entry only (e.g. with "multiple accounts per email" on).
+  const email = user.email ?? user.providerData.find((provider) => provider.email)?.email;
+  if (!email) return;
   const profile: UserProfile = {
     uid: user.uid,
-    email: user.email,
-    emailLower: user.email.toLowerCase(),
+    email,
+    emailLower: email.toLowerCase(),
     displayName: user.displayName ?? undefined,
     photoURL: user.photoURL ?? undefined,
     lastSignInAt: new Date().toISOString(),

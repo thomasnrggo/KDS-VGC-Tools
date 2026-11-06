@@ -17,7 +17,7 @@ import {
   type StaffMember,
   type UserProfile,
 } from "@/lib/firebase";
-import { isOwnerUid, type StaffRole } from "@/lib/admin";
+import type { StaffRole } from "@/lib/admin";
 
 const ROLE_LABELS: Record<StaffRole, string> = { moderator: "Moderator", admin: "Admin" };
 const ROLE_OPTIONS = [
@@ -33,7 +33,7 @@ const ROLE_HINTS: Record<StaffRole, string> = {
  * Who's staff (see src/lib/admin.ts): the moderators and admins, each
  * with a role picker and Remove, and a search by email over everyone
  * who's signed in (profiles/) to add someone. Admins only. Your own role
- * can't be changed here, and the owner is always an admin.
+ * can't be changed here (nor by the rules), so an admin always remains.
  */
 export default function AdminUsersPage() {
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
@@ -172,13 +172,6 @@ export default function AdminUsersPage() {
             <p className="text-sm text-zinc-500">Loading…</p>
           ) : (
             <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-raised">
-              <li className="flex items-center gap-3 px-3 py-2.5">
-                <PersonLabel
-                  name="Site owner"
-                  detail={isOwnerUid(user.uid) ? (user.email ?? "") : "Set in the app's config"}
-                />
-                <span className="text-xs font-medium text-zinc-500">Admin, always</span>
-              </li>
               {staff.length === 0 && (
                 <li className="px-3 py-2.5 text-sm text-zinc-500">
                   No moderators or other admins yet.
@@ -243,7 +236,7 @@ export default function AdminUsersPage() {
             ) : (
               <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-raised">
                 {results.map((profile) => {
-                  const current = isOwnerUid(profile.uid) ? "admin" : staffRole(profile.uid);
+                  const current = staffRole(profile.uid);
                   return (
                     <li key={profile.uid} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
                       <PersonLabel

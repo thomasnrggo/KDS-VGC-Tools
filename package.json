@@ -1,6 +1,6 @@
 {
   "name": "vgc-match-planner",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "A personal tool for planning Pokémon VGC matchups — paste your team and opponent teams, then plan lead/back picks with notes.",
   "author": "thomasnrggo",
@@ -21,7 +21,8 @@
     "generate:names": "node scripts/generate-name-data.mjs",
     "generate:calc-data": "node scripts/generate-calc-data.mjs",
     "generate:learnsets": "node scripts/generate-learnsets.mjs",
-    "update:meta": "tsx scripts/update-meta.mjs"
+    "update:meta": "tsx scripts/update-meta.mjs",
+    "set-role": "node scripts/set-role.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

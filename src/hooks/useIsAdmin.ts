@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getRole } from "@/lib/firebase";
-import { isAdminRole, isOwnerUid, isStaffRole, type Role } from "@/lib/admin";
+import { isAdminRole, isStaffRole, type Role } from "@/lib/admin";
 import { useAuth } from "./useAuth";
 
 /** Each signed-in user's role, kept across page navigations so admin UI doesn't blink. */
@@ -20,7 +20,7 @@ export function useIsAdmin() {
   const [loaded, setLoaded] = useState<{ uid: string; role: Role } | null>(null);
 
   useEffect(() => {
-    if (!uid || isOwnerUid(uid)) return;
+    if (!uid) return;
     let cancelled = false;
     getRole(uid)
       .then((role) => {
@@ -42,13 +42,10 @@ export function useIsAdmin() {
   const isLoaded = !!uid && loaded?.uid === uid;
   const role: Role = !uid
     ? "user"
-    : isOwnerUid(uid)
-      ? "admin"
-      : loaded?.uid === uid
-        ? loaded.role
-        : (knownRoles.get(uid) ?? "user");
-  const isLoading =
-    isAuthLoading || (!!uid && !isOwnerUid(uid) && !isLoaded && !knownRoles.has(uid));
+    : loaded?.uid === uid
+      ? loaded.role
+      : (knownRoles.get(uid) ?? "user");
+  const isLoading = isAuthLoading || (!!uid && !isLoaded && !knownRoles.has(uid));
 
   return { role, isAdmin: isAdminRole(role), isStaff: isStaffRole(role), isLoading };
 }

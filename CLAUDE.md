@@ -30,6 +30,7 @@ Never bump the minor or major number (0.3, 1.0) unless the user explicitly says 
 - `npm run generate:type-chart` — regenerate `src/data/typeChart.json` from PokeAPI (one-off; static data, rarely needs re-running)
 - `npm run generate:names` — regenerate `src/data/names/<language>.json` (localized Pokémon/move/item/ability/type/nature names) from PokeAPI; re-run after the other generators (see docs/localization.md)
 - `npm run generate:calc-data` — regenerate `src/data/moveFlags.json`/`speciesWeights.json` (move flags and species weights for the damage calculator) from Showdown's data (`@pkmn/dex`); re-run after adding moves or species
+- `npm run set-role -- <email> <admin|moderator|user>` — set someone's role (`roles/{uid}`) with the Admin SDK; how the first admin is made (needs `FIREBASE_SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS`; see src/lib/admin.ts)
 - `npm run generate:learnsets` — regenerate `src/data/learnsets.json` (which moves each species learns, for the Team Builder's move list) from Showdown's data (`@pkmn/dex`); re-run after adding species or moves
 
 ## Stack notes

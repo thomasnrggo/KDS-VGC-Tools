@@ -10,6 +10,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.4 — 2026-11-05
+
+### Changed
+
+- Roles: no hard-coded owner any more — the site's first admin is a normal `roles/{uid}` doc,
+  set with `npm run set-role -- <email> admin` (or in the Firebase console), and
+  `NEXT_PUBLIC_ADMIN_UID` is gone. Needs the updated `firestore.rules` published.
+- Profiles keep the email from the Google sign-in when Firebase stores it only there, and
+  `npm run set-role` finds such accounts too and reports what actually failed (e.g. missing
+  credentials) instead of "no account".
+
 ## 0.3.3 — 2026-11-05
 
 ### Added
