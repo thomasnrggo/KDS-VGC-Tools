@@ -1,0 +1,1 @@
+export { MetagamePage } from "./MetagamePage";

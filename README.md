@@ -1,15 +1,32 @@
-# VGC Match Planner
+# VGC Box
 
-A personal tool for planning Pokémon VGC matchups. Paste your team once (Pokémon Showdown export
-format), then build up a list of opponent teams — each with sprite art and one or more named game
-plans covering lead/back picks and notes.
+**The Pokémon VGC prep toolkit** — live at [vgcbox.vercel.app](https://vgcbox.vercel.app).
 
-See [PLANNING.md](./PLANNING.md) for the full project plan: data model, the Showdown-paste parsing
-spec, how species names resolve to sprite images, and the current roadmap. That file is the source of
-truth for scope and design decisions — keep it in sync as the project evolves.
+VGC Box brings together what you need to prepare for a Pokémon VGC tournament (Pokémon Champions,
+level 50 doubles):
 
-This is a [Next.js](https://nextjs.org) app (App Router, TypeScript, Tailwind CSS v4). Data is stored
-entirely in the browser (IndexedDB) — there is no backend or account system.
+- **Metagame** (the home page) — usage from every Masters team list at official tournaments: the
+  most-used Pokémon, their sets, items, moves and teammates, the top cores and the winning teams.
+  New data every Monday.
+- **Team Builder** and **My Teams** — build a team with the metagame's threats beside it, then keep
+  its report: common leads, damage calcs, coverage and notes.
+- **Damage Calculator** — calc your Pokémon against the metagame's common sets.
+- **Speed Tiers** — every Pokémon's Speed at level 50, with and without a Choice Scarf.
+- **Team Library** — search the community's teams collected by the
+  [VGCPastes Repository](https://docs.google.com/spreadsheets/d/1axlwmzPA49rYkqXh7zHvAtSP-TKbM0ijGYBPRflLSWw),
+  by Pokémon, item, player or event.
+- **Matchup Planner** and **Tournaments** — plan a lead and back for each opponent, and log your
+  runs round by round.
+
+It's free and runs in the browser: your teams are saved on your device (IndexedDB), and an optional
+Google sign-in syncs them across devices (Firebase). The site's name, tagline and descriptions live
+in [`src/lib/site.ts`](./src/lib/site.ts).
+
+See [PLANNING.md](./PLANNING.md) for the reasoning behind the design — the data model, the
+Showdown-paste parsing spec, how species names resolve to sprite images, and the roadmap — and
+[CHANGELOG.md](./CHANGELOG.md) for what shipped when.
+
+This is a [Next.js](https://nextjs.org) app (App Router, TypeScript, Tailwind CSS v4).
 
 ## Getting started
 

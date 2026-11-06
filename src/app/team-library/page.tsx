@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
@@ -38,7 +39,9 @@ export default function TeamLibraryPage() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
-        <TeamLibrarySection myTeams={teams} onAddTeam={addBuiltTeam} />
+        <Suspense>
+          <TeamLibrarySection myTeams={teams} onAddTeam={addBuiltTeam} />
+        </Suspense>
       </div>
     </div>
   );

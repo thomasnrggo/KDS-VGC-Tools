@@ -3119,3 +3119,36 @@ The single hard-coded admin became roles, managed at `/admin/users` instead of b
   the service account in Vercel; not worth it for adding staff.
 - **Custom claims** were considered: no rule reads, but setting them needs the Admin SDK on a
   server, and a new role only applies after the user's token refreshes.
+
+## Metagame as the home page (2026-11-06)
+
+- `/` renders the Metagame (`src/components/MetagamePage`, shared with `/metagame`) with an intro
+  (`MetaIntro`: what it is, links to the tools whose sections are on). `HomeGate` sends everyone
+  but staff to the Matchup Planner (the old home) while the `metagame` flag is off.
+- The view is URL state, read once with `useSearchParams` (hence the Suspense in MetagamePage) and
+  written with `history.replaceState` (`?reg`, `?events`, `?view`, `?q`) — or `pushState` for
+  `?pokemon`, so Back closes the dialog (a popstate listener mirrors it).
+- Not yet: the page is still client-rendered from Firestore. Next step: render it on the server
+  from the meta documents with daily revalidation (as the Team Library's route does), for an
+  instant first paint, search indexing and a link-preview image; and split
+  `MetagameSection.tsx` (~1,800 lines) into overview, table, top teams and dialogs.
+
+## Site identity and SEO (2026-11-06)
+
+- **One source**: `src/lib/site.ts` — name, tagline ("The Pokémon VGC prep toolkit"), the
+  one-sentence and paragraph descriptions, each public page's title and description (`PAGES`),
+  and the routes in the sitemap. The home intro's copy (messages' `metagame.introTitle/introBody`)
+  says the same.
+- **Titles**: the root layout's template gives "Page · VGC Box"; the home page's title is absolute.
+  Pages are client components, so each section's `layout.tsx` (a server component) exports the
+  metadata (`pageMetadata`). `/metagame` points its canonical to `/` (the same page).
+- **Private pages** (someone's team, tournament, matchup plan, shared report, prep group, admin):
+  `privateMetadata` — an absolute title (a section layout's plain title stops the root template
+  reaching them), `noindex`, no inherited canonical.
+- **Link previews**: `src/app/opengraph-image.tsx` (and `twitter-image.tsx`, the same) renders the
+  logo, tagline and tools at build time. `SITE_URL` comes from `NEXT_PUBLIC_SITE_URL`, default
+  `https://vgcbox.vercel.app`.
+- **Crawlers**: `sitemap.ts` (PUBLIC_ROUTES), `robots.ts` (all but `/admin` and `/api/`), and
+  schema.org `WebApplication` JSON-LD on the home page.
+- Still to do for SEO: the pages render client-side, so crawlers see the metadata but little
+  content — server-rendering the metagame is the next step (see "Metagame as the home page").

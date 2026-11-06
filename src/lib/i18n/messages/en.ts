@@ -824,7 +824,7 @@ export const en = {
     winners: "Winners",
     mostUsed: "Most used",
     trendLegend: (event: string, previous: string) =>
-      `▲▼ Change in usage at ${event} against ${previous}, in points.`,
+      `▲▼ change at ${event} vs ${previous}, in points`,
     commonCores: "Common cores",
     commonCoresHint:
       "Pokémon that show up on the same team most often. Tap one to see how it does.",
@@ -835,6 +835,34 @@ export const en = {
     members: "Its Pokémon",
     teams: "Teams",
     noData: "No official tournament data for this regulation yet.",
+    hideIntro: "Hide the introduction",
+    introTitle: "VGC Box: the Pokémon VGC prep toolkit",
+    introBody:
+      "See what official tournaments are bringing, build your team and test it against the metagame, run the damage calcs that matter, borrow ideas from the community's teams and plan your leads and backs for every opponent. Free, in your browser. The metagame below comes from every Masters team list at official events, with new data every Monday.",
+    tools: {
+      teamBuilder: {
+        title: "Team Builder",
+        body: "Build a team, with the metagame's threats beside it",
+      },
+      damageCalc: { title: "Damage Calculator", body: "Calc against the common sets" },
+      teamLibrary: { title: "Team Library", body: "Find shared teams by Pokémon or player" },
+      matchupPlanner: { title: "Matchup Planner", body: "Plan your leads and backs per opponent" },
+    },
+    through: (event: string, date: string) => `through ${event} (${date})`,
+    weekly: "new data every Monday",
+    usageOf: (scope: string) => `% of teams · ${scope}`,
+    scopeShortRecent: (count: number) => `last ${count} events`,
+    scopeShortAll: "whole regulation",
+    atEvent: (event: string) => `At ${event}`,
+    vsPrevious: (event: string, usage: string) => `${event}: ${usage}`,
+    ofTopTeams: "of top-32 teams",
+    roundsCount: (rounds: number) => `${rounds.toLocaleString("en")} rounds`,
+    copySet: "Copy set",
+    setCopied: "Set copied as a paste",
+    findInLibrary: (name: string) => `Teams with ${name} in the Team Library`,
+    addToMyTeams: "Add to my teams",
+    addedToMyTeams: (name: string) => `Added "${name}" to your teams`,
+    alreadyInMyTeams: (name: string) => `Already in your teams as "${name}"`,
     noMatches: (query: string) => `No Pokémon match “${query}”.`,
   },
   opponentPokemon: {

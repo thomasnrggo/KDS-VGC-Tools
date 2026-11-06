@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { REGULATIONS } from "@/data/regulations";
 import { IconName } from "@/enums";
 import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
@@ -119,7 +120,9 @@ export function TeamLibrarySection({
   const { appLanguage } = useLanguageSettings();
   const [regulationId, setRegulationId] = useState(REGULATIONS[0].id);
   const { library, isLoading, failed } = useTeamLibrary(regulationId);
-  const [query, setQuery] = useState("");
+  // ?q= prefills the search — the Metagame links a Pokémon's teams here.
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [withStatPoints, setWithStatPoints] = useState(false);
   const [withOwnersEvs, setWithOwnersEvs] = useState(false);
   const [onlyFavorites, setOnlyFavorites] = useState(false);

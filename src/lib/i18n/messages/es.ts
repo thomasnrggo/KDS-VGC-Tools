@@ -834,8 +834,7 @@ export const es: Messages = {
     topTeams: "Equipos destacados",
     winners: "Ganadores",
     mostUsed: "Más usados",
-    trendLegend: (event, previous) =>
-      `▲▼ Cambio de uso en ${event} respecto a ${previous}, en puntos.`,
+    trendLegend: (event, previous) => `▲▼ cambio en ${event} frente a ${previous}, en puntos`,
     commonCores: "Núcleos comunes",
     commonCoresHint:
       "Pokémon que aparecen juntos en el mismo equipo con más frecuencia. Toca uno para ver cómo le va.",
@@ -846,6 +845,37 @@ export const es: Messages = {
     members: "Sus Pokémon",
     teams: "Equipos",
     noData: "Aún no hay datos de torneos oficiales para esta regulación.",
+    hideIntro: "Ocultar la introducción",
+    introTitle: "VGC Box: el kit para preparar torneos de Pokémon VGC",
+    introBody:
+      "Mira qué llevan los torneos oficiales, arma tu equipo y pruébalo contra el metajuego, haz los cálculos de daño que importan, toma ideas de los equipos de la comunidad y planea tus leads y backs contra cada rival. Gratis, en tu navegador. El metajuego de abajo sale de todas las listas Masters de los eventos oficiales, con datos nuevos cada lunes.",
+    tools: {
+      teamBuilder: {
+        title: "Constructor de equipos",
+        body: "Arma un equipo, con las amenazas del metajuego al lado",
+      },
+      damageCalc: { title: "Calculadora de daño", body: "Calcula contra los sets comunes" },
+      teamLibrary: {
+        title: "Biblioteca de equipos",
+        body: "Encuentra equipos por Pokémon o jugador",
+      },
+      matchupPlanner: { title: "Planificador", body: "Planea tus leads y backs por rival" },
+    },
+    through: (event, date) => `hasta ${event} (${date})`,
+    weekly: "datos nuevos cada lunes",
+    usageOf: (scope) => `% de equipos · ${scope}`,
+    scopeShortRecent: (count) => `últimos ${count} eventos`,
+    scopeShortAll: "toda la regulación",
+    atEvent: (event) => `En ${event}`,
+    vsPrevious: (event, usage) => `${event}: ${usage}`,
+    ofTopTeams: "de los equipos del top 32",
+    roundsCount: (rounds) => `${rounds.toLocaleString("es")} rondas`,
+    copySet: "Copiar set",
+    setCopied: "Set copiado como paste",
+    findInLibrary: (name) => `Equipos con ${name} en la Biblioteca de equipos`,
+    addToMyTeams: "Añadir a mis equipos",
+    addedToMyTeams: (name) => `"${name}" añadido a tus equipos`,
+    alreadyInMyTeams: (name) => `Ya está en tus equipos como "${name}"`,
     noMatches: (query) => `Ningún Pokémon coincide con “${query}”.`,
   },
   opponentPokemon: {

@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import movesData from "@/data/moves.json";
 import typeChart from "@/data/typeChart.json";
 import { resolveTypes } from "@/lib/damage/calculateDamage";
@@ -18,8 +20,14 @@ import {
   type MetaFinalist,
   type MetaTournament,
 } from "@/lib/meta/metaDocument";
-import { formatTeamPaste } from "@/lib/formatPokemonPaste";
+import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
+import { createTeam, validateTeamSize } from "@/lib/team";
+import { findMetaSpread, type MetaSpreads } from "@/lib/meta/metaSpreads";
+import { useMetaSpreads } from "@/hooks/useMetaSpreads";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import type { MoveData } from "@/types/damage";
+import type { Team } from "@/types";
 import { IconName } from "@/enums";
 import { Icon } from "../Icon";
 import { ItemIcon } from "../ItemIcon";
@@ -32,6 +40,7 @@ import { Button, IconButton, TextAction, TogglePill } from "../Button";
 import { TeamSheetPreview } from "../TeamSheetPreview";
 import { toast } from "../Toast";
 import { TypeIcon } from "../TypeIcon";
+import { MetaIntro } from "./MetaIntro";
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
@@ -72,6 +81,21 @@ interface Trend {
   previous: number | null;
 }
 
+const TABS: Tab[] = ["overview", "pokemon", "megas", "cores", "teams"];
+
+/** Updates the page's URL query without a navigation; a null value removes the key. */
+function setUrl(changes: Record<string, string | null>, mode: "replace" | "push" = "replace") {
+  const params = new URLSearchParams(window.location.search);
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === null) params.delete(key);
+    else params.set(key, value);
+  }
+  const search = params.toString();
+  const url = `${window.location.pathname}${search ? `?${search}` : ""}`;
+  if (mode === "push") window.history.pushState(null, "", url);
+  else window.history.replaceState(null, "", url);
+}
+
 const TAB_CLASS = (active: boolean) =>
   cn(
     "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
@@ -87,20 +111,93 @@ const TAB_CLASS = (active: boolean) =>
  * from its species), only the Megas, cores (pairs, trios, quads) and full
  * teams.
  */
-export function MetagameSection() {
+export function MetagameSection({
+  showIntro = false,
+  myTeams,
+  onAddTeam,
+}: {
+  /** The home page's welcome: what VGC Box is, and its tools. */
+  showIntro?: boolean;
+  /** All of the user's teams — to spot a winning team already added. */
+  myTeams: Team[];
+  /** Saves a new team (useMyTeams' addBuiltTeam). */
+  onAddTeam: (team: Team) => void;
+}) {
   const t = useMessages();
   const text = usePokemonText();
   const { appLanguage } = useLanguageSettings();
-  const [regulationId, setRegulationId] = useState(REGULATIONS[0]?.id ?? "");
+  // The view lives in the URL (?reg, ?events, ?view, ?q, ?pokemon), so a
+  // link shares it and Back closes a Pokémon's details. Read once; then
+  // written with history.replaceState / pushState (see setUrl).
+  const searchParams = useSearchParams();
+  const [regulationId, setRegulationIdState] = useState(() => {
+    const id = searchParams.get("reg");
+    return REGULATIONS.some((regulation) => regulation.id === id)
+      ? id!
+      : (REGULATIONS[0]?.id ?? "");
+  });
   const { meta, isLoading } = useMeta(regulationId);
-  const [query, setQuery] = useState("");
+  // The admin's common spreads (see /admin/meta-sets), for a copied set's Stat Points.
+  const { spreads } = useMetaSpreads(regulationId);
+  const { flags } = useFeatureFlags();
+  const { isStaff } = useIsAdmin();
+  const libraryOpen = flags.teamLibrary || isStaff;
+  const [query, setQueryState] = useState(() => searchParams.get("q") ?? "");
   const [openSpecies, setOpenSpecies] = useState<string | null>(null);
-  const [scope, setScope] = useState<Scope>("recent");
-  const [tab, setTab] = useState<Tab>("overview");
+  const [scope, setScopeState] = useState<Scope>(() => searchParams.get("events") ?? "recent");
+  const [tab, setTabState] = useState<Tab>(() => {
+    const view = searchParams.get("view");
+    return TABS.includes(view as Tab) ? (view as Tab) : "overview";
+  });
   const [sort, setSort] = useState<Sort>("usage");
   const [coreSize, setCoreSize] = useState<CoreSize>("pairs");
   // The overview's detail dialogs: a Pokémon (its species) or a core.
-  const [detailSpecies, setDetailSpecies] = useState<string | null>(null);
+  const [detailSpecies, setDetailSpeciesState] = useState<string | null>(() =>
+    searchParams.get("pokemon"),
+  );
+  // Whether this page opened the Pokémon dialog with its own history entry,
+  // so closing it goes Back instead of leaving an extra entry behind.
+  const pushedDetail = useRef(false);
+
+  function setRegulationId(id: string) {
+    setRegulationIdState(id);
+    setUrl({ reg: id === REGULATIONS[0]?.id ? null : id, events: null });
+  }
+  function setQuery(value: string) {
+    setQueryState(value);
+    setUrl({ q: value.trim() || null });
+  }
+  function setScope(value: Scope) {
+    setScopeState(value);
+    setUrl({ events: value === "recent" ? null : value });
+  }
+  function setTab(value: Tab) {
+    setTabState(value);
+    setUrl({ view: value === "overview" ? null : value });
+  }
+  function setDetailSpecies(species: string | null) {
+    if (species) {
+      setDetailSpeciesState(species);
+      pushedDetail.current = true;
+      setUrl({ pokemon: species }, "push");
+    } else if (pushedDetail.current) {
+      pushedDetail.current = false;
+      window.history.back();
+    } else {
+      setDetailSpeciesState(null);
+      setUrl({ pokemon: null });
+    }
+  }
+  // Back and Forward open and close the Pokémon dialog.
+  useEffect(() => {
+    function onPopState() {
+      const species = new URLSearchParams(window.location.search).get("pokemon");
+      if (!species) pushedDetail.current = false;
+      setDetailSpeciesState(species);
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
   const [detailCore, setDetailCore] = useState<MetaCombo | null>(null);
   const [detailFinalist, setDetailFinalist] = useState<{
     event: MetaTournament;
@@ -198,6 +295,15 @@ export function MetagameSection() {
   const latestEvent = tournaments.at(-1);
   const previousEvent = tournaments.at(-2);
   const combos = slice?.combos;
+  /** A teammate (a plain species) as the list has it: its most-used form, a Mega apart. */
+  const formOf = (species: string) =>
+    (slice?.pokemon ?? []).find((entry) => stripMegaSuffix(entry.species) === species)?.species;
+  // What the usage figures cover, briefly: "last 4 events", "Gdansk"…
+  const scopeShort = tournamentScope
+    ? shortTournamentName(tournamentScope.title)
+    : scope === "recent" && official?.recent
+      ? t.metagame.scopeShortRecent(official.recent.tournamentIds.length)
+      : t.metagame.scopeShortAll;
   const eventCount = tournamentScope
     ? 1
     : scope === "recent" && official?.recent
@@ -206,14 +312,19 @@ export function MetagameSection() {
 
   return (
     <section className="flex flex-col gap-4">
+      {showIntro && <MetaIntro />}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-zinc-900">{t.metagame.title}</h2>
+        {showIntro ? (
+          <h2 className="text-xl font-semibold text-zinc-900">{t.metagame.title}</h2>
+        ) : (
+          <h1 className="text-xl font-semibold text-zinc-900">{t.metagame.title}</h1>
+        )}
         {REGULATIONS.length > 1 && (
           <RegulationSelect
             value={regulationId}
             onChange={(id) => {
               setRegulationId(id);
-              setScope("recent");
+              setScopeState("recent");
               setOpenSpecies(null);
             }}
           />
@@ -234,7 +345,7 @@ export function MetagameSection() {
             <div className="flex flex-wrap items-center gap-2">
               <Select
                 value={tournamentScope ? tournamentScope.id : official.recent ? "recent" : "all"}
-                onChange={setScope}
+                onChange={(value) => setScope(value)}
                 ariaLabel={t.metagame.scopeLabel}
                 title={t.metagame.scopeHint}
                 className="px-3.5 py-1.5 text-sm"
@@ -258,8 +369,13 @@ export function MetagameSection() {
                 ]}
               />
               <span aria-hidden="true" className="mx-1 hidden h-6 w-px bg-zinc-300 sm:block" />
-              <div role="tablist" aria-label={t.metagame.view} className="flex flex-wrap gap-1.5">
-                {(["overview", "pokemon", "megas", "cores", "teams"] as const).map((option) => (
+              {/* One line that scrolls sideways on phones, rather than wrapping. */}
+              <div
+                role="tablist"
+                aria-label={t.metagame.view}
+                className="-mx-3 flex gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+              >
+                {TABS.map((option) => (
                   <button
                     key={option}
                     type="button"
@@ -269,7 +385,7 @@ export function MetagameSection() {
                       setTab(option);
                       setOpenSpecies(null);
                     }}
-                    className={TAB_CLASS(tab === option)}
+                    className={cn(TAB_CLASS(tab === option), "shrink-0")}
                   >
                     {
                       {
@@ -336,6 +452,13 @@ export function MetagameSection() {
                   : t.metagame.basedOn(eventCount, slice?.teams ?? official.teams)}
               </span>
               {tournamentScope && ` · ${t.metagame.teamsCount(tournamentScope.teams)}`}
+              {/* How fresh: the newest event in it, when it was updated, and when next. */}
+              {!tournamentScope &&
+                latestEvent &&
+                ` · ${t.metagame.through(
+                  shortTournamentName(latestEvent.title),
+                  eventDate(latestEvent, appLanguage),
+                )}`}
               {" · "}
               {t.metagame.updated(
                 new Date(meta.updatedAt).toLocaleDateString(appLanguage, {
@@ -343,6 +466,7 @@ export function MetagameSection() {
                   day: "numeric",
                 }),
               )}
+              {` · ${t.metagame.weekly}`}
             </p>
           </div>
 
@@ -359,6 +483,7 @@ export function MetagameSection() {
               events={scopeEvents}
               query={query.trim()}
               trendOf={cardTrend}
+              usageLegend={t.metagame.usageOf(scopeShort)}
               trendLegend={
                 trendIndex >= 1
                   ? t.metagame.trendLegend(
@@ -434,6 +559,11 @@ export function MetagameSection() {
                       history={historyBySpecies.get(mon.species) ?? []}
                       tournaments={tournaments}
                       recentIds={recentIds}
+                      spreads={spreads}
+                      onOpenPokemon={(species) => {
+                        const form = formOf(species);
+                        if (form) setDetailSpecies(form);
+                      }}
                       isOpen={openSpecies === mon.species}
                       onToggle={() =>
                         setOpenSpecies((current) => (current === mon.species ? null : mon.species))
@@ -459,12 +589,27 @@ export function MetagameSection() {
                   history={historyBySpecies.get(detailSpecies) ?? []}
                   tournaments={tournaments}
                   recentIds={recentIds}
+                  scopeShort={scopeShort}
+                  spreads={spreads}
+                  libraryOpen={libraryOpen}
+                  onOpenPokemon={(species) => {
+                    const form = formOf(species);
+                    if (!form) return;
+                    setDetailSpeciesState(form);
+                    setUrl({ pokemon: form });
+                  }}
                   onClose={() => setDetailSpecies(null)}
                 />
               );
             })()}
           {detailFinalist && (
-            <FinalistModal {...detailFinalist} onClose={() => setDetailFinalist(null)} />
+            <FinalistModal
+              {...detailFinalist}
+              regulationId={regulationId}
+              myTeams={myTeams}
+              onAddTeam={onAddTeam}
+              onClose={() => setDetailFinalist(null)}
+            />
           )}
           {detailCore && (
             <CoreDetailModal
@@ -491,6 +636,7 @@ function MetaOverview({
   query,
   matches,
   trendOf,
+  usageLegend,
   trendLegend,
   onOpenFinalist,
   onOpenPokemon,
@@ -508,6 +654,8 @@ function MetaOverview({
   matches?: (species: string) => boolean;
   /** Its usage at the event in view against the one before. */
   trendOf: (species: string) => CardTrend | null;
+  /** What the cards' percentages cover. */
+  usageLegend: string;
   /** What the arrows compare — null when there's no earlier event. */
   trendLegend: string | null;
   onOpenFinalist: (event: MetaTournament, finalist: MetaFinalist) => void;
@@ -541,9 +689,12 @@ function MetaOverview({
           <h3 className="text-lg font-semibold text-zinc-900">
             {t.metagame.topPokemon(top.length)}
           </h3>
-          {trendLegend && <p className="text-sm text-zinc-600">{trendLegend}</p>}
+          <p className="text-sm text-zinc-600">
+            {usageLegend}
+            {trendLegend && ` · ${trendLegend}`}
+          </p>
         </div>
-        <ol className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-10">
+        <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-10">
           {top.map((mon, index) => (
             <li key={mon.species}>
               <PokemonCard
@@ -564,7 +715,7 @@ function MetaOverview({
               </h4>
             )}
             {beyondTop.length > 0 ? (
-              <ol className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-10">
+              <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-5 xl:grid-cols-10">
                 {beyondTop.map(({ mon, rank }) => (
                   <li key={mon.species}>
                     <PokemonCard
@@ -691,11 +842,14 @@ function DetailHeader({
 function Stat({
   label,
   value,
+  caption,
   hint,
   className,
 }: {
   label: string;
   value: React.ReactNode;
+  /** What the figure covers, always shown (phones can't hover for the hint). */
+  caption?: string;
   hint?: string;
   className?: string;
 }) {
@@ -707,6 +861,7 @@ function Stat({
       <span className={cn("text-base font-semibold text-zinc-900 tabular-nums", className)}>
         {value}
       </span>
+      {caption && <span className="truncate text-[11px] text-zinc-500">{caption}</span>}
     </div>
   );
 }
@@ -721,6 +876,10 @@ function PokemonDetailModal({
   history,
   tournaments,
   recentIds,
+  scopeShort,
+  spreads,
+  libraryOpen,
+  onOpenPokemon,
   onClose,
 }: {
   mon: MetaPokemon;
@@ -729,11 +888,21 @@ function PokemonDetailModal({
   history: MetaPokemon["history"];
   tournaments: MetaTournament[];
   recentIds: Set<string>;
+  /** What the usage covers: "last 4 events"… */
+  scopeShort: string;
+  spreads: MetaSpreads;
+  /** Whether to link the Team Library (its section is on). */
+  libraryOpen: boolean;
+  /** Opens a teammate's details. */
+  onOpenPokemon: (species: string) => void;
   onClose: () => void;
 }) {
   const t = useMessages();
   const text = usePokemonText();
   const delta = trend && trend.previous !== null ? trend.latest - trend.previous : null;
+  const latestEvent = tournaments.at(-1);
+  const previousEvent = tournaments.at(-2);
+  const baseName = text.species(stripMegaSuffix(mon.species));
 
   return (
     <Modal onClose={onClose} labelledBy="meta-pokemon-title" size="wide" fullScreenOnPhone>
@@ -749,11 +918,29 @@ function PokemonDetailModal({
           <Stat
             label={t.metagame.usage}
             value={percent(mon.usage, 1)}
+            caption={scopeShort}
             hint={t.metagame.usageHint}
           />
-          <Stat label={t.metagame.top} value={percent(mon.topUsage)} hint={t.metagame.topHint} />
           <Stat
-            label={t.metagame.latest}
+            label={t.metagame.top}
+            value={percent(mon.topUsage)}
+            caption={t.metagame.ofTopTeams}
+            hint={t.metagame.topHint}
+          />
+          <Stat
+            label={
+              latestEvent
+                ? t.metagame.atEvent(shortTournamentName(latestEvent.title))
+                : t.metagame.latest
+            }
+            caption={
+              trend?.previous != null && previousEvent
+                ? t.metagame.vsPrevious(
+                    shortTournamentName(previousEvent.title),
+                    percent(trend.previous),
+                  )
+                : undefined
+            }
             value={
               trend ? (
                 <>
@@ -774,16 +961,28 @@ function PokemonDetailModal({
           <Stat
             label={t.metagame.winRate}
             value={mon.winRate === null ? "—" : percent(mon.winRate)}
+            caption={t.metagame.roundsCount(mon.rounds)}
             hint={t.metagame.winRateHint(mon.rounds)}
             className={winRateTone(mon.winRate, mon.rounds)}
           />
         </div>
+        {libraryOpen && (
+          <Link
+            href={`/team-library?q=${encodeURIComponent(stripMegaSuffix(mon.species))}`}
+            className="mb-4 flex w-fit items-center gap-1 text-sm font-medium text-zinc-700 hover:text-zinc-900 hover:underline"
+          >
+            {t.metagame.findInLibrary(baseName)}
+            <Icon name={IconName.ChevronRight} size={16} />
+          </Link>
+        )}
         <MetaDetails
           mon={mon}
           history={history}
           tournaments={tournaments}
           recentIds={recentIds}
           inset={false}
+          spreads={spreads}
+          onOpenPokemon={onOpenPokemon}
         />
       </div>
     </Modal>
@@ -979,9 +1178,13 @@ function MetaRow({
   history,
   tournaments,
   recentIds,
+  spreads,
+  onOpenPokemon,
   isOpen,
   onToggle,
 }: {
+  spreads: MetaSpreads;
+  onOpenPokemon: (species: string) => void;
   mon: MetaPokemon;
   rank: number;
   trend: Trend | null;
@@ -1082,7 +1285,14 @@ function MetaRow({
         </span>
       </button>
       {isOpen && (
-        <MetaDetails mon={mon} history={history} tournaments={tournaments} recentIds={recentIds} />
+        <MetaDetails
+          mon={mon}
+          history={history}
+          tournaments={tournaments}
+          recentIds={recentIds}
+          spreads={spreads}
+          onOpenPokemon={onOpenPokemon}
+        />
       )}
     </li>
   );
@@ -1094,6 +1304,8 @@ function MetaDetails({
   tournaments,
   recentIds,
   inset = true,
+  spreads,
+  onOpenPokemon,
 }: {
   mon: MetaPokemon;
   history: MetaPokemon["history"];
@@ -1101,9 +1313,32 @@ function MetaDetails({
   recentIds: Set<string>;
   /** Lined up under a table row's name (true), or on its own in a dialog. */
   inset?: boolean;
+  /** The admin's spreads — a copied set gets its Stat Points. */
+  spreads?: MetaSpreads;
+  /** Opens a teammate's details; without it, teammates are plain text. */
+  onOpenPokemon?: (species: string) => void;
 }) {
   const t = useMessages();
   const text = usePokemonText();
+
+  /** The set as a paste: the admin's spread (and nature) for it when there is one. */
+  async function copySet(set: MetaPokemon["sets"][number]) {
+    const spread = findMetaSpread(spreads, mon.species, set.item);
+    const paste = formatPokemonPaste({
+      species: stripMegaSuffix(mon.species),
+      item: set.item,
+      ability: set.ability,
+      nature: spread?.nature ?? set.nature,
+      evs: spread?.evs,
+      moves: set.moves,
+    });
+    try {
+      await navigator.clipboard.writeText(paste);
+      toast.success(t.metagame.setCopied);
+    } catch {
+      toast.error(t.opponentCard.copyFailed);
+    }
+  }
   const padding = inset && "px-3 sm:pl-[5.75rem]";
   const peak = Math.max(...history.map((point) => point.usage), 0.01);
 
@@ -1179,8 +1414,17 @@ function MetaDetails({
                     <span className="text-zinc-700">{text.ability(set.ability)}</span>
                   )}
                   {set.nature && <span className="text-zinc-500">{text.nature(set.nature)}</span>}
-                  <span className="ml-auto text-xs text-zinc-500">
+                  <span className="ml-auto flex items-center gap-1 text-xs text-zinc-500">
                     {t.metagame.setShare(percent(set.share))}
+                    <IconButton
+                      variant="ghost"
+                      onClick={() => copySet(set)}
+                      aria-label={t.metagame.copySet}
+                      title={t.metagame.copySet}
+                      className="h-7 w-7"
+                    >
+                      <Icon name={IconName.ContentCopy} size={14} />
+                    </IconButton>
                   </span>
                 </div>
                 <ul className="grid grid-cols-2 gap-1.5">
@@ -1217,14 +1461,29 @@ function MetaDetails({
           <ShareList
             title={t.metagame.teammates}
             shares={mon.teammates.slice(0, 6)}
-            render={(name) => (
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="relative h-7 w-7 shrink-0">
-                  <PokemonSprite species={name} fill />
-                </span>
-                <span className="truncate">{text.species(name)}</span>
-              </span>
-            )}
+            render={(name) => {
+              const label = (
+                <>
+                  <span className="relative h-7 w-7 shrink-0">
+                    <PokemonSprite species={name} fill />
+                  </span>
+                  <span className="truncate">{text.species(name)}</span>
+                </>
+              );
+              return onOpenPokemon ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenPokemon(name)}
+                  aria-label={t.metagame.openDetails(text.species(name))}
+                  className="flex min-w-0 items-center gap-1.5 text-left hover:underline"
+                >
+                  {label}
+                  <Icon name={IconName.ChevronRight} size={14} className="shrink-0 text-zinc-400" />
+                </button>
+              ) : (
+                <span className="flex min-w-0 items-center gap-1.5">{label}</span>
+              );
+            }}
           />
         </div>
       </div>
@@ -1340,16 +1599,21 @@ function TopTeams({
   const mode: TopTeamsMode = hasFinalists ? picked : "mostUsed";
   if (!hasFinalists && teams.length === 0) return null;
 
-  const finalists = events.flatMap((event) =>
-    (event.finalists ?? [])
-      .filter((finalist) => !matches || finalist.team.some((mon) => matches(mon.species)))
-      .map((finalist) => ({ event, finalist })),
-  );
+  // One row per event: its winner and runner-up side by side (while
+  // searching, only those with a match).
+  const finalistsByEvent = events
+    .map((event) => ({
+      event,
+      finalists: (event.finalists ?? []).filter(
+        (finalist) => !matches || finalist.team.some((mon) => matches(mon.species)),
+      ),
+    }))
+    .filter(({ finalists }) => finalists.length > 0);
   const mostUsed = teams
     .map((team, index) => ({ team, rank: index + 1 }))
     .filter(({ team }) => !matches || team.species.some(matches))
     .slice(0, OVERVIEW_CORES);
-  const isEmpty = mode === "winners" ? finalists.length === 0 : mostUsed.length === 0;
+  const isEmpty = mode === "winners" ? finalistsByEvent.length === 0 : mostUsed.length === 0;
 
   return (
     <section className="flex flex-col gap-3">
@@ -1392,54 +1656,76 @@ function TopTeams({
           </p>
         )}
         {mode === "winners" ? (
-          <ColumnList
-            items={finalists}
-            itemKey={({ event, finalist }) => `${event.id}-${finalist.placing}`}
-            renderItem={({ event, finalist }) => {
-              const name = shortTournamentName(event.title);
-              const placing = t.metagame.finalistPlacing(finalist.placing);
-              return (
-                <button
-                  type="button"
-                  onClick={() => onOpenFinalist(event, finalist)}
-                  aria-label={t.metagame.openDetails(`${placing} · ${name}`)}
-                  title={finalist.team.map((mon) => text.species(mon.species)).join(" / ")}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-zinc-100"
-                >
-                  <span className="flex w-24 shrink-0 flex-col">
-                    <span
-                      className="truncate text-sm font-semibold text-zinc-900"
-                      title={event.title}
-                    >
-                      {name}
-                    </span>
-                    <span className="text-xs text-zinc-500 tabular-nums">
-                      {placing} · {formatRecord(finalist.record)}
-                    </span>
-                    <span className="text-xs text-zinc-400">{eventDate(event, appLanguage)}</span>
+          <ol className="flex flex-col divide-y divide-zinc-200">
+            {finalistsByEvent.map(({ event, finalists }) => (
+              <li
+                key={event.id}
+                className="flex flex-col gap-1 px-3 py-2.5 lg:flex-row lg:items-center lg:gap-4"
+              >
+                <span className="flex shrink-0 items-baseline gap-2 lg:w-28 lg:flex-col lg:gap-0">
+                  <span
+                    className="truncate text-sm font-semibold text-zinc-900"
+                    title={event.title}
+                  >
+                    {shortTournamentName(event.title)}
                   </span>
-                  <span className="flex min-w-0 flex-1 gap-0.5">
-                    {finalist.team.map((mon, index) => (
-                      <span
-                        key={index}
-                        className={cn(
-                          "relative h-9 w-9 shrink-0 rounded-full sm:h-10 sm:w-10",
-                          matches?.(mon.species) && HIGHLIGHT_SPRITE,
-                        )}
+                  <span className="text-xs text-zinc-500">
+                    {eventDate(event, appLanguage)} · {t.metagame.teamsCount(event.teams)}
+                  </span>
+                </span>
+                <span className="grid min-w-0 flex-1 grid-cols-1 gap-1 lg:grid-cols-2 lg:gap-4">
+                  {finalists.map((finalist) => {
+                    const name = shortTournamentName(event.title);
+                    const placing = t.metagame.finalistPlacing(finalist.placing);
+                    return (
+                      <button
+                        key={finalist.placing}
+                        type="button"
+                        onClick={() => onOpenFinalist(event, finalist)}
+                        aria-label={t.metagame.openDetails(`${placing} · ${name}`)}
+                        title={finalist.team.map((mon) => text.species(mon.species)).join(" / ")}
+                        className="-mx-1 flex min-w-0 items-center gap-3 rounded-lg px-1 py-1 text-left hover:bg-zinc-100"
                       >
-                        <PokemonSprite species={mon.species} fill />
-                        {mon.item && (
-                          <span className="absolute -right-0.5 -bottom-0.5">
-                            <ItemIcon item={mon.item} size={16} />
+                        <span className="flex w-20 shrink-0 flex-col">
+                          <span
+                            className={cn(
+                              "text-xs font-semibold",
+                              finalist.placing === 1
+                                ? "text-amber-700 dark:text-amber-300"
+                                : "text-zinc-700",
+                            )}
+                          >
+                            {placing}
                           </span>
-                        )}
-                      </span>
-                    ))}
-                  </span>
-                </button>
-              );
-            }}
-          />
+                          <span className="text-xs text-zinc-500 tabular-nums">
+                            {formatRecord(finalist.record)}
+                          </span>
+                        </span>
+                        <span className="flex min-w-0 gap-0.5">
+                          {finalist.team.map((mon, index) => (
+                            <span
+                              key={index}
+                              className={cn(
+                                "relative h-9 w-9 shrink-0 rounded-full sm:h-11 sm:w-11",
+                                matches?.(mon.species) && HIGHLIGHT_SPRITE,
+                              )}
+                            >
+                              <PokemonSprite species={mon.species} fill />
+                              {mon.item && (
+                                <span className="absolute -right-0.5 -bottom-0.5">
+                                  <ItemIcon item={mon.item} size={16} />
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </span>
+              </li>
+            ))}
+          </ol>
         ) : (
           <ColumnList
             items={mostUsed}
@@ -1547,19 +1833,44 @@ function ComboRow<C extends MetaCombo>({
 function FinalistModal({
   event,
   finalist,
+  regulationId,
+  myTeams,
+  onAddTeam,
   onClose,
 }: {
   event: MetaTournament;
   finalist: MetaFinalist;
+  regulationId: string;
+  myTeams: Team[];
+  onAddTeam: (team: Team) => void;
   onClose: () => void;
 }) {
   const t = useMessages();
   const { appLanguage } = useLanguageSettings();
   const placing = t.metagame.finalistPlacing(finalist.placing);
+  const teamName = `${shortTournamentName(event.title)} ${placing}`;
+  const paste = formatTeamPaste(finalist.team);
+
+  /** Saves the team sheet as a new team of mine — once. */
+  function addToMyTeams() {
+    const existing = myTeams.find((mine) => mine.rawPaste === paste);
+    if (existing) {
+      toast.info(t.metagame.alreadyInMyTeams(existing.name));
+      return;
+    }
+    const team = createTeam(paste, teamName, regulationId);
+    const sizeError = validateTeamSize(team.pokemon);
+    if (sizeError) {
+      toast.error(sizeError);
+      return;
+    }
+    onAddTeam(team);
+    toast.success(t.metagame.addedToMyTeams(teamName));
+  }
 
   async function copyTeam() {
     try {
-      await navigator.clipboard.writeText(formatTeamPaste(finalist.team));
+      await navigator.clipboard.writeText(paste);
       toast.success(t.metagame.teamCopied);
     } catch {
       toast.error(t.opponentCard.copyFailed);
@@ -1576,10 +1887,14 @@ function FinalistModal({
         onClose={onClose}
       />
       <TeamSheetPreview pokemon={finalist.team} />
-      <div className="flex justify-end pt-3">
+      <div className="flex flex-wrap justify-end gap-2 pt-3">
         <Button variant="outline" onClick={copyTeam} className="flex items-center gap-1.5">
           <Icon name={IconName.ContentCopy} size={16} />
           {t.metagame.copyTeam}
+        </Button>
+        <Button onClick={addToMyTeams} className="flex items-center gap-1.5">
+          <Icon name={IconName.Add} size={16} />
+          {t.metagame.addToMyTeams}
         </Button>
       </div>
     </Modal>
@@ -1613,7 +1928,8 @@ function PokemonCard({
       onClick={() => onOpen(mon.species)}
       aria-label={t.metagame.openDetails(name)}
       className={cn(
-        "relative flex h-full w-full flex-col items-center gap-1 rounded-lg border border-zinc-200 bg-raised px-2 pt-5 pb-2.5 text-center transition-[border-color,opacity] hover:border-zinc-400",
+        // Phones: a compact row (sprite beside the name); wider, a tile.
+        "relative flex h-full w-full items-center gap-2 rounded-lg border border-zinc-200 bg-raised py-1.5 pr-2 pl-1 text-left transition-[border-color,opacity] hover:border-zinc-400 sm:flex-col sm:gap-1 sm:px-2 sm:pt-5 sm:pb-2.5 sm:text-center",
         highlight === true && "border-chrome-600 ring-1 ring-chrome-600",
         highlight === false && "opacity-40 hover:opacity-100",
       )}
@@ -1639,18 +1955,20 @@ function PokemonCard({
           <span className="sr-only">{trend.hint}</span>
         </span>
       )}
-      <span className="relative h-14 w-14">
+      <span className="relative h-11 w-11 shrink-0 sm:h-16 sm:w-16">
         <PokemonSprite species={mon.species} fill />
       </span>
-      <span className="w-full truncate text-xs font-medium text-zinc-900 sm:text-sm">{name}</span>
-      <span className="text-sm font-semibold text-zinc-900 tabular-nums">
-        {percent(mon.usage, 1)}
-      </span>
-      <span className="h-1 w-full overflow-hidden rounded-full bg-zinc-200">
-        <span
-          className="block h-full rounded-full bg-chrome-600"
-          style={{ width: percent(mon.usage) }}
-        />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:w-full sm:items-center sm:gap-1">
+        <span className="w-full truncate text-xs font-medium text-zinc-900 sm:text-sm">{name}</span>
+        <span className="text-sm font-semibold text-zinc-900 tabular-nums">
+          {percent(mon.usage, 1)}
+        </span>
+        <span className="h-1 w-full overflow-hidden rounded-full bg-zinc-200">
+          <span
+            className="block h-full rounded-full bg-chrome-600"
+            style={{ width: percent(mon.usage) }}
+          />
+        </span>
       </span>
     </button>
   );

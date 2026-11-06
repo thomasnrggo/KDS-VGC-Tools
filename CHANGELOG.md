@@ -10,6 +10,36 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.6 — 2026-11-06
+
+### Changed
+
+- The browser tab icon (and the home-screen icon on phones) is the VGC Box logo, on a dark tile
+  so its white swirl shows on light tabs too, in place of the default Next.js icon.
+- The Metagame is the home page (`/`; `/metagame` still works, and the logo goes home), with a
+  short intro and links to the Team Builder, Damage Calculator, Team Library and Matchup Planner.
+  Proper page title and description for search and link previews.
+- Metagame: the view is in the URL — the regulation, events, tab, search and an open Pokémon — so
+  a link shares it, and Back closes a Pokémon's details.
+- Metagame: clearer numbers — the cards say what their percentages cover ("% of teams · last 4
+  events"), the details show a caption under each figure ("At Gdansk", "Puebla: 23%", "3,300
+  rounds"), and the summary says how fresh it is ("through Gdansk (Oct 31) · updated Nov 4 · new
+  data every Monday").
+- Metagame on phones: the top 20 as compact two-column rows, and the view tabs on one scrolling
+  line.
+- Metagame: Top teams shows each event on one row, its winner and runner-up side by side.
+- Metagame details: copy a common set as a paste (with the admin's spread when there is one),
+  open a teammate's details, and find the Pokémon's teams in the Team Library (`?q=` now prefills
+  its search). A winning team can be added to My Teams.
+- What VGC Box is, said the same way everywhere: "The Pokémon VGC prep toolkit". The home intro
+  introduces the whole site as a welcome banner in Hisuian Zoroark's colors (light purple; a red tint in dark mode) with the logo and, on wide screens, the tools in a 2×2 grid beside the text — with a ✕ that closes it for good on that device (it never flashes
+  back on load) — and the README is rewritten.
+- SEO: every page has its own title ("Damage Calculator · VGC Box") and search description, a
+  canonical address, and a link-preview image (the logo, the tagline and the tools) for Discord, X
+  and the like. A sitemap and robots.txt list the public pages; someone's own teams, tournaments,
+  shared reports and the admin pages are titled but kept out of search. The home page describes
+  the site to search engines (schema.org).
+
 ## 0.3.5 — 2026-11-06
 
 ### Changed

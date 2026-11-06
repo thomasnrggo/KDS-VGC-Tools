@@ -32,6 +32,7 @@ Never bump the minor or major number (0.3, 1.0) unless the user explicitly says 
 - `npm run generate:calc-data` — regenerate `src/data/moveFlags.json`/`speciesWeights.json` (move flags and species weights for the damage calculator) from Showdown's data (`@pkmn/dex`); re-run after adding moves or species
 - `npm run set-role -- <email> <admin|moderator|user>` — set someone's role (`roles/{uid}`) with the Admin SDK; how the first admin is made (needs `FIREBASE_SERVICE_ACCOUNT` or `GOOGLE_APPLICATION_CREDENTIALS`; see src/lib/admin.ts)
 - `npm run generate:learnsets` — regenerate `src/data/learnsets.json` (which moves each species learns, for the Team Builder's move list) from Showdown's data (`@pkmn/dex`); re-run after adding species or moves
+- `npm run generate:icons` — regenerate `src/app/favicon.ico`/`icon.png`/`apple-icon.png` from `public/resources/logo.png` (the logo on a dark tile); re-run after the logo changes
 
 ## Stack notes
 

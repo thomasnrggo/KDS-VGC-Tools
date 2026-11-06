@@ -74,7 +74,7 @@ const NAV_LINKS = [
   // Available to everyone — no feature flag of its own.
   { page: "damage-calc", href: "/damage-calc", labelKey: "damageCalc", flagKey: null },
   { page: "speed-tiers", href: "/speed-tiers", labelKey: "speedTiers", flagKey: "speedTiers" },
-  { page: "metagame", href: "/metagame", labelKey: "metagame", flagKey: "metagame" },
+  { page: "metagame", href: "/", labelKey: "metagame", flagKey: "metagame" },
   {
     page: "team-library",
     href: "/team-library",
@@ -355,7 +355,8 @@ export function MyTeamHeader({
       >
         <div className="relative flex items-center justify-between gap-2 px-4 py-4 lg:gap-4 lg:px-6">
           <div className="flex min-w-0 shrink items-center gap-3 lg:gap-6">
-            <div className="flex shrink-0 items-center gap-2">
+            {/* The logo goes home (the Metagame). */}
+            <Link href="/" className="flex shrink-0 items-center gap-2">
               <Image
                 src="/resources/logo.png"
                 alt="VGC Box"
@@ -369,7 +370,7 @@ export function MyTeamHeader({
               <span className="text-lg font-extrabold text-white lg:text-xl">
                 VGC<span className="font-light">Box</span>
               </span>
-            </div>
+            </Link>
 
             {/* Regular (1024px+): both links inline next to the logo, same as before. */}
             <nav className="hidden shrink-0 items-center gap-6 lg:flex">

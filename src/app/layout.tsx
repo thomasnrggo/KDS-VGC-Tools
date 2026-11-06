@@ -7,6 +7,7 @@ import { Toaster } from "@/components/Toast";
 import { FirebaseAnalytics } from "@/components/FirebaseAnalytics";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/site";
 
 /**
  * Sets the "dark" class on <html> before the page paints, so there's no
@@ -16,7 +17,8 @@ import { cn } from "@/lib/utils";
  * (localStorage "theme" if the user's picked one before, else the OS-level
  * prefers-color-scheme) so the class this sets is never immediately
  * contradicted once useTheme's effect runs on mount. Also sets <html lang>
- * from the app language (see useLanguage), for screen readers and spelling.
+ * from the app language (see useLanguage), for screen readers and spelling,
+ * and marks a closed home intro (see MetaIntro) so it never flashes.
  */
 const THEME_INIT_SCRIPT = `
   (function () {
@@ -26,6 +28,7 @@ const THEME_INIT_SCRIPT = `
       if (isDark) document.documentElement.classList.add("dark");
       var language = localStorage.getItem("appLanguage");
       if (language === "es") document.documentElement.lang = language;
+      if (localStorage.getItem("homeIntroDismissed")) document.documentElement.dataset.introDismissed = "";
     } catch (e) {}
   })();
 `;
@@ -40,9 +43,38 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// The site-wide defaults (see src/lib/site.ts): each page sets its own
+// title — shown as "Damage Calculator · VGC Box" — and description.
 export const metadata: Metadata = {
-  title: "VGC Box",
-  description: "Plan Pokémon VGC matchups: your team, opponent teams, and lead/back game plans.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} — ${TAGLINE}`, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: [
+    "Pokémon VGC",
+    "VGC",
+    "Pokémon Champions",
+    "metagame",
+    "usage stats",
+    "damage calculator",
+    "team builder",
+    "speed tiers",
+    "pokepaste",
+    "teams",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} — ${TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    locale: "en_US",
+    alternateLocale: ["es_ES"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE_NAME} — ${TAGLINE}`,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({

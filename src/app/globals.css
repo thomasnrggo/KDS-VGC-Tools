@@ -215,6 +215,11 @@
  * white ring. Styled here because `accent-color` makes Chrome darken the
  * whole track whenever the accent is a light color like this green.
  */
+/* The home intro, once closed on this device (see MetaIntro and the root layout's early script). */
+[data-intro-dismissed] .home-intro {
+  display: none;
+}
+
 @layer components {
   .slider {
     --slider-color: var(--color-green-500);
