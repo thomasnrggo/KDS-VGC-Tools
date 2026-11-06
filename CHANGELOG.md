@@ -10,6 +10,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.5 — 2026-11-06
+
+### Changed
+
+- Team Library on phones: each team is just its roster and the favorite star; tapping it opens
+  the rest — the title, owner · placing · event with the EVs badge, the same-team toggle, the
+  rental code and links, and the add button under the star.
+
 ## 0.3.4 — 2026-11-05
 
 ### Changed

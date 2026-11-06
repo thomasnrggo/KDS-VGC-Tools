@@ -140,6 +140,14 @@ export function TeamLibrarySection({
   // The same Pokémon and items: the newest shown, the rest folded under it.
   const groups = groupTeams(matching);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  // Phones show each team as just its roster and star; a tap opens the rest.
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set());
+  function toggleOpen(id: string) {
+    const next = new Set(openIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setOpenIds(next);
+  }
   function toggleGroup(key: string) {
     const next = new Set(expanded);
     if (next.has(key)) next.delete(key);
@@ -171,6 +179,62 @@ export function TeamLibrarySection({
     } catch (error) {
       console.error("[team-library] copy failed:", error);
     }
+  }
+
+  /** Whose Stat Points the paste has, as a badge. */
+  function evsBadge(team: LibraryTeam) {
+    const evs = EVS_LABELS[evsSource(team)];
+    return (
+      <span
+        title={evs.hint(t)}
+        className={cn(
+          "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+          evs.className,
+        )}
+      >
+        {evs.label(t)}
+      </span>
+    );
+  }
+
+  /** The row's star and "Add to my teams" buttons — on a closed phone row, just the star. */
+  function actions(team: LibraryTeam, buttonClass = "h-7 w-7", withAdd = true) {
+    return (
+      <>
+        <IconButton
+          variant="ghost"
+          className={buttonClass}
+          onClick={() => toggleFavorite(team.id)}
+          aria-pressed={isFavorite(team.id)}
+          aria-label={
+            isFavorite(team.id) ? t.teamLibrary.removeFavorite : t.teamLibrary.addFavorite
+          }
+          title={isFavorite(team.id) ? t.teamLibrary.removeFavorite : t.teamLibrary.addFavorite}
+        >
+          <Icon
+            name={isFavorite(team.id) ? IconName.StarFilled : IconName.Star}
+            size={18}
+            className={cn(isFavorite(team.id) && "text-amber-500")}
+          />
+        </IconButton>
+        {withAdd && team.pokepaste && (
+          <IconButton
+            variant="ghost"
+            className={buttonClass}
+            onClick={() => addToMyTeams(team)}
+            disabled={addingId !== null}
+            aria-label={addingId === team.id ? t.teamLibrary.adding : t.teamLibrary.addToMyTeams}
+            title={addingId === team.id ? t.teamLibrary.adding : t.teamLibrary.addToMyTeams}
+          >
+            <Icon
+              name={IconName.Add}
+              size={18}
+              className={cn(addingId === team.id && "animate-pulse")}
+            />
+          </IconButton>
+        )}
+      </>
+    );
   }
 
   /** Saves the team's Pokepaste as a new team of mine, credited and linked back — once. */
@@ -287,11 +351,23 @@ export function TeamLibrarySection({
                     <li
                       key={team.id}
                       className={cn(
-                        "flex flex-col gap-2 px-3 py-3 md:flex-row md:items-center md:gap-4",
+                        "relative flex flex-col gap-1.5 px-3 py-2.5 max-md:pr-12 md:flex-row md:items-center md:gap-4 md:py-3",
                         index > 0 && "border-l-4 border-l-zinc-300 bg-zinc-50 pl-2",
                       )}
                     >
-                      <div className="flex min-w-0 flex-1 flex-col gap-1.5 lg:flex-row lg:items-center lg:gap-4">
+                      {/* Phones: the whole row opens and closes the details. */}
+                      <button
+                        type="button"
+                        onClick={() => toggleOpen(team.id)}
+                        aria-expanded={openIds.has(team.id)}
+                        aria-label={`${team.description || team.id}: ${
+                          openIds.has(team.id)
+                            ? t.pokemonCard.hideDetails
+                            : t.pokemonCard.showDetails
+                        }`}
+                        className="absolute inset-0 z-0 active:bg-zinc-100/60 md:hidden"
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col gap-1.5 max-md:pointer-events-none lg:flex-row lg:items-center lg:gap-4">
                         <span
                           className="flex shrink-0 gap-0.5"
                           title={team.pokemon.map((species) => text.species(species)).join(" / ")}
@@ -302,7 +378,7 @@ export function TeamLibrarySection({
                               <span
                                 key={index}
                                 className={cn(
-                                  "relative h-12 w-12 shrink-0 rounded-full sm:h-14 sm:w-14",
+                                  "relative h-11 w-11 shrink-0 rounded-full sm:h-14 sm:w-14",
                                   highlights(species, item) && "bg-zinc-200 ring-2 ring-chrome-600",
                                 )}
                               >
@@ -320,24 +396,40 @@ export function TeamLibrarySection({
                           })}
                         </span>
 
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <span
-                            className="truncate text-sm font-semibold text-zinc-900"
-                            title={team.description}
-                          >
-                            {team.description || team.id}
-                          </span>
+                        <div
+                          className={cn(
+                            "flex min-w-0 flex-1 flex-col",
+                            !openIds.has(team.id) && "max-md:hidden",
+                          )}
+                        >
+                          <div className="flex min-w-0 items-center gap-1">
+                            <span
+                              className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900"
+                              title={team.description}
+                            >
+                              {team.description || team.id}
+                            </span>
+                          </div>
                           {team.date && (
-                            <span className="truncate text-xs text-zinc-500">
+                            <span className="truncate text-xs text-zinc-500 max-md:hidden">
                               {formatDate(team.date, appLanguage)}
                             </span>
                           )}
+                          {/* Phones: owner · placing · event and the EVs, on one line. */}
+                          <span className="flex min-w-0 items-center gap-1.5 text-xs text-zinc-500 md:hidden">
+                            <span className="min-w-0 truncate">
+                              {[team.owner || team.creator, team.rank, team.event]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                            {evsBadge(team)}
+                          </span>
                           {index === 0 && group.teams.length > 1 && (
                             <button
                               type="button"
                               onClick={() => toggleGroup(group.key)}
                               aria-expanded={expanded.has(group.key)}
-                              className="mt-0.5 flex w-fit items-center gap-0.5 text-xs font-medium text-zinc-600 hover:text-zinc-900"
+                              className="pointer-events-auto relative z-10 mt-0.5 flex w-fit items-center gap-0.5 text-xs font-medium text-zinc-600 hover:text-zinc-900"
                             >
                               <Icon
                                 name={
@@ -357,7 +449,9 @@ export function TeamLibrarySection({
 
                       {/* Owner — its own column on wide screens, a labelled line on phones. */}
                       {/* The creator's name under the handle, when the sheet gives one. */}
-                      <div className={cn(OWNER_COLUMN, "flex min-w-0 flex-col text-xs")}>
+                      <div
+                        className={cn(OWNER_COLUMN, "flex min-w-0 flex-col text-xs max-md:hidden")}
+                      >
                         {(team.owner || team.creator) && (
                           <span className="flex min-w-0 gap-1">
                             <span className="text-zinc-500 md:hidden">{t.teamLibrary.owner}:</span>
@@ -380,7 +474,12 @@ export function TeamLibrarySection({
                       </div>
 
                       {/* Results — the placing, and the event under it. */}
-                      <div className={cn(RESULTS_COLUMN, "flex min-w-0 flex-col text-xs")}>
+                      <div
+                        className={cn(
+                          RESULTS_COLUMN,
+                          "flex min-w-0 flex-col text-xs max-md:hidden",
+                        )}
+                      >
                         {team.rank && (
                           <span className="truncate font-medium text-zinc-800">
                             <span className="font-normal text-zinc-500 md:hidden">
@@ -397,22 +496,11 @@ export function TeamLibrarySection({
                       </div>
 
                       {/* EVs — whose Stat Points the paste has: the owner's, VGCPastes', or none. */}
-                      <div className={cn(EVS_COLUMN, "flex items-center gap-1 text-xs")}>
-                        <span className="text-zinc-500 md:hidden">
-                          {t.teamLibrary.columns.evs}:
-                        </span>
-                        <span
-                          title={EVS_LABELS[evsSource(team)].hint(t)}
-                          className={cn(
-                            "rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
-                            EVS_LABELS[evsSource(team)].className,
-                          )}
-                        >
-                          {EVS_LABELS[evsSource(team)].label(t)}
-                        </span>
+                      <div className={cn(EVS_COLUMN, "flex items-center max-md:hidden")}>
+                        {evsBadge(team)}
                       </div>
 
-                      <div className={PASTE_COLUMN}>
+                      <div className={cn(PASTE_COLUMN, "max-md:hidden")}>
                         {team.pokepaste && (
                           <a
                             href={team.pokepaste}
@@ -429,7 +517,8 @@ export function TeamLibrarySection({
                       <div
                         className={cn(
                           LINKS_COLUMN,
-                          "flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium",
+                          "flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium max-md:relative max-md:z-10 max-md:w-fit",
+                          !openIds.has(team.id) && "max-md:hidden",
                         )}
                       >
                         {team.replicaCode && (
@@ -445,17 +534,21 @@ export function TeamLibrarySection({
                           </button>
                         )}
                         {[
+                          { href: team.pokepaste, label: t.teamLibrary.pokepaste, phoneOnly: true },
                           { href: team.source, label: t.teamLibrary.source },
                           { href: team.report, label: t.teamLibrary.report },
                         ].map(
-                          ({ href, label }) =>
+                          ({ href, label, phoneOnly }) =>
                             href && (
                               <a
                                 key={label}
                                 href={href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-0.5 text-zinc-700 hover:text-zinc-900 hover:underline"
+                                className={cn(
+                                  "flex items-center gap-0.5 text-zinc-700 hover:text-zinc-900 hover:underline",
+                                  phoneOnly && "md:hidden",
+                                )}
                               >
                                 {label}
                                 <Icon name={IconName.OpenInNew} size={12} />
@@ -464,55 +557,12 @@ export function TeamLibrarySection({
                         )}
                       </div>
 
-                      <div
-                        className={cn(ACTIONS_COLUMN, "flex items-center gap-1 max-md:self-end")}
-                      >
-                        <IconButton
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => toggleFavorite(team.id)}
-                          aria-pressed={isFavorite(team.id)}
-                          aria-label={
-                            isFavorite(team.id)
-                              ? t.teamLibrary.removeFavorite
-                              : t.teamLibrary.addFavorite
-                          }
-                          title={
-                            isFavorite(team.id)
-                              ? t.teamLibrary.removeFavorite
-                              : t.teamLibrary.addFavorite
-                          }
-                        >
-                          <Icon
-                            name={isFavorite(team.id) ? IconName.StarFilled : IconName.Star}
-                            size={18}
-                            className={cn(isFavorite(team.id) && "text-amber-500")}
-                          />
-                        </IconButton>
-                        {team.pokepaste && (
-                          <IconButton
-                            variant="ghost"
-                            className="h-7 w-7"
-                            onClick={() => addToMyTeams(team)}
-                            disabled={addingId !== null}
-                            aria-label={
-                              addingId === team.id
-                                ? t.teamLibrary.adding
-                                : t.teamLibrary.addToMyTeams
-                            }
-                            title={
-                              addingId === team.id
-                                ? t.teamLibrary.adding
-                                : t.teamLibrary.addToMyTeams
-                            }
-                          >
-                            <Icon
-                              name={IconName.Add}
-                              size={18}
-                              className={cn(addingId === team.id && "animate-pulse")}
-                            />
-                          </IconButton>
-                        )}
+                      <div className={cn(ACTIONS_COLUMN, "flex items-center gap-1 max-md:hidden")}>
+                        {actions(team)}
+                      </div>
+                      {/* Phones: stacked down the row's right edge, as in My Teams. */}
+                      <div className="absolute inset-y-0 right-1.5 z-10 flex flex-col justify-center gap-0.5 md:hidden">
+                        {actions(team, "h-10 w-10 text-zinc-500", openIds.has(team.id))}
                       </div>
                     </li>
                   ),
