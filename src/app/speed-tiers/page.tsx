@@ -20,7 +20,7 @@ export default function SpeedTiersPage() {
   const { activeTeams, activeTeamId, isLoading, addTeam, editTeam, removeTeam, setActiveTeamId } =
     useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
-  const { isAdmin } = useIsAdmin();
+  const { isStaff } = useIsAdmin();
 
   const [selectedRegulationId, setSelectedRegulationId] = useState(REGULATIONS[0]?.id ?? "");
   const selectedRegulation =
@@ -33,7 +33,7 @@ export default function SpeedTiersPage() {
   // leaving a non-admin viewing a view they can no longer reach through the
   // UI — computed here instead of synced via an effect, so there's no
   // separate "wrong view for a tick" render to worry about.
-  const effectiveView: View = view === "speedline" && !isAdmin ? "table" : view;
+  const effectiveView: View = view === "speedline" && !isStaff ? "table" : view;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -101,7 +101,7 @@ export default function SpeedTiersPage() {
           >
             {t.speedTiers.tiers}
           </button>
-          {isAdmin && (
+          {isStaff && (
             <button
               type="button"
               role="tab"
@@ -131,7 +131,7 @@ export default function SpeedTiersPage() {
             megaStoneItemsForSpecies={selectedRegulation.megaStoneItemsForSpecies}
           />
         )}
-        {isAdmin && view === "speedline" && (
+        {isStaff && view === "speedline" && (
           <SpeedLine
             myTeams={activeTeams}
             defaultTeamId={activeTeamId ?? undefined}

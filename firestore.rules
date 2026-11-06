@@ -10,14 +10,55 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // Roles (src/lib/admin.ts, /admin/users): staff have a roles/{uid} doc —
+    // "moderator" keeps the shared data (seasons, public calc sets, meta
+    // sets, learnsets); "admin" also manages feature flags and roles. The
+    // owner (keep in sync with NEXT_PUBLIC_ADMIN_UID) is always an admin,
+    // doc or not, so the site can't be locked out of its admin pages.
+    function isOwner() {
+      return request.auth != null && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+    }
+    function roleDoc() {
+      return /databases/$(database)/documents/roles/$(request.auth.uid);
+    }
+    function hasRole(roles) {
+      return request.auth != null && exists(roleDoc()) && get(roleDoc()).data.role in roles;
+    }
+    function isAdmin() {
+      return isOwner() || hasRole(['admin']);
+    }
+    function isStaff() {
+      return isOwner() || hasRole(['admin', 'moderator']);
+    }
+
+    // Each person reads their own role (that's how the app knows it);
+    // admins read and set everyone's, but not their own — no admin can
+    // demote or remove themselves by accident.
+    match /roles/{uid} {
+      allow read: if (request.auth != null && request.auth.uid == uid) || isAdmin();
+      allow create, update: if isAdmin()
+        && request.auth.uid != uid
+        && request.resource.data.role in ['moderator', 'admin'];
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+
+    // Who has signed in (src/lib/firebase/roles.ts's UserProfile), so an
+    // admin can find someone by email at /admin/users. Each person writes
+    // only their own; only admins read them.
+    match /profiles/{uid} {
+      allow read: if isAdmin();
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+      allow delete: if false;
+    }
+
     // Shared, public default-team-set data (see src/data/regulations for the
     // Regulation this belongs under, src/types/season.ts, and the
-    // /admin/seasons editor) — every visitor reads it, only the admin
-    // account writes. Keep this uid in sync with NEXT_PUBLIC_ADMIN_UID.
+    // /admin/seasons editor) — every visitor reads it, staff write it.
     match /seasons/{seasonId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+      allow write: if isStaff();
     }
 
     // Public copies of shared Team Reports (see src/types/team.ts's
@@ -112,25 +153,23 @@ service cloud.firestore {
         && groupData(resource.data.groupId).ownerUid == request.auth.uid;
     }
 
-    // The admin's public Damage Calculator sets (src/types/calcSet.ts,
-    // src/lib/firebase/publicSets.ts) — same everyone-reads/admin-writes
+    // The public Damage Calculator sets (src/types/calcSet.ts,
+    // src/lib/firebase/publicSets.ts) — same everyone-reads/staff-writes
     // shape as seasons. A user's own sets live under users/{uid}/calcSets,
-    // covered by the rule at the top. Keep this uid in sync with
-    // NEXT_PUBLIC_ADMIN_UID.
+    // covered by the rule at the top.
     match /publicSets/{setId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+      allow write: if isStaff();
     }
 
-    // Admin-controlled per-section on/off switches (see src/types/featureFlags.ts,
-    // src/lib/firebase/featureFlags.ts, and /admin/features) — same
-    // everyone-reads/admin-writes shape as seasons above. Keep this uid in
-    // sync with NEXT_PUBLIC_ADMIN_UID.
+    // Shared app config, read by every visitor: the per-section feature
+    // flags (src/types/featureFlags.ts, /admin/features) are admin-only;
+    // the rest — learnset overrides, meta spreads (metaSpreads_{regulation})
+    // — staff keep.
     match /appConfig/{docId} {
       allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.uid == "YAVX7lLqGZTnzZm2TXdBMcNB1B92";
+      allow write: if (docId == "featureFlags" && isAdmin())
+        || (docId != "featureFlags" && isStaff());
     }
 
     // The metagame summary per regulation (see PLANNING.md's "Metagame

@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { type User, onAuthStateChanged } from "firebase/auth";
-import { auth, signInWithGoogle as signInWithGooglePopup, signOutUser } from "@/lib/firebase";
+import {
+  auth,
+  saveProfile,
+  signInWithGoogle as signInWithGooglePopup,
+  signOutUser,
+} from "@/lib/firebase";
 import { toast } from "@/components/Toast";
 import { getMessages } from "@/lib/i18n/settings";
 
@@ -22,6 +27,9 @@ const POPUP_DISMISSED_CODES = new Set([
  */
 let knownAuth: { user: User | null } | null = null;
 
+/** Whose profile (see saveProfile) this page load has already saved — once each, not per hook. */
+const savedProfiles = new Set<string>();
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(() => knownAuth?.user ?? null);
   const [isLoading, setIsLoading] = useState(() => knownAuth === null);
@@ -29,6 +37,12 @@ export function useAuth() {
   useEffect(() => {
     return onAuthStateChanged(auth, (nextUser) => {
       knownAuth = { user: nextUser };
+      if (nextUser && !savedProfiles.has(nextUser.uid)) {
+        savedProfiles.add(nextUser.uid);
+        void saveProfile(nextUser).catch((error) =>
+          console.error("[profiles] save failed:", error),
+        );
+      }
       setUser(nextUser);
       setIsLoading(false);
     });

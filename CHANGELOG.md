@@ -10,6 +10,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.3 — 2026-11-05
+
+### Added
+
+- Roles: moderators and admins instead of one hard-coded admin. Moderators keep meta sets, public
+  calc sets, seasons and learnsets, and see preview sections; admins also manage feature flags and
+  roles. `/admin/users` lists the staff and adds people by email (anyone who has signed in once).
+  Needs the updated `firestore.rules` published.
+
 ## 0.3.2 — 2026-11-05
 
 ### Fixed

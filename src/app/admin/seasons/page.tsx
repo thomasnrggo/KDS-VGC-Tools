@@ -42,10 +42,10 @@ export default function AdminSeasonsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const { isAdmin } = useIsAdmin();
+  const { isStaff, isLoading: roleLoading } = useIsAdmin();
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isStaff) return;
     let cancelled = false;
     getSeasons()
       .then((loaded) => {
@@ -61,7 +61,7 @@ export default function AdminSeasonsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin]);
+  }, [isStaff]);
 
   function startAdding() {
     setEditingId(null);
@@ -161,11 +161,15 @@ export default function AdminSeasonsPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (roleLoading) return null;
+
+  if (!isStaff) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
         <p className="text-lg font-semibold text-zinc-900">Not authorized</p>
-        <p className="text-sm text-zinc-600">This page is only available to the site admin.</p>
+        <p className="text-sm text-zinc-600">
+          This page is only available to moderators and admins.
+        </p>
         <Link href="/matchup-planner" className="text-sm font-medium text-zinc-600 hover:underline">
           ← Back to Matchup Planner
         </Link>

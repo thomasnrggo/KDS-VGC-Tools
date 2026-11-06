@@ -45,7 +45,7 @@ const byName = (a: string, b: string) => moveName(a).localeCompare(moveName(b));
  */
 export default function AdminLearnsetsPage() {
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
-  const { isAdmin } = useIsAdmin();
+  const { isStaff, isLoading: roleLoading } = useIsAdmin();
   const { overrides, isLoading: overridesLoading, saveSpecies } = useLearnsetOverrides();
   const [data, setData] = useState<LearnsetData | null>(null);
   const [speciesQuery, setSpeciesQuery] = useState("");
@@ -75,11 +75,15 @@ export default function AdminLearnsetsPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (roleLoading) return null;
+
+  if (!isStaff) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
         <p className="text-lg font-semibold text-zinc-900">Not authorized</p>
-        <p className="text-sm text-zinc-600">This page is only available to the site admin.</p>
+        <p className="text-sm text-zinc-600">
+          This page is only available to moderators and admins.
+        </p>
         <Link href="/matchup-planner" className="text-sm font-medium text-zinc-600 hover:underline">
           ← Back to Matchup Planner
         </Link>

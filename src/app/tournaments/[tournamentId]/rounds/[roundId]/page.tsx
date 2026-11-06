@@ -14,7 +14,7 @@ import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
 import { parseRoundOpponentTeam } from "@/lib/tournament";
 import { REGULATIONS } from "@/data/regulations";
-import { isAdminUid } from "@/lib/admin";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import type { TournamentGame, TournamentRound } from "@/types";
 import { useMessages } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
@@ -40,7 +40,7 @@ export default function RoundPage({ params }: RoundPageProps) {
   } = useMyTeams();
   const { tournaments, isLoading: isTournamentsLoading, updateTournament } = useTournaments();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
-  const isAdmin = isAdminUid(user?.uid);
+  const { isStaff } = useIsAdmin();
   const [isEditingRoster, setIsEditingRoster] = useState(false);
   const [rosterDraft, setRosterDraft] = useState("");
 
@@ -212,7 +212,7 @@ export default function RoundPage({ params }: RoundPageProps) {
             </div>
           )}
 
-          {isAdmin && team && round.opponentTeam.length > 0 && (
+          {isStaff && team && round.opponentTeam.length > 0 && (
             <RoundSpeedLine myTeam={team.pokemon} opponentTeam={round.opponentTeam} />
           )}
 

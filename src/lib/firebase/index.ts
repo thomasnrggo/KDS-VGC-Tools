@@ -26,3 +26,13 @@ export {
   saveGroupPlan,
   deleteGroupPlan,
 } from "./groups";
+export {
+  getRole,
+  listStaff,
+  setStaffRole,
+  removeStaffRole,
+  saveProfile,
+  searchProfiles,
+  type StaffMember,
+  type UserProfile,
+} from "./roles";

@@ -2117,7 +2117,8 @@ endDate, rawPaste}`) absorbs it directly.
     page gate — real enforcement is the rule, the env var only hides the page from everyone else).
     `src/lib/firebase/seasons.ts` (`getSeasons`/`saveSeason`/`deleteSeason`) is plain CRUD, no
     tombstone/merge logic — unlike the per-user sync work above, this is a single admin-managed list,
-    not something reconciled across devices.
+    not something reconciled across devices. _(Superseded 2026-11-05 by roles — see "Roles" below:
+    seasons are now written by any staff member.)_
   * **Admin page**: `/admin/seasons` (`src/app/admin/seasons/page.tsx`) — gated on
     `user?.uid === NEXT_PUBLIC_ADMIN_UID`, shows a sign-in prompt if signed out and a plain "Not
     authorized" message for any other signed-in account. A form (regulation dropdown from
@@ -3095,3 +3096,25 @@ megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation —
 - Regulation M-B legality data for the "add any Pokémon" feature: species list from
   [Bulbapedia's Regulation Set M-B page](https://bulbapedia.bulbagarden.net/wiki/Regulation_Set_M-B); item
   list from [RotomPicks](https://rotompicks.com/en/items/).
+
+## Roles (2026-11-05)
+
+The single hard-coded admin became roles, managed at `/admin/users` instead of by editing rules.
+
+- **Roles**: `"user"` (everyone; no doc), `"moderator"`, `"admin"` — `src/lib/admin.ts`. A staff
+  member has `roles/{uid}` `{role, email, displayName?, setBy, setAt}`. Moderators keep the shared
+  data — meta sets, public calc sets, seasons, learnset overrides — and see preview sections whose
+  flag is off (FeatureGate, nav links, the Threats tab, the builder panel, the speedline). Admins
+  also manage feature flags (`appConfig/featureFlags`) and roles. The owner
+  (`NEXT_PUBLIC_ADMIN_UID`, also the one uid left in `firestore.rules`' `isOwner()`) is always an
+  admin, doc or not — nobody can lock the site out.
+- **Rules**: `isStaff()` / `isAdmin()` helpers (an `exists` + `get` on `roles/{uid}` per staff
+  write). Each person reads their own role doc (how `useIsAdmin` learns it); admins read and write
+  all, except their own — no self-demotion.
+- **Finding people**: the browser can't look up Firebase Auth users, so each sign-in saves
+  `profiles/{uid}` `{uid, email, emailLower, displayName?, photoURL?, lastSignInAt}` (own write,
+  admin read); `/admin/users` prefix-searches `emailLower`. Only people who have signed in once can
+  be found. A server route with firebase-admin (`getUserByEmail`) was the alternative — it'd need
+  the service account in Vercel; not worth it for adding staff.
+- **Custom claims** were considered: no rule reads, but setting them needs the Admin SDK on a
+  server, and a new role only applies after the user's token refreshes.

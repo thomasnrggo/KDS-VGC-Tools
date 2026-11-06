@@ -129,8 +129,8 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   );
   // The Threats tab is a preview: behind its flag, always there for the admin.
   const { flags } = useFeatureFlags();
-  const { isAdmin } = useIsAdmin();
-  const visibleTabs = TABS.filter((tab) => tab !== "threats" || flags.teamThreats || isAdmin);
+  const { isStaff } = useIsAdmin();
+  const visibleTabs = TABS.filter((tab) => tab !== "threats" || flags.teamThreats || isStaff);
   // A tab from the URL that isn't shown (yet — the flags and admin load after) opens the report.
   const activeTab = visibleTabs.includes(selectedTab) ? selectedTab : "report";
 

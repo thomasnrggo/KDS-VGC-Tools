@@ -105,8 +105,8 @@ export function TeamBuilder({
   // Kept once opened, so the opponent set up there survives a look at the analysis.
   const [hasCalculator, setHasCalculator] = useState(false);
   const { flags } = useFeatureFlags();
-  const { isAdmin } = useIsAdmin();
-  const canUsePanel = (flags.teamThreats || isAdmin) && pokemon.length > 0;
+  const { isStaff } = useIsAdmin();
+  const canUsePanel = (flags.teamThreats || isStaff) && pokemon.length > 0;
   const modalOpen =
     pasteDraft !== null ||
     importDraft !== null ||

@@ -56,7 +56,7 @@ function FlagToggle({
 
 export default function AdminFeaturesPage() {
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
-  const { isAdmin } = useIsAdmin();
+  const { isAdmin, isLoading: roleLoading } = useIsAdmin();
   const { flags, isLoading: flagsLoading, updateFlags } = useFeatureFlags();
 
   async function toggle(flagKey: keyof FeatureFlags) {
@@ -89,11 +89,13 @@ export default function AdminFeaturesPage() {
     );
   }
 
+  if (roleLoading) return null;
+
   if (!isAdmin) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
         <p className="text-lg font-semibold text-zinc-900">Not authorized</p>
-        <p className="text-sm text-zinc-600">This page is only available to the site admin.</p>
+        <p className="text-sm text-zinc-600">This page is only available to admins.</p>
         <Link href="/matchup-planner" className="text-sm font-medium text-zinc-600 hover:underline">
           ← Back to Matchup Planner
         </Link>
@@ -130,6 +132,9 @@ export default function AdminFeaturesPage() {
           >
             Meta sets →
           </Link>
+          <Link href="/admin/users" className="text-sm font-medium text-zinc-100 hover:text-white">
+            Users →
+          </Link>
         </div>
         <AuthMenu
           user={user}
@@ -142,7 +147,8 @@ export default function AdminFeaturesPage() {
       <div className="flex flex-col gap-3 p-6 md:max-w-md">
         <h2 className="text-sm font-semibold text-zinc-900">App sections</h2>
         <p className="text-xs text-zinc-500">
-          Disabling a section hides it from the nav and blocks its pages for everyone except you.
+          Disabling a section hides it from the nav and blocks its pages for everyone except
+          moderators and admins (who can preview it).
         </p>
         {flagsLoading ? (
           <p className="text-sm text-zinc-500">Loading…</p>

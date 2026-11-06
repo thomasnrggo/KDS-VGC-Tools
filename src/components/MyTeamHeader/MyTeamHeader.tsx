@@ -17,7 +17,7 @@ import { MobileMenu } from "./MobileMenu";
 import { IconName } from "@/enums";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useMessages } from "@/hooks/useLanguage";
-import { isAdminUid } from "@/lib/admin";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   Drawer,
   DrawerContent,
@@ -198,10 +198,10 @@ export function MyTeamHeader({
   // FeatureGate does at the route level for anyone who navigates there
   // directly. Reuses the authUser prop this component already receives
   // rather than calling useAuth() a second time.
-  const isAdmin = isAdminUid(authUser?.uid);
+  const { isStaff } = useIsAdmin();
   const { flags } = useFeatureFlags();
   const visibleNavLinks = NAV_LINKS.filter(
-    (link) => link.flagKey === null || flags[link.flagKey] || isAdmin,
+    (link) => link.flagKey === null || flags[link.flagKey] || isStaff,
   );
 
   useEffect(() => {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { deleteCalcSet, getCalcSets, saveCalcSet, syncCalcSetsWithCloud } from "@/lib/storage/db";
 import { deletePublicSet, getPublicSets, savePublicSet } from "@/lib/firebase";
-import { isAdminUid } from "@/lib/admin";
+import { useIsAdmin } from "./useIsAdmin";
 import { generateId } from "@/lib/id";
 import { findSameNameSet } from "@/lib/calcSets";
 import { useAuth } from "./useAuth";
@@ -38,7 +38,8 @@ let cachedPublic: CalcSet[] | null = null;
  */
 export function useCalcSets() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const canEditPublic = isAdminUid(user?.uid);
+  // Moderators and admins keep the public sets.
+  const { isStaff: canEditPublic } = useIsAdmin();
   const [customSets, setCustomSets] = useState<CalcSet[]>(() => cachedCustom ?? []);
   const [publicSets, setPublicSets] = useState<CalcSet[]>(() => cachedPublic ?? []);
 

@@ -16,7 +16,7 @@ interface FeatureGateProps {
  * Wraps a whole section's route tree (see the layout.tsx in each of
  * matchup-planner/teams/tournaments/speed-tiers) — renders `children`
  * normally when the section's flag is on, or when the current visitor is
- * the admin (who can always reach a disabled section, so there's no way to
+ * staff (a moderator or admin, who preview it before launch) — the admin (who can always reach a disabled section, so there's no way to
  * toggle yourself out of being able to turn it back on), and
  * SectionDisabledNotice otherwise. /admin/* routes are never wrapped by
  * this, for the same "can't lock yourself out" reason.
@@ -36,9 +36,9 @@ interface FeatureGateProps {
  */
 export function FeatureGate({ flagKey, children }: FeatureGateProps) {
   const { flags } = useFeatureFlags();
-  const { isAdmin } = useIsAdmin();
+  const { isStaff } = useIsAdmin();
 
-  if (flags[flagKey] || isAdmin) {
+  if (flags[flagKey] || isStaff) {
     return <>{children}</>;
   }
 
