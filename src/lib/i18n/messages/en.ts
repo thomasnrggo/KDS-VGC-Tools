@@ -1,6 +1,8 @@
 /** English app text — the source of truth for every dictionary's shape (see ./index.ts). */
 export const en = {
   common: {
+    showTips: "Show tips",
+    hideTips: "Hide tips",
     cancel: "Cancel",
     save: "Save",
     saving: "Saving…",
@@ -511,8 +513,8 @@ export const en = {
   },
   groupMode: {
     label: "Row grouping",
-    grouped: "Grouped",
-    byPokemon: "By Pokémon",
+    grouped: "Group equal Speeds",
+    byPokemon: "One row each",
   },
   coverage: {
     defense: "Defense",
@@ -875,9 +877,26 @@ export const en = {
   speedTiers: {
     title: "Speed Tiers",
     viewLabel: "Speed Tiers view",
-    table: "Table",
-    tiers: "Tiers",
+    table: "By Pokémon",
+    tiers: "Ranking",
     speedLine: "SpeedLine",
+    tipsTitle: "Who's faster, at level 50",
+    tipsBody:
+      "Every Pokémon in the regulation at the Speeds people actually run — fastest, neutral and slowest, with and without a Choice Scarf.",
+    tips: [
+      {
+        lead: "Find your Speed:",
+        body: "in Ranking, type a number like `150` to see every Speed within 5 points of it — green is faster than you, red slower, amber a Speed tie.",
+      },
+      {
+        lead: "Compare Pokémon:",
+        body: "type several names, like `garchomp sneasler`, to see only those.",
+      },
+      {
+        lead: "Two views:",
+        body: "Ranking lists every Speed in order, with chips to choose which; By Pokémon gives each Pokémon a row with its Speeds in columns — click one to sort, and a number searches that column.",
+      },
+    ],
   },
   speedTable: {
     scarfNotApplicable:
@@ -892,7 +911,7 @@ export const en = {
       neutral32Scarf: "Neutral +32 Scarf",
     },
     pokemon: "Pokémon",
-    searchPlaceholder: 'Search Pokémon or Speed… (e.g. "charizard garchomp")',
+    searchPlaceholder: "Pokémon or Speed, e.g. 150",
     searchLabel: "Search Pokémon or Speed",
     noMatches: (query: string) => `No Pokémon match "${query}".`,
   },

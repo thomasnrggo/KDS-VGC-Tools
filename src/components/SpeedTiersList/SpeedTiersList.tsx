@@ -260,7 +260,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
           onQueryChange={setQuery}
           placeholder={t.speedTable.searchPlaceholder}
           ariaLabel={t.speedTable.searchLabel}
-          className="max-w-xs"
+          className="w-full sm:w-64"
         />
         <div role="group" aria-label={t.speedList.filterMetrics} className="flex flex-wrap gap-1.5">
           {METRICS.map((metric) => (

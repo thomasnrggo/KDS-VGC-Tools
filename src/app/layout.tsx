@@ -18,7 +18,8 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/site";
  * prefers-color-scheme) so the class this sets is never immediately
  * contradicted once useTheme's effect runs on mount. Also sets <html lang>
  * from the app language (see useLanguage), for screen readers and spelling,
- * and marks a closed home intro (see MetaIntro) so it never flashes.
+ * and marks a closed home intro (see MetaIntro) and closed page tips (see
+ * PageTips) so they never flash.
  */
 const THEME_INIT_SCRIPT = `
   (function () {
@@ -29,6 +30,8 @@ const THEME_INIT_SCRIPT = `
       var language = localStorage.getItem("appLanguage");
       if (language === "es") document.documentElement.lang = language;
       if (localStorage.getItem("homeIntroDismissed")) document.documentElement.dataset.introDismissed = "";
+      var hiddenTips = localStorage.getItem("hiddenTips");
+      if (hiddenTips) document.documentElement.dataset.hiddenTips = hiddenTips;
     } catch (e) {}
   })();
 `;

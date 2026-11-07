@@ -1,18 +1,24 @@
 "use client";
 
-import { Suspense } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "../MyTeamHeader";
 import { MetagameSection } from "../MetagameSection";
 import { REGULATIONS } from "@/data/regulations";
+import type { MetaDocument } from "@/lib/meta/metaDocument";
 
 /**
  * The Metagame page with the app's header — the site's home page (`/`,
- * with the intro) and `/metagame`. Suspense: MetagameSection reads its
- * view from the URL (useSearchParams).
+ * with the intro and the server's snapshot of the metagame, so it renders
+ * on the server) and `/metagame`.
  */
-export function MetagamePage({ showIntro = false }: { showIntro?: boolean }) {
+export function MetagamePage({
+  showIntro = false,
+  initialMeta = null,
+}: {
+  showIntro?: boolean;
+  initialMeta?: MetaDocument | null;
+}) {
   const {
     teams,
     activeTeams,
@@ -44,9 +50,12 @@ export function MetagamePage({ showIntro = false }: { showIntro?: boolean }) {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
-        <Suspense>
-          <MetagameSection showIntro={showIntro} myTeams={teams} onAddTeam={addBuiltTeam} />
-        </Suspense>
+        <MetagameSection
+          showIntro={showIntro}
+          initialMeta={initialMeta}
+          myTeams={teams}
+          onAddTeam={addBuiltTeam}
+        />
       </div>
     </div>
   );

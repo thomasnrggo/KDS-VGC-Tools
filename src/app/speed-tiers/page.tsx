@@ -26,14 +26,16 @@ export default function SpeedTiersPage() {
   const selectedRegulation =
     REGULATIONS.find((regulation) => regulation.id === selectedRegulationId) ?? REGULATIONS[0];
 
-  const [view, setView] = useState<View>("table");
+  // Ranking first: it's the speed tier list the page is named for, and
+  // where a typed Speed searches every Speed (By Pokémon is the lookup).
+  const [view, setView] = useState<View>("list");
   // Belt-and-suspenders: the tab below only ever lets an admin select
   // "speedline", but if admin status changes out from under an already-open
-  // tab (e.g. signing out), derive back to Table for render rather than
+  // tab (e.g. signing out), derive back to Ranking for render rather than
   // leaving a non-admin viewing a view they can no longer reach through the
   // UI — computed here instead of synced via an effect, so there's no
   // separate "wrong view for a tick" render to worry about.
-  const effectiveView: View = view === "speedline" && !isStaff ? "table" : view;
+  const effectiveView: View = view === "speedline" && !isStaff ? "list" : view;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -64,29 +66,15 @@ export default function SpeedTiersPage() {
           )}
         </div>
 
-        {/* Table = one row per Pokémon, every config as its own column.
-            Tiers ("list" internally) = one row per (Pokémon, config) record,
-            all sorted together by real Speed value — the pikalytics-style
-            true speed tier list, vs. Table's full per-Pokémon stat spread.
+        {/* Ranking ("list" internally, the default) = one row per (Pokémon,
+            config) record, all sorted together by real Speed value — the
+            pikalytics-style true speed tier list. By Pokémon ("table"
+            internally) = one row per Pokémon, every config as its own column.
             SpeedLine ("speedline" internally) = not the hypothetical-spread
             reference data the other two views show — your active team's
             actual Speed (real pasted item/nature/Stat Points) against one
             saved opponent's, on a shared horizontal line. */}
         <div role="tablist" aria-label={t.speedTiers.viewLabel} className="flex gap-1.5">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={effectiveView === "table"}
-            onClick={() => setView("table")}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-              effectiveView === "table"
-                ? "bg-chrome-600 text-white"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-            )}
-          >
-            {t.speedTiers.table}
-          </button>
           <button
             type="button"
             role="tab"
@@ -100,6 +88,20 @@ export default function SpeedTiersPage() {
             )}
           >
             {t.speedTiers.tiers}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={effectiveView === "table"}
+            onClick={() => setView("table")}
+            className={cn(
+              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+              effectiveView === "table"
+                ? "bg-chrome-600 text-white"
+                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+            )}
+          >
+            {t.speedTiers.table}
           </button>
           {isStaff && (
             <button

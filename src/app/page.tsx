@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { HomeGate } from "@/components/HomeGate";
 import { MetagamePage } from "@/components/MetagamePage";
+import { REGULATIONS } from "@/data/regulations";
+import { getMetaSnapshot } from "@/lib/meta/serverMeta";
 import { PAGES, SITE_ABOUT, SITE_NAME, SITE_URL, pageMetadata } from "@/lib/site";
+
+// Static, and rebuilt in the background at most once an hour (the
+// metagame job writes weekly): every visitor gets the rendered metagame at
+// once, and search engines read it. Each rebuild is one Firestore read
+// (serverMeta). Must be a literal: Next reads it at build time.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   ...pageMetadata("home", "/"),
@@ -21,8 +29,13 @@ const STRUCTURED_DATA = {
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 };
 
-/** The home page: the metagame, with the intro — or the Matchup Planner while the Metagame section is switched off. */
-export default function Home() {
+/**
+ * The home page: the metagame, with the intro — or the Matchup Planner
+ * while the Metagame section is switched off. Rendered on the server from
+ * a snapshot of the current regulation's metagame (see serverMeta).
+ */
+export default async function Home() {
+  const initialMeta = await getMetaSnapshot(REGULATIONS[0]?.id ?? "");
   return (
     <>
       {/* What the site is, for search engines (schema.org). */}
@@ -31,7 +44,7 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
       />
       <HomeGate>
-        <MetagamePage showIntro />
+        <MetagamePage showIntro initialMeta={initialMeta} />
       </HomeGate>
     </>
   );

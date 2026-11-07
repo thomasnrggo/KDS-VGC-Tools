@@ -289,7 +289,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
           onQueryChange={setQuery}
           placeholder={t.speedTable.searchPlaceholder}
           ariaLabel={t.speedTable.searchLabel}
-          className="max-w-xs"
+          className="w-full sm:w-64"
         />
         <GroupModeToggle grouped={groupMode} onChange={setGroupMode} className="ml-auto" />
       </div>

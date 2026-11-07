@@ -3128,10 +3128,25 @@ The single hard-coded admin became roles, managed at `/admin/users` instead of b
 - The view is URL state, read once with `useSearchParams` (hence the Suspense in MetagamePage) and
   written with `history.replaceState` (`?reg`, `?events`, `?view`, `?q`) — or `pushState` for
   `?pokemon`, so Back closes the dialog (a popstate listener mirrors it).
-- Not yet: the page is still client-rendered from Firestore. Next step: render it on the server
-  from the meta documents with daily revalidation (as the Team Library's route does), for an
-  instant first paint, search indexing and a link-preview image; and split
-  `MetagameSection.tsx` (~1,800 lines) into overview, table, top teams and dialogs.
+- **Server-rendered** (`src/app/page.tsx`): static, `revalidate = 3600`. The server reads
+  `meta/{current regulation}` over Firestore's REST API (`src/lib/meta/serverMeta.ts` — the
+  documents are public, so the web key, sent as a header; no Admin SDK) and passes a snapshot
+  (`metaSnapshot`: the events, the top 20 of the recent slice and of the whole regulation —
+  whose histories draw the trend arrows — and the top of each core list; ~1/4 of the ~380KB
+  document, ~40KB gzipped HTML) to `useMeta` as its starting value. The browser then loads the
+  whole document as before (a device copy older than the snapshot is skipped). Not through
+  Next's data cache: the REST response (~6MB) is over its 2MB limit, and the page is what's
+  cached anyway. A failed read during a rebuild throws, so the last good page stays; at build
+  (or in dev) it returns null and the page loads in the browser.
+- **URL state without `useSearchParams`** (`metaUrl.ts`): that hook makes a static page render
+  the part below it only in the browser. Instead a `useSyncExternalStore` over
+  `location.search` — the server and hydration see no query (the default view), then the
+  browser re-renders with the real one. `setUrl` notifies it; Back/Forward do via popstate.
+  The URL is the view's only state (regulation, events, tab, search as typed, open Pokémon).
+- **Split** of `MetagameSection.tsx` (was ~1,975 lines): `metaShared.ts` (constants, types,
+  formatting), `MetaParts.tsx` (dialog header, stat, share list, moves), `MetaOverview.tsx`
+  (cards, cores, top teams), `MetaTable.tsx` (the Pokémon rows and their details, core and
+  team lists), `MetaDialogs.tsx` (Pokémon, core, finalist).
 
 ## Site identity and SEO (2026-11-06)
 
@@ -3150,5 +3165,19 @@ The single hard-coded admin became roles, managed at `/admin/users` instead of b
   `https://vgcbox.vercel.app`.
 - **Crawlers**: `sitemap.ts` (PUBLIC_ROUTES), `robots.ts` (all but `/admin` and `/api/`), and
   schema.org `WebApplication` JSON-LD on the home page.
-- Still to do for SEO: the pages render client-side, so crawlers see the metadata but little
-  content — server-rendering the metagame is the next step (see "Metagame as the home page").
+- The home page's metagame is server-rendered (see "Metagame as the home page"), so crawlers
+  read it; the other pages still render their content in the browser.
+
+## Page tips (2026-11-06)
+
+- The home page has the welcome banner (MetaIntro); each tool page gets a slimmer tips strip
+  instead (`src/components/PageTips`): one line on what the page is for and 2–3 tips for what
+  isn't obvious, each page in its own light accent (Speed Tiers: sky). Text in the messages
+  (`<page>.tipsTitle/tipsBody/tips`, a tip's `backticks` render as a key to type).
+- ✕ hides it on the device; a "?" beside the title (`PageTipsButton`) brings it back. Hidden ids
+  are a space-separated list in localStorage `hiddenTips`, copied to `<html data-hidden-tips>` by
+  the root layout's early script; per-page CSS (a hoisted `<style>`) shows the strip or the "?"
+  from it — no flash on load, no re-render on toggle.
+- **On hold (2026-11-06):** built and tried on Speed Tiers, then taken off the page — the owner wants no banner there for now. The component, the early script's `hiddenTips` and Speed Tiers' text (`speedTiers.tips*`) stay, ready for when it's picked up again. Its number search lives in Tiers (every Speed); in Table a number searches the
+  sorted column (Base by default), so the tip points to Tiers. Next: the Damage Calculator, Team
+  Builder, Team Library and Matchup Planner.

@@ -40,13 +40,16 @@ function loadOnce<T>(
  * A metagame document: this device's copy right away, then Firestore's once
  * per session. `value` is null while there's nothing yet — no such document,
  * offline on a first visit, or a failed read — so every use has to work
- * without it. State is only ever set from async results.
+ * without it. State is only ever set from async results. `initial` (the
+ * server-rendered page's snapshot, for that key) stands in until either
+ * arrives, and is what the server renders — so it's never cached.
  */
-function useMetaDocument<T>(
+function useMetaDocument<T extends { updatedAt: string }>(
   key: string | null,
   readCached: () => Promise<T | null>,
   read: () => Promise<T | null>,
   cache: (value: T) => Promise<void>,
+  initial: T | null = null,
 ): { value: T | null; isLoading: boolean } {
   const [entry, setEntry] = useState<{ key: string | null; value: T | null; done: boolean }>({
     key: null,
@@ -55,8 +58,9 @@ function useMetaDocument<T>(
   });
 
   const isCurrent = entry.key === key;
-  const value = isCurrent ? entry.value : key ? ((loaded.get(key) as T | null) ?? null) : null;
-  const isLoading = !!key && !loaded.has(key) && !(isCurrent && entry.done);
+  const known = isCurrent ? entry.value : key ? ((loaded.get(key) as T | null) ?? null) : null;
+  const value = known ?? initial;
+  const isLoading = !!key && !initial && !loaded.has(key) && !(isCurrent && entry.done);
 
   useEffect(() => {
     if (!key || loaded.has(key)) return;
@@ -65,7 +69,8 @@ function useMetaDocument<T>(
     // This device's copy first, so the data shows without waiting on the network.
     readCached()
       .then((cached) => {
-        if (cancelled || !cached) return;
+        // Not if the server's snapshot is newer (the weekly job has run since).
+        if (cancelled || !cached || (initial && cached.updatedAt < initial.updatedAt)) return;
         setEntry((current) =>
           current.key === key && current.done ? current : { key, value: cached, done: false },
         );
@@ -93,13 +98,16 @@ function useMetaDocument<T>(
 /**
  * The metagame summary for a regulation (see PLANNING.md's "Metagame data"):
  * the whole regulation, the recent events, and each Pokémon's history.
+ * `initial`: the server's snapshot (src/lib/meta/serverMeta.ts) — used only
+ * for its own regulation, until the whole document loads.
  */
-export function useMeta(regulationId: string | undefined) {
+export function useMeta(regulationId: string | undefined, initial?: MetaDocument | null) {
   const { value, isLoading } = useMetaDocument<MetaDocument>(
     regulationId ?? null,
     () => getCachedMeta(regulationId!),
     () => getMeta(regulationId!),
     saveCachedMeta,
+    initial && initial.regulationId === regulationId ? initial : null,
   );
   return { meta: value, isLoading };
 }

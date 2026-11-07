@@ -3,6 +3,8 @@ import type { Messages } from ".";
 /** Spanish app text — one neutral Spanish for the UI; game terms follow the separate Pokémon language (Spain or Latin America). */
 export const es: Messages = {
   common: {
+    showTips: "Mostrar consejos",
+    hideTips: "Ocultar consejos",
     cancel: "Cancelar",
     save: "Guardar",
     saving: "Guardando…",
@@ -519,8 +521,8 @@ export const es: Messages = {
   },
   groupMode: {
     label: "Agrupación de filas",
-    grouped: "Agrupado",
-    byPokemon: "Por Pokémon",
+    grouped: "Agrupar velocidades iguales",
+    byPokemon: "Una fila cada uno",
   },
   coverage: {
     defense: "Defensa",
@@ -888,9 +890,26 @@ export const es: Messages = {
   speedTiers: {
     title: "Velocidades",
     viewLabel: "Vista de velocidades",
-    table: "Tabla",
-    tiers: "Niveles",
+    table: "Por Pokémon",
+    tiers: "Ranking",
     speedLine: "SpeedLine",
+    tipsTitle: "Quién es más rápido, a nivel 50",
+    tipsBody:
+      "Todos los Pokémon de la regulación con las velocidades que de verdad se usan: la más rápida, la neutra y la más lenta, con y sin Pañuelo Elección.",
+    tips: [
+      {
+        lead: "Encuentra tu velocidad:",
+        body: "en Ranking, escribe un número como `150` para ver cada velocidad a 5 puntos o menos — en verde lo más rápido que tú, en rojo lo más lento y en ámbar los empates.",
+      },
+      {
+        lead: "Compara Pokémon:",
+        body: "escribe varios nombres, como `garchomp sneasler`, para ver solo esos.",
+      },
+      {
+        lead: "Dos vistas:",
+        body: "Ranking ordena todas las velocidades en una sola lista, con chips para elegir cuáles; Por Pokémon da a cada Pokémon una fila con sus velocidades en columnas — haz clic en una para ordenar, y un número busca en esa columna.",
+      },
+    ],
   },
   speedTable: {
     scarfNotApplicable:
@@ -905,7 +924,7 @@ export const es: Messages = {
       neutral32Scarf: "Neutra +32 con Pañuelo",
     },
     pokemon: "Pokémon",
-    searchPlaceholder: 'Busca un Pokémon o una velocidad… (p. ej. "charizard garchomp")',
+    searchPlaceholder: "Pokémon o velocidad, p. ej. 150",
     searchLabel: "Buscar Pokémon o velocidad",
     noMatches: (query) => `Ningún Pokémon coincide con "${query}".`,
   },

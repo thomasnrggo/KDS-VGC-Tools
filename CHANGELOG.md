@@ -10,6 +10,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.7 — 2026-11-06
+
+### Changed
+
+- The home page arrives with the metagame already on it: rendered on the server (refreshed
+  hourly) instead of loading in the browser — faster on a first visit, and readable by search
+  engines. Links to a view (`?view=`, `?pokemon=`…) work as before.
+- Speed Tiers: the search box says it takes a Speed too ("Pokémon or Speed, e.g. 150"), and is
+  wider so the hint isn't cut off.
+- Speed Tiers: the views are named for what they show — **By Pokémon** (was Table: a row per
+  Pokémon, its Speeds in columns) and **Ranking** (was Tiers: every Speed in order). The grouping
+  buttons' tips now read "Group equal Speeds" and "One row each", so "By Pokémon" means one thing.
+- Speed Tiers opens on Ranking, now the first view — the speed tier list itself, where a typed
+  Speed checks every Speed; By Pokémon comes second.
+
 ## 0.3.6 — 2026-11-06
 
 ### Changed
