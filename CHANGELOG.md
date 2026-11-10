@@ -10,6 +10,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.8 — 2026-11-10
+
+### Added
+
+- Damage Calculator: "Load Team" on the Attacker side lists your own teams (with search and a
+  preview of each), so you can switch which of your teams you're calculating with in one tap.
+  The team you pick also becomes your active team. Switching teams in the header now updates the
+  Attacker side too, instead of only on the first visit.
+
 ## 0.3.7 — 2026-11-06
 
 ### Changed

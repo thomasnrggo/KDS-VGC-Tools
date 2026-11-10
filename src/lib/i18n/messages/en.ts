@@ -1232,6 +1232,13 @@ export const en = {
   calcPanel: {
     loadTeam: "Load Team",
     loadTeamHint: "Load a saved opponent's team",
+    loadMyTeamHint: "Load one of your teams",
+    loadMyTeamIntro:
+      "Pick one of your teams to replace this side's whole roster. It also becomes your active team.",
+    noTeams: "No teams saved yet — add one in My Teams first.",
+    loadTeamSearch: "Search by name, Pokémon or item",
+    loadNoTeamMatches: "None of your teams matches that search.",
+    activeTeam: "Active",
     exportTeam: "Export Team",
     exportTeamHint: "Export team as Showdown export text",
     exportSet: "Export Set",

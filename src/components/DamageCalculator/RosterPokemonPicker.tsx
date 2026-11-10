@@ -32,8 +32,8 @@ import {
   computePokemonBuild,
 } from "../PokemonEditor";
 import { PokemonSetPicker } from "./PokemonSetPicker";
-import { LoadTeamDialog } from "./LoadTeamDialog";
-import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey } from "@/types";
+import { LoadMyTeamDialog, LoadTeamDialog } from "./LoadTeamDialog";
+import type { DamageCalcOptions, Opponent, ParsedPokemon, StatKey, Team } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import type { CalcSetsApi, SavedSetRef } from "@/hooks/useCalcSets";
 import { findSameNameSet } from "@/lib/calcSets";
@@ -146,8 +146,10 @@ interface RosterPokemonPickerProps {
   onAbilityChange?: (ability: string) => void;
   onItemChange?: (item: string | undefined) => void;
   onMovesChange?: (moves: string[]) => void;
-  /** Your saved opponents, for "Load Team" (which can also switch to a prep group's list, see LoadTeamDialog) — only passed for the Defender side (the Attacker already seeds from the header's active team), so the button only renders there. */
+  /** Your saved opponents, for the Defender's "Load Team" (which can also switch to a prep group's list, see LoadTeamDialog). */
   loadableOpponents?: Opponent[];
+  /** Your own teams, for the Attacker's "Load Team" (see LoadMyTeamDialog) — instead of `loadableOpponents`. */
+  loadableTeams?: { teams: Team[]; activeTeamId: string | null; onLoad: (team: Team) => void };
   /** Saved sets (the user's own and public ones) — listed in the species picker, and where "Save set" writes. */
   calcSets: CalcSetsApi;
   /** Extra classes on the card (e.g. hiding it while the other side's tab is open on phones). */
@@ -183,6 +185,7 @@ export function RosterPokemonPicker({
   onItemChange,
   onMovesChange,
   loadableOpponents,
+  loadableTeams,
   single = false,
   calcSets,
   className = "",
@@ -445,18 +448,29 @@ export function RosterPokemonPicker({
     /** Its link text from sm up, when shorter than `label`. */
     shortLabel?: string;
   }> = [
-    ...(loadableOpponents
+    ...(loadableTeams
       ? [
           {
             key: "load",
             placement: "left" as const,
             icon: IconName.Download,
             label: t.calcPanel.loadTeam,
-            hint: t.calcPanel.loadTeamHint,
+            hint: t.calcPanel.loadMyTeamHint,
             onClick: () => setIsLoadOpponentOpen(true),
           },
         ]
-      : []),
+      : loadableOpponents
+        ? [
+            {
+              key: "load",
+              placement: "left" as const,
+              icon: IconName.Download,
+              label: t.calcPanel.loadTeam,
+              hint: t.calcPanel.loadTeamHint,
+              onClick: () => setIsLoadOpponentOpen(true),
+            },
+          ]
+        : []),
     ...(single ? (["pokemon"] as const) : (["pokemon", "team"] as const)).map((mode) => ({
       key: `import-${mode}`,
       placement: mode === "pokemon" ? ("right" as const) : undefined,
@@ -636,6 +650,20 @@ export function RosterPokemonPicker({
         <LoadTeamDialog
           opponents={loadableOpponents}
           onLoad={loadOpponentTeam}
+          onClose={() => setIsLoadOpponentOpen(false)}
+          labelledBy={loadOpponentModalTitleId}
+        />
+      )}
+
+      {isLoadOpponentOpen && loadableTeams && (
+        <LoadMyTeamDialog
+          teams={loadableTeams.teams}
+          activeTeamId={loadableTeams.activeTeamId}
+          onLoad={(team) => {
+            loadableTeams.onLoad(team);
+            setIsLoadOpponentOpen(false);
+            toast.success(t.calcPanel.loaded(team.name));
+          }}
           onClose={() => setIsLoadOpponentOpen(false)}
           labelledBy={loadOpponentModalTitleId}
         />

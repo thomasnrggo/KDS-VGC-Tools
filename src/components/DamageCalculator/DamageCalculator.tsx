@@ -36,7 +36,7 @@ import { TogglePill } from "../Button";
 import { toast } from "../Toast";
 import { PokemonSprite } from "../PokemonSprite";
 import { IconName } from "@/enums";
-import type { DamageCalcOptions, ParsedPokemon, TeamCalcSide } from "@/types";
+import type { DamageCalcOptions, ParsedPokemon, Team, TeamCalcSide } from "@/types";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/LoadingState";
@@ -115,12 +115,12 @@ interface DamageCalculatorProps {
 export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
   const t = useMessages();
   const text = usePokemonText();
-  const { teams, activeTeamId, isLoading, updateTeam } = myTeams;
-  // Team/opponent selection from a saved roster is otherwise omitted (see
-  // PLANNING.md) — the header's active team seeds the Attacker's sidebar on
-  // first load, and a specific opponent seeds the Defender's when opened via
-  // an OpponentCard's "Open in Damage Calculator" link (?opponentId=...,
-  // below) — both are one-time seeds, not an ongoing team-selection UI.
+  const { teams, activeTeams, activeTeamId, isLoading, updateTeam, setActiveTeamId } = myTeams;
+  // The Attacker is your side: it shows the header's active team (on first
+  // load and whenever the header switches teams), and its "Load Team" picks
+  // one of your teams (which also makes it the active one). The Defender's
+  // "Load Team" lists saved opponents, and an OpponentCard's "Open in Damage
+  // Calculator" link (?opponentId=..., below) seeds it once.
   const activeTeam = activeTeamId ? teams.find((t) => t.id === activeTeamId) : undefined;
   const { opponents } = useOpponents();
   const calcSets = useCalcSets();
@@ -208,27 +208,6 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
   // moves without leaving the Pokémon you're editing.
   const [movesSide, setMovesSide] = useState<"attacker" | "defender">("attacker");
 
-  // Seeds the Attacker's sidebar with the header's active team, the first
-  // time activeTeamId becomes available (it loads asynchronously from
-  // IndexedDB) — adjusted directly during render, React's own recommended
-  // pattern for "sync state once when a value changes" (see "Adjusting some
-  // state when a prop changes" in the React docs), rather than an effect.
-  // Guarded by attackerDefaultedFor so this never fires again once it has,
-  // meaning a later explicit change is never overridden by it — it only
-  // replaces the untouched starting default. With no active team, the
-  // Attacker keeps that default species, like the Defender.
-  const [attackerDefaultedFor, setAttackerDefaultedFor] = useState<string | null>(null);
-  if (activeTeamId !== attackerDefaultedFor) {
-    setAttackerDefaultedFor(activeTeamId);
-    const isUntouched = attackerSidebar === initialAttackerSidebar;
-    if (isUntouched && activeTeam && activeTeam.pokemon.length > 0) {
-      const seeded = activeTeam.pokemon.map((pokemon) => ({ pokemon, isCustom: false }));
-      setAttackerSidebar(seeded);
-      setAttackerSelectedIndex(0);
-      applyEntryAbility(seeded[0]?.pokemon, attackerMega);
-    }
-  }
-
   // Same render-time-adjust pattern as the Attacker's seed above, but keyed
   // on the ?opponentId= URL param instead of the header's active team, and
   // gated on the opponent actually being found rather than the sidebar
@@ -275,6 +254,45 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
     useState<StatOverrides>(DEFAULT_STAT_OVERRIDES);
   const [defenderStatOverrides, setDefenderStatOverrides] =
     useState<StatOverrides>(DEFAULT_STAT_OVERRIDES);
+
+  function loadAttackerTeam(team: Team) {
+    if (team.pokemon.length === 0) return;
+    const seeded = team.pokemon
+      .slice(0, MAX_SIDEBAR_POKEMON)
+      .map((pokemon): SidebarEntry => ({ pokemon, isCustom: false }));
+    setAttackerSidebar(seeded);
+    setAttackerSelectedIndex(0);
+    setSelectedMove(null);
+    setAttackerBattleState(DEFAULT_BATTLE_STATE);
+    setAttackerStatOverrides(DEFAULT_STAT_OVERRIDES);
+    applyEntryAbility(seeded[0]?.pokemon, attackerMega);
+  }
+
+  // Puts the header's active team on the Attacker's side whenever it changes —
+  // the first time it becomes available (it loads asynchronously from
+  // IndexedDB) and each time the header switches teams — adjusted directly
+  // during render, React's recommended pattern for "sync state when a value
+  // changes" (see "Adjusting some state when a prop changes" in the React
+  // docs), rather than an effect. The first one only replaces the untouched
+  // starting default (attackerDefaultedFor is still null then); later ones are
+  // an explicit switch, so they replace whatever is there. With no active
+  // team, the Attacker keeps that default species, like the Defender.
+  const [attackerDefaultedFor, setAttackerDefaultedFor] = useState<string | null>(null);
+  if (activeTeamId !== attackerDefaultedFor) {
+    setAttackerDefaultedFor(activeTeamId);
+    const isUntouched = attackerSidebar === initialAttackerSidebar;
+    if (activeTeam && (isUntouched || attackerDefaultedFor !== null)) loadAttackerTeam(activeTeam);
+  }
+
+  // The Attacker's "Load Team": loads it directly (so re-picking the active
+  // team after edits restores it) and makes it the active team, so the header
+  // matches and saved calcs are filed on it. Marking it as already synced
+  // keeps the switch above from loading it a second time.
+  function loadMyTeam(team: Team) {
+    loadAttackerTeam(team);
+    setAttackerDefaultedFor(team.id);
+    setActiveTeamId(team.id);
+  }
 
   // Restores the Defender's saved work in progress (see defenderDraftStore)
   // once, on the first client render — localStorage isn't readable on the
@@ -1113,6 +1131,7 @@ export function DamageCalculator({ myTeams }: DamageCalculatorProps) {
           }
           onSaveToSidebar={attackerSaveCurrentToSidebar}
           onImportTeam={attackerImportTeam}
+          loadableTeams={{ teams: activeTeams, activeTeamId, onLoad: loadMyTeam }}
           onRemovePokemon={attackerRemovePokemon}
           mega={attackerMega}
           onMegaChange={(mega) => {

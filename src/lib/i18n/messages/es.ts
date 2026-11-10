@@ -1250,6 +1250,13 @@ export const es: Messages = {
   calcPanel: {
     loadTeam: "Cargar equipo",
     loadTeamHint: "Cargar el equipo de un rival guardado",
+    loadMyTeamHint: "Cargar uno de tus equipos",
+    loadMyTeamIntro:
+      "Elige uno de tus equipos para reemplazar todos los Pokémon de este lado. También pasa a ser tu equipo activo.",
+    noTeams: "Aún no hay equipos guardados — añade uno en Mis equipos primero.",
+    loadTeamSearch: "Buscar por nombre, Pokémon u objeto",
+    loadNoTeamMatches: "Ninguno de tus equipos coincide con esa búsqueda.",
+    activeTeam: "Activo",
     exportTeam: "Exportar equipo",
     exportTeamHint: "Exportar el equipo como texto de Showdown",
     exportSet: "Exportar set",

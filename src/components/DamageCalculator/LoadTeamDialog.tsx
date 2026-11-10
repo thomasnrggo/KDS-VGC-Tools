@@ -13,7 +13,7 @@ import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { tagsMatchQuery } from "@/lib/opponentTags";
 import { hasStatPoints } from "@/lib/hasStatPoints";
-import type { Opponent } from "@/types";
+import type { Opponent, ParsedPokemon, Team } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface LoadTeamDialogProps {
@@ -29,12 +29,11 @@ interface LoadTeamDialogProps {
  * Lists your own opponents or one of your prep groups' — starting on whichever
  * the Matchup Planner last showed — with a search (like the Opponents list's)
  * and a preview of each team, flagging teams that would load without Stat
- * Points.
+ * Points. (The Attacker's version, for your own teams, is LoadMyTeamDialog.)
  */
 export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadTeamDialogProps) {
   const t = useMessages();
   const text = usePokemonText();
-  const isPhone = useIsPhone();
   const { activeGroups } = useGroups();
   const plannerSource = usePlannerSource();
   const [pickedSource, setPickedSource] = useState<PlannerSource | null>(null);
@@ -97,98 +96,215 @@ export function LoadTeamDialog({ opponents, onLoad, onClose, labelledBy }: LoadT
         </div>
       )}
 
-      {list.length === 0 && !isLoadingGroup ? (
-        <p className="text-sm text-zinc-600">
-          {group ? t.calcPanel.noGroupOpponents : t.calcPanel.noOpponents}
-        </p>
-      ) : (
-        <>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t.calcPanel.loadSearch}
-            aria-label={t.calcPanel.loadSearch}
-            autoFocus={!isPhone}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            className="mb-2 w-full rounded-lg border border-zinc-300 bg-field px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
-          />
-          <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto sm:max-h-96">
-            {isLoadingGroup && (
-              <p className="px-1 py-2 text-sm text-zinc-500">{t.common.loading}</p>
-            )}
-            {!isLoadingGroup && visible.length === 0 && (
-              <p className="px-1 py-2 text-sm text-zinc-500">{t.calcPanel.loadNoMatches}</p>
-            )}
-            {visible.map((opponent) => {
-              const withoutSp = opponent.team.pokemon.filter((mon) => !hasStatPoints(mon)).length;
-              const spWarning =
-                withoutSp === 0
-                  ? null
-                  : withoutSp === opponent.team.pokemon.length
-                    ? t.calcPanel.noStatPoints
-                    : t.calcPanel.someWithoutStatPoints(withoutSp);
-              return (
-                <button
-                  key={opponent.id}
-                  type="button"
-                  onClick={() => onLoad(opponent)}
-                  className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-left hover:bg-zinc-100"
-                >
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span
-                      className="truncate text-sm font-medium text-zinc-900"
-                      title={opponent.label}
-                    >
-                      {opponent.label}
-                    </span>
-                    {/* The calc would treat these as 0 in every stat, so the numbers would be off. */}
-                    {spWarning && (
-                      <span
-                        className="truncate text-xs text-amber-700"
-                        title={t.calcPanel.statPointsHint}
-                      >
-                        {spWarning}
-                      </span>
-                    )}
-                  </span>
-                  {/* The team at a glance, on the same line as the name: each Pokémon with its item, a smaller take on the team bars' tiles. */}
-                  <span
-                    className="flex shrink-0 gap-1"
-                    aria-label={opponent.team.pokemon
-                      .map((mon) => text.species(mon.species))
-                      .join(", ")}
-                  >
-                    {opponent.team.pokemon.map((mon, index) => (
-                      <span
-                        key={index}
-                        className="relative h-8 w-8 shrink-0 rounded-md bg-zinc-200/60 sm:h-9 sm:w-9"
-                      >
-                        <span className="absolute inset-0.5">
-                          <PokemonSprite species={mon.species} item={mon.item} fill />
-                        </span>
-                        {mon.item && (
-                          <span className="absolute -right-1 -bottom-1">
-                            <ItemIcon item={mon.item} size={14} />
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
+      <LoadableTeamList
+        teams={visible.map((opponent) => ({
+          id: opponent.id,
+          label: opponent.label,
+          pokemon: opponent.team.pokemon,
+        }))}
+        isEmpty={list.length === 0 && !isLoadingGroup}
+        emptyText={group ? t.calcPanel.noGroupOpponents : t.calcPanel.noOpponents}
+        isLoading={isLoadingGroup}
+        noMatchesText={t.calcPanel.loadNoMatches}
+        query={query}
+        onQueryChange={setQuery}
+        onPick={(id) => {
+          const opponent = visible.find((o) => o.id === id);
+          if (opponent) onLoad(opponent);
+        }}
+      />
       <ModalActions>
         <Button variant="outline" onClick={onClose}>
           {t.common.cancel}
         </Button>
       </ModalActions>
     </Modal>
+  );
+}
+
+interface LoadMyTeamDialogProps {
+  /** Your own (non-archived) teams, in the My Teams order. */
+  teams: Team[];
+  /** The header's active team — marked in the list. */
+  activeTeamId: string | null;
+  onLoad: (team: Team) => void;
+  onClose: () => void;
+  labelledBy: string;
+}
+
+/**
+ * The Attacker's "Load Team": one of your own teams onto that side, with the
+ * same search and preview as the opponents' dialog above.
+ */
+export function LoadMyTeamDialog({
+  teams,
+  activeTeamId,
+  onLoad,
+  onClose,
+  labelledBy,
+}: LoadMyTeamDialogProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const [query, setQuery] = useState("");
+
+  const terms = parseSearchTerms(query);
+  const visible = teams.filter((team) =>
+    terms.every(
+      (term) =>
+        foldForSearch(team.name).includes(term) ||
+        team.pokemon.some((mon) => pokemonMatchesQuery(mon, term, text)),
+    ),
+  );
+
+  return (
+    <Modal onClose={onClose} labelledBy={labelledBy} fullScreenOnPhone>
+      <ModalTitle id={labelledBy}>{t.calcPanel.loadTeam}</ModalTitle>
+      <ModalDescription className="mb-3">{t.calcPanel.loadMyTeamIntro}</ModalDescription>
+      <LoadableTeamList
+        teams={visible.map((team) => ({
+          id: team.id,
+          label: team.name,
+          pokemon: team.pokemon,
+          badge: team.id === activeTeamId ? t.calcPanel.activeTeam : undefined,
+        }))}
+        isEmpty={teams.length === 0}
+        emptyText={t.calcPanel.noTeams}
+        isLoading={false}
+        noMatchesText={t.calcPanel.loadNoTeamMatches}
+        searchPlaceholder={t.calcPanel.loadTeamSearch}
+        query={query}
+        onQueryChange={setQuery}
+        onPick={(id) => {
+          const team = visible.find((candidate) => candidate.id === id);
+          if (team) onLoad(team);
+        }}
+      />
+      <ModalActions>
+        <Button variant="outline" onClick={onClose}>
+          {t.common.cancel}
+        </Button>
+      </ModalActions>
+    </Modal>
+  );
+}
+
+interface LoadableTeamListProps {
+  teams: Array<{ id: string; label: string; pokemon: ParsedPokemon[]; badge?: string }>;
+  /** Nothing saved at all (rather than nothing matching the search). */
+  isEmpty: boolean;
+  emptyText: string;
+  isLoading: boolean;
+  noMatchesText: string;
+  /** Defaults to the opponents' "Pokémon, item or tag". */
+  searchPlaceholder?: string;
+  query: string;
+  onQueryChange: (query: string) => void;
+  onPick: (id: string) => void;
+}
+
+/**
+ * Both Load Team dialogs' search and team list: each team's name, a warning
+ * when it would load without Stat Points, and its Pokémon at a glance.
+ */
+function LoadableTeamList({
+  teams,
+  isEmpty,
+  emptyText,
+  isLoading,
+  noMatchesText,
+  searchPlaceholder,
+  query,
+  onQueryChange,
+  onPick,
+}: LoadableTeamListProps) {
+  const t = useMessages();
+  const text = usePokemonText();
+  const isPhone = useIsPhone();
+  const placeholder = searchPlaceholder ?? t.calcPanel.loadSearch;
+
+  if (isEmpty) return <p className="text-sm text-zinc-600">{emptyText}</p>;
+
+  return (
+    <>
+      <input
+        type="search"
+        value={query}
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        autoFocus={!isPhone}
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+        className="mb-2 w-full rounded-lg border border-zinc-300 bg-field px-3 py-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
+      />
+      <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto sm:max-h-96">
+        {isLoading && <p className="px-1 py-2 text-sm text-zinc-500">{t.common.loading}</p>}
+        {!isLoading && teams.length === 0 && (
+          <p className="px-1 py-2 text-sm text-zinc-500">{noMatchesText}</p>
+        )}
+        {teams.map((team) => {
+          const withoutSp = team.pokemon.filter((mon) => !hasStatPoints(mon)).length;
+          const spWarning =
+            withoutSp === 0
+              ? null
+              : withoutSp === team.pokemon.length
+                ? t.calcPanel.noStatPoints
+                : t.calcPanel.someWithoutStatPoints(withoutSp);
+          return (
+            <button
+              key={team.id}
+              type="button"
+              onClick={() => onPick(team.id)}
+              className="flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-1.5 text-left hover:bg-zinc-100"
+            >
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-sm font-medium text-zinc-900" title={team.label}>
+                    {team.label}
+                  </span>
+                  {team.badge && (
+                    <span className="shrink-0 rounded-full bg-zinc-200 px-1.5 py-0.5 text-[10px] font-medium text-zinc-700">
+                      {team.badge}
+                    </span>
+                  )}
+                </span>
+                {/* The calc would treat these as 0 in every stat, so the numbers would be off. */}
+                {spWarning && (
+                  <span
+                    className="truncate text-xs text-amber-700"
+                    title={t.calcPanel.statPointsHint}
+                  >
+                    {spWarning}
+                  </span>
+                )}
+              </span>
+              {/* The team at a glance, on the same line as the name: each Pokémon with its item, a smaller take on the team bars' tiles. */}
+              <span
+                className="flex shrink-0 gap-1"
+                aria-label={team.pokemon.map((mon) => text.species(mon.species)).join(", ")}
+              >
+                {team.pokemon.map((mon, index) => (
+                  <span
+                    key={index}
+                    className="relative h-8 w-8 shrink-0 rounded-md bg-zinc-200/60 sm:h-9 sm:w-9"
+                  >
+                    <span className="absolute inset-0.5">
+                      <PokemonSprite species={mon.species} item={mon.item} fill />
+                    </span>
+                    {mon.item && (
+                      <span className="absolute -right-1 -bottom-1">
+                        <ItemIcon item={mon.item} size={14} />
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </>
   );
 }
