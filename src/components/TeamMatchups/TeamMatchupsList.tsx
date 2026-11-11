@@ -30,6 +30,12 @@ interface TeamMatchupsListProps {
   /** Your opponents and each prep group's, each in Matchup Planner list order. */
   lists: { source: MatchupSource; opponents: Opponent[] }[];
   isLoading: boolean;
+  /**
+   * A shared report's matchups: where each row links (instead of your own
+   * matchup page), without the list it's from or the empty state's link to
+   * the Matchup Planner.
+   */
+  shared?: { href: (opponent: Opponent) => string };
 }
 
 /** A copy's matchup page — through ?groupId= for a prep group's (your private plan for it). */
@@ -167,11 +173,13 @@ function MatchupRow({
   row,
   rowClassName,
   isMatch,
+  shared,
 }: {
   team: Team;
   row: Row;
   rowClassName: string;
   isMatch?: (mon: ParsedPokemon) => boolean;
+  shared?: TeamMatchupsListProps["shared"];
 }) {
   const t = useMessages();
   const { opponent, mainLabel } = row.primary;
@@ -227,7 +235,7 @@ function MatchupRow({
       <div className="flex min-w-0 flex-col gap-2 border-zinc-300 px-3 py-3 md:border-r md:p-4">
         <div className="flex h-7 w-0 min-w-full items-center gap-1.5">
           <Link
-            href={matchupHref(team, row.primary)}
+            href={shared ? shared.href(opponent) : matchupHref(team, row.primary)}
             title={opponent.label}
             className="min-w-0 truncate text-xs font-semibold tracking-wide text-zinc-600 uppercase after:absolute after:inset-0 hover:text-zinc-900"
           >
@@ -241,9 +249,11 @@ function MatchupRow({
               {t.opponentCard.variant}
             </span>
           )}
-          <span className="shrink-0 text-[11px] text-zinc-500">
-            · {sourceLabel(row.primary.source)}
-          </span>
+          {!shared && (
+            <span className="shrink-0 text-[11px] text-zinc-500">
+              · {sourceLabel(row.primary.source)}
+            </span>
+          )}
           <Icon
             name={IconName.ExpandMore}
             size={18}
@@ -321,7 +331,7 @@ function MatchupRow({
  * the same team in several lists shown once. Each row links to its matchup
  * page (see docs/team-report.md).
  */
-export function TeamMatchupsList({ team, lists, isLoading }: TeamMatchupsListProps) {
+export function TeamMatchupsList({ team, lists, isLoading, shared }: TeamMatchupsListProps) {
   const t = useMessages();
   const pokemonText = usePokemonText();
   const [query, setQuery] = useState("");
@@ -344,6 +354,13 @@ export function TeamMatchupsList({ team, lists, isLoading }: TeamMatchupsListPro
     ? (mon: ParsedPokemon) => terms.some((term) => pokemonMatchesQuery(mon, term, pokemonText))
     : undefined;
 
+  if (rows.length === 0 && shared) {
+    return (
+      <p className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
+        {t.sharedPage.noMatchups}
+      </p>
+    );
+  }
   if (rows.length === 0) {
     return (
       <p className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-500">
@@ -376,6 +393,7 @@ export function TeamMatchupsList({ team, lists, isLoading }: TeamMatchupsListPro
               team={team}
               row={row}
               isMatch={isMatch}
+              shared={shared}
               rowClassName={cn(index % 2 === 0 ? "bg-zinc-200" : "bg-zinc-100")}
             />
           ))}

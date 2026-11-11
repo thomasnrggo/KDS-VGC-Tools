@@ -269,7 +269,22 @@ export const es: Messages = {
     copyLink: "Copiar enlace",
     openShared: "Abrir informe compartido",
     updatesHint:
-      "La copia compartida se actualiza cuando editas el equipo. Las notas, combinaciones y estadísticas de torneos nunca se comparten.",
+      "La copia compartida se actualiza mientras editas el equipo y sus enfrentamientos. Las estadísticas de torneos nunca se comparten.",
+    alsoShare: "Compartir también",
+    sections: {
+      strategy: "Estrategia",
+      calcs: "Cálculos",
+      matchups: "Enfrentamientos",
+    },
+    sectionHints: {
+      strategy: "Las notas del equipo y sus combinaciones habituales.",
+      calcs: "Todos los cálculos de referencia de la pestaña Cálculos.",
+      matchups: "Cada rival que has preparado para este equipo: su equipo, tus planes y tus notas.",
+    },
+    alsoShareClosedOnly:
+      "La estrategia, los cálculos y los enfrentamientos solo se pueden compartir con la hoja de equipo cerrada — revelarían los puntos de estadística y la naturaleza que la hoja abierta oculta.",
+    matchupsLoading:
+      "Tus enfrentamientos aún se están cargando — se compartirán en cuanto terminen.",
     publishing: "Publicando…",
     makingPrivate: "Haciéndolo privado…",
     publishFailed:
@@ -333,6 +348,21 @@ export const es: Messages = {
       "Puede que el enlace sea incorrecto o que su dueño haya hecho privado el informe.",
     loadFailedBody: "Revisa tu conexión e inténtalo de nuevo.",
     goHome: "Ir a VGC Box",
+    noMatchups: "Aún no hay enfrentamientos compartidos.",
+    noScoutingNotes: "Sin notas sobre lo que hacen.",
+    noStrategy: "Aún no hay combinaciones ni notas compartidas.",
+    noCalcs: "Aún no hay cálculos compartidos.",
+    matchupNotShared: "Este enfrentamiento no está compartido",
+    matchupNotSharedBody:
+      "Puede que su dueño lo haya quitado o haya dejado de compartir los enfrentamientos.",
+    backToShared: "Volver al informe compartido",
+    addEverything: "Añadir todo a mis equipos",
+    addEverythingHint:
+      "Guarda una copia de este equipo en Mis equipos, con su estrategia y cálculos compartidos, y sus enfrentamientos en tus rivales",
+    addedEverything: (name, matchups) =>
+      matchups === 0
+        ? `"${name}" añadido a tus equipos`
+        : `"${name}" añadido a tus equipos, con ${matchups} enfrentamiento${matchups === 1 ? "" : "s"}`,
   },
   hoverCard: {
     unsupportedMega: (item) =>

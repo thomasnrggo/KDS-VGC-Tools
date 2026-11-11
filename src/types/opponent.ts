@@ -1,4 +1,4 @@
-import type { Team } from "./team";
+import type { ParsedPokemon, Team } from "./team";
 
 /** An index into a My Team's pokemon, or null for "not picked yet" — each slot is independent. */
 export type PokemonSlot = number | null;
@@ -67,5 +67,29 @@ export interface Opponent {
   addedBy?: string;
   addedByName?: string;
   createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * One matchup of a shared Team Report — Firestore
+ * `sharedTeams/{teamId}/matchups/{opponentId}`, public like its team: an
+ * opponent the owner has prep for (see hasMatchupPrep) and the owner's plan
+ * for the shared team. Only published while the share includes "matchups";
+ * built by toSharedMatchup (src/lib/sharedTeam.ts). See docs/full-share.md.
+ */
+export interface SharedMatchup {
+  /** The owner's opponent id (personal or a prep group's). */
+  id: string;
+  label: string;
+  regulationId: string;
+  /** Their roster, as the owner has it. */
+  pokemon: ParsedPokemon[];
+  pokepasteUrl?: string;
+  tags: string[];
+  /** Set on a variant: its main's opponent id (grouped only when that main is shared too). */
+  variantOf?: string;
+  /** The owner's list position (Opponent.sortOrder, highest first). */
+  sortOrder: number;
+  plan: MatchupPlan;
   updatedAt: string;
 }

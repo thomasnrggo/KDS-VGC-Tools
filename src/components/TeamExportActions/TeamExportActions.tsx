@@ -13,6 +13,8 @@ interface TeamExportActionsProps {
   sheet?: TeamSheetMode;
   /** Omit to hide "Add to my teams" — on your own team, where it'd only make a duplicate. */
   onAddToMyTeams?: () => void;
+  /** "Add to my teams"'s label and hint, when it copies more than the team — a shared report's "Add everything". */
+  addToMyTeamsText?: { label: string; hint: string };
   onAddToOpponents: () => void;
 }
 
@@ -25,6 +27,7 @@ export function TeamExportActions({
   pokemon,
   sheet = "closed",
   onAddToMyTeams,
+  addToMyTeamsText,
   onAddToOpponents,
 }: TeamExportActionsProps) {
   const t = useMessages();
@@ -44,11 +47,11 @@ export function TeamExportActions({
         <Button
           variant="outline"
           onClick={onAddToMyTeams}
-          title={t.teamPage.addToMyTeamsHint}
+          title={addToMyTeamsText?.hint ?? t.teamPage.addToMyTeamsHint}
           className={buttonClass}
         >
           <Icon name={IconName.Add} size={18} />
-          {t.teamPage.addToMyTeams}
+          {addToMyTeamsText?.label ?? t.teamPage.addToMyTeams}
         </Button>
       )}
       <Button

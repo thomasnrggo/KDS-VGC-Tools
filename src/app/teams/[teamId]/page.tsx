@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMyTeams } from "@/hooks/useMyTeams";
@@ -37,6 +37,8 @@ import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
 import { addPasteToOpponents } from "@/lib/teamExport";
+import { opponentsToShare, sharesSection } from "@/lib/sharedTeam";
+import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamExportActions } from "@/components/TeamExportActions";
 import { Button, TogglePill, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
@@ -110,6 +112,20 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     isAuthLoading || personal.isLoading || groupsApi.isLoading || groupOpponents.isLoading;
 
   const team = teams.find((t) => t.id === teamId) ?? null;
+  // What the shared report's matchups should be (docs/full-share.md) — once every list has loaded.
+  const matchupOpponents = team && !isMatchupsLoading ? opponentsToShare(team, matchupLists) : null;
+  // Each visit re-checks them once: every opponent edit updates them as it's
+  // saved, but an opponent removed by a prep group teammate, or edited before
+  // matchups were shared, is only caught here.
+  const reconciledRef = useRef<string | null>(null);
+  const sharesMatchups = sharesSection(team?.share, "matchups");
+  useEffect(() => {
+    if (!team || !matchupOpponents || !sharesMatchups || reconciledRef.current === team.id) return;
+    reconciledRef.current = team.id;
+    reconcileSharedMatchups(team, matchupOpponents).catch((error) =>
+      console.error("[share] matchups reconcile failed:", error),
+    );
+  }, [team, matchupOpponents, sharesMatchups]);
   // No regulation selector on this page (it's one specific team's own
   // report) — default the header switcher to whichever regulation this
   // team itself is tagged for, so it at least includes this team.
@@ -381,6 +397,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           {isSharing && (
             <ShareDialog
               team={team}
+              matchupOpponents={matchupOpponents}
               onUpdate={(updater) => updateTeam(teamId, updater)}
               isSignedIn={!!user}
               onSignIn={signInWithGoogle}

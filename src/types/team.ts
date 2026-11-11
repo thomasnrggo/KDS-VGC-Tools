@@ -67,16 +67,25 @@ export interface TeamCalc {
  */
 export type TeamSheetMode = "open" | "closed";
 
+/**
+ * The parts of a Team Report its owner can choose to add to the shared copy
+ * — the roster and overview always go out. See docs/full-share.md.
+ */
+export type ShareSection = "strategy" | "calcs" | "matchups";
+
 /** Set when the team's report is shared (see src/lib/sharedTeam.ts); absent means private. */
 export interface TeamShare {
   sheet: TeamSheetMode;
+  /** The sections shared besides the roster — none (absent) for a share made before they existed. */
+  sections?: ShareSection[];
 }
 
 /**
  * The public copy of a shared Team Report — Firestore `sharedTeams/{teamId}`,
  * readable by anyone with the link, written only by its owner (see
  * firestore.rules). Built by toSharedTeam, which strips what an open sheet
- * hides; the owner's notes, plans and calcs are never included.
+ * hides and leaves out every section the owner didn't choose to share. Shared
+ * matchups are a subcollection, `sharedTeams/{teamId}/matchups` (see SharedMatchup).
  */
 export interface SharedTeam {
   id: string;
@@ -91,6 +100,13 @@ export interface SharedTeam {
   pokemon: ParsedPokemon[];
   /** The owner team's Team.regulationIds — where "Add to opponents" / "Add to my teams" file a copy. Missing on a copy published before it existed. */
   regulationIds?: string[];
+  /** The sections shared besides the roster (TeamShare.sections) — absent on a copy published before they existed. */
+  sections?: ShareSection[];
+  /** With the "strategy" section: the team's notes and combinations. */
+  notes?: string;
+  combinations?: TeamCombination[];
+  /** With the "calcs" section: the team's benchmark calcs. */
+  calcs?: TeamCalc[];
   updatedAt: string;
 }
 

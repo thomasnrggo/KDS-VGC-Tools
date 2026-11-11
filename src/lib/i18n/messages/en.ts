@@ -267,7 +267,21 @@ export const en = {
     copyLink: "Copy link",
     openShared: "Open shared report",
     updatesHint:
-      "The shared copy updates when you edit the team. Notes, combinations and tournament stats are never shared.",
+      "The shared copy updates as you edit the team and its matchups. Tournament stats are never shared.",
+    alsoShare: "Also share",
+    sections: {
+      strategy: "Strategy",
+      calcs: "Calcs",
+      matchups: "Matchups",
+    },
+    sectionHints: {
+      strategy: "The team's notes and common combinations.",
+      calcs: "Every benchmark calc on the Calcs tab.",
+      matchups: "Each opponent you've prepped for this team: their team, your plans and notes.",
+    },
+    alsoShareClosedOnly:
+      "Strategy, calcs and matchups can only be shared with a closed team sheet — they'd give away the Stat Points and nature an open sheet hides.",
+    matchupsLoading: "Your matchups are still loading — they'll be shared once they have.",
     publishing: "Publishing…",
     makingPrivate: "Making private…",
     publishFailed:
@@ -329,6 +343,20 @@ export const en = {
     notSharedBody: "The link may be wrong, or its owner made the report private.",
     loadFailedBody: "Check your connection and try again.",
     goHome: "Go to VGC Box",
+    noMatchups: "No matchups shared yet.",
+    noScoutingNotes: "No notes on what they do.",
+    noStrategy: "No combinations or notes shared yet.",
+    noCalcs: "No calcs shared yet.",
+    matchupNotShared: "This matchup isn't shared",
+    matchupNotSharedBody: "Its owner may have removed it, or stopped sharing matchups.",
+    backToShared: "Back to the shared report",
+    addEverything: "Add everything to my teams",
+    addEverythingHint:
+      "Save a copy of this team in My Teams, with its shared strategy and calcs, and its matchups in your opponents",
+    addedEverything: (name: string, matchups: number) =>
+      matchups === 0
+        ? `Added "${name}" to your teams`
+        : `Added "${name}" to your teams, with ${matchups} matchup${matchups === 1 ? "" : "s"}`,
   },
   hoverCard: {
     unsupportedMega: (item: string) =>

@@ -9,7 +9,15 @@ export { getPublicSets, savePublicSet, deletePublicSet } from "./publicSets";
 export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";
 export { getLearnsetOverrides, saveLearnsetOverride } from "./learnsetOverrides";
 export { getMetaSpreads, saveMetaSpread } from "./metaSpreads";
-export { publishSharedTeam, unpublishSharedTeam, getSharedTeam } from "./sharedTeams";
+export {
+  publishSharedTeam,
+  unpublishSharedTeam,
+  getSharedTeam,
+  publishSharedMatchup,
+  unpublishSharedMatchup,
+  getSharedMatchups,
+  getSharedMatchup,
+} from "./sharedTeams";
 export {
   createGroup,
   renameGroup,

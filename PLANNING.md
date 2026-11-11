@@ -404,7 +404,7 @@ interface Team {
   pokepasteUrl?: string;
   replicaCode?: string; // in-game code to rent the team
   overview?: string; // "Team overview" rich text — included in shared reports
-  share?: { sheet: "open" | "closed" }; // present = report shared; see "Shareable Team Reports" in §7
+  share?: { sheet: "open" | "closed"; sections?: ("strategy" | "calcs" | "matchups")[] }; // present = report shared; see "Shareable Team Reports" in §7 and docs/full-share.md
   updatedAt: string; // ISO timestamp
 }
 
@@ -419,8 +419,12 @@ interface SharedTeam {
   overview?: string;
   sheet: "open" | "closed";
   pokemon: ParsedPokemon[]; // open sheet: no evs/nature
+  sections?: ("strategy" | "calcs" | "matchups")[];
+  notes?: string; combinations?: TeamCombination[]; // with "strategy"
+  calcs?: TeamCalc[]; // with "calcs"
   updatedAt: string;
 }
+// sharedTeams/{teamId}/matchups/{opponentId} — SharedMatchup, with "matchups" (docs/full-share.md).
 
 interface TeamCalc {
   id: string;
@@ -2643,8 +2647,9 @@ megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation —
     team sheet** (Pokémon, items, abilities, moves — no Stat Points, nature, or stats, and no
     Poképaste link since the paste would reveal them) or a **closed team sheet** (everything the
     report shows). Sharing needs sign-in. The public copy is a separate Firestore doc,
-    `sharedTeams/{teamId}`, built by `toSharedTeam` (src/lib/sharedTeam.ts) — never the owner's
-    notes, combinations, plans, calcs or tournament stats. `firestore.rules` gives it public read,
+    `sharedTeams/{teamId}`, built by `toSharedTeam` (src/lib/sharedTeam.ts) — never tournament
+    stats; since 2026-11-11 the owner can also share Strategy, Calcs and Matchups (**full share**,
+    see docs/full-share.md). `firestore.rules` gives it public read,
     and create/update/delete only by the `ownerUid` in the doc. **The rules change must be deployed
     before sharing works.**
   - The copy follows edits: `saveMyTeam`'s debounced cloud push also republishes a shared team

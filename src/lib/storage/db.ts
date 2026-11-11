@@ -4,14 +4,19 @@ import { normalizeTeam } from "@/lib/team";
 import {
   auth,
   createCollectionSync,
+  getSharedMatchups,
+  publishSharedMatchup,
   publishSharedTeam,
   pullMetaDoc,
   pushMetaDoc,
+  unpublishSharedMatchup,
   unpublishSharedTeam,
 } from "@/lib/firebase";
-import { toSharedTeam } from "@/lib/sharedTeam";
+import { sharesSection, toSharedMatchup, toSharedTeam } from "@/lib/sharedTeam";
+import { getPlanForTeam } from "@/lib/opponent";
+import { hasMatchupPrep } from "@/lib/matchupPlans";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
-import type { CalcSet, Opponent, Team, Tournament } from "@/types";
+import type { CalcSet, Opponent, SharedMatchup, Team, Tournament } from "@/types";
 import type { MetaDocument, MetaTournamentDocument } from "@/lib/meta/metaDocument";
 
 const DB_NAME = "vgc-match-planner";
@@ -169,11 +174,114 @@ export async function publishTeamShare(team: Team): Promise<void> {
   lastPublishedShare.set(team.id, fingerprint);
 }
 
-/** Removes a team's public copy — "make private", or the team was deleted. Throws on failure. */
+/**
+ * Removes a team's public copy — "make private", or the team was deleted —
+ * its matchups first (firestore.rules checks the team doc to allow that).
+ * Throws on failure.
+ */
 export async function unpublishTeamShare(id: string): Promise<void> {
   lastPublishedShare.delete(id);
   if (!currentUid()) return;
+  const matchups = await getSharedMatchups(id);
+  await Promise.all(matchups.map((matchup) => dropSharedMatchup(id, matchup.id, true)));
   await unpublishSharedTeam(id);
+}
+
+// ── Shared matchups ──────────────────────────────────────────────────────────
+// A team shared with its "matchups" section publishes each prepped opponent
+// as sharedTeams/{teamId}/matchups/{opponentId} (see SharedMatchup and
+// docs/full-share.md). Every opponent save updates them (live, like the team
+// doc); reconcileSharedMatchups re-checks the whole set from the Team Report
+// and the Share dialog, which have every list loaded.
+
+// What each shared matchup (`${teamId}/${opponentId}`) was last published as
+// (minus its timestamp), or "" once it's known not to be published — so an
+// unchanged save doesn't rewrite it, and an opponent without prep is only
+// deleted once.
+const lastPublishedMatchup = new Map<string, string>();
+
+function matchupKey(teamId: string, opponentId: string): string {
+  return `${teamId}/${opponentId}`;
+}
+
+function matchupFingerprint(matchup: SharedMatchup): string {
+  return JSON.stringify({ ...matchup, updatedAt: "" });
+}
+
+async function putSharedMatchup(teamId: string, opponent: Opponent): Promise<void> {
+  const matchup = toSharedMatchup(opponent, teamId);
+  const key = matchupKey(teamId, opponent.id);
+  const fingerprint = matchupFingerprint(matchup);
+  if (lastPublishedMatchup.get(key) === fingerprint) return;
+  await publishSharedMatchup(teamId, matchup);
+  lastPublishedMatchup.set(key, fingerprint);
+}
+
+async function dropSharedMatchup(teamId: string, opponentId: string, force = false): Promise<void> {
+  const key = matchupKey(teamId, opponentId);
+  if (!force && lastPublishedMatchup.get(key) === "") return;
+  await unpublishSharedMatchup(teamId, opponentId);
+  lastPublishedMatchup.set(key, "");
+}
+
+/** Whether `opponent` is one of `team`'s shared matchups: in its regulations, with prep for it. */
+function isSharedMatchup(team: Team, opponent: Opponent): boolean {
+  return (
+    team.regulationIds.includes(opponent.regulationId) &&
+    hasMatchupPrep(getPlanForTeam(opponent, team.id))
+  );
+}
+
+async function teamsSharingMatchups(): Promise<Team[]> {
+  return (await getMyTeams()).filter((team) => sharesSection(team.share, "matchups"));
+}
+
+/**
+ * Follows an opponent's edit (yours or a prep group's) in every shared
+ * team's matchups: published while it has prep for that team, removed once
+ * it hasn't. Signed out, or with no team sharing matchups, it does nothing.
+ */
+export async function publishOpponentToShares(opponent: Opponent): Promise<void> {
+  if (!currentUid()) return;
+  const teams = await teamsSharingMatchups();
+  await Promise.all(
+    teams.map((team) =>
+      isSharedMatchup(team, opponent)
+        ? putSharedMatchup(team.id, opponent)
+        : dropSharedMatchup(team.id, opponent.id),
+    ),
+  );
+}
+
+/** Removes deleted opponents from every shared team's matchups. */
+export async function removeOpponentsFromShares(opponentIds: string[]): Promise<void> {
+  if (!currentUid() || opponentIds.length === 0) return;
+  const teams = await teamsSharingMatchups();
+  await Promise.all(
+    teams.flatMap((team) => opponentIds.map((id) => dropSharedMatchup(team.id, id))),
+  );
+}
+
+/**
+ * Makes `team`'s published matchups exactly `opponents` (see
+ * opponentsToShare) — or none, when its share doesn't include matchups:
+ * publishes what's new or changed, removes the rest. Needs every list
+ * loaded, since whatever isn't passed is removed. Throws on failure.
+ */
+export async function reconcileSharedMatchups(team: Team, opponents: Opponent[]): Promise<void> {
+  if (!currentUid() || !team.share) return;
+  const wanted = sharesSection(team.share, "matchups") ? opponents : [];
+  const published = await getSharedMatchups(team.id);
+  for (const matchup of published) {
+    lastPublishedMatchup.set(matchupKey(team.id, matchup.id), matchupFingerprint(matchup));
+  }
+  const wantedIds = new Set(wanted.map((opponent) => opponent.id));
+  await Promise.all([
+    ...wanted.map((opponent) => putSharedMatchup(team.id, opponent)),
+    ...published
+      .filter((matchup) => !wantedIds.has(matchup.id))
+      .map((matchup) => dropSharedMatchup(team.id, matchup.id, true)),
+  ]);
 }
 
 export async function saveMyTeam(team: Team): Promise<void> {
@@ -295,6 +403,9 @@ export async function saveOpponent(opponent: Opponent): Promise<void> {
       void opponentsSync
         .push(uid, opponent)
         .catch((error) => logCloudSyncError("push opponent", error));
+      void publishOpponentToShares(opponent).catch((error) =>
+        logCloudSyncError("publish shared matchup", error),
+      );
     });
   }
 }
@@ -307,6 +418,9 @@ export async function deleteOpponent(id: string): Promise<void> {
     void opponentsSync
       .remove(uid, id)
       .catch((error) => logCloudSyncError("remove opponent", error));
+    void removeOpponentsFromShares([id]).catch((error) =>
+      logCloudSyncError("remove shared matchup", error),
+    );
   }
 }
 
@@ -324,6 +438,9 @@ export async function deleteOpponents(ids: string[]): Promise<void> {
   if (uid) {
     void Promise.all(ids.map((id) => opponentsSync.remove(uid, id))).catch((error) =>
       logCloudSyncError("delete opponents", error),
+    );
+    void removeOpponentsFromShares(ids).catch((error) =>
+      logCloudSyncError("remove shared matchups", error),
     );
   }
   await Promise.all(ids.map((id) => db.delete(OPPONENTS_STORE, id)));

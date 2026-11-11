@@ -10,6 +10,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.11 — 2026-11-11
+
+### Added
+
+- Full share: the Share dialog can also share a team's **Strategy** (notes and combinations),
+  **Calcs** and **Matchups** (every opponent you've prepped for it, with your plans and notes). The
+  link stays live — it follows your edits to the team and its matchups. The shared report gets a tab
+  for each, and each matchup opens a read-only matchup page. "Add everything to my teams" copies the
+  team with what was shared, and its matchups into your opponents. Only with a closed team sheet —
+  they'd give away the spreads an open sheet hides. Needs the latest `firestore.rules` deployed.
+
 ## 0.3.10 — 2026-11-10
 
 ### Added

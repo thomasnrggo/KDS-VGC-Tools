@@ -2,7 +2,8 @@
 
 import { leadBackSlotProps, PokemonSlotPicker } from "../PokemonSlotPicker";
 import { PlanControls } from "../GamePlanCard";
-import { RichTextEditor } from "../RichTextEditor";
+import { RichTextEditor, RichTextView } from "../RichTextEditor";
+import { hasRichText } from "@/lib/richText";
 import { useMessages } from "@/hooks/useLanguage";
 import { notesToHtml } from "@/lib/matchupPlans";
 import type { ParsedPokemon, TeamCombination } from "@/types";
@@ -15,10 +16,13 @@ interface TeamCombinationCardProps {
   index: number;
   total: number;
   teamPokemon: ParsedPokemon[];
-  onUpdate: (updater: (combination: TeamCombination) => TeamCombination) => void;
-  onMove: (direction: -1 | 1) => void;
-  onRemove: () => void;
+  /** Omit the three to show it read only — a shared report's combination. */
+  onUpdate?: (updater: (combination: TeamCombination) => TeamCombination) => void;
+  onMove?: (direction: -1 | 1) => void;
+  onRemove?: () => void;
 }
+
+const noChange = () => {};
 
 /**
  * One "common combination" on the Team Report's Strategy tab, laid out like
@@ -38,7 +42,10 @@ export function TeamCombinationCard({
 }: TeamCombinationCardProps) {
   const t = useMessages();
   const name = t.combination.title(index + 1);
-  const slotProps = leadBackSlotProps(combination, teamPokemon, onUpdate, t, { flexBack: true });
+  const slotProps = leadBackSlotProps(combination, teamPokemon, onUpdate ?? noChange, t, {
+    flexBack: true,
+  });
+  const notes = notesToHtml(combination.notes);
 
   return (
     <section
@@ -47,14 +54,16 @@ export function TeamCombinationCard({
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-zinc-900">{name}</h3>
-        <PlanControls
-          name={name}
-          index={index}
-          total={total}
-          onMove={onMove}
-          onRemove={onRemove}
-          removeLabel={t.combination.remove}
-        />
+        {onMove && onRemove && (
+          <PlanControls
+            name={name}
+            index={index}
+            total={total}
+            onMove={onMove}
+            onRemove={onRemove}
+            removeLabel={t.combination.remove}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
@@ -71,7 +80,7 @@ export function TeamCombinationCard({
               <h4 className={LABEL_CLASSES}>{label}</h4>
               <div className="flex gap-2">
                 {pair.map((slot) => (
-                  <PokemonSlotPicker key={slot} {...slotProps(slot)} />
+                  <PokemonSlotPicker key={slot} {...slotProps(slot)} readOnly={!onUpdate} />
                 ))}
               </div>
             </div>
@@ -79,13 +88,17 @@ export function TeamCombinationCard({
         </div>
         <div className="flex min-w-0 flex-col gap-1">
           <h4 className={LABEL_CLASSES}>{t.combination.notes}</h4>
-          <RichTextEditor
-            value={notesToHtml(combination.notes)}
-            onChange={(notes) => onUpdate((c) => ({ ...c, notes }))}
-            size="medium"
-            placeholder={t.combination.notesPlaceholder}
-            ariaLabel={`${name} — ${t.combination.notesLabel}`}
-          />
+          {!onUpdate ? (
+            hasRichText(notes) && <RichTextView html={notes} />
+          ) : (
+            <RichTextEditor
+              value={notes}
+              onChange={(notes) => onUpdate((c) => ({ ...c, notes }))}
+              size="medium"
+              placeholder={t.combination.notesPlaceholder}
+              ariaLabel={`${name} — ${t.combination.notesLabel}`}
+            />
+          )}
         </div>
       </div>
     </section>

@@ -51,6 +51,8 @@ interface PokemonSlotPickerProps {
   };
   /** Empty while the rest of the group is picked: shows "+1" — any of the rest fits. */
   anyWhenEmpty?: boolean;
+  /** Shows the pick without changing it — a shared report's plans and combinations. */
+  readOnly?: boolean;
 }
 
 export function PokemonSlotPicker({
@@ -66,6 +68,7 @@ export function PokemonSlotPicker({
   calcs,
   flex,
   anyWhenEmpty = false,
+  readOnly = false,
 }: PokemonSlotPickerProps) {
   const t = useMessages();
   const pokemonText = usePokemonText();
@@ -109,6 +112,7 @@ export function PokemonSlotPicker({
   }, [isOpen]);
 
   function toggleOpen() {
+    if (readOnly) return;
     if (!isOpen) setEitherMode(alternativeIndex !== null);
     setIsOpen((open) => !open);
   }
@@ -146,8 +150,8 @@ export function PokemonSlotPicker({
       <button
         type="button"
         onClick={toggleOpen}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
+        aria-haspopup={readOnly ? undefined : "listbox"}
+        aria-expanded={readOnly ? undefined : isOpen}
         aria-label={
           selected && alternative
             ? t.slotPicker.pickedEither(
@@ -205,16 +209,22 @@ export function PokemonSlotPicker({
             {sprite}
           </PokemonHoverCard>
         ) : (
-          <span className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border border-dashed border-zinc-500 transition-all hover:border-zinc-600 hover:bg-zinc-300/50">
+          <span
+            className={cn(
+              "flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-zinc-500",
+              !readOnly &&
+                "cursor-pointer transition-all hover:border-zinc-600 hover:bg-zinc-300/50",
+            )}
+          >
             {anyWhenEmpty ? (
               <span className="text-lg font-semibold text-zinc-500">+1</span>
             ) : (
-              <Icon className="text-zinc-500" name={IconName.Add} size={24} />
+              !readOnly && <Icon className="text-zinc-500" name={IconName.Add} size={24} />
             )}
           </span>
         )}
       </button>
-      {selected && (
+      {selected && !readOnly && (
         <button
           type="button"
           onClick={() => (alternative && flex ? flex.onChange(null, null) : onChange(null))}

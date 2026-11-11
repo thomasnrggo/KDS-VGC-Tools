@@ -5,6 +5,7 @@ import { createOpponent } from "./opponent";
 import { createTeam, validateTeamSize } from "./team";
 import { parseTeam } from "./parseTeam";
 import { teamFingerprint } from "./teamIdentity";
+import { importSharedMatchups } from "./sharedTeam";
 import type { Opponent, ParsedPokemon, SharedTeam, Team, TeamSheetMode } from "@/types";
 
 /**
@@ -80,19 +81,29 @@ export function addPasteToOpponents({
 
 /**
  * Saves a shared team as a new team of mine — the shared report's "Add to
- * my teams". Keeps its post details (creator, links, overview); toasts
- * instead when one of my teams already has the same paste.
+ * my teams" (or "Add everything", with its matchups). Keeps its post details
+ * (creator, links, overview) and whatever strategy and calcs were shared;
+ * `matchups` (sharedMatchupsAsOpponents) go to my opponents, filed under the
+ * new team (see importSharedMatchups). Toasts instead when one of my teams
+ * already has the same paste.
  */
 export function addSharedTeamToMyTeams({
   shared,
   regulationId,
   myTeams,
   addTeam,
+  matchups = [],
+  myOpponents = [],
+  addOpponents,
 }: {
   shared: SharedTeam;
   regulationId: string;
   myTeams: Team[];
   addTeam: (team: Team) => void;
+  matchups?: Opponent[];
+  myOpponents?: Opponent[];
+  /** Adds or replaces opponents (useOpponents' addOpponents) — needed with `matchups`. */
+  addOpponents?: (opponents: Opponent[]) => void;
 }): void {
   const t = getMessages();
   const paste = formatTeamPaste(shared.pokemon, { sheet: shared.sheet });
@@ -107,6 +118,9 @@ export function addSharedTeamToMyTeams({
     pokepasteUrl: shared.pokepasteUrl,
     replicaCode: shared.replicaCode,
     overview: shared.overview,
+    notes: shared.notes,
+    combinations: shared.combinations,
+    calcs: shared.calcs,
   };
   const sizeError = validateTeamSize(team.pokemon);
   if (sizeError) {
@@ -114,5 +128,11 @@ export function addSharedTeamToMyTeams({
     return;
   }
   addTeam(team);
-  toast.success(t.teamPage.addedToMyTeams(shared.name));
+  if (matchups.length === 0 || !addOpponents) {
+    toast.success(t.teamPage.addedToMyTeams(shared.name));
+    return;
+  }
+  const { added, updated } = importSharedMatchups({ matchups, teamId: team.id, myOpponents });
+  if (added.length + updated.length > 0) addOpponents([...added, ...updated]);
+  toast.success(t.sharedPage.addedEverything(shared.name, matchups.length));
 }

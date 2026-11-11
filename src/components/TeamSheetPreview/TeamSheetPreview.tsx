@@ -23,7 +23,7 @@ const MOVES = movesData as unknown as Record<string, MoveData>;
  * the sprite and held item, name, item · ability, nature, and the moves 2×2.
  * Pass `onNoteChange` for a note per Pokémon (keyed by its index in the team),
  * under its moves.
- * Without it the sheet is read-only.
+ * Without it the sheet is read-only, still showing any `notes` (a shared report's matchup).
  */
 export function TeamSheetPreview({
   pokemon,
@@ -100,6 +100,9 @@ function TeamSheetEntry({
             );
           })}
         </ul>
+      )}
+      {!onNoteChange && note.trim() && (
+        <p className="text-xs whitespace-pre-line text-zinc-700">{note}</p>
       )}
       {onNoteChange && (
         <PokemonNote

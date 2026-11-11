@@ -18,6 +18,7 @@ import {
   splitGroupOpponent,
 } from "@/lib/groupOpponents";
 import { normalizeOpponent } from "@/lib/opponent";
+import { publishOpponentToShares, removeOpponentsFromShares } from "@/lib/storage/db";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
 import { useAuth } from "./useAuth";
 import { sortByListOrder, useOpponentActions, type OpponentStore } from "./useOpponentActions";
@@ -135,6 +136,10 @@ export function useGroupOpponents(group: PrepGroup | null) {
             void saveGroupPlan(uid, plan).catch(logWriteError);
           });
         }
+        // Your shared teams' matchups follow it too (docs/full-share.md).
+        debouncer.schedule(`share:${opponent.id}`, () => {
+          void publishOpponentToShares(opponent).catch(logWriteError);
+        });
       }
     },
     remove: (ids) => {
@@ -145,9 +150,11 @@ export function useGroupOpponents(group: PrepGroup | null) {
         debouncer.cancel(`plan:${planId}`);
         pendingShared.current.delete(id);
         pendingPlans.current.delete(planId);
+        debouncer.cancel(`share:${id}`);
         void deleteGroupOpponent(groupId, id).catch(logWriteError);
         void deleteGroupPlan(uid, planId).catch(logWriteError);
       }
+      void removeOpponentsFromShares(ids).catch(logWriteError);
     },
   };
 

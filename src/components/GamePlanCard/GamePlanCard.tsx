@@ -7,7 +7,8 @@ import {
   PokemonSlotPicker,
   type SlotCalcs,
 } from "@/components/PokemonSlotPicker";
-import { RichTextEditor } from "@/components/RichTextEditor";
+import { RichTextEditor, RichTextView } from "@/components/RichTextEditor";
+import { hasRichText } from "@/lib/richText";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
 import { EMPTY_PICKS, notesToHtml, planLetter } from "@/lib/matchupPlans";
@@ -41,10 +42,13 @@ interface GamePlanCardProps {
   theirTeam: ParsedPokemon[];
   /** Your team's calcs against their team — each pick's hover card shows the ones against the other side's picks. */
   calcs: TeamCalc[];
-  onChange: (updater: (plan: GamePlan) => GamePlan) => void;
-  onMove: (direction: -1 | 1) => void;
-  onRemove: () => void;
+  /** Omit the three to show the plan read only — a shared report's matchup. */
+  onChange?: (updater: (plan: GamePlan) => GamePlan) => void;
+  onMove?: (direction: -1 | 1) => void;
+  onRemove?: () => void;
 }
+
+const noChange = () => {};
 
 /**
  * One plan of a matchup, on the matchup page: what you expect them to bring
@@ -65,13 +69,15 @@ export function GamePlanCard({
 }: GamePlanCardProps) {
   const t = useMessages();
   const name = t.matchupPage.plan(planLetter(index));
+  const readOnly = !onChange;
+  const change = onChange ?? noChange;
   const theirSlots = leadBackSlotProps<PlanPicks>(
     plan.theirs ?? EMPTY_PICKS,
     theirTeam,
-    (updater) => onChange((p) => ({ ...p, theirs: updater(p.theirs ?? EMPTY_PICKS) })),
+    (updater) => change((p) => ({ ...p, theirs: updater(p.theirs ?? EMPTY_PICKS) })),
     t,
   );
-  const mySlots = leadBackSlotProps(plan, myTeam, onChange, t, { flexBack: true });
+  const mySlots = leadBackSlotProps(plan, myTeam, change, t, { flexBack: true });
 
   // Each pick's calcs are against the other side's picks, in the form each
   // is shown in (Mega or not) — or its whole team, either form, while it
@@ -148,6 +154,7 @@ export function GamePlanCard({
                   key={slot}
                   {...props}
                   calcs={slotCalcs(side, slot, mon, props.megaEnabled)}
+                  readOnly={readOnly}
                 />
               );
             })}
@@ -164,7 +171,15 @@ export function GamePlanCard({
     >
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-zinc-900">{name}</h3>
-        <PlanControls name={name} index={index} total={total} onMove={onMove} onRemove={onRemove} />
+        {onMove && onRemove && (
+          <PlanControls
+            name={name}
+            index={index}
+            total={total}
+            onMove={onMove}
+            onRemove={onRemove}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
@@ -181,13 +196,21 @@ export function GamePlanCard({
         </div>
         <div className="flex min-w-0 flex-col gap-1">
           <h4 className={LABEL_CLASSES}>{t.opponentCard.gamePlan}</h4>
-          <RichTextEditor
-            value={notesToHtml(plan.notes)}
-            onChange={(notes) => onChange((p) => ({ ...p, notes }))}
-            size="medium"
-            placeholder={t.matchupPage.planNotesPlaceholder}
-            ariaLabel={`${name} — ${t.opponentCard.gamePlan}`}
-          />
+          {!onChange ? (
+            hasRichText(notesToHtml(plan.notes)) ? (
+              <RichTextView html={notesToHtml(plan.notes)} />
+            ) : (
+              <p className="text-sm text-zinc-400">{t.teamMatchups.noGamePlan}</p>
+            )
+          ) : (
+            <RichTextEditor
+              value={notesToHtml(plan.notes)}
+              onChange={(notes) => onChange((p) => ({ ...p, notes }))}
+              size="medium"
+              placeholder={t.matchupPage.planNotesPlaceholder}
+              ariaLabel={`${name} — ${t.opponentCard.gamePlan}`}
+            />
+          )}
         </div>
       </div>
     </section>

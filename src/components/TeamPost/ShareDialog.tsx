@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Modal } from "../Modal";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
-import { publishTeamShare, unpublishTeamShare } from "@/lib/storage/db";
-import { sharedTeamPath } from "@/lib/sharedTeam";
-import type { Team, TeamSheetMode } from "@/types";
+import { publishTeamShare, reconcileSharedMatchups, unpublishTeamShare } from "@/lib/storage/db";
+import { SHARE_SECTIONS, sharedTeamPath, sharesSection } from "@/lib/sharedTeam";
+import type { Opponent, ShareSection, Team, TeamShare, TeamSheetMode } from "@/types";
 import { useMessages } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/Button";
@@ -37,15 +37,22 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
-/** Private / Shareable, and for shareable an open or closed team sheet — see TeamShare/SharedTeam. */
+/**
+ * Private / Shareable, and for shareable an open or closed team sheet and
+ * which sections go with it (strategy, calcs, matchups) — see
+ * TeamShare/SharedTeam and docs/full-share.md.
+ */
 export function ShareDialog({
   team,
+  matchupOpponents,
   onUpdate,
   isSignedIn,
   onSignIn,
   onClose,
 }: {
   team: Team;
+  /** The opponents whose matchups a share publishes (opponentsToShare) — null while they load. */
+  matchupOpponents: Opponent[] | null;
   onUpdate: (updater: (team: Team) => Team) => void;
   isSignedIn: boolean;
   onSignIn: () => void;
@@ -63,24 +70,38 @@ export function ShareDialog({
   // Saves the choice locally right away, then publishes/unpublishes the
   // public copy and waits for it — a failure (e.g. firestore.rules not
   // deployed) shows here instead of only in the console.
-  async function apply(sheet: TeamSheetMode | null) {
-    const next: Team = { ...team, share: sheet ? { sheet } : undefined };
+  async function apply(share: TeamShare | null) {
+    const next: Team = { ...team, share: share ?? undefined };
     onUpdate((t) => ({ ...t, share: next.share }));
-    setStatus({ kind: "saving", message: sheet ? t.share.publishing : t.share.makingPrivate });
+    setStatus({ kind: "saving", message: share ? t.share.publishing : t.share.makingPrivate });
     try {
-      if (sheet) await publishTeamShare(next);
-      else await unpublishTeamShare(team.id);
+      if (share) {
+        // The team doc first: the rules check it before allowing its matchups.
+        await publishTeamShare(next);
+        if (matchupOpponents) await reconcileSharedMatchups(next, matchupOpponents);
+      } else {
+        await unpublishTeamShare(team.id);
+      }
       setStatus(null);
     } catch (error) {
       console.error("[share] failed:", error);
       setStatus({
         kind: "error",
-        message: sheet ? t.share.publishFailed : t.share.unpublishFailed,
+        message: share ? t.share.publishFailed : t.share.unpublishFailed,
       });
     }
   }
 
   const isShared = !!team.share;
+
+  function toggleSection(section: ShareSection) {
+    if (!team.share) return;
+    const on = !sharesSection(team.share, section);
+    const sections = SHARE_SECTIONS.filter((s) =>
+      s === section ? on : sharesSection(team.share, s),
+    );
+    void apply({ ...team.share, sections });
+  }
 
   return (
     <Modal onClose={onClose} labelledBy="share-team-title">
@@ -115,7 +136,7 @@ export function ShareDialog({
                     type="radio"
                     name="visibility"
                     checked={isShared === option.shared}
-                    onChange={() => void apply(option.shared ? "open" : null)}
+                    onChange={() => void apply(option.shared ? { sheet: "open" } : null)}
                     className="mt-1"
                   />
                   <span className="flex flex-col">
@@ -138,7 +159,7 @@ export function ShareDialog({
                         type="radio"
                         name="sheet"
                         checked={team.share?.sheet === option.value}
-                        onChange={() => void apply(option.value)}
+                        onChange={() => void apply({ ...team.share, sheet: option.value })}
                         className="mt-1"
                       />
                       <span className="flex flex-col">
@@ -147,6 +168,42 @@ export function ShareDialog({
                       </span>
                     </label>
                   ))}
+                </fieldset>
+
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="mb-1 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                    {t.share.alsoShare}
+                  </legend>
+                  {/* Closed sheets only — see sharesSection. */}
+                  {team.share.sheet === "open" ? (
+                    <p className="text-xs text-zinc-500">{t.share.alsoShareClosedOnly}</p>
+                  ) : (
+                    SHARE_SECTIONS.map((section) => (
+                      <label key={section} className="flex cursor-pointer items-start gap-2">
+                        <input
+                          type="checkbox"
+                          checked={sharesSection(team.share, section)}
+                          onChange={() => toggleSection(section)}
+                          className="mt-1"
+                        />
+                        <span className="flex flex-col">
+                          <span className="text-sm font-medium text-zinc-900">
+                            {t.share.sections[section]}
+                          </span>
+                          <span className="text-xs text-zinc-500">
+                            {t.share.sectionHints[section]}
+                          </span>
+                          {section === "matchups" &&
+                            sharesSection(team.share, "matchups") &&
+                            !matchupOpponents && (
+                              <span className="text-xs text-zinc-500">
+                                {t.share.matchupsLoading}
+                              </span>
+                            )}
+                        </span>
+                      </label>
+                    ))
+                  )}
                 </fieldset>
 
                 <div className="flex flex-col gap-1">

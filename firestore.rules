@@ -74,6 +74,17 @@ service cloud.firestore {
         && request.resource.data.id == teamId;
       allow delete: if request.auth != null
         && (resource == null || resource.data.ownerUid == request.auth.uid);
+
+      // A shared team's matchups (docs/full-share.md, SharedMatchup): public
+      // like the team; only the team doc's owner writes them — so they're
+      // published after it and removed before it.
+      match /matchups/{opponentId} {
+        allow read: if true;
+        allow write: if request.auth != null
+          && exists(/databases/$(database)/documents/sharedTeams/$(teamId))
+          && get(/databases/$(database)/documents/sharedTeams/$(teamId)).data.ownerUid
+            == request.auth.uid;
+      }
     }
 
     // Prep groups (docs/prep-groups.md, src/lib/firebase/groups.ts): a shared
