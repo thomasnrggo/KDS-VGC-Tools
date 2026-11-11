@@ -16,7 +16,8 @@ import { sharesSection, toSharedMatchup, toSharedTeam } from "@/lib/sharedTeam";
 import { getPlanForTeam } from "@/lib/opponent";
 import { hasMatchupPrep } from "@/lib/matchupPlans";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
-import type { CalcSet, Opponent, SharedMatchup, Team, Tournament } from "@/types";
+import type { CalcSet, MyTeamFolders, Opponent, SharedMatchup, Team, Tournament } from "@/types";
+import { EMPTY_TEAM_FOLDERS } from "@/lib/myTeamFolders";
 import type { MetaDocument, MetaTournamentDocument } from "@/lib/meta/metaDocument";
 
 const DB_NAME = "vgc-match-planner";
@@ -378,6 +379,58 @@ export async function syncLibraryFavorites(uid: string): Promise<string[]> {
     if (local.length > 0) await pushMetaDoc(uid, LIBRARY_FAVORITES_KEY, { ids: local });
   } catch (error) {
     logCloudSyncError("pull library favorites", error);
+  }
+  return local;
+}
+
+// ── My Teams folders ───────────────────────────────────────────────────────
+// Your folders and which team is in which (MyTeamFolders, docs/team-folders.md)
+// — this device's copy in META_STORE, the account's in users/{uid}/meta/teamFolders.
+
+const TEAM_FOLDERS_KEY = "teamFolders";
+
+function isTeamFolders(value: unknown): value is MyTeamFolders {
+  const folders = value as MyTeamFolders | null;
+  return !!folders && Array.isArray(folders.folders) && typeof folders.placement === "object";
+}
+
+export async function getTeamFolders(): Promise<MyTeamFolders> {
+  const db = await getDb();
+  const stored = await db.get(META_STORE, TEAM_FOLDERS_KEY);
+  return isTeamFolders(stored) ? stored : EMPTY_TEAM_FOLDERS;
+}
+
+export async function setTeamFolders(folders: MyTeamFolders): Promise<void> {
+  const db = await getDb();
+  await db.put(META_STORE, folders, TEAM_FOLDERS_KEY);
+  const uid = currentUid();
+  if (uid) {
+    void pushMetaDoc(uid, TEAM_FOLDERS_KEY, { ...folders }).catch((error) =>
+      logCloudSyncError("push team folders", error),
+    );
+  }
+}
+
+/**
+ * The account's folders, once signed in: whichever copy was changed last
+ * wins (the account's, unless this device's is newer — e.g. folders made
+ * before signing in); with none on the account yet, this device's are
+ * uploaded. Falls back to this device's on a failed read.
+ */
+export async function syncTeamFolders(uid: string): Promise<MyTeamFolders> {
+  const local = await getTeamFolders();
+  try {
+    const cloud = await pullMetaDoc<MyTeamFolders>(uid, TEAM_FOLDERS_KEY);
+    if (isTeamFolders(cloud) && (cloud.updatedAt ?? "") >= (local.updatedAt ?? "")) {
+      const db = await getDb();
+      await db.put(META_STORE, cloud, TEAM_FOLDERS_KEY);
+      return cloud;
+    }
+    if (local.folders.length > 0 || Object.keys(local.placement).length > 0) {
+      await pushMetaDoc(uid, TEAM_FOLDERS_KEY, { ...local });
+    }
+  } catch (error) {
+    logCloudSyncError("pull team folders", error);
   }
   return local;
 }

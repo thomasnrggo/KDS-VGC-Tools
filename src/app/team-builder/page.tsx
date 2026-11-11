@@ -8,6 +8,7 @@ import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { TeamBuilder } from "@/components/TeamBuilder";
 import { REGULATIONS } from "@/data/regulations";
 import { createTeam } from "@/lib/team";
+import { fileNewTeam } from "@/hooks/useTeamFolders";
 import type { Team } from "@/types";
 
 /**
@@ -17,13 +18,16 @@ import type { Team } from "@/types";
  * — without leaving this page, so the keyboard flow isn't interrupted.
  */
 interface NewTeamBuilderPageProps {
-  /** ?regulation= — the regulation to start in (My Teams passes the one it's showing). */
-  searchParams: Promise<{ regulation?: string }>;
+  /**
+   * ?regulation= — the regulation to start in (My Teams passes the one it's
+   * showing); ?folder= — the My Teams folder it was created from, to file it in.
+   */
+  searchParams: Promise<{ regulation?: string; folder?: string }>;
 }
 
 export default function NewTeamBuilderPage({ searchParams }: NewTeamBuilderPageProps) {
   const t = useMessages();
-  const { regulation: regulationId } = use(searchParams);
+  const { regulation: regulationId, folder: folderId } = use(searchParams);
   const {
     teams,
     activeTeams,
@@ -58,6 +62,11 @@ export default function NewTeamBuilderPage({ searchParams }: NewTeamBuilderPageP
     const saved = { ...next, updatedAt: new Date().toISOString() };
     addBuiltTeam(saved);
     setSavedId(saved.id);
+    if (folderId) {
+      void fileNewTeam(saved.id, folderId).catch((error) =>
+        console.error("[team folders] failed to file the new team:", error),
+      );
+    }
     // The native History API is synced with Next's router.
     window.history.replaceState(null, "", `/teams/${saved.id}/edit`);
   }

@@ -26,6 +26,7 @@ export enum IconName {
   FormatBold = "format_bold",
   FormatItalic = "format_italic",
   FormatListBulleted = "format_list_bulleted",
+  Folder = "folder",
   Group = "group",
   Help = "help",
   History = "history",

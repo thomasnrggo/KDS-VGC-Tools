@@ -10,6 +10,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.14 — 2026-11-11
+
+### Added
+
+- My Teams folders: create, rename, reorder and delete folders, and file each team with "Move to
+  folder" or by dragging it onto a folder. A Folders panel beside the list (chips on phones) shows
+  all teams, a folder's, or those in none. A team created inside a folder goes there. Folders are
+  yours alone (also for collaborative teams) and sync to your account.
+
+### Changed
+
+- My Teams rows show just Duplicate and a ⋯ menu (Edit team, Move to folder, Archive, Remove team) —
+  on phones too, where Archive and Remove were only on the team's page.
+
 ## 0.3.13 — 2026-11-11
 
 ### Changed

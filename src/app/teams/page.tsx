@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
@@ -44,18 +44,21 @@ export default function TeamsPage() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
-        <MyTeamsSection
-          teams={teams}
-          isLoading={isLoading}
-          duplicateTeam={duplicateTeam}
-          updateTeam={updateTeam}
-          removeTeam={removeTeam}
-          archiveTeam={archiveTeam}
-          unarchiveTeam={unarchiveTeam}
-          reorderTeams={reorderTeams}
-          selectedRegulationId={selectedRegulationId}
-          setSelectedRegulationId={setSelectedRegulationId}
-        />
+        {/* MyTeamsSection reads ?folder= (useSearchParams needs a Suspense boundary). */}
+        <Suspense>
+          <MyTeamsSection
+            teams={teams}
+            isLoading={isLoading}
+            duplicateTeam={duplicateTeam}
+            updateTeam={updateTeam}
+            removeTeam={removeTeam}
+            archiveTeam={archiveTeam}
+            unarchiveTeam={unarchiveTeam}
+            reorderTeams={reorderTeams}
+            selectedRegulationId={selectedRegulationId}
+            setSelectedRegulationId={setSelectedRegulationId}
+          />
+        </Suspense>
       </div>
     </div>
   );
