@@ -11,7 +11,7 @@ import { useAllGroupOpponents } from "@/hooks/useAllGroupOpponents";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
@@ -22,6 +22,17 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { PokemonCalcsBox } from "@/components/TeamCalcs";
 import { TeamMatchupsList } from "@/components/TeamMatchups";
 import { ShareDialog } from "@/components/TeamPost";
+import { CollabDialog, TeamActivityList } from "@/components/CollabTeam";
+import { MemberAvatar } from "@/components/PrepGroups";
+import { toast } from "@/components/Toast";
+import {
+  collabTeamMatchups,
+  endCollabTeam,
+  leaveCollabTeam,
+  makeTeamCollaborative,
+  removeCollabMember,
+} from "@/lib/collabTeamFlows";
+import { timeAgo } from "@/lib/timeAgo";
 import { RowActionsMenu } from "@/components/RowActionsMenu";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
@@ -37,10 +48,16 @@ import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
 import { addPasteToOpponents } from "@/lib/teamExport";
-import { opponentsToShare, sharesSection } from "@/lib/sharedTeam";
+import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sharedTeam";
 import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamExportActions } from "@/components/TeamExportActions";
-import { Button, TogglePill, iconButtonVariants } from "@/components/Button";
+import {
+  Button,
+  IconButton,
+  TogglePill,
+  buttonVariants,
+  iconButtonVariants,
+} from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
 import {
   Drawer,
@@ -83,7 +100,8 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     teams,
     activeTeams,
     activeTeamId,
-    isLoading,
+    isLoading: isPersonalLoading,
+    isCollabLoading,
     addTeam,
     editTeam,
     removeTeam,
@@ -91,6 +109,9 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     updateTeam,
     archiveTeam,
     unarchiveTeam,
+    duplicateTeam,
+    dropPersonalCopy,
+    restorePersonalTeam,
   } = useMyTeams();
   const router = useRouter();
   const { tournaments } = useTournaments();
@@ -112,6 +133,84 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     isAuthLoading || personal.isLoading || groupsApi.isLoading || groupOpponents.isLoading;
 
   const team = teams.find((t) => t.id === teamId) ?? null;
+  // Not found among your own teams yet: it may be a collaborative one, still arriving.
+  const isLoading = isPersonalLoading || (!team && isCollabLoading);
+  const { appLanguage } = useLanguageSettings();
+
+  // Collaboration (docs/collaborative-teams.md): a collaborative team's group
+  // (members, invite link), and the matchups making one can bring along.
+  const [isCollaborating, setIsCollaborating] = useState(false);
+  const [isActivityOpen, setIsActivityOpen] = useState(false);
+  const collabGroup = team?.collab
+    ? (groupsApi.groups.find((group) => group.id === team.collab?.groupId) ?? null)
+    : null;
+  const collabMembers = collabGroup
+    ? collabGroup.memberUids.flatMap((uid) =>
+        collabGroup.members[uid] ? [{ uid, member: collabGroup.members[uid] }] : [],
+      )
+    : [];
+  const matchupsToBring =
+    team && !team.collab
+      ? opponentsToShare(team, [{ source: { kind: "mine" }, opponents: personal.opponents }])
+      : [];
+  const me = user && {
+    uid: user.uid,
+    name: user.displayName ?? user.email ?? "?",
+    photoURL: user.photoURL ?? undefined,
+  };
+
+  async function makeCollaborative(bringMatchups: boolean) {
+    if (!team || !me) return;
+    await makeTeamCollaborative({
+      team,
+      owner: me,
+      matchups: bringMatchups ? matchupsToBring : [],
+    });
+    dropPersonalCopy(team.id);
+  }
+
+  /** Brings a collaborative team's matchups into your opponents, filed under `ownTeamId`. */
+  async function bringMatchupsHome(ownTeamId: string, replacePlans: boolean) {
+    if (!team?.collab) return;
+    const matchups = await collabTeamMatchups(team.collab.groupId, team.id);
+    const { added, updated } = importSharedMatchups({
+      matchups,
+      teamId: ownTeamId,
+      myOpponents: personal.opponents,
+      replacePlans,
+    });
+    if (added.length + updated.length > 0) personal.addOpponents([...added, ...updated]);
+  }
+
+  async function keepCopy() {
+    if (!team) return;
+    const copy = duplicateTeam(team.id);
+    if (!copy) return;
+    await bringMatchupsHome(copy.id, false);
+    toast.success(t.collab.keptCopy(copy.name));
+  }
+
+  async function stopCollaborating() {
+    if (!team?.collab) return;
+    // Yours again first — nothing is lost if ending it then fails.
+    await bringMatchupsHome(team.id, true);
+    restorePersonalTeam(team);
+    await endCollabTeam(team.id, team.collab.groupId);
+    setIsCollaborating(false);
+  }
+
+  async function leaveTeam() {
+    if (!collabGroup || !team || !me) return;
+    // Leave the page first, so it never flashes "team not found".
+    router.replace("/teams");
+    await leaveCollabTeam(team.id, collabGroup.id, me);
+  }
+
+  async function removeMember(uid: string) {
+    if (!collabGroup || !team || !me) return;
+    const member = collabGroup.members[uid];
+    await removeCollabMember(team.id, collabGroup.id, { uid, name: member?.name ?? "?" }, me);
+  }
   // What the shared report's matchups should be (docs/full-share.md) — once every list has loaded.
   const matchupOpponents = team && !isMatchupsLoading ? opponentsToShare(team, matchupLists) : null;
   // Each visit re-checks them once: every opponent edit updates them as it's
@@ -226,442 +325,556 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
           </Link>
         </div>
       ) : (
-        <div className="flex w-full flex-col gap-6 px-3 py-4 sm:p-6">
-          {/* "< My Teams / team" left (the team's name is the page's h1), the tabs then
+        <div className="w-full px-3 py-4 sm:p-6">
+          <div className="flex flex-col gap-6">
+            {/* "< My Teams / team" left (the team's name is the page's h1), the tabs then
               Share and Edit right. Narrower screens: Share and Edit stay on the breadcrumb's
               line and the tabs wrap below it. */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <nav
-              aria-label={t.teamPage.breadcrumb}
-              className="mr-auto flex min-w-0 items-center gap-1 text-sm"
-            >
-              <Link
-                href="/teams"
-                className="flex shrink-0 items-center gap-1 rounded-full py-1 pr-1 font-medium text-zinc-500 hover:text-zinc-800"
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <nav
+                aria-label={t.teamPage.breadcrumb}
+                className="mr-auto flex min-w-0 items-center gap-1 text-sm"
               >
-                <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
-                {t.nav.myTeams}
-              </Link>
-              <span aria-hidden="true" className="text-zinc-400">
-                /
-              </span>
-              <h1 aria-current="page" className="truncate font-semibold text-zinc-900">
-                {team.name}
-              </h1>
-            </nav>
-            {/* Phones: one button showing the current section, opening a bottom sheet with
+                <Link
+                  href="/teams"
+                  className="flex shrink-0 items-center gap-1 rounded-full py-1 pr-1 font-medium text-zinc-500 hover:text-zinc-800"
+                >
+                  <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
+                  {t.nav.myTeams}
+                </Link>
+                <span aria-hidden="true" className="text-zinc-400">
+                  /
+                </span>
+                <h1 aria-current="page" className="truncate font-semibold text-zinc-900">
+                  {team.name}
+                </h1>
+              </nav>
+              {/* Phones: one button showing the current section, opening a bottom sheet with
                 all of them — instead of pill tabs wrapping onto two rows. */}
-            <Drawer open={isSectionsOpen} onOpenChange={setIsSectionsOpen} showSwipeHandle>
-              <DrawerTrigger
-                render={
+              <Drawer open={isSectionsOpen} onOpenChange={setIsSectionsOpen} showSwipeHandle>
+                <DrawerTrigger
+                  render={
+                    <button
+                      type="button"
+                      aria-label={`${t.teamPage.sections}: ${t.teamPage.tabs[activeTab]}`}
+                      className="order-last flex basis-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-raised px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 sm:hidden"
+                    />
+                  }
+                >
+                  {t.teamPage.tabs[activeTab]}
+                  <Icon name={IconName.ExpandMore} size={18} className="text-zinc-500" />
+                </DrawerTrigger>
+                <DrawerContent>
+                  <DrawerHeader>
+                    <DrawerTitle>{t.teamPage.sections}</DrawerTitle>
+                  </DrawerHeader>
+                  <div className="flex flex-col gap-1 p-3 pt-1 pb-6">
+                    {visibleTabs.map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        aria-current={activeTab === tab ? "page" : undefined}
+                        onClick={() => {
+                          selectTab(tab);
+                          setIsSectionsOpen(false);
+                        }}
+                        className={cn(
+                          "flex min-h-12 items-center justify-between rounded-lg px-3 text-left text-base font-medium",
+                          activeTab === tab
+                            ? "bg-chrome-600 text-white"
+                            : "text-zinc-800 active:bg-zinc-200",
+                        )}
+                      >
+                        {t.teamPage.tabs[tab]}
+                        {activeTab === tab && <Icon name={IconName.Check} size={18} />}
+                      </button>
+                    ))}
+                  </div>
+                </DrawerContent>
+              </Drawer>
+              <div
+                role="tablist"
+                aria-label={t.teamPage.sections}
+                className="order-last hidden basis-full flex-wrap gap-1.5 sm:flex lg:order-none lg:basis-auto"
+              >
+                {visibleTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab}
+                    onClick={() => selectTab(tab)}
+                    className={cn(
+                      "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                      activeTab === tab
+                        ? "bg-chrome-600 text-white"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+                    )}
+                  >
+                    {t.teamPage.tabs[tab]}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5">
+                {team.collab && (
                   <button
                     type="button"
-                    aria-label={`${t.teamPage.sections}: ${t.teamPage.tabs[activeTab]}`}
-                    className="order-last flex basis-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-raised px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 sm:hidden"
+                    onClick={() => setIsActivityOpen((open) => !open)}
+                    aria-label={t.activity.open}
+                    aria-pressed={isActivityOpen}
+                    title={t.activity.open}
+                    className={cn(
+                      iconButtonVariants({ variant: "round" }),
+                      isActivityOpen && "bg-chrome-600 text-white hover:bg-chrome-700",
+                    )}
+                  >
+                    <Icon name={IconName.History} size={16} />
+                  </button>
+                )}
+                {/* Collaborators: your own team opens "make collaborative"; a
+                  collaborative one shows its members' faces. */}
+                <button
+                  type="button"
+                  onClick={() => setIsCollaborating(true)}
+                  aria-label={
+                    team.collab ? t.collab.sharedWith(collabMembers.length) : t.collab.collaborate
+                  }
+                  title={
+                    team.collab ? t.collab.sharedWith(collabMembers.length) : t.collab.collaborate
+                  }
+                  className={
+                    team.collab && collabMembers.length > 0
+                      ? "flex -space-x-2 rounded-full"
+                      : iconButtonVariants({ variant: "round" })
+                  }
+                >
+                  {team.collab && collabMembers.length > 0 ? (
+                    collabMembers
+                      .slice(0, 3)
+                      .map(({ uid, member }) => <MemberAvatar key={uid} member={member} />)
+                  ) : (
+                    <Icon name={IconName.Group} size={16} />
+                  )}
+                </button>
+                {/* A collaborative team can't be shared yet. A dot marks a shared
+                  report — the owner's only sign of it. */}
+                {!team.collab && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSharing(true)}
+                    aria-label={shareLabel}
+                    title={shareLabel}
+                    className={cn(iconButtonVariants({ variant: "round" }), "relative")}
+                  >
+                    <Icon name={IconName.Share} size={16} />
+                    {team.share && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-50 bg-green-600"
+                      />
+                    )}
+                  </button>
+                )}
+                {/* Phones: My Teams rows only show Edit and Duplicate, so Archive and
+                  Remove are here instead (a collaborative team's are in Collaborate). */}
+                <div className={cn("md:hidden", team.collab && "hidden")}>
+                  <RowActionsMenu
+                    label={t.myTeams.teamOptions(team.name)}
+                    triggerClassName={iconButtonVariants({ variant: "round" })}
+                    onRemove={() => setIsConfirmingRemove(true)}
+                    removeLabel={t.myTeams.removeTeam}
+                    middleAction={
+                      isTeamArchived(team)
+                        ? {
+                            label: t.myTeams.unarchive,
+                            icon: IconName.Unarchive,
+                            onClick: () => unarchiveTeam(team.id),
+                          }
+                        : {
+                            label: t.myTeams.archive,
+                            icon: IconName.Archive,
+                            onClick: () => archiveTeam(team.id),
+                          }
+                    }
                   />
+                </div>
+              </div>
+            </div>
+
+            {isConfirmingRemove && (
+              <Modal
+                onClose={() => setIsConfirmingRemove(false)}
+                labelledBy="confirm-remove-team-title"
+              >
+                <ModalTitle id="confirm-remove-team-title" className="mb-2">
+                  {t.myTeams.confirmRemoveTitle(team.name)}
+                </ModalTitle>
+                <ModalDescription>{t.myTeams.confirmRemoveBody}</ModalDescription>
+                <div className="flex gap-2">
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      // Leave first, so this page never flashes "team not found".
+                      router.replace("/teams");
+                      removeTeam(team.id);
+                    }}
+                  >
+                    {t.myTeams.removeTeam}
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsConfirmingRemove(false)}>
+                    {t.common.cancel}
+                  </Button>
+                </div>
+              </Modal>
+            )}
+
+            {/* Who's editing it (a collaborative team) on the left; the team's
+                actions on the right — Edit opens the Team Builder. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              {team.collab ? (
+                <p className="flex items-center gap-1.5 text-xs text-zinc-500">
+                  <Icon name={IconName.Group} size={14} />
+                  {t.collab.collaborativeBadge}
+                  {team.collab.updatedBy && (
+                    <>
+                      {" · "}
+                      {t.collab.editedBy(
+                        team.collab.updatedBy.name,
+                        timeAgo(team.updatedAt, appLanguage),
+                      )}
+                    </>
+                  )}
+                </p>
+              ) : (
+                <span aria-hidden="true" />
+              )}
+              <TeamExportActions
+                layout="inline"
+                pokemon={team.pokemon}
+                onAddToOpponents={() =>
+                  addPasteToOpponents({
+                    name: team.name,
+                    paste: team.rawPaste,
+                    regulationId: selectedRegulationId,
+                    pokepasteUrl: team.pokepasteUrl,
+                    opponents: personal.opponents,
+                    addOpponents: personal.addOpponents,
+                  })
                 }
               >
-                {t.teamPage.tabs[activeTab]}
-                <Icon name={IconName.ExpandMore} size={18} className="text-zinc-500" />
-              </DrawerTrigger>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>{t.teamPage.sections}</DrawerTitle>
-                </DrawerHeader>
-                <div className="flex flex-col gap-1 p-3 pt-1 pb-6">
-                  {visibleTabs.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      aria-current={activeTab === tab ? "page" : undefined}
-                      onClick={() => {
-                        selectTab(tab);
-                        setIsSectionsOpen(false);
-                      }}
-                      className={cn(
-                        "flex min-h-12 items-center justify-between rounded-lg px-3 text-left text-base font-medium",
-                        activeTab === tab
-                          ? "bg-chrome-600 text-white"
-                          : "text-zinc-800 active:bg-zinc-200",
-                      )}
-                    >
-                      {t.teamPage.tabs[tab]}
-                      {activeTab === tab && <Icon name={IconName.Check} size={18} />}
-                    </button>
-                  ))}
-                </div>
-              </DrawerContent>
-            </Drawer>
-            <div
-              role="tablist"
-              aria-label={t.teamPage.sections}
-              className="order-last hidden basis-full flex-wrap gap-1.5 sm:flex lg:order-none lg:basis-auto"
-            >
-              {visibleTabs.map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab}
-                  onClick={() => selectTab(tab)}
+                <Link
+                  href={`/teams/${teamId}/edit`}
+                  title={t.teamBuilder.editPokemonHint}
                   className={cn(
-                    "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-                    activeTab === tab
-                      ? "bg-chrome-600 text-white"
-                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+                    buttonVariants({ variant: "outline" }),
+                    "flex items-center justify-center gap-2 px-4 py-1.5 text-sm",
                   )}
                 >
-                  {t.teamPage.tabs[tab]}
-                </button>
-              ))}
+                  <Icon name={IconName.Edit} size={18} />
+                  {t.common.edit}
+                </Link>
+              </TeamExportActions>
             </div>
-            <div className="flex items-center gap-1.5">
-              {/* A dot marks a shared report — the owner's only sign of it. */}
-              <button
-                type="button"
-                onClick={() => setIsSharing(true)}
-                aria-label={shareLabel}
-                title={shareLabel}
-                className={cn(iconButtonVariants({ variant: "round" }), "relative")}
-              >
-                <Icon name={IconName.Share} size={16} />
-                {team.share && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-zinc-50 bg-green-600"
-                  />
-                )}
-              </button>
-              {/* Editing the team happens in the Team Builder. */}
-              <Link
-                href={`/teams/${teamId}/edit`}
-                aria-label={t.teamBuilder.editPokemon}
-                title={t.teamBuilder.editPokemonHint}
-                className={iconButtonVariants({ variant: "round" })}
-              >
-                <Icon name={IconName.Edit} size={16} />
-              </Link>
-              {/* Phones: My Teams rows only show Edit and Duplicate, so Archive and
-                  Remove are here instead. */}
-              <div className="md:hidden">
-                <RowActionsMenu
-                  label={t.myTeams.teamOptions(team.name)}
-                  triggerClassName={iconButtonVariants({ variant: "round" })}
-                  onRemove={() => setIsConfirmingRemove(true)}
-                  removeLabel={t.myTeams.removeTeam}
-                  middleAction={
-                    isTeamArchived(team)
-                      ? {
-                          label: t.myTeams.unarchive,
-                          icon: IconName.Unarchive,
-                          onClick: () => unarchiveTeam(team.id),
-                        }
-                      : {
-                          label: t.myTeams.archive,
-                          icon: IconName.Archive,
-                          onClick: () => archiveTeam(team.id),
-                        }
-                  }
-                />
-              </div>
-            </div>
-          </div>
 
-          {isConfirmingRemove && (
-            <Modal
-              onClose={() => setIsConfirmingRemove(false)}
-              labelledBy="confirm-remove-team-title"
-            >
-              <ModalTitle id="confirm-remove-team-title" className="mb-2">
-                {t.myTeams.confirmRemoveTitle(team.name)}
-              </ModalTitle>
-              <ModalDescription>{t.myTeams.confirmRemoveBody}</ModalDescription>
-              <div className="flex gap-2">
-                <Button
-                  variant="danger"
-                  onClick={() => {
-                    // Leave first, so this page never flashes "team not found".
-                    router.replace("/teams");
-                    removeTeam(team.id);
-                  }}
+            {isCollaborating && (
+              <CollabDialog
+                team={team}
+                group={collabGroup}
+                uid={user?.uid ?? null}
+                onSignIn={signInWithGoogle}
+                matchupCount={matchupsToBring.length}
+                onMake={makeCollaborative}
+                onKeepCopy={keepCopy}
+                onLeave={leaveTeam}
+                onStop={stopCollaborating}
+                onRemoveMember={removeMember}
+                onClose={() => setIsCollaborating(false)}
+              />
+            )}
+
+            {isSharing && (
+              <ShareDialog
+                team={team}
+                matchupOpponents={matchupOpponents}
+                onUpdate={(updater) => updateTeam(teamId, updater)}
+                isSignedIn={!!user}
+                onSignIn={signInWithGoogle}
+                onClose={() => setIsSharing(false)}
+              />
+            )}
+
+            {isTeamArchived(team) && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <span className="flex items-center gap-2 text-sm text-zinc-700">
+                  <Icon name={IconName.Archive} size={18} className="shrink-0 text-zinc-500" />
+                  {t.teamPage.archivedNotice}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => unarchiveTeam(team.id)}
+                  className="shrink-0 rounded-full border border-zinc-300 px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
                 >
-                  {t.myTeams.removeTeam}
-                </Button>
-                <Button variant="outline" onClick={() => setIsConfirmingRemove(false)}>
-                  {t.common.cancel}
-                </Button>
+                  {t.teamPage.unarchive}
+                </button>
               </div>
-            </Modal>
-          )}
+            )}
 
-          {isSharing && (
-            <ShareDialog
-              team={team}
-              matchupOpponents={matchupOpponents}
-              onUpdate={(updater) => updateTeam(teamId, updater)}
-              isSignedIn={!!user}
-              onSignIn={signInWithGoogle}
-              onClose={() => setIsSharing(false)}
-            />
-          )}
-
-          {isTeamArchived(team) && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3">
-              <span className="flex items-center gap-2 text-sm text-zinc-700">
-                <Icon name={IconName.Archive} size={18} className="shrink-0 text-zinc-500" />
-                {t.teamPage.archivedNotice}
-              </span>
-              <button
-                type="button"
-                onClick={() => unarchiveTeam(team.id)}
-                className="shrink-0 rounded-full border border-zinc-300 px-4 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
-              >
-                {t.teamPage.unarchive}
-              </button>
-            </div>
-          )}
-
-          {/* Six compact cards in a row on desktop. Per-Pokémon notes
+            {/* Six compact cards in a row on desktop. Per-Pokémon notes
               (Team.pokemonNotes) are no longer shown here, but stay saved. So do the
               old post's creator, links and overview, no longer shown either. */}
-          {activeTab === "report" && (
-            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-              {team.pokemon.map((mon, index) => (
-                <PokemonReportCard key={`${mon.species}-${index}`} pokemon={mon} />
-              ))}
-            </div>
-          )}
-          {activeTab === "report" && (
-            <TeamExportActions
-              pokemon={team.pokemon}
-              onAddToOpponents={() =>
-                addPasteToOpponents({
-                  name: team.name,
-                  paste: team.rawPaste,
-                  regulationId: selectedRegulationId,
-                  pokepasteUrl: team.pokepasteUrl,
-                  opponents: personal.opponents,
-                  addOpponents: personal.addOpponents,
-                })
-              }
-            />
-          )}
+            {/* Each card opens that Pokémon in the Team Builder (it's your team, or
+                one you collaborate on). */}
+            {activeTab === "report" && (
+              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+                {team.pokemon.map((mon, index) => (
+                  <PokemonReportCard
+                    key={`${mon.species}-${index}`}
+                    pokemon={mon}
+                    href={`/teams/${teamId}/edit?slot=${index}`}
+                  />
+                ))}
+              </div>
+            )}
 
-          {/* Two columns on desktop: the lead/back combinations, and one
+            {/* Two columns on desktop: the lead/back combinations, and one
               "Weaknesses & watch-outs" area. Narrower, where they'd stack, chips switch
               between them instead. (Team.weaknesses is no longer shown — its text stays
               saved.) */}
-          {activeTab === "strategy" && (
-            <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-              <div className="flex flex-wrap gap-1.5 lg:hidden">
-                <TogglePill
-                  active={strategySection === "combinations"}
-                  onClick={() => setStrategySection("combinations")}
-                  className="px-3.5 py-1.5 text-sm"
+            {activeTab === "strategy" && (
+              <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+                <div className="flex flex-wrap gap-1.5 lg:hidden">
+                  <TogglePill
+                    active={strategySection === "combinations"}
+                    onClick={() => setStrategySection("combinations")}
+                    className="px-3.5 py-1.5 text-sm"
+                  >
+                    {t.teamPage.combinations}
+                  </TogglePill>
+                  <TogglePill
+                    active={strategySection === "notes"}
+                    onClick={() => setStrategySection("notes")}
+                    className="px-3.5 py-1.5 text-sm"
+                  >
+                    {t.teamPage.notes}
+                  </TogglePill>
+                </div>
+                {/* Laid out like the matchup page's plans: a card per combination, arrows to reorder. */}
+                <section
+                  aria-label={t.teamPage.combinations}
+                  className={cn(
+                    "flex-col gap-3 lg:flex",
+                    strategySection === "combinations" ? "flex" : "hidden",
+                  )}
                 >
-                  {t.teamPage.combinations}
-                </TogglePill>
-                <TogglePill
-                  active={strategySection === "notes"}
-                  onClick={() => setStrategySection("notes")}
-                  className="px-3.5 py-1.5 text-sm"
+                  <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
+                    {t.teamPage.combinations}
+                  </h2>
+                  {(team.combinations ?? []).length === 0 ? (
+                    <p className="text-sm text-zinc-500">{t.teamPage.noCombinations}</p>
+                  ) : (
+                    (team.combinations ?? []).map((combination, index, all) => (
+                      <TeamCombinationCard
+                        key={combination.id}
+                        combination={combination}
+                        index={index}
+                        total={all.length}
+                        teamPokemon={team.pokemon}
+                        onUpdate={(updater) => updateCombination(combination.id, updater)}
+                        onMove={(direction) => moveCombination(combination.id, direction)}
+                        onRemove={() => removeCombination(combination.id)}
+                      />
+                    ))
+                  )}
+                  <Button
+                    variant="outline"
+                    onClick={addCombination}
+                    className="flex items-center gap-1.5 self-start"
+                  >
+                    <Icon name={IconName.Add} size={16} />
+                    {t.teamPage.addCombination}
+                  </Button>
+                </section>
+
+                {/* Titled like the combinations beside it — no card around the editor. */}
+                <section
+                  aria-label={t.teamPage.notes}
+                  className={cn(
+                    "flex-col gap-3 lg:flex",
+                    strategySection === "notes" ? "flex" : "hidden",
+                  )}
                 >
-                  {t.teamPage.notes}
-                </TogglePill>
+                  <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
+                    {t.teamPage.notes}
+                  </h2>
+                  <RichTextEditor
+                    value={team.notes ?? ""}
+                    onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
+                    placeholder={t.teamPage.notesPlaceholder}
+                    ariaLabel={t.teamPage.notesLabel}
+                    size="tall"
+                  />
+                </section>
               </div>
-              {/* Laid out like the matchup page's plans: a card per combination, arrows to reorder. */}
-              <section
-                aria-label={t.teamPage.combinations}
-                className={cn(
-                  "flex-col gap-3 lg:flex",
-                  strategySection === "combinations" ? "flex" : "hidden",
-                )}
-              >
-                <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
-                  {t.teamPage.combinations}
-                </h2>
-                {(team.combinations ?? []).length === 0 ? (
-                  <p className="text-sm text-zinc-500">{t.teamPage.noCombinations}</p>
-                ) : (
-                  (team.combinations ?? []).map((combination, index, all) => (
-                    <TeamCombinationCard
-                      key={combination.id}
-                      combination={combination}
-                      index={index}
-                      total={all.length}
-                      teamPokemon={team.pokemon}
-                      onUpdate={(updater) => updateCombination(combination.id, updater)}
-                      onMove={(direction) => moveCombination(combination.id, direction)}
-                      onRemove={() => removeCombination(combination.id)}
-                    />
-                  ))
-                )}
-                <Button
-                  variant="outline"
-                  onClick={addCombination}
-                  className="flex items-center gap-1.5 self-start"
-                >
-                  <Icon name={IconName.Add} size={16} />
-                  {t.teamPage.addCombination}
-                </Button>
-              </section>
+            )}
 
-              {/* Titled like the combinations beside it — no card around the editor. */}
-              <section
-                aria-label={t.teamPage.notes}
-                className={cn(
-                  "flex-col gap-3 lg:flex",
-                  strategySection === "notes" ? "flex" : "hidden",
-                )}
-              >
-                <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
-                  {t.teamPage.notes}
-                </h2>
-                <RichTextEditor
-                  value={team.notes ?? ""}
-                  onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
-                  placeholder={t.teamPage.notesPlaceholder}
-                  ariaLabel={t.teamPage.notesLabel}
-                  size="tall"
-                />
-              </section>
-            </div>
-          )}
+            {/* What the team is weak to and what it can hit — see src/lib/teamCoverage.ts. */}
+            {activeTab === "coverage" && (
+              <TeamCoverage pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
+            )}
 
-          {/* What the team is weak to and what it can hit — see src/lib/teamCoverage.ts. */}
-          {activeTab === "coverage" && (
-            <TeamCoverage pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
-          )}
+            {/* The metagame's common sets calced against the team — see src/lib/threats/. */}
+            {activeTab === "threats" && (
+              <TeamThreats pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
+            )}
 
-          {/* The metagame's common sets calced against the team — see src/lib/threats/. */}
-          {activeTab === "threats" && (
-            <TeamThreats pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
-          )}
-
-          {/* Each Pokémon's card (collapsed to its sprite header until clicked)
+            {/* Each Pokémon's card (collapsed to its sprite header until clicked)
               with its saved calcs underneath. Columns are independent, so
               expanding one card or one list never stretches the others. */}
-          {activeTab === "calcs" && (
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <SearchField
-                  query={calcQuery}
-                  onQueryChange={setCalcQuery}
-                  placeholder={t.pokemonCard.searchCalcsPlaceholder}
-                  ariaLabel={t.pokemonCard.searchCalcs}
-                  className="min-w-0 flex-1 sm:max-w-xs"
-                />
-                {(team.calcs ?? []).length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setIsConfirmingClearCalcs(true)}
-                    className="ml-auto flex items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-red-300 hover:text-red-600"
+            {activeTab === "calcs" && (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <SearchField
+                    query={calcQuery}
+                    onQueryChange={setCalcQuery}
+                    placeholder={t.pokemonCard.searchCalcsPlaceholder}
+                    ariaLabel={t.pokemonCard.searchCalcs}
+                    className="min-w-0 flex-1 sm:max-w-xs"
+                  />
+                  {(team.calcs ?? []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmingClearCalcs(true)}
+                      className="ml-auto flex items-center gap-1.5 rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:border-red-300 hover:text-red-600"
+                    >
+                      <Icon name={IconName.Delete} size={16} />
+                      {t.pokemonCard.clearCalcs}
+                    </button>
+                  )}
+                </div>
+                {isConfirmingClearCalcs && (
+                  <Modal
+                    onClose={() => setIsConfirmingClearCalcs(false)}
+                    labelledBy="confirm-clear-calcs-title"
                   >
-                    <Icon name={IconName.Delete} size={16} />
-                    {t.pokemonCard.clearCalcs}
-                  </button>
+                    <ModalTitle id="confirm-clear-calcs-title" className="mb-2">
+                      {t.pokemonCard.confirmClearCalcsTitle((team.calcs ?? []).length)}
+                    </ModalTitle>
+                    <ModalDescription>{t.pokemonCard.confirmClearCalcsBody}</ModalDescription>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="danger"
+                        onClick={() => {
+                          updateTeam(teamId, (t) => ({ ...t, calcs: [] }));
+                          setIsConfirmingClearCalcs(false);
+                        }}
+                      >
+                        {t.pokemonCard.clearCalcs}
+                      </Button>
+                      <Button variant="outline" onClick={() => setIsConfirmingClearCalcs(false)}>
+                        {t.common.cancel}
+                      </Button>
+                    </div>
+                  </Modal>
+                )}
+                <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
+                  {team.pokemon.map((mon, index) => (
+                    <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">
+                      <PokemonReportCard pokemon={mon} collapsible />
+                      <PokemonCalcsBox
+                        searching={calcSearchTerms.length > 0}
+                        calcs={(team.calcs ?? []).filter(
+                          (calc) =>
+                            calc.species === speciesIdentity(mon.species) &&
+                            (calcSearchTerms.length === 0 ||
+                              calcMatchesSearch(calc, calcSearchTerms, pokemonText.species)),
+                        )}
+                        onRemoveCalc={(id) =>
+                          updateTeam(teamId, (t) => ({
+                            ...t,
+                            calcs: (t.calcs ?? []).filter((calc) => calc.id !== id),
+                          }))
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "matchups" && (
+              <TeamMatchupsList team={team} lists={matchupLists} isLoading={isMatchupsLoading} />
+            )}
+
+            {activeTab === "stats" && (
+              <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+                {usageStats.every((stat) => stat.timesPicked === 0) ? (
+                  <p className="text-sm text-zinc-500">
+                    {t.teamPage.noGames.before}
+                    <Link href="/tournaments" className="text-zinc-600 hover:underline">
+                      {t.teamPage.noGames.link}
+                    </Link>
+                    {t.teamPage.noGames.after}
+                  </p>
+                ) : (
+                  <table className="w-full text-xs text-zinc-700">
+                    <thead>
+                      <tr className="text-zinc-500">
+                        <th className="py-1 text-left font-normal">{t.teamPage.statsPokemon}</th>
+                        <th className="text-right font-normal">{t.teamPage.statsPicked}</th>
+                        <th className="text-right font-normal">{t.teamPage.statsWins}</th>
+                        <th className="text-right font-normal">{t.teamPage.statsLosses}</th>
+                        <th className="text-right font-normal">{t.teamPage.statsWinRate}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usageStats.map((stat) => (
+                        <tr key={stat.index} className="border-t border-zinc-100">
+                          <td className="flex items-center gap-2 py-1.5">
+                            <span className="relative h-6 w-6 shrink-0">
+                              <PokemonSprite species={stat.pokemon.species} fill />
+                            </span>
+                            <span className="truncate font-medium text-zinc-900">
+                              {pokemonText.species(stat.pokemon.species)}
+                            </span>
+                          </td>
+                          <td className="text-right">{stat.timesPicked}</td>
+                          <td className="text-right text-green-700">{stat.wins}</td>
+                          <td className="text-right text-red-600">{stat.losses}</td>
+                          <td className="text-right font-medium">
+                            {stat.timesPicked > 0
+                              ? `${Math.round((stat.wins / stat.timesPicked) * 100)}%`
+                              : "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
-              {isConfirmingClearCalcs && (
-                <Modal
-                  onClose={() => setIsConfirmingClearCalcs(false)}
-                  labelledBy="confirm-clear-calcs-title"
-                >
-                  <ModalTitle id="confirm-clear-calcs-title" className="mb-2">
-                    {t.pokemonCard.confirmClearCalcsTitle((team.calcs ?? []).length)}
-                  </ModalTitle>
-                  <ModalDescription>{t.pokemonCard.confirmClearCalcsBody}</ModalDescription>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        updateTeam(teamId, (t) => ({ ...t, calcs: [] }));
-                        setIsConfirmingClearCalcs(false);
-                      }}
-                    >
-                      {t.pokemonCard.clearCalcs}
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsConfirmingClearCalcs(false)}>
-                      {t.common.cancel}
-                    </Button>
-                  </div>
-                </Modal>
-              )}
-              <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-                {team.pokemon.map((mon, index) => (
-                  <div key={`${mon.species}-${index}`} className="flex flex-col gap-2">
-                    <PokemonReportCard pokemon={mon} collapsible />
-                    <PokemonCalcsBox
-                      searching={calcSearchTerms.length > 0}
-                      calcs={(team.calcs ?? []).filter(
-                        (calc) =>
-                          calc.species === speciesIdentity(mon.species) &&
-                          (calcSearchTerms.length === 0 ||
-                            calcMatchesSearch(calc, calcSearchTerms, pokemonText.species)),
-                      )}
-                      onRemoveCalc={(id) =>
-                        updateTeam(teamId, (t) => ({
-                          ...t,
-                          calcs: (t.calcs ?? []).filter((calc) => calc.id !== id),
-                        }))
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "matchups" && (
-            <TeamMatchupsList team={team} lists={matchupLists} isLoading={isMatchupsLoading} />
-          )}
-
-          {activeTab === "stats" && (
-            <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-              {usageStats.every((stat) => stat.timesPicked === 0) ? (
-                <p className="text-sm text-zinc-500">
-                  {t.teamPage.noGames.before}
-                  <Link href="/tournaments" className="text-zinc-600 hover:underline">
-                    {t.teamPage.noGames.link}
-                  </Link>
-                  {t.teamPage.noGames.after}
-                </p>
-              ) : (
-                <table className="w-full text-xs text-zinc-700">
-                  <thead>
-                    <tr className="text-zinc-500">
-                      <th className="py-1 text-left font-normal">{t.teamPage.statsPokemon}</th>
-                      <th className="text-right font-normal">{t.teamPage.statsPicked}</th>
-                      <th className="text-right font-normal">{t.teamPage.statsWins}</th>
-                      <th className="text-right font-normal">{t.teamPage.statsLosses}</th>
-                      <th className="text-right font-normal">{t.teamPage.statsWinRate}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {usageStats.map((stat) => (
-                      <tr key={stat.index} className="border-t border-zinc-100">
-                        <td className="flex items-center gap-2 py-1.5">
-                          <span className="relative h-6 w-6 shrink-0">
-                            <PokemonSprite species={stat.pokemon.species} fill />
-                          </span>
-                          <span className="truncate font-medium text-zinc-900">
-                            {pokemonText.species(stat.pokemon.species)}
-                          </span>
-                        </td>
-                        <td className="text-right">{stat.timesPicked}</td>
-                        <td className="text-right text-green-700">{stat.wins}</td>
-                        <td className="text-right text-red-600">{stat.losses}</td>
-                        <td className="text-right font-medium">
-                          {stat.timesPicked > 0
-                            ? `${Math.round((stat.wins / stat.timesPicked) * 100)}%`
-                            : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            )}
+          </div>
+          {/* Over the report, from the right — on every screen size. */}
+          {team.collab && (
+            <Drawer open={isActivityOpen} onOpenChange={setIsActivityOpen} swipeDirection="right">
+              <DrawerContent>
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 px-4 py-3">
+                  <DrawerTitle className="text-sm font-semibold text-zinc-900">
+                    {t.activity.title}
+                  </DrawerTitle>
+                  <IconButton
+                    variant="ghost"
+                    onClick={() => setIsActivityOpen(false)}
+                    aria-label={t.common.close}
+                    title={t.common.close}
+                  >
+                    <Icon name={IconName.Close} size={18} />
+                  </IconButton>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                  {isActivityOpen && <TeamActivityList teamId={team.id} group={collabGroup} />}
+                </div>
+              </DrawerContent>
+            </Drawer>
           )}
         </div>
       )}

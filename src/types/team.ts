@@ -110,6 +110,20 @@ export interface SharedTeam {
   updatedAt: string;
 }
 
+/** Who a collaborative team belongs to — see Team.collab. */
+export interface TeamCollab {
+  groupId: string;
+  ownerUid: string;
+  /** Who last edited the team (its own fields — combinations and calcs are their own docs). */
+  updatedBy?: EditedBy;
+}
+
+/** Who last changed a collaborative team, or one of its plans (shown as "last edited by"). */
+export interface EditedBy {
+  uid: string;
+  name: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -152,6 +166,13 @@ export interface Team {
   replicaCode?: string;
   /** Present when the report is shared — see TeamShare. */
   share?: TeamShare;
+  /**
+   * Set on a collaborative team (docs/collaborative-teams.md): it lives in
+   * Firestore at `teams/{id}`, edited by the members of prep group
+   * `groupId`, instead of in this device's storage. Never stored — added
+   * when the team is read (see collabDocToTeam).
+   */
+  collab?: TeamCollab;
   /** Benchmark damage calcs on the Team Report's Calcs tab, in pasted order. */
   calcs?: TeamCalc[];
   /** ISO timestamp of when this team was archived, or absent/undefined if it's active. Archiving is reversible (see unarchiveTeam) — it just moves the team out of the switcher and the My Teams "Active" tab, it never deletes anything. */

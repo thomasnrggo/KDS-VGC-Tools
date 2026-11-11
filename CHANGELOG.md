@@ -10,6 +10,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.12 — 2026-11-11
+
+### Added
+
+- Collaborative teams: "Collaborate" on a Team Report makes the team shared with friends you
+  invite by link. Everyone can edit its roster, notes, combinations, calcs and matchup plans (one
+  shared plan per matchup) and sees changes live. It can bring your prepped matchups along. The
+  owner can remove members or stop collaborating (keeping the team and its matchups); members can
+  keep a copy or leave. Needs the latest `firestore.rules` deployed.
+- Collaborative teams have an Activity drawer (from the right, over the Team Report): who edited
+  the team, its combinations, calcs and plans, and who joined or left, kept 30 days.
+
+### Changed
+
+- A team's page: the "Team report" tab is now "Overview". Edit, Copy team and Add to opponents
+  sit together at the top right (Edit as a button instead of a pencil icon), and clicking a
+  Pokémon's card opens it in the Team Builder.
+- Team Builder: the Stats box beside the moves also shows each final stat.
+- Speed changed by a held item (Choice Scarf, Iron Ball) shows the stat screen's value marked *;
+  clicking it switches to the in-battle Speed (with the item's icon) and back — on the Overview's
+  cards, the Team Builder's Stats box and its Stat Points table (which showed only the in-battle
+  value before).
+
+### Fixed
+
+- Damage Calculator: a long damage line (e.g. with recoil) no longer squeezes the move's name
+  away — the damage text is cut short with "…" first, and the name always shows.
+
 ## 0.3.11 — 2026-11-11
 
 ### Added

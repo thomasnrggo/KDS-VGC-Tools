@@ -10,7 +10,7 @@ import { setPlannerSource } from "@/hooks/usePlannerSource";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { Icon } from "@/components/Icon";
 import { IconName } from "@/enums";
-import { getInvite, joinGroup } from "@/lib/firebase";
+import { getInvite, joinGroup, logTeamActivity } from "@/lib/firebase";
 import { REGULATIONS } from "@/data/regulations";
 import type { GroupInvite } from "@/types";
 import { LoadingState } from "@/components/LoadingState";
@@ -72,8 +72,15 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
   const groupId = loaded?.state === "ready" ? loaded.invite.groupId : null;
   const isMember = !!groupId && groups.some((group) => group.id === groupId);
 
+  // A collaborative team's invite opens the team (docs/collaborative-teams.md).
+  const teamId = loaded?.state === "ready" ? loaded.invite.teamId : undefined;
+
   function openGroup() {
     if (!groupId) return;
+    if (teamId) {
+      router.push(`/teams/${teamId}`);
+      return;
+    }
     setPlannerSource(groupId);
     router.push("/matchup-planner");
   }
@@ -83,11 +90,20 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
     setIsJoining(true);
     setJoinError(false);
     try {
+      const name = user.displayName ?? user.email ?? "?";
       await joinGroup(code, loaded.invite, {
         uid: user.uid,
-        name: user.displayName ?? user.email ?? "?",
+        name,
         photoURL: user.photoURL ?? undefined,
       });
+      // A collaborative team's activity says who joined (docs/collaborative-teams.md).
+      if (loaded.invite.teamId) {
+        await logTeamActivity(
+          loaded.invite.teamId,
+          { change: { kind: "joined" } },
+          { uid: user.uid, name },
+        ).catch((error) => console.error("[collab team] logging the join failed:", error));
+      }
       openGroup();
     } catch (error) {
       console.error("[prep group] join failed:", error);
@@ -123,11 +139,15 @@ export default function JoinGroupPage({ params }: JoinGroupPageProps) {
           {t.groups.join.invited(loaded.invite.groupName)}
         </p>
         <p className="text-sm text-zinc-600">
-          {isMember ? t.groups.join.alreadyMember : t.groups.join.explain}
+          {isMember
+            ? t.groups.join.alreadyMember
+            : teamId
+              ? t.collab.joinExplain
+              : t.groups.join.explain}
         </p>
         {isMember ? (
           <button type="button" onClick={openGroup} className={PRIMARY_BUTTON}>
-            {t.groups.join.open}
+            {teamId ? t.collab.openTeam : t.groups.join.open}
           </button>
         ) : (
           <button

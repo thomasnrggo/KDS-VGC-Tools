@@ -28,6 +28,7 @@ export enum IconName {
   FormatListBulleted = "format_list_bulleted",
   Group = "group",
   Help = "help",
+  History = "history",
   LightMode = "light_mode",
   Link = "link",
   Logout = "logout",

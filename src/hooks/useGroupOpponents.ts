@@ -8,21 +8,37 @@ import {
   saveGroupPlan,
   subscribeGroupOpponents,
   subscribeGroupPlans,
+  subscribeSharedPlans,
+  saveSharedPlan,
+  deleteSharedPlan,
+  logTeamActivity,
 } from "@/lib/firebase";
+import { planActivity } from "@/lib/teamActivity";
 import {
   canRemoveGroupOpponent,
   groupPlanId,
   mergeGroupOpponent,
   planChanged,
   sharedChanged,
+  sharedPlanChanged,
   splitGroupOpponent,
+  toSharedPlanDoc,
+  withSharedPlan,
+  withoutSharedPlan,
 } from "@/lib/groupOpponents";
 import { normalizeOpponent } from "@/lib/opponent";
 import { publishOpponentToShares, removeOpponentsFromShares } from "@/lib/storage/db";
 import { createKeyedDebouncer } from "@/lib/keyedDebounce";
 import { useAuth } from "./useAuth";
 import { sortByListOrder, useOpponentActions, type OpponentStore } from "./useOpponentActions";
-import type { GroupPlanDoc, Opponent, PrepGroup, SharedOpponent } from "@/types";
+import type {
+  GroupPlanDoc,
+  MatchupPlan,
+  Opponent,
+  PrepGroup,
+  SharedOpponent,
+  SharedPlanDoc,
+} from "@/types";
 
 /** Edits (typing notes, dragging) are written after a pause, like the personal list's cloud push. */
 const WRITE_DELAY_MS = 800;
@@ -37,10 +53,15 @@ const WRITE_DELAY_MS = 800;
  * Writes are debounced; until one goes out, its value stays layered over
  * what Firestore last reported, so a teammate's unrelated change arriving
  * meanwhile can't undo what you're typing.
+ *
+ * On a collaborative team's group (PrepGroup.teamId), that team's plan is
+ * the one every member shares (`groups/{id}/plans`, see
+ * docs/collaborative-teams.md); plans for your other teams stay private.
  */
 export function useGroupOpponents(group: PrepGroup | null) {
   const { user } = useAuth();
   const groupId = group?.id ?? null;
+  const teamId = group?.teamId ?? null;
   const uid = user?.uid ?? null;
   const [opponents, setOpponents] = useState<Opponent[]>([]);
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
@@ -48,30 +69,43 @@ export function useGroupOpponents(group: PrepGroup | null) {
   const [failure, setFailure] = useState<{ groupId: string; error: Error } | null>(null);
   const error = failure && failure.groupId === groupId ? failure.error : null;
 
-  const snapshot = useRef<{ shared: SharedOpponent[]; plans: GroupPlanDoc[] }>({
-    shared: [],
-    plans: [],
-  });
+  const snapshot = useRef<{
+    shared: SharedOpponent[];
+    plans: GroupPlanDoc[];
+    sharedPlans: SharedPlanDoc[];
+  }>({ shared: [], plans: [], sharedPlans: [] });
   const pendingShared = useRef(new Map<string, SharedOpponent>());
   const pendingPlans = useRef(new Map<string, GroupPlanDoc>());
+  const pendingSharedPlans = useRef(new Map<string, SharedPlanDoc>());
+  // Each pending shared plan as it was before its first unsaved edit, for the team's activity log.
+  const sharedPlansBefore = useRef(new Map<string, MatchupPlan | undefined>());
   const debouncer = useMemo(() => createKeyedDebouncer(WRITE_DELAY_MS), []);
 
   useEffect(() => {
     if (!groupId || !uid) return;
     let sharedReady = false;
     let plansReady = false;
-    snapshot.current = { shared: [], plans: [] };
+    // Only a collaborative team's group has shared plans to wait for.
+    let sharedPlansReady = !teamId;
+    snapshot.current = { shared: [], plans: [], sharedPlans: [] };
 
     function publish() {
-      if (!sharedReady || !plansReady) return;
+      if (!sharedReady || !plansReady || !sharedPlansReady) return;
       const shared = new Map(snapshot.current.shared.map((opponent) => [opponent.id, opponent]));
       pendingShared.current.forEach((opponent, id) => shared.set(id, opponent));
       const plans = new Map(snapshot.current.plans.map((plan) => [plan.opponentId, plan]));
       pendingPlans.current.forEach((plan) => plans.set(plan.opponentId, plan));
+      const sharedPlans = new Map(
+        snapshot.current.sharedPlans.map((plan) => [plan.opponentId, plan]),
+      );
+      pendingSharedPlans.current.forEach((plan, id) => sharedPlans.set(id, plan));
       setOpponents(
-        [...shared.values()].map((opponent) =>
-          normalizeOpponent(mergeGroupOpponent(opponent, plans.get(opponent.id))),
-        ),
+        [...shared.values()].map((opponent) => {
+          const merged = mergeGroupOpponent(opponent, plans.get(opponent.id));
+          return normalizeOpponent(
+            teamId ? withSharedPlan(merged, teamId, sharedPlans.get(opponent.id)) : merged,
+          );
+        }),
       );
       setLoadedFor(groupId);
     }
@@ -99,11 +133,23 @@ export function useGroupOpponents(group: PrepGroup | null) {
       },
       onError,
     );
+    const stopSharedPlans = teamId
+      ? subscribeSharedPlans(
+          groupId,
+          (sharedPlans) => {
+            snapshot.current.sharedPlans = sharedPlans;
+            sharedPlansReady = true;
+            publish();
+          },
+          onError,
+        )
+      : () => {};
     return () => {
       stopShared();
       stopPlans();
+      stopSharedPlans();
     };
-  }, [groupId, uid]);
+  }, [groupId, teamId, uid]);
 
   const store: OpponentStore = {
     save: (changes) => {
@@ -117,7 +163,35 @@ export function useGroupOpponents(group: PrepGroup | null) {
               addedBy: after.addedBy ?? uid,
               addedByName: after.addedByName ?? user?.displayName ?? undefined,
             };
-        const { shared, plan } = splitGroupOpponent(opponent, groupId);
+        // A collaborative team's plan is shared, not kept with your private ones.
+        const { shared, plan } = splitGroupOpponent(
+          teamId ? withoutSharedPlan(opponent, teamId) : opponent,
+          groupId,
+        );
+        if (teamId && sharedPlanChanged(before, opponent, teamId)) {
+          const by = { uid, name: user?.displayName ?? user?.email ?? "?" };
+          const doc = toSharedPlanDoc(
+            opponent.id,
+            opponent.plansByTeamId[teamId],
+            by,
+            new Date().toISOString(),
+          );
+          pendingSharedPlans.current.set(opponent.id, doc);
+          if (!sharedPlansBefore.current.has(opponent.id)) {
+            sharedPlansBefore.current.set(opponent.id, before?.plansByTeamId[teamId]);
+          }
+          debouncer.schedule(`sharedPlan:${opponent.id}`, () => {
+            pendingSharedPlans.current.delete(opponent.id);
+            const previous = sharedPlansBefore.current.get(opponent.id);
+            sharedPlansBefore.current.delete(opponent.id);
+            void saveSharedPlan(groupId, doc).catch(logWriteError);
+            void logTeamActivity(
+              teamId,
+              planActivity(opponent.id, opponent.label, previous, doc.plan),
+              by,
+            ).catch(logWriteError);
+          });
+        }
         if (sharedChanged(before, opponent, groupId)) {
           if (!before) {
             void saveGroupOpponent(groupId, shared).catch(logWriteError);
@@ -129,7 +203,12 @@ export function useGroupOpponents(group: PrepGroup | null) {
             });
           }
         }
-        if (planChanged(before, opponent)) {
+        if (
+          planChanged(before && (teamId ? withoutSharedPlan(before, teamId) : before), {
+            ...opponent,
+            plansByTeamId: plan.plansByTeamId,
+          })
+        ) {
           pendingPlans.current.set(plan.id, plan);
           debouncer.schedule(`plan:${plan.id}`, () => {
             pendingPlans.current.delete(plan.id);
@@ -151,8 +230,11 @@ export function useGroupOpponents(group: PrepGroup | null) {
         pendingShared.current.delete(id);
         pendingPlans.current.delete(planId);
         debouncer.cancel(`share:${id}`);
+        debouncer.cancel(`sharedPlan:${id}`);
+        pendingSharedPlans.current.delete(id);
         void deleteGroupOpponent(groupId, id).catch(logWriteError);
         void deleteGroupPlan(uid, planId).catch(logWriteError);
+        if (teamId) void deleteSharedPlan(groupId, id).catch(logWriteError);
       }
       void removeOpponentsFromShares(ids).catch(logWriteError);
     },

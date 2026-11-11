@@ -38,7 +38,8 @@ export default function MatchupPage({ params }: MatchupPageProps) {
     teams,
     activeTeams,
     activeTeamId,
-    isLoading: isTeamsLoading,
+    isLoading: isPersonalTeamsLoading,
+    isCollabLoading,
     addTeam,
     editTeam,
     removeTeam,
@@ -60,6 +61,8 @@ export default function MatchupPage({ params }: MatchupPageProps) {
     : personal.isLoading;
 
   const team = teams.find((t) => t.id === teamId) ?? null;
+  // Not found among your own teams yet: it may be a collaborative one, still arriving.
+  const isTeamsLoading = isPersonalTeamsLoading || (!team && isCollabLoading);
   const opponent = opponents.find((o) => o.id === opponentId) ?? null;
   const plan = opponent ? getPlanForTeam(opponent, teamId) : null;
   const mainLabel = opponent?.variantOf

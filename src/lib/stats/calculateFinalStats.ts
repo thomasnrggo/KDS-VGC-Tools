@@ -51,7 +51,7 @@ export function resolveBaseStats(species: string, item?: string): BaseStats | un
  * any stat not mentioned to 0 — matching Showdown's own convention of only
  * listing non-default values.
  */
-function parseStatPoints(text: string | undefined): BaseStats {
+export function parseStatPoints(text: string | undefined): BaseStats {
   const spread: BaseStats = { hp: 0, atk: 0, def: 0, spa: 0, spd: 0, spe: 0 };
   if (!text) return spread;
 

@@ -147,6 +147,68 @@ service cloud.firestore {
           && (resource.data.addedBy == request.auth.uid
             || groupData(groupId).ownerUid == request.auth.uid);
       }
+
+      // A collaborative team's group (docs/collaborative-teams.md): the one
+      // plan every member shares for each opponent. Only on a team's group —
+      // an ordinary group's plans stay in each member's users/{uid}/groupPlans.
+      match /plans/{opponentId} {
+        allow read: if isGroupMember(groupId);
+        allow write: if isGroupMember(groupId) && 'teamId' in groupData(groupId);
+      }
+    }
+
+    // Collaborative teams (docs/collaborative-teams.md, src/lib/firebase/
+    // collabTeams.ts): edited by the members of the team's group. Only that
+    // group's owner creates or deletes one, and nobody can move it to another
+    // group or hand it to another owner.
+    function teamGroupId(teamId) {
+      return get(/databases/$(database)/documents/teams/$(teamId)).data.groupId;
+    }
+    function teamExists(teamId) {
+      return exists(/databases/$(database)/documents/teams/$(teamId));
+    }
+
+    match /teams/{teamId} {
+      // A team that doesn't exist (yet) reads as missing rather than denied:
+      // its new group reaches members' listeners before the team doc is
+      // written, and a denied listener would stop for good.
+      allow read: if signedIn() && (resource == null || isGroupMember(resource.data.groupId));
+      allow create: if signedIn()
+        && request.resource.data.id == teamId
+        && request.resource.data.ownerUid == request.auth.uid
+        && groupData(request.resource.data.groupId).ownerUid == request.auth.uid
+        && groupData(request.resource.data.groupId).teamId == teamId;
+      allow update: if isGroupMember(resource.data.groupId)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.groupId == resource.data.groupId
+        && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if signedIn()
+        && groupData(resource.data.groupId).ownerUid == request.auth.uid;
+
+      match /combinations/{combinationId} {
+        allow read: if signedIn() && (!teamExists(teamId) || isGroupMember(teamGroupId(teamId)));
+        allow write: if isGroupMember(teamGroupId(teamId));
+      }
+      match /calcs/{calcId} {
+        allow read: if signedIn() && (!teamExists(teamId) || isGroupMember(teamGroupId(teamId)));
+        allow write: if isGroupMember(teamGroupId(teamId));
+      }
+
+      // The team's activity log (src/lib/firebase/teamActivity.ts): members
+      // add entries as themselves and can only extend their own; nobody
+      // edits anyone else's. Only the owner deletes — when ending the team.
+      match /activity/{entryId} {
+        allow read: if signedIn() && (!teamExists(teamId) || isGroupMember(teamGroupId(teamId)));
+        allow create: if isGroupMember(teamGroupId(teamId))
+          && request.resource.data.id == entryId
+          && request.resource.data.by.uid == request.auth.uid;
+        allow update: if isGroupMember(teamGroupId(teamId))
+          && resource.data.by.uid == request.auth.uid
+          && request.resource.data.by.uid == request.auth.uid
+          && request.resource.data.id == entryId;
+        allow delete: if signedIn()
+          && groupData(teamGroupId(teamId)).ownerUid == request.auth.uid;
+      }
     }
 
     // Invite links: knowing the code is the access, so a signed-in user can

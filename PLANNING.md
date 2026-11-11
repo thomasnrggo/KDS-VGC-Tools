@@ -420,7 +420,8 @@ interface SharedTeam {
   sheet: "open" | "closed";
   pokemon: ParsedPokemon[]; // open sheet: no evs/nature
   sections?: ("strategy" | "calcs" | "matchups")[];
-  notes?: string; combinations?: TeamCombination[]; // with "strategy"
+  notes?: string;
+  combinations?: TeamCombination[]; // with "strategy"
   calcs?: TeamCalc[]; // with "calcs"
   updatedAt: string;
 }
@@ -3186,3 +3187,11 @@ The single hard-coded admin became roles, managed at `/admin/users` instead of b
 - **On hold (2026-11-06):** built and tried on Speed Tiers, then taken off the page — the owner wants no banner there for now. The component, the early script's `hiddenTips` and Speed Tiers' text (`speedTiers.tips*`) stay, ready for when it's picked up again. Its number search lives in Tiers (every Speed); in Table a number searches the
   sorted column (Base by default), so the tip points to Tiers. Next: the Damage Calculator, Team
   Builder, Team Library and Matchup Planner.
+
+## Collaborative teams (planned 2026-11-11)
+
+Several players build and prep one team together. Decided: **one shared plan per matchup**,
+membership **reuses prep groups** (a collaborative team is a team plus its own group), **owner +
+editors** only, last write wins with an "editing" marker on rich text, online-only. Phases:
+groundwork (`useMyTeams` behind two stores), v1, presence, then CRDTs/history only if needed. Full
+spec: [docs/collaborative-teams.md](./docs/collaborative-teams.md).

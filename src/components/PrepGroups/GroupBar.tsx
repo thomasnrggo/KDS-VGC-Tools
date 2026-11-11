@@ -30,7 +30,7 @@ export function inviteLink(code: string): string {
   return `${window.location.origin}/groups/join/${code}`;
 }
 
-function MemberAvatar({ member, size = 28 }: { member: GroupMember; size?: number }) {
+export function MemberAvatar({ member, size = 28 }: { member: GroupMember; size?: number }) {
   return (
     <span
       title={member.name}
@@ -120,11 +120,18 @@ export function GroupBar({
                 await copyInvite(code, t.groups.resetInviteDone);
               }),
           },
-          {
-            label: group.archivedAt ? t.groups.unarchive : t.groups.archive,
-            icon: group.archivedAt ? IconName.Unarchive : IconName.Archive,
-            onClick: () => void run(() => onSetArchived(!group.archivedAt)),
-          },
+          // A collaborative team's group ends with the team ("Stop collaborating"
+          // on its page, docs/collaborative-teams.md) — archiving it here would
+          // drop the team from everyone's list, the owner's included.
+          ...(group.teamId
+            ? []
+            : [
+                {
+                  label: group.archivedAt ? t.groups.unarchive : t.groups.archive,
+                  icon: group.archivedAt ? IconName.Unarchive : IconName.Archive,
+                  onClick: () => void run(() => onSetArchived(!group.archivedAt)),
+                },
+              ]),
         ]
       : [{ label: t.groups.leave, icon: IconName.Logout, onClick: () => setDialog("leave") }]),
   ];

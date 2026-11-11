@@ -80,19 +80,7 @@ along). Plans point at roster slots by index, and the copied team keeps the shar
 
 Prep from a prep group is shared like your own, but the shared copy never says which group it's from.
 
-## Next: collaborative mode (not built)
+## Next: collaborative teams
 
-Discussed 2026-11-11; open questions before designing it:
-
-- **One shared plan per matchup, or one per player?** Decides the plan data model.
-- A collaborative team has to be an online doc with members (`teams/{id}`, like prep groups), not a
-  local-first `users/{uid}` record — every page reading the active team must handle both kinds.
-- Its plans need a home: likely the team's own prep group, with plans shared (today prep-group plans
-  are private).
-- Today's sync is last-write-wins per whole record, so two editors would overwrite each other:
-  field-level writes or sub-documents, live listeners, and "X is editing" soft locks for rich text
-  (CRDTs/Yjs only if that isn't enough).
-- Roster slots are referenced by index (`pokemonNotes`, plan picks): stable slot ids should come
-  first, or a teammate reordering the roster would misattach notes and picks.
-- Roles (owner / editor / viewer), invites (reuse prep-group invites), "last edited by" or a light
-  history, fork a copy, what happens when the owner leaves.
+Planned in docs/collaborative-teams.md (decided 2026-11-11: shared plans, prep groups for
+membership, owner + editors).

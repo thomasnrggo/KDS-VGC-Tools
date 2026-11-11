@@ -285,6 +285,12 @@ export async function reconcileSharedMatchups(team: Team, opponents: Opponent[])
 }
 
 export async function saveMyTeam(team: Team): Promise<void> {
+  // A collaborative team lives in Firestore (src/lib/firebase/collabTeams.ts),
+  // never here — useMyTeams routes its edits there.
+  if (team.collab) {
+    console.error(`[teams] refused to save collaborative team ${team.id} as a personal one`);
+    return;
+  }
   await putTeamLocal(team);
   const uid = currentUid();
   if (uid) {

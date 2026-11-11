@@ -31,6 +31,7 @@ export {
   subscribeGroupPlans,
   saveGroupOpponent,
   deleteGroupOpponent,
+  getGroupOpponents,
   saveGroupPlan,
   deleteGroupPlan,
 } from "./groups";
@@ -44,3 +45,19 @@ export {
   type StaffMember,
   type UserProfile,
 } from "./roles";
+export {
+  subscribeCollabTeam,
+  writeCollabTeamChanges,
+  getSharedPlans,
+  saveSharedPlans,
+  subscribeSharedPlans,
+  saveSharedPlan,
+  deleteSharedPlan,
+  createCollabTeam,
+  deleteCollabTeam,
+} from "./collabTeams";
+export {
+  logTeamActivity,
+  subscribeTeamActivity,
+  ACTIVITY_SHOWN,
+} from "./teamActivity";

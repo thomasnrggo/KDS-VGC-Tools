@@ -216,6 +216,13 @@ describe("importSharedMatchups", () => {
       myOpponents: [planned],
     });
     expect(second.updated).toEqual([]);
+    const replaced = importSharedMatchups({
+      matchups: [shared("Sand")],
+      teamId: "my-team",
+      myOpponents: [planned],
+      replacePlans: true,
+    });
+    expect(replaced.updated[0].plansByTeamId["my-team"]).toMatchObject({ leadPair: [0, null] });
   });
 
   it("keeps a variant with its main when both come along", () => {

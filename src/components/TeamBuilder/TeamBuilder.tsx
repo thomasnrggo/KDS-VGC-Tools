@@ -1,7 +1,7 @@
 "use client";
 
 import { Select } from "@/components/Select";
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { Button, IconButton, iconButtonVariants, TextAction, TogglePill } from "../Button";
 import { Icon } from "../Icon";
@@ -10,7 +10,7 @@ import { Modal, ModalActions, ModalDescription, ModalTitle } from "../Modal";
 import { BuilderEditor } from "./BuilderEditor";
 import { TeamThreats } from "../TeamThreats";
 import { BuilderCalculator } from "./BuilderCalculator";
-import { Drawer, DrawerContent, DrawerTitle } from "../ui/drawer";
+import { SidePanel } from "../SidePanel";
 import { PokemonSprite } from "../PokemonSprite";
 import { shortRegulationLabel } from "../TeamRegulationTags";
 import { Textarea } from "../Textarea";
@@ -53,6 +53,8 @@ interface TeamBuilderProps {
   teamHref?: string;
   /** The page's heading, for screen readers — the back link and team name stand in for it visually. */
   heading: string;
+  /** The slot to open on (a Pokémon card clicked on the team's Overview). */
+  initialSlot?: number;
 }
 
 /**
@@ -72,11 +74,12 @@ export function TeamBuilder({
   onRemovePokemon,
   teamHref,
   heading,
+  initialSlot = 0,
 }: TeamBuilderProps) {
   const t = useMessages();
   const text = usePokemonText();
   const isPhone = useIsPhone();
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState(initialSlot);
   const [pasteDraft, setPasteDraft] = useState<{ text: string; error: string | null } | null>(null);
   const [importDraft, setImportDraft] = useState<{ text: string; error: string | null } | null>(
     null,
@@ -100,8 +103,6 @@ export function TeamBuilder({
   // here) — a preview behind its flag, always there for the admin.
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState<PanelMode>("analysis");
-  // Desktop: the panel stays mounted while it slides out (see its onTransitionEnd).
-  const [isPanelMounted, setIsPanelMounted] = useState(false);
   // Kept once opened, so the opponent set up there survives a look at the analysis.
   const [hasCalculator, setHasCalculator] = useState(false);
   const { flags } = useFeatureFlags();
@@ -347,11 +348,6 @@ export function TeamBuilder({
 
   function setPanelOpen(open: boolean) {
     setIsPanelOpen(open);
-    if (open) setIsPanelMounted(true);
-    // Without the transition (reduced motion), nothing's left to wait for.
-    else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIsPanelMounted(false);
-    }
   }
 
   function showPanel(mode: PanelMode) {
@@ -729,17 +725,6 @@ export function TeamBuilder({
           </Modal>
         )}
 
-        {/* Phones: no room beside the builder, so the panel takes the whole screen. */}
-        {isPhone && (
-          <Drawer open={isPanelOpen} onOpenChange={setPanelOpen} swipeDirection="right">
-            <DrawerContent style={{ "--drawer-content-width": "100vw" } as CSSProperties}>
-              <DrawerTitle className="sr-only">{t.teamBuilder.panelTitle(team.name)}</DrawerTitle>
-              {panelHeader}
-              {isPanelOpen && panelBody}
-            </DrawerContent>
-          </Drawer>
-        )}
-
         {importDraft && (
           <Modal
             onClose={() => setImportDraft(null)}
@@ -804,30 +789,15 @@ export function TeamBuilder({
           </Modal>
         )}
       </div>
-      {/* Slides in by growing from no width (pushing the builder over) and out
-          the same way; the panel inside keeps its width, so it's revealed, not squeezed. */}
-      {!isPhone && isPanelMounted && (
-        <aside
-          aria-label={t.teamBuilder.panelTitle(team.name)}
-          inert={!isPanelOpen}
-          onTransitionEnd={(event) => {
-            if (event.target === event.currentTarget && event.propertyName === "width") {
-              if (!isPanelOpen) setIsPanelMounted(false);
-            }
-          }}
-          className={cn(
-            "sticky top-4 shrink-0 overflow-hidden transition-[width,margin-left,opacity] duration-300 ease-out motion-reduce:transition-none",
-            isPanelOpen
-              ? "ml-4 w-[min(42rem,45vw)] opacity-100 starting:ml-0 starting:w-0 starting:opacity-0"
-              : "ml-0 w-0 opacity-0",
-          )}
-        >
-          <div className="flex max-h-[calc(100dvh-2rem)] w-[min(42rem,45vw)] flex-col overflow-hidden rounded-lg border border-zinc-200 bg-raised">
-            {panelHeader}
-            {panelBody}
-          </div>
-        </aside>
-      )}
+      {/* Beside the builder on desktop (pushing it over), the whole screen on phones. */}
+      <SidePanel
+        open={isPanelOpen}
+        onOpenChange={setPanelOpen}
+        label={t.teamBuilder.panelTitle(team.name)}
+        header={panelHeader}
+      >
+        {panelBody}
+      </SidePanel>
     </div>
   );
 }

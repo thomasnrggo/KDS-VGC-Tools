@@ -90,6 +90,8 @@ export function duplicateTeam(team: Team, name: string): Team {
   };
   delete copy.share;
   delete copy.archivedAt;
+  // A copy of a collaborative team is your own (see docs/collaborative-teams.md).
+  delete copy.collab;
   return copy;
 }
 

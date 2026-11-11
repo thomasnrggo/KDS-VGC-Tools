@@ -592,9 +592,11 @@ export function MoveList({
                 >
                   {type && <TypeIcon type={type} size={26} />}
                 </span>
+                {/* Short on room, the damage text gives way first (it shrinks 100×
+                    faster); the move's name keeps at least a few letters. */}
                 <span
                   aria-hidden="true"
-                  className="pointer-events-none relative ml-3 min-w-0 truncate"
+                  className="pointer-events-none relative ml-3 min-w-12 truncate"
                 >
                   {text.move(move)}
                 </span>
@@ -657,7 +659,7 @@ export function MoveList({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "pointer-events-none relative ml-auto shrink-0 pr-4 pl-3 tabular-nums",
+                    "pointer-events-none relative ml-auto min-w-0 shrink-[100] truncate pr-4 pl-3 tabular-nums",
                     isSelected ? "text-chrome-200" : "font-medium text-zinc-600",
                   )}
                 >

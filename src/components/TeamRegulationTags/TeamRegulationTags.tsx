@@ -68,7 +68,8 @@ export function TeamRegulationTags({ team, onTag, onUntag }: TeamRegulationTagsP
           </span>
         );
       })}
-      {untaggedRegulations.length > 0 && (
+      {/* A collaborative team keeps its group's one regulation (docs/collaborative-teams.md). */}
+      {untaggedRegulations.length > 0 && !team.collab && (
         <button
           type="button"
           onClick={(event) => {

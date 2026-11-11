@@ -15,11 +15,15 @@ import { teamWithoutSlot } from "@/lib/rosterSlots";
 
 interface EditTeamPageProps {
   params: Promise<{ teamId: string }>;
+  /** `?slot=` opens that Pokémon — a card clicked on the team's Overview. */
+  searchParams: Promise<{ slot?: string }>;
 }
 
 /** A saved team in the Team Builder — reached from its Team Report page (or right after creating it, see /team-builder). */
-export default function EditTeamPage({ params }: EditTeamPageProps) {
+export default function EditTeamPage({ params, searchParams }: EditTeamPageProps) {
   const { teamId } = use(params);
+  const { slot } = use(searchParams);
+  const initialSlot = Math.max(0, Number.parseInt(slot ?? "", 10) || 0);
   const t = useMessages();
   const {
     teams,
@@ -38,7 +42,11 @@ export default function EditTeamPage({ params }: EditTeamPageProps) {
   function removePokemon(index: number) {
     updateTeam(teamId, (current) => teamWithoutSlot(current, index));
     // Plans against opponents and logged games live outside the team.
-    removePokemonEverywhere(teamId, index, user?.uid ?? null).catch((error) => {
+    const collab =
+      team?.collab && user
+        ? { team: team.collab, by: { uid: user.uid, name: user.displayName ?? user.email ?? "?" } }
+        : undefined;
+    removePokemonEverywhere(teamId, index, user?.uid ?? null, collab).catch((error) => {
       console.error("[team builder] updating picks after a removal failed:", error);
       toast.error(t.teamBuilder.removeSyncFailed);
     });
@@ -80,6 +88,7 @@ export default function EditTeamPage({ params }: EditTeamPageProps) {
             onChange={(updater) => updateTeam(teamId, updater)}
             onRemovePokemon={removePokemon}
             teamHref={`/teams/${teamId}`}
+            initialSlot={initialSlot}
           />
         </div>
       )}

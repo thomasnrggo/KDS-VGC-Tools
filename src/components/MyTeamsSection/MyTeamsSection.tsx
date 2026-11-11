@@ -367,6 +367,15 @@ export function MyTeamsSection({
                   >
                     {team.name}
                   </span>
+                  {team.collab && (
+                    <span
+                      title={t.collab.collaborativeBadge}
+                      className="flex items-center gap-1 rounded-full bg-zinc-300 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-zinc-600 uppercase"
+                    >
+                      <Icon name={IconName.Group} size={12} />
+                      {t.collab.collaborativeBadge}
+                    </span>
+                  )}
                   <TeamRegulationTags
                     team={team}
                     onTag={(regulationId) =>
@@ -419,7 +428,8 @@ export function MyTeamsSection({
                 >
                   <Icon name={IconName.ContentCopy} size={18} />
                 </IconButton>
-                {tab === "active" ? (
+                {/* A collaborative team is left or stopped from its page (Collaborate). */}
+                {team.collab ? null : tab === "active" ? (
                   <IconButton
                     variant="ghost"
                     onClick={() => archiveTeam(team.id)}
@@ -440,18 +450,20 @@ export function MyTeamsSection({
                     <Icon name={IconName.Unarchive} size={16} />
                   </IconButton>
                 )}
-                <IconButton
-                  variant="ghost"
-                  onClick={() => setConfirmRemoveId(team.id)}
-                  aria-label={t.myTeams.removeTeam}
-                  title={t.myTeams.removeTeam}
-                  className={cn(
-                    desktopRowActionClass,
-                    "hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950",
-                  )}
-                >
-                  <Icon name={IconName.Delete} size={16} />
-                </IconButton>
+                {!team.collab && (
+                  <IconButton
+                    variant="ghost"
+                    onClick={() => setConfirmRemoveId(team.id)}
+                    aria-label={t.myTeams.removeTeam}
+                    title={t.myTeams.removeTeam}
+                    className={cn(
+                      desktopRowActionClass,
+                      "hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950",
+                    )}
+                  >
+                    <Icon name={IconName.Delete} size={16} />
+                  </IconButton>
+                )}
               </div>
             </li>
           ))}

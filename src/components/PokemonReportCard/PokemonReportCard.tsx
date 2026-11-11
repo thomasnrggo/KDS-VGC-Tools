@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ItemSpeed } from "../ItemSpeed";
 import { useState } from "react";
 import { calculateStatBreakdown } from "@/lib/stats/calculateFinalStats";
 import { resolveTypes } from "@/lib/damage/calculateDamage";
@@ -33,6 +35,8 @@ interface PokemonReportCardProps {
   sheet?: TeamSheetMode;
   /** Starts collapsed to just its sprite header; clicking the header expands the rest (the Calcs tab). */
   collapsible?: boolean;
+  /** Where clicking the card goes — your team's Pokémon in the Team Builder. Its own buttons keep their clicks. */
+  href?: string;
 }
 
 /**
@@ -52,6 +56,7 @@ export function PokemonReportCard({
   pokemon,
   sheet = "closed",
   collapsible = false,
+  href,
 }: PokemonReportCardProps) {
   const t = useMessages();
   const text = usePokemonText();
@@ -78,10 +83,25 @@ export function PokemonReportCard({
   const nature = pokemon.nature ? NATURE_MODIFIERS[pokemon.nature.toLowerCase()] : undefined;
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm">
+    <div
+      className={cn(
+        "relative flex flex-col overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm",
+        href && "transition-colors hover:border-zinc-400",
+      )}
+    >
       {/* No visible name header (trying the card without one) — the sprite
           and its tooltip identify the Pokémon; screen readers still get it. */}
       <h3 className="sr-only">{text.species(pokemon.species)}</h3>
+      {/* The whole card opens the Pokémon in the Team Builder; the copy and
+          Mega buttons sit above this link (z-10) and keep their own clicks. */}
+      {href && !collapsible && (
+        <Link
+          href={href}
+          aria-label={t.pokemonCard.editPokemon(text.species(pokemon.species))}
+          title={t.pokemonCard.editPokemon(text.species(pokemon.species))}
+          className="absolute inset-0 z-[5] rounded-xl focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none"
+        />
+      )}
 
       {/* Collapsible on phones: a slim row instead of the tall sprite header, so a
           column of them (the Calcs tab) leaves room for the calcs themselves. */}
@@ -307,14 +327,14 @@ export function PokemonReportCard({
                     {boosted ? "+" : lowered ? "-" : ""}
                   </span>
                   <span className="self-stretch border-l border-zinc-300 py-0.5 text-right text-zinc-800">
-                    {itemSpeed !== undefined && formPokemon.item ? (
-                      <span
-                        title={t.pokemonCard.speedWithItem(text.item(formPokemon.item), itemSpeed)}
-                        className="cursor-help"
-                      >
-                        <span className="text-zinc-400">*</span>
-                        {breakdown.final.speedBeforeItem}
-                      </span>
+                    {itemSpeed !== undefined &&
+                    formPokemon.item &&
+                    breakdown.final.speedBeforeItem !== undefined ? (
+                      <ItemSpeed
+                        speed={breakdown.final.speedBeforeItem}
+                        withItem={itemSpeed}
+                        item={formPokemon.item}
+                      />
                     ) : (
                       breakdown.final[stat]
                     )}

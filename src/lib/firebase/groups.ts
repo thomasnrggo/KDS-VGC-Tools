@@ -39,6 +39,13 @@ function plansRef(uid: string) {
   return collection(db, "users", uid, "groupPlans");
 }
 
+/** What an invite link's doc says about its group (all someone not in it yet can read). */
+function inviteFor(group: PrepGroup): GroupInvite {
+  const invite: GroupInvite = { groupId: group.id, groupName: group.name };
+  if (group.teamId) invite.teamId = group.teamId;
+  return invite;
+}
+
 /** A long random code — the invite link's secret. */
 function newInviteCode(): string {
   return generateId().replace(/-/g, "");
@@ -48,6 +55,8 @@ export async function createGroup(
   name: string,
   regulationId: string,
   owner: { uid: string } & GroupMember,
+  /** A collaborative team's own group (docs/collaborative-teams.md). */
+  teamId?: string,
 ): Promise<PrepGroup> {
   const now = new Date().toISOString();
   const member: GroupMember = { name: owner.name };
@@ -60,24 +69,19 @@ export async function createGroup(
     memberUids: [owner.uid],
     members: { [owner.uid]: member },
     inviteCode: newInviteCode(),
+    ...(teamId && { teamId }),
     createdAt: now,
     updatedAt: now,
   };
   // The group first: the invite's rule checks that its creator owns the group.
   await setDoc(groupRef(group.id), group);
-  await setDoc(doc(db, INVITES, group.inviteCode), {
-    groupId: group.id,
-    groupName: name,
-  } satisfies GroupInvite);
+  await setDoc(doc(db, INVITES, group.inviteCode), inviteFor(group));
   return group;
 }
 
 export async function renameGroup(group: PrepGroup, name: string): Promise<void> {
   await updateDoc(groupRef(group.id), { name, updatedAt: new Date().toISOString() });
-  await setDoc(doc(db, INVITES, group.inviteCode), {
-    groupId: group.id,
-    groupName: name,
-  } satisfies GroupInvite);
+  await setDoc(doc(db, INVITES, group.inviteCode), inviteFor({ ...group, name }));
 }
 
 export async function setGroupArchived(groupId: string, archived: boolean): Promise<void> {
@@ -91,10 +95,7 @@ export async function setGroupArchived(groupId: string, archived: boolean): Prom
 /** A new invite link; the old one stops working. Returns the new code. */
 export async function resetInviteCode(group: PrepGroup): Promise<string> {
   const code = newInviteCode();
-  await setDoc(doc(db, INVITES, code), {
-    groupId: group.id,
-    groupName: group.name,
-  } satisfies GroupInvite);
+  await setDoc(doc(db, INVITES, code), inviteFor(group));
   await updateDoc(groupRef(group.id), { inviteCode: code, updatedAt: new Date().toISOString() });
   await deleteDoc(doc(db, INVITES, group.inviteCode)).catch(() => {});
   return code;
@@ -171,6 +172,12 @@ export function subscribeGroupPlans(
 
 export async function saveGroupOpponent(groupId: string, opponent: SharedOpponent): Promise<void> {
   await setDoc(doc(opponentsRef(groupId), opponent.id), opponent);
+}
+
+/** A group's opponents, once (the planner reads them live — see subscribeGroupOpponents). */
+export async function getGroupOpponents(groupId: string): Promise<SharedOpponent[]> {
+  const snap = await getDocs(opponentsRef(groupId));
+  return snap.docs.map((d) => d.data() as SharedOpponent);
 }
 
 export async function deleteGroupOpponent(groupId: string, opponentId: string): Promise<void> {

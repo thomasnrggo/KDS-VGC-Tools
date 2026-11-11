@@ -20,7 +20,11 @@ import {
 } from "@/lib/team";
 import { REGULATIONS } from "@/data/regulations";
 import { useAuth } from "./useAuth";
+import { useCollabTeams } from "./useCollabTeams";
 import { sameRecords } from "@/lib/sameRecords";
+import { diffCollabTeam, hasCollabChanges } from "@/lib/collabTeam";
+import { createKeyedDebouncer } from "@/lib/keyedDebounce";
+import { writeCollabTeamChanges } from "@/lib/firebase";
 import type { Team } from "@/types";
 import { getMessages } from "@/lib/i18n/settings";
 
@@ -44,17 +48,62 @@ function sortByCustomOrder(teams: Team[]): Team[] {
  */
 let cached: { teams: Team[]; activeTeamId: string | null } | null = null;
 
+/** A collaborative team's edits are written after a pause, like the personal cloud push. */
+const COLLAB_WRITE_DELAY_MS = 800;
+const collabWriteDebouncer = createKeyedDebouncer(COLLAB_WRITE_DELAY_MS);
+
+// Shared by every useMyTeams on the page (and kept across navigations), so
+// they all show the same pending edit and only one write goes out:
+// your edits to collaborative teams not yet reported back by Firestore, what
+// each pending edit started from, and the last Firestore snapshot of each.
+// The write is the difference between an edit and what it started from, so a
+// teammate's change to another part made meanwhile is never overwritten.
+let collabEdits: Record<string, Team> = {};
+const collabEditBases: Record<string, Team> = {};
+const collabSnapshots: Record<string, Team> = {};
+const collabEditListeners = new Set<(edits: Record<string, Team>) => void>();
+
+/**
+ * Your teams: your own (this device's storage, synced to your account) and,
+ * signed in, your collaborative ones (live from Firestore — see
+ * useCollabTeams and docs/collaborative-teams.md), as one list. Every edit
+ * goes where its team lives. A collaborative team's list order and archived
+ * state aren't per-member yet, so reordering and archiving skip them.
+ */
 export function useMyTeams() {
   const { user, isLoading: isAuthLoading } = useAuth();
-  const [teams, setTeams] = useState<Team[]>(() => cached?.teams ?? []);
-  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(
+  // Your own teams (`teams` below adds the collaborative ones).
+  const [personalTeams, setTeams] = useState<Team[]>(() => cached?.teams ?? []);
+  // The saved active team id — resolved against the full list on each render.
+  const [storedActiveTeamId, setActiveTeamIdState] = useState<string | null>(
     () => cached?.activeTeamId ?? null,
   );
   const [isLoading, setIsLoading] = useState(() => cached === null);
+  const collab = useCollabTeams();
 
   useEffect(() => {
-    if (!isLoading) cached = { teams, activeTeamId };
-  }, [teams, activeTeamId, isLoading]);
+    if (!isLoading) cached = { teams: personalTeams, activeTeamId: storedActiveTeamId };
+  }, [personalTeams, storedActiveTeamId, isLoading]);
+
+  // Your pending edits to collaborative teams, shown right away and until
+  // Firestore reports them back (a snapshot as new as the edit replaces it).
+  const [shownCollabEdits, setShownCollabEdits] = useState(() => collabEdits);
+  useEffect(() => {
+    collabEditListeners.add(setShownCollabEdits);
+    return () => {
+      collabEditListeners.delete(setShownCollabEdits);
+    };
+  }, []);
+  useEffect(() => {
+    for (const team of collab.teams) collabSnapshots[team.id] = team;
+  }, [collab.teams]);
+
+  const collabTeams = collab.teams.map((team) => {
+    const edited = shownCollabEdits[team.id];
+    return edited && edited.updatedAt > team.updatedAt ? edited : team;
+  });
+  const collabIds = new Set(collabTeams.map((team) => team.id));
+  const teams = [...personalTeams.filter((team) => !collabIds.has(team.id)), ...collabTeams];
 
   // Set once the sync (or, signed out, the local read) has landed, so a slow
   // local read can't overwrite it.
@@ -65,17 +114,53 @@ export function useMyTeams() {
   // against them.
   const showLoaded = useCallback((loaded: { teams: Team[]; activeTeamId: string | null }) => {
     const sorted = sortByCustomOrder(loaded.teams);
-    // An archived team can never be "the active team" — this both picks
-    // the initial one and recovers if the persisted id points at a team
-    // that's since been archived (e.g. archived from another device).
-    const resolvedActiveId =
-      loaded.activeTeamId &&
-      sorted.some((team) => team.id === loaded.activeTeamId && !isTeamArchived(team))
-        ? loaded.activeTeamId
-        : (sorted.find((team) => !isTeamArchived(team))?.id ?? null);
     setTeams((current) => (sameRecords(current, sorted) ? current : sorted));
-    setActiveTeamIdState(resolvedActiveId);
+    setActiveTeamIdState(loaded.activeTeamId);
     setIsLoading(false);
+  }, []);
+
+  // An archived team can never be "the active team" — this both picks the
+  // initial one and recovers if the saved id points at a team that's since
+  // been archived (e.g. from another device), or one that isn't in the list
+  // (yet: a collaborative team arrives after your own).
+  const activeTeamId =
+    storedActiveTeamId &&
+    teams.some((team) => team.id === storedActiveTeamId && !isTeamArchived(team))
+      ? storedActiveTeamId
+      : (sortByCustomOrder(teams).find((team) => !isTeamArchived(team))?.id ?? null);
+
+  /**
+   * Saves an edit of a collaborative team: shown right away, written to
+   * Firestore after a pause (see diffCollabTeam — only what changed).
+   */
+  const saveCollabTeam = useCallback(
+    (updated: Team) => {
+      const id = updated.id;
+      collabEditBases[id] ??= collabSnapshots[id];
+      collabEdits = { ...collabEdits, [id]: updated };
+      for (const show of collabEditListeners) show(collabEdits);
+      collabWriteDebouncer.schedule(id, () => {
+        const base = collabEditBases[id];
+        const latest = collabEdits[id];
+        delete collabEditBases[id];
+        if (!base || !latest || !user) return;
+        const changes = diffCollabTeam(base, latest);
+        if (!hasCollabChanges(changes)) return;
+        const by = { uid: user.uid, name: user.displayName ?? user.email ?? "?" };
+        writeCollabTeamChanges(id, base, changes, by, latest.updatedAt).catch((error) => {
+          console.error(`[collab team] saving ${id} failed:`, error);
+        });
+      });
+    },
+    [user],
+  );
+
+  /** The team with `id` as currently shown, your unsaved edits included. */
+  const currentCollabTeam = useCallback((id: string): Team | undefined => {
+    const snapshot = collabSnapshots[id];
+    const edited = collabEdits[id];
+    if (!snapshot) return undefined;
+    return edited && edited.updatedAt > snapshot.updatedAt ? edited : snapshot;
   }, []);
 
   useEffect(() => {
@@ -115,57 +200,51 @@ export function useMyTeams() {
     };
   }, [user, isAuthLoading, showLoaded]);
 
-  const setActiveTeamId = useCallback(
-    (id: string | null) => {
-      // Belt-and-suspenders: the switcher never offers an archived team as a
-      // choice, but guard here too in case something else ever calls this
-      // directly with one.
-      if (id && teams.some((team) => team.id === id && isTeamArchived(team))) {
-        return;
-      }
-      setActiveTeamIdState(id);
-      void persistActiveTeamId(id);
-    },
-    [teams],
-  );
+  const setActiveTeamId = (id: string | null) => {
+    // Belt-and-suspenders: the switcher never offers an archived team as a
+    // choice, but guard here too in case something else ever calls this
+    // directly with one.
+    if (id && teams.some((team) => team.id === id && isTeamArchived(team))) {
+      return;
+    }
+    setActiveTeamIdState(id);
+    void persistActiveTeamId(id);
+  };
 
   /** Adds a new team from a paste and makes it active. Returns an error message, or null on success. */
-  const addTeam = useCallback(
-    (rawPaste: string, name: string, regulationId: string): string | null => {
-      const trimmed = rawPaste.trim();
-      if (!trimmed) {
-        return getMessages().errors.pasteTeamFirst;
-      }
+  const addTeam = (rawPaste: string, name: string, regulationId: string): string | null => {
+    const trimmed = rawPaste.trim();
+    if (!trimmed) {
+      return getMessages().errors.pasteTeamFirst;
+    }
 
-      const newTeam = createTeam(
-        trimmed,
-        name.trim() || getMessages().errors.defaultTeamName(teams.length + 1),
-        regulationId,
-      );
-      const sizeError = validateTeamSize(newTeam.pokemon);
-      if (sizeError) {
-        return sizeError;
-      }
+    const newTeam = createTeam(
+      trimmed,
+      name.trim() || getMessages().errors.defaultTeamName(teams.length + 1),
+      regulationId,
+    );
+    const sizeError = validateTeamSize(newTeam.pokemon);
+    if (sizeError) {
+      return sizeError;
+    }
 
-      // Same reasoning as Opponents' duplicate check: prevents re-adding the
-      // exact same team twice (e.g. re-pasting by habit) from silently
-      // creating two entries with different random ids. Checked against
-      // archived teams too — re-pasting one you'd archived should surface
-      // the same message rather than silently making a second copy.
-      const duplicate = teams.find(
-        (team) => team.regulationIds.includes(regulationId) && team.rawPaste === newTeam.rawPaste,
-      );
-      if (duplicate) {
-        return getMessages().errors.duplicateTeam(duplicate.name);
-      }
+    // Same reasoning as Opponents' duplicate check: prevents re-adding the
+    // exact same team twice (e.g. re-pasting by habit) from silently
+    // creating two entries with different random ids. Checked against
+    // archived teams too — re-pasting one you'd archived should surface
+    // the same message rather than silently making a second copy.
+    const duplicate = teams.find(
+      (team) => team.regulationIds.includes(regulationId) && team.rawPaste === newTeam.rawPaste,
+    );
+    if (duplicate) {
+      return getMessages().errors.duplicateTeam(duplicate.name);
+    }
 
-      setTeams((prev) => [...prev, newTeam]);
-      void saveMyTeam(newTeam);
-      setActiveTeamId(newTeam.id);
-      return null;
-    },
-    [teams, setActiveTeamId],
-  );
+    setTeams((prev) => [...prev, newTeam]);
+    void saveMyTeam(newTeam);
+    setActiveTeamId(newTeam.id);
+    return null;
+  };
 
   /**
    * Saves a team put together in the Team Builder (see /team-builder) as a
@@ -173,116 +252,140 @@ export function useMyTeams() {
    * until its first Pokémon, so leaving an empty one behind never creates a
    * team. Skips addTeam's paste validation and duplicate check.
    */
-  const addBuiltTeam = useCallback(
-    (team: Team) => {
-      setTeams((prev) => [...prev, team]);
-      void saveMyTeam(team);
-      setActiveTeamId(team.id);
-    },
-    [setActiveTeamId],
-  );
+  const addBuiltTeam = (team: Team) => {
+    setTeams((prev) => [...prev, team]);
+    void saveMyTeam(team);
+    setActiveTeamId(team.id);
+  };
 
-  /** Saves a copy of the team with `id`, named "<name> (copy)" — see duplicateTeam. Leaves the active team as it is. */
-  const duplicateTeam = useCallback(
-    (id: string) => {
-      const existing = teams.find((team) => team.id === id);
-      if (!existing) return;
-      const copy = toDuplicate(existing, getMessages().myTeams.copyName(existing.name));
-      setTeams((prev) => [...prev, copy]);
-      void saveMyTeam(copy);
-    },
-    [teams],
-  );
+  /**
+   * Saves a copy of the team with `id`, named "<name> (copy)" — see
+   * duplicateTeam (a collaborative team's copy is your own). Leaves the
+   * active team as it is. Returns the copy.
+   */
+  const duplicateTeam = (id: string): Team | undefined => {
+    const existing = teams.find((team) => team.id === id);
+    if (!existing) return undefined;
+    const copy = toDuplicate(existing, getMessages().myTeams.copyName(existing.name));
+    setTeams((prev) => [...prev, copy]);
+    void saveMyTeam(copy);
+    return copy;
+  };
+
+  /**
+   * After a team became collaborative (makeTeamCollaborative): drops its
+   * personal copy — and its public share, which a collaborative team
+   * doesn't have yet. The collaborative one keeps the same id.
+   */
+  const dropPersonalCopy = (id: string) => {
+    const personal = personalTeams.find((team) => team.id === id);
+    if (!personal) return;
+    setTeams((prev) => prev.filter((team) => team.id !== id));
+    void deleteMyTeam(id, !!personal.share);
+  };
+
+  /** Stopping a collaborative team: it becomes your own team again, same id (see endCollabTeam). */
+  const restorePersonalTeam = (team: Team) => {
+    const own: Team = { ...team, updatedAt: new Date().toISOString() };
+    delete own.collab;
+    setTeams((prev) => [...prev.filter((t) => t.id !== team.id), own]);
+    void saveMyTeam(own);
+  };
 
   /** Re-parses `rawPaste` and replaces the team with `id`, keeping its id and regulationIds — editing a team's paste doesn't touch which regulations it's tagged with (see addRegulationTag/removeRegulationTag for that). Returns an error message, or null on success. */
-  const editTeam = useCallback(
-    (id: string, rawPaste: string, name: string): string | null => {
-      const trimmed = rawPaste.trim();
-      if (!trimmed) {
-        return getMessages().errors.pasteTeamFirst;
-      }
+  const editTeam = (id: string, rawPaste: string, name: string): string | null => {
+    const trimmed = rawPaste.trim();
+    if (!trimmed) {
+      return getMessages().errors.pasteTeamFirst;
+    }
 
-      const existing = teams.find((team) => team.id === id);
-      const reparsed = createTeam(
-        trimmed,
-        name.trim() || "Team",
-        existing?.regulationIds[0] ?? REGULATIONS[0].id,
-      );
-      const sizeError = validateTeamSize(reparsed.pokemon);
-      if (sizeError) {
-        return sizeError;
-      }
+    const existing = teams.find((team) => team.id === id);
+    const reparsed = createTeam(
+      trimmed,
+      name.trim() || "Team",
+      existing?.regulationIds[0] ?? REGULATIONS[0].id,
+    );
+    const sizeError = validateTeamSize(reparsed.pokemon);
+    if (sizeError) {
+      return sizeError;
+    }
 
-      const updated: Team = {
-        ...existing,
-        ...reparsed,
-        id,
-        regulationIds: existing?.regulationIds ?? reparsed.regulationIds,
-        // reparsed comes from createTeam, which stamps a brand-new sortOrder
-        // (Date.now()) meant for newly created teams — an edit shouldn't
-        // silently jump the team to the top of the list, so keep its
-        // existing position.
-        sortOrder: existing?.sortOrder ?? reparsed.sortOrder,
-      };
-      setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
-      void saveMyTeam(updated);
+    const updated: Team = {
+      ...existing,
+      ...reparsed,
+      id,
+      regulationIds: existing?.regulationIds ?? reparsed.regulationIds,
+      // reparsed comes from createTeam, which stamps a brand-new sortOrder
+      // (Date.now()) meant for newly created teams — an edit shouldn't
+      // silently jump the team to the top of the list, so keep its
+      // existing position.
+      sortOrder: existing?.sortOrder ?? reparsed.sortOrder,
+    };
+    if (existing?.collab) {
+      saveCollabTeam({ ...updated, updatedAt: new Date().toISOString() });
       return null;
-    },
-    [teams],
-  );
+    }
+    setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
+    void saveMyTeam(updated);
+    return null;
+  };
 
   /** Applies `updater` to the team with `id`, persisting the result — used by the Team Report page (notes/weaknesses/pokemonNotes/combinations). No-op if not found. */
-  const updateTeam = useCallback((id: string, updater: (team: Team) => Team) => {
-    setTeams((prev) => {
-      let updated: Team | undefined;
-      const next = prev.map((team) => {
-        if (team.id !== id) return team;
-        updated = { ...updater(team), updatedAt: new Date().toISOString() };
-        return updated;
+  const updateTeam = useCallback(
+    (id: string, updater: (team: Team) => Team) => {
+      const collabTeam = currentCollabTeam(id);
+      if (collabTeam) {
+        saveCollabTeam({ ...updater(collabTeam), updatedAt: new Date().toISOString() });
+        return;
+      }
+      setTeams((prev) => {
+        let updated: Team | undefined;
+        const next = prev.map((team) => {
+          if (team.id !== id) return team;
+          updated = { ...updater(team), updatedAt: new Date().toISOString() };
+          return updated;
+        });
+        if (updated) {
+          void saveMyTeam(updated);
+        }
+        return next;
       });
-      if (updated) {
-        void saveMyTeam(updated);
-      }
-      return next;
-    });
-  }, []);
-
-  const removeTeam = useCallback(
-    (id: string) => {
-      setTeams((prev) => prev.filter((team) => team.id !== id));
-      if (activeTeamId === id) {
-        setActiveTeamId(teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null);
-      }
-      void deleteMyTeam(id, !!teams.find((team) => team.id === id)?.share);
     },
-    [activeTeamId, teams, setActiveTeamId],
+    [currentCollabTeam, saveCollabTeam],
   );
+
+  const removeTeam = (id: string) => {
+    // Leaving or ending a collaborative team is its own flow (docs/collaborative-teams.md).
+    if (teams.find((team) => team.id === id)?.collab) {
+      console.warn(`[teams] ${id} is collaborative — leave or stop collaborating instead`);
+      return;
+    }
+    setTeams((prev) => prev.filter((team) => team.id !== id));
+    if (activeTeamId === id) {
+      setActiveTeamId(teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null);
+    }
+    void deleteMyTeam(id, !!teams.find((team) => team.id === id)?.share);
+  };
 
   /** Archives a team — reversible (see unarchiveTeam), it just moves the team off the switcher and onto the My Teams "Archived" tab. Reassigns activeTeamId if this was the active team, same fallback as removeTeam. */
-  const archiveTeam = useCallback(
-    (id: string) => {
-      const existing = teams.find((team) => team.id === id);
-      if (!existing) return;
-      const updated = toArchived(existing);
-      setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
-      void saveMyTeam(updated);
-      if (activeTeamId === id) {
-        setActiveTeamId(teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null);
-      }
-    },
-    [teams, activeTeamId, setActiveTeamId],
-  );
+  const archiveTeam = (id: string) => {
+    const existing = teams.find((team) => team.id === id);
+    if (!existing || existing.collab) return;
+    const updated = toArchived(existing);
+    setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
+    void saveMyTeam(updated);
+    if (activeTeamId === id) {
+      setActiveTeamId(teams.find((team) => team.id !== id && !isTeamArchived(team))?.id ?? null);
+    }
+  };
 
-  const unarchiveTeam = useCallback(
-    (id: string) => {
-      const existing = teams.find((team) => team.id === id);
-      if (!existing) return;
-      const updated = toActive(existing);
-      setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
-      void saveMyTeam(updated);
-    },
-    [teams],
-  );
+  const unarchiveTeam = (id: string) => {
+    const existing = teams.find((team) => team.id === id);
+    if (!existing || existing.collab) return;
+    const updated = toActive(existing);
+    setTeams((prev) => prev.map((team) => (team.id === id ? updated : team)));
+    void saveMyTeam(updated);
+  };
 
   // Re-sorted on every render (not just on load) so a drag reorder — which
   // only patches sortOrder values, not array position — is reflected
@@ -297,18 +400,15 @@ export function useMyTeams() {
    * showing) in its new top-to-bottom order — see reorderTeams in
    * src/lib/team.ts for why only that subset's sortOrder values ever change.
    */
-  const reorderTeams = useCallback(
-    (orderedIds: string[]) => {
-      const changed = reorderTeamsList(teams, orderedIds);
-      if (changed.length === 0) return;
-      const changedById = new Map(changed.map((team) => [team.id, team]));
-      setTeams((prev) => prev.map((team) => changedById.get(team.id) ?? team));
-      for (const team of changed) {
-        void saveMyTeam(team);
-      }
-    },
-    [teams],
-  );
+  const reorderTeams = (orderedIds: string[]) => {
+    const changed = reorderTeamsList(teams, orderedIds).filter((team) => !team.collab);
+    if (changed.length === 0) return;
+    const changedById = new Map(changed.map((team) => [team.id, team]));
+    setTeams((prev) => prev.map((team) => changedById.get(team.id) ?? team));
+    for (const team of changed) {
+      void saveMyTeam(team);
+    }
+  };
 
   return {
     teams,
@@ -317,9 +417,13 @@ export function useMyTeams() {
     activeTeam,
     activeTeamId,
     isLoading,
+    /** Collaborative teams are still arriving — a team not found yet may be one of them. */
+    isCollabLoading: collab.isLoading,
     addTeam,
     addBuiltTeam,
     duplicateTeam,
+    dropPersonalCopy,
+    restorePersonalTeam,
     editTeam,
     updateTeam,
     removeTeam,

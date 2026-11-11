@@ -7,7 +7,10 @@ import {
   mergeGroupOpponent,
   planChanged,
   sharedChanged,
+  sharedPlanChanged,
   splitGroupOpponent,
+  withSharedPlan,
+  withoutSharedPlan,
 } from "./groupOpponents";
 import { createOpponent } from "./opponent";
 import { EMPTY_PLAN } from "@/constants";
@@ -98,5 +101,32 @@ describe("copyOpponentsInto", () => {
     expect(copies[2].variantOf).toBeUndefined();
     expect(copies[0].plansByTeamId).toEqual(OPPONENT.plansByTeamId);
     expect(copies.every((copy) => copy.addedBy === "uid-b")).toBe(true);
+  });
+});
+
+describe("shared plans (a collaborative team's group)", () => {
+  const plan = (notes: string) => ({ ...EMPTY_PLAN, notes });
+  const base = { ...OPPONENT, plansByTeamId: { team: plan("mine"), other: plan("other") } };
+  const shared = { opponentId: OPPONENT.id, plan: plan("ours"), updatedAt: "now" };
+
+  it("shows the team's shared plan, keeping private plans for other teams", () => {
+    const merged = withSharedPlan(base, "team", shared);
+    expect(merged.plansByTeamId.team.notes).toBe("ours");
+    expect(merged.plansByTeamId.other.notes).toBe("other");
+  });
+
+  it("keeps a private plan for the team until there's a shared one", () => {
+    expect(withSharedPlan(base, "team", undefined).plansByTeamId.team.notes).toBe("mine");
+  });
+
+  it("leaves the team's plan out of what's saved privately", () => {
+    expect(Object.keys(withoutSharedPlan(base, "team").plansByTeamId)).toEqual(["other"]);
+  });
+
+  it("notices only a change to the team's plan", () => {
+    const edited = { ...base, plansByTeamId: { ...base.plansByTeamId, team: plan("new") } };
+    expect(sharedPlanChanged(base, edited, "team")).toBe(true);
+    const otherEdited = { ...base, plansByTeamId: { ...base.plansByTeamId, other: plan("x") } };
+    expect(sharedPlanChanged(base, otherEdited, "team")).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ import {
 } from "react";
 import { Icon } from "../Icon";
 import { ItemIcon } from "../ItemIcon";
+import { ItemSpeed } from "../ItemSpeed";
 import {
   buildCustomPokemon,
   computePokemonBuild,
@@ -1394,6 +1395,29 @@ export function BuilderEditor({
                     <span className="w-6 shrink-0 text-right font-medium tabular-nums">
                       {points > 0 ? points : "–"}
                     </span>
+                    {/* The final stat, like the Overview's cards: Speed before an item
+                        that changes it (Choice Scarf, Iron Ball), marked * with the
+                        in-battle Speed on hover — not a switch here, where a click
+                        opens the Stat Points table (which has the switch). */}
+                    <span className="w-9 shrink-0 border-l border-zinc-300 text-right text-zinc-800 tabular-nums">
+                      {breakdown ? (
+                        stat === "spe" &&
+                        breakdown.final.speedBeforeItem !== undefined &&
+                        breakdown.final.spe !== breakdown.final.speedBeforeItem &&
+                        pokemon?.item ? (
+                          <ItemSpeed
+                            static
+                            speed={breakdown.final.speedBeforeItem}
+                            withItem={breakdown.final.spe}
+                            item={pokemon.item}
+                          />
+                        ) : (
+                          breakdown.final[stat]
+                        )
+                      ) : (
+                        "–"
+                      )}
+                    </span>
                   </span>
                 );
               })}
@@ -1417,6 +1441,21 @@ export function BuilderEditor({
                 <PokemonEditor
                   title={title}
                   pokemon={pokemon}
+                  // Speed before an item that changes it, switchable — like the Stats box.
+                  renderFinalCell={(stat, value) =>
+                    stat === "spe" &&
+                    breakdown?.final.speedBeforeItem !== undefined &&
+                    breakdown.final.speedBeforeItem !== value &&
+                    pokemon.item ? (
+                      <ItemSpeed
+                        speed={breakdown.final.speedBeforeItem}
+                        withItem={value}
+                        item={pokemon.item}
+                      />
+                    ) : (
+                      value
+                    )
+                  }
                   statOverrides={NO_STAT_OVERRIDES}
                   onStatOverridesChange={(overrides) =>
                     onChange(applyStatOverrides(pokemon, overrides))

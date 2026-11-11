@@ -188,16 +188,20 @@ export function sharedMatchupsAsOpponents(matchups: SharedMatchup[], teamId: str
  * items — sameTeamKey) gets the plan unless it already has one for that
  * team; the rest are added as new opponents, variants kept with their main
  * when it's added too. Returns what to add and what to replace.
+ * `replacePlans` gives an opponent I already have the plan even when it has
+ * one — stopping a collaborative team, whose shared plans are the newer ones.
  */
 export function importSharedMatchups({
   matchups,
   teamId,
   myOpponents,
+  replacePlans = false,
   now = Date.now(),
 }: {
   matchups: Opponent[];
   teamId: string;
   myOpponents: Opponent[];
+  replacePlans?: boolean;
   now?: number;
 }): { added: Opponent[]; updated: Opponent[] } {
   const mineByKey = new Map(myOpponents.map((opponent) => [sameTeamKey(opponent), opponent]));
@@ -207,7 +211,7 @@ export function importSharedMatchups({
     const plan = Object.values(source.plansByTeamId)[0];
     const mine = mineByKey.get(sameTeamKey(source));
     if (mine) {
-      if (!mine.plansByTeamId[teamId] && plan) {
+      if (plan && (replacePlans || !mine.plansByTeamId[teamId])) {
         updated.push({ ...mine, plansByTeamId: { ...mine.plansByTeamId, [teamId]: plan } });
       }
       return;

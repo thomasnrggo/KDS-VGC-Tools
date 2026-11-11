@@ -1,5 +1,14 @@
 import { topSortOrder } from "./opponent";
-import type { GroupPlanDoc, Opponent, PrepGroup, SharedOpponent } from "@/types";
+import { sameValue } from "./sameValue";
+import type {
+  EditedBy,
+  GroupPlanDoc,
+  MatchupPlan,
+  Opponent,
+  PrepGroup,
+  SharedOpponent,
+  SharedPlanDoc,
+} from "@/types";
 
 /** The id of your plan doc for one group opponent. */
 export function groupPlanId(groupId: string, opponentId: string): string {
@@ -35,6 +44,50 @@ export function mergeGroupOpponent(
   const merged: Opponent = { ...shared, plansByTeamId: plan?.plansByTeamId ?? {} };
   if (plan?.copiedPlanFrom) merged.copiedPlanFrom = plan.copiedPlanFrom;
   return merged;
+}
+
+/**
+ * On a collaborative team's group (PrepGroup.teamId): the opponent with the
+ * team's plan taken from the shared plan doc — the one every member sees.
+ * Without one yet, a private plan for the team (e.g. copied in from your
+ * list) still shows, and becomes the shared one on its first edit.
+ */
+export function withSharedPlan(
+  opponent: Opponent,
+  teamId: string,
+  shared: SharedPlanDoc | undefined,
+): Opponent {
+  if (!shared) return opponent;
+  return { ...opponent, plansByTeamId: { ...opponent.plansByTeamId, [teamId]: shared.plan } };
+}
+
+/** The reverse, for saving: the opponent without the team's plan (what stays private). */
+export function withoutSharedPlan(opponent: Opponent, teamId: string): Opponent {
+  if (!(teamId in opponent.plansByTeamId)) return opponent;
+  const plansByTeamId = { ...opponent.plansByTeamId };
+  delete plansByTeamId[teamId];
+  return { ...opponent, plansByTeamId };
+}
+
+/** Whether an edit changed the team's shared plan. */
+export function sharedPlanChanged(
+  before: Opponent | undefined,
+  after: Opponent,
+  teamId: string,
+): boolean {
+  const plan = after.plansByTeamId[teamId];
+  if (!plan) return false;
+  return !sameValue(before?.plansByTeamId[teamId] ?? null, plan);
+}
+
+/** The shared plan doc for an edited plan. */
+export function toSharedPlanDoc(
+  opponentId: string,
+  plan: MatchupPlan,
+  by: EditedBy,
+  now: string,
+): SharedPlanDoc {
+  return { opponentId, plan, updatedBy: by, updatedAt: now };
 }
 
 /** Whether a split changed your plan doc — editing tags or the order shouldn't rewrite your plans. */
