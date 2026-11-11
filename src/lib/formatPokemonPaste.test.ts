@@ -46,7 +46,11 @@ Hardy Nature
   });
 
   it("only lists non-zero Stat Points, in the standard HP/Atk/Def/SpA/SpD/Spe order", () => {
-    const pokemon = { species: "Ditto", nature: "Hardy", evs: "0 HP / 0 Atk / 5 Def / 0 SpA / 0 SpD / 3 Spe" };
+    const pokemon = {
+      species: "Ditto",
+      nature: "Hardy",
+      evs: "0 HP / 0 Atk / 5 Def / 0 SpA / 0 SpD / 3 Spe",
+    };
     expect(formatPokemonPaste(pokemon)).toBe(`Ditto
 Level: 50
 EVs: 5 Def / 3 Spe
@@ -92,5 +96,17 @@ Careful Nature
 
   it("returns an empty string for an empty roster", () => {
     expect(formatTeamPaste([])).toBe("");
+  });
+
+  it("leaves out EVs and Nature for an open team sheet", () => {
+    const exported = formatTeamPaste(
+      [{ species: "Incineroar", item: "Sitrus Berry", ability: "Intimidate", moves: ["Fake Out"] }],
+      { sheet: "open" },
+    );
+
+    expect(exported).toBe(`Incineroar @ Sitrus Berry
+Ability: Intimidate
+Level: 50
+- Fake Out`);
   });
 });

@@ -32,6 +32,7 @@ export function toSharedTeam(
     overview: hasRichText(team.overview) ? team.overview : undefined,
     sheet: share.sheet,
     pokemon: isOpen ? team.pokemon.map(toOpenSheetPokemon) : team.pokemon,
+    regulationIds: team.regulationIds,
     updatedAt: now,
   };
 }

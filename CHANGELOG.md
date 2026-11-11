@@ -10,6 +10,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.9 — 2026-11-10
+
+### Added
+
+- Team Report: under the cards, "Copy team" (Showdown export text), "Add to my teams" (only on
+  someone else's team) and "Add to opponents" — on your own report and on a shared team link. Each
+  card also has a copy button for that one Pokémon. On an open team sheet the export leaves out EVs
+  and Nature, since the shared copy doesn't have them; adding the same team twice says where it
+  already is instead of making a duplicate.
+
 ## 0.3.8 — 2026-11-10
 
 ### Added

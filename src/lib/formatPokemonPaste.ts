@@ -1,5 +1,5 @@
 import { calculateStatBreakdown } from "./stats/calculateFinalStats";
-import type { ParsedPokemon, StatKey } from "@/types";
+import type { ParsedPokemon, StatKey, TeamSheetMode } from "@/types";
 
 const EVS_LABEL: Record<StatKey, string> = {
   hp: "HP",
@@ -26,16 +26,22 @@ const STAT_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
  * left out of the EVs line, matching the conventional Showdown-export
  * style (only non-zero stats listed) rather than always listing all 6 the
  * way `applyStatOverrides`'s own internal `evs` string does.
+ *
+ * `sheet: "open"` (a shared open team sheet) leaves out the EVs and Nature
+ * lines too — the shared copy has neither, so writing "0" / "Hardy" would
+ * be made up.
  */
-export function formatPokemonPaste(pokemon: ParsedPokemon): string {
-  const lines: string[] = [
-    pokemon.item ? `${pokemon.species} @ ${pokemon.item}` : pokemon.species,
-  ];
+export function formatPokemonPaste(
+  pokemon: ParsedPokemon,
+  { sheet = "closed" }: { sheet?: TeamSheetMode } = {},
+): string {
+  const lines: string[] = [pokemon.item ? `${pokemon.species} @ ${pokemon.item}` : pokemon.species];
 
   if (pokemon.ability) lines.push(`Ability: ${pokemon.ability}`);
   lines.push("Level: 50");
 
-  const breakdown = calculateStatBreakdown(pokemon);
+  const isOpenSheet = sheet === "open";
+  const breakdown = isOpenSheet ? null : calculateStatBreakdown(pokemon);
   const nonZeroSp = breakdown
     ? STAT_ORDER.filter((stat) => breakdown.statPoints[stat] > 0).map(
         (stat) => `${breakdown.statPoints[stat]} ${EVS_LABEL[stat]}`,
@@ -43,7 +49,7 @@ export function formatPokemonPaste(pokemon: ParsedPokemon): string {
     : [];
   if (nonZeroSp.length > 0) lines.push(`EVs: ${nonZeroSp.join(" / ")}`);
 
-  lines.push(`${pokemon.nature ?? "Hardy"} Nature`);
+  if (!isOpenSheet) lines.push(`${pokemon.nature ?? "Hardy"} Nature`);
 
   for (const move of pokemon.moves ?? []) {
     // The calc keeps an emptied move slot as "" so the others stay in place.
@@ -59,6 +65,9 @@ export function formatPokemonPaste(pokemon: ParsedPokemon): string {
  * separator `parseTeam`'s `splitIntoBlocks` expects, so this round-trips
  * through Import's team-paste path.
  */
-export function formatTeamPaste(pokemon: ParsedPokemon[]): string {
-  return pokemon.map(formatPokemonPaste).join("\n\n");
+export function formatTeamPaste(
+  pokemon: ParsedPokemon[],
+  options: { sheet?: TeamSheetMode } = {},
+): string {
+  return pokemon.map((mon) => formatPokemonPaste(mon, options)).join("\n\n");
 }

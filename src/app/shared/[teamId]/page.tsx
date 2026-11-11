@@ -12,6 +12,16 @@ import { getSharedTeam } from "@/lib/firebase";
 import { REGULATIONS } from "@/data/regulations";
 import type { SharedTeam } from "@/types";
 import { LoadingState } from "@/components/LoadingState";
+import { TeamExportActions } from "@/components/TeamExportActions";
+import { useOpponents } from "@/hooks/useOpponents";
+import { addPasteToOpponents, addSharedTeamToMyTeams } from "@/lib/teamExport";
+import { formatTeamPaste } from "@/lib/formatPokemonPaste";
+
+/** Where a copy of a shared team goes: the owner's first regulation, or the newest one for a copy shared before regulations were published with it. */
+function sharedRegulationId(team: SharedTeam): string {
+  const known = team.regulationIds?.find((id) => REGULATIONS.some((reg) => reg.id === id));
+  return known ?? REGULATIONS[0]?.id ?? "";
+}
 
 interface SharedTeamPageProps {
   params: Promise<{ teamId: string }>;
@@ -27,6 +37,7 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
   const t = useMessages();
   const { teamId } = use(params);
   const {
+    teams,
     activeTeams,
     activeTeamId,
     isLoading: isTeamsLoading,
@@ -34,7 +45,9 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
     editTeam,
     removeTeam,
     setActiveTeamId,
+    addBuiltTeam,
   } = useMyTeams();
+  const { opponents, addOpponents } = useOpponents();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const [state, setState] = useState<
     | { kind: "loading" }
@@ -112,6 +125,34 @@ export default function SharedTeamPage({ params }: SharedTeamPageProps) {
               />
             ))}
           </div>
+
+          <TeamExportActions
+            pokemon={state.team.pokemon}
+            sheet={state.team.sheet}
+            // Your own shared team is already in My Teams.
+            onAddToMyTeams={
+              user?.uid === state.team.ownerUid
+                ? undefined
+                : () => {
+                    addSharedTeamToMyTeams({
+                      shared: state.team,
+                      regulationId: sharedRegulationId(state.team),
+                      myTeams: teams,
+                      addTeam: addBuiltTeam,
+                    });
+                  }
+            }
+            onAddToOpponents={() => {
+              addPasteToOpponents({
+                name: state.team.name,
+                paste: formatTeamPaste(state.team.pokemon, { sheet: state.team.sheet }),
+                regulationId: sharedRegulationId(state.team),
+                pokepasteUrl: state.team.pokepasteUrl,
+                opponents,
+                addOpponents,
+              });
+            }}
+          />
         </div>
       )}
     </div>

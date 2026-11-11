@@ -212,6 +212,16 @@ export const es: Messages = {
       stats: "Estadísticas de torneos",
     },
     share: "Compartir",
+    copyTeam: "Copiar equipo",
+    copyTeamHint: "Copiar el equipo como texto de Showdown",
+    addToMyTeams: "Añadir a mis equipos",
+    addToMyTeamsHint: "Guardar una copia de este equipo en Mis equipos",
+    addToOpponents: "Añadir a rivales",
+    addToOpponentsHint: "Añadir este equipo a tus rivales del Planificador",
+    addedToMyTeams: (name) => `"${name}" añadido a tus equipos`,
+    alreadyInMyTeams: (name) => `Ya está en tus equipos como "${name}"`,
+    addedToOpponents: (name) => `"${name}" añadido a tus rivales`,
+    alreadyInOpponents: (name) => `Ya está en tus rivales como "${name}"`,
     sharedLabel: (sheet) =>
       `Compartido · hoja de equipo ${sheet === "open" ? "abierta" : "cerrada"}`,
     archivedNotice:

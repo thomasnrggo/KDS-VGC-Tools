@@ -210,6 +210,16 @@ export const en = {
       stats: "Tournament stats",
     },
     share: "Share",
+    copyTeam: "Copy team",
+    copyTeamHint: "Copy the team as Showdown export text",
+    addToMyTeams: "Add to my teams",
+    addToMyTeamsHint: "Save a copy of this team in My Teams",
+    addToOpponents: "Add to opponents",
+    addToOpponentsHint: "Add this team to your opponents in the Matchup Planner",
+    addedToMyTeams: (name: string) => `Added "${name}" to your teams`,
+    alreadyInMyTeams: (name: string) => `Already in your teams as "${name}"`,
+    addedToOpponents: (name: string) => `Added "${name}" to your opponents`,
+    alreadyInOpponents: (name: string) => `Already in your opponents as "${name}"`,
     sharedLabel: (sheet: "open" | "closed") =>
       `Shared · ${sheet === "open" ? "open" : "closed"} team sheet`,
     archivedNotice:

@@ -36,6 +36,8 @@ import { Modal, ModalDescription, ModalTitle } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
+import { addPasteToOpponents } from "@/lib/teamExport";
+import { TeamExportActions } from "@/components/TeamExportActions";
 import { Button, TogglePill, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
 import {
@@ -411,6 +413,21 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                 <PokemonReportCard key={`${mon.species}-${index}`} pokemon={mon} />
               ))}
             </div>
+          )}
+          {activeTab === "report" && (
+            <TeamExportActions
+              pokemon={team.pokemon}
+              onAddToOpponents={() =>
+                addPasteToOpponents({
+                  name: team.name,
+                  paste: team.rawPaste,
+                  regulationId: selectedRegulationId,
+                  pokepasteUrl: team.pokepasteUrl,
+                  opponents: personal.opponents,
+                  addOpponents: personal.addOpponents,
+                })
+              }
+            />
           )}
 
           {/* Two columns on desktop: the lead/back combinations, and one

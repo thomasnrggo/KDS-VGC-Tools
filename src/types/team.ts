@@ -89,6 +89,8 @@ export interface SharedTeam {
   overview?: string;
   sheet: TeamSheetMode;
   pokemon: ParsedPokemon[];
+  /** The owner team's Team.regulationIds — where "Add to opponents" / "Add to my teams" file a copy. Missing on a copy published before it existed. */
+  regulationIds?: string[];
   updatedAt: string;
 }
 

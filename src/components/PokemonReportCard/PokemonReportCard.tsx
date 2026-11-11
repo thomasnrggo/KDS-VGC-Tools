@@ -16,6 +16,8 @@ import type { ParsedPokemon, StatKey, TeamSheetMode } from "@/types";
 import type { MoveData } from "@/types/damage";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { Icon } from "../Icon";
+import { IconButton } from "../Button";
+import { copyPokemonExport } from "@/lib/teamExport";
 import { IconName } from "@/enums";
 import { cn } from "@/lib/utils";
 
@@ -172,6 +174,19 @@ export function PokemonReportCard({
               </span>
             ))}
           </span>
+        )}
+        {/* Copy this Pokémon's Showdown export (the Calcs tab's collapsible card
+            keeps that corner for its expand arrow). */}
+        {!collapsible && (
+          <IconButton
+            variant="ghost"
+            onClick={() => copyPokemonExport(pokemon, text.species(pokemon.species), sheet)}
+            aria-label={t.calcPanel.copyAsExport(text.species(pokemon.species))}
+            title={t.calcPanel.copyAsExportHint}
+            className="absolute top-2 right-2 z-10 h-7 w-7 hover:bg-zinc-200"
+          >
+            <Icon name={IconName.ContentCopy} size={16} />
+          </IconButton>
         )}
         <div className="pointer-events-none absolute inset-y-2 left-1/2 w-28 -translate-x-1/2">
           <div className="relative h-full w-full">
