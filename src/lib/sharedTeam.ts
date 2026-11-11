@@ -41,3 +41,10 @@ export function toSharedTeam(
 export function sharedTeamPath(teamId: string): string {
   return `/shared/${teamId}`;
 }
+
+/** The roster in one line, for a shared team's link preview: "Glimmora, Toxapex, … · by Rey". */
+export function sharedTeamSummary(team: Pick<SharedTeam, "pokemon" | "creator">): string {
+  const roster = team.pokemon.map((mon) => mon.species).join(", ");
+  const creator = team.creator?.trim();
+  return creator ? `${roster} · by ${creator}` : roster;
+}

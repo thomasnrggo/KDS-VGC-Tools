@@ -10,6 +10,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.10 — 2026-11-10
+
+### Added
+
+- Shared team links get their own preview (WhatsApp, Discord, X…): the team's name, creator and
+  its six sprites instead of the site's generic card, with the roster in the description. A link
+  that isn't shared anymore falls back to the site's preview.
+
 ## 0.3.9 — 2026-11-10
 
 ### Added
