@@ -173,7 +173,8 @@ Team Builder's panel (`SidePanel`).
 - **Merged**: your edits of the same thing within 10 minutes extend your latest entry (counts add
   up, fields are unioned, `lastAt` moves) instead of adding one per pause in your typing
   (`continuesActivity` / `mergeActivity`, remembered per session).
-- **Undo data** (for a later Restore): each entry keeps what the edits replaced, as it was before
+- **Undo data** (no Restore button — decided 2026-11-11 it isn't needed for now; the data stays
+  so one could be added later without a migration): each entry keeps what the edits replaced, as it was before
   the first of them: field values, removed or changed combinations and calcs, the previous plan.
 - **Rules**: members add entries as themselves and can only extend their own; only the owner
   deletes them (when the team ends, `deleteCollabTeam` clears the log first).

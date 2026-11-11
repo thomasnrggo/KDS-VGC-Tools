@@ -10,6 +10,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.13 — 2026-11-11
+
+### Changed
+
+- A team's page: Edit, Copy team and Add to opponents only show on the Overview tab.
+
 ## 0.3.12 — 2026-11-11
 
 ### Added

@@ -528,53 +528,57 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </Modal>
             )}
 
-            {/* Who's editing it (a collaborative team) on the left; the team's
-                actions on the right — Edit opens the Team Builder. */}
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              {team.collab ? (
-                <p className="flex items-center gap-1.5 text-xs text-zinc-500">
-                  <Icon name={IconName.Group} size={14} />
-                  {t.collab.collaborativeBadge}
-                  {team.collab.updatedBy && (
-                    <>
-                      {" · "}
-                      {t.collab.editedBy(
-                        team.collab.updatedBy.name,
-                        timeAgo(team.updatedAt, appLanguage),
+            {/* Who's editing it (a collaborative team) on the left, on every tab; the
+                team's actions on the right, on the Overview only — Edit opens the Team Builder. */}
+            {(team.collab || activeTab === "report") && (
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                {team.collab ? (
+                  <p className="flex items-center gap-1.5 text-xs text-zinc-500">
+                    <Icon name={IconName.Group} size={14} />
+                    {t.collab.collaborativeBadge}
+                    {team.collab.updatedBy && (
+                      <>
+                        {" · "}
+                        {t.collab.editedBy(
+                          team.collab.updatedBy.name,
+                          timeAgo(team.updatedAt, appLanguage),
+                        )}
+                      </>
+                    )}
+                  </p>
+                ) : (
+                  <span aria-hidden="true" />
+                )}
+                {activeTab === "report" && (
+                  <TeamExportActions
+                    layout="inline"
+                    pokemon={team.pokemon}
+                    onAddToOpponents={() =>
+                      addPasteToOpponents({
+                        name: team.name,
+                        paste: team.rawPaste,
+                        regulationId: selectedRegulationId,
+                        pokepasteUrl: team.pokepasteUrl,
+                        opponents: personal.opponents,
+                        addOpponents: personal.addOpponents,
+                      })
+                    }
+                  >
+                    <Link
+                      href={`/teams/${teamId}/edit`}
+                      title={t.teamBuilder.editPokemonHint}
+                      className={cn(
+                        buttonVariants({ variant: "outline" }),
+                        "flex items-center justify-center gap-2 px-4 py-1.5 text-sm",
                       )}
-                    </>
-                  )}
-                </p>
-              ) : (
-                <span aria-hidden="true" />
-              )}
-              <TeamExportActions
-                layout="inline"
-                pokemon={team.pokemon}
-                onAddToOpponents={() =>
-                  addPasteToOpponents({
-                    name: team.name,
-                    paste: team.rawPaste,
-                    regulationId: selectedRegulationId,
-                    pokepasteUrl: team.pokepasteUrl,
-                    opponents: personal.opponents,
-                    addOpponents: personal.addOpponents,
-                  })
-                }
-              >
-                <Link
-                  href={`/teams/${teamId}/edit`}
-                  title={t.teamBuilder.editPokemonHint}
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "flex items-center justify-center gap-2 px-4 py-1.5 text-sm",
-                  )}
-                >
-                  <Icon name={IconName.Edit} size={18} />
-                  {t.common.edit}
-                </Link>
-              </TeamExportActions>
-            </div>
+                    >
+                      <Icon name={IconName.Edit} size={18} />
+                      {t.common.edit}
+                    </Link>
+                  </TeamExportActions>
+                )}
+              </div>
+            )}
 
             {isCollaborating && (
               <CollabDialog
