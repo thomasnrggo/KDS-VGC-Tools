@@ -2893,7 +2893,20 @@ megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation —
     backfill; `metaEvents/{id}` (anonymized parsed events, private — the job's record of what
     it has fetched) and `meta/{regulationId}` (public, ~100KB) with rules; the workflow
     (`.github/workflows/update-meta.yml`, Mondays 06:00 UTC + manual run, dry run by
-    default when manual). The first live dry run (2026-10-30) found no events: the index parser
+    default when manual). **Excluding events (2026-11-14):** /admin/meta-events lists each
+    regulation's events (and opens one's own most used Pokémon); Exclude adds it to
+    `appConfig/metaExcludedEvents` (staff write, `src/lib/meta/excludedEvents.ts`). The job
+    leaves excluded events out of every summary and rebuilds any regulation whose summary no
+    longer matches its exclusions, even with nothing new to fetch — so a change applies on the
+    next run (or a manual one). Saved copies are kept: including an event again re-fetches
+    nothing. **Uploading events and Run now (2026-11-14):** the same page adds an event by hand
+    — the pokedata.ovh roster and Masters standings, parsed in the browser
+    (`src/lib/meta/metaImport.ts`; names never leave it, the job's 90% join bar applies) and
+    left in `metaImports/{id}` (staff only), which the job saves as an event and rebuilds from
+    (under its pokedata.ovh id when given, so it's never fetched again). "Run now" calls
+    `/api/admin/meta-job` (staff, checked from the Firebase ID token and `roles/{uid}`), which
+    dispatches the workflow on main with `META_JOB_GITHUB_TOKEN` (server-only env) and shows
+    the latest run. The first live dry run (2026-10-30) found no events: the index parser
     had been guessed from an event page's markup (`class="date"`); the index uses `"dates"`
     and wraps each event in `<div class="tournament vg|tcg">`, now parsed block by block (VGC
     = the "vg" block) and tested against an excerpt of the real page. The job also logs what

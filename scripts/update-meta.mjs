@@ -21,6 +21,8 @@ import { fileURLToPath } from "node:url";
 import { parseOfficialEvent } from "../src/lib/meta/officialTournament.ts";
 import { aggregateCombinations, aggregateOfficialMeta } from "../src/lib/meta/aggregateMeta.ts";
 import { RECENT_EVENTS } from "../src/lib/meta/metaDocument.ts";
+import { summaryNeedsRebuild } from "../src/lib/meta/excludedEvents.ts";
+import { MIN_JOIN } from "../src/lib/meta/metaImport.ts";
 import {
   isFinished,
   isVgcEvent,
@@ -39,8 +41,6 @@ const REQUEST_TIMEOUT_MS = 60_000;
 const DIVISION = "Masters";
 /** The placings published as an event's finalists: the winner and the runner-up. */
 const FINALISTS = 2;
-/** The share of players that must match a team sheet for an event to count. */
-const MIN_JOIN = 0.9;
 
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
@@ -108,6 +108,19 @@ async function openStore() {
       async regulationIds() {
         return new Set([...written.values()].map((event) => event.regulationId).filter(Boolean));
       },
+      async excludedIds() {
+        return new Set();
+      },
+      async imports() {
+        return [];
+      },
+      async deleteImport() {},
+      async eventIdsByRegulation() {
+        return new Map();
+      },
+      async summaryTournamentIds() {
+        return null;
+      },
       async saveMeta(regulationId, data) {
         written.set(`meta/${regulationId}`, data);
       },
@@ -142,6 +155,36 @@ async function openStore() {
     async regulationIds() {
       const snap = await db.collection("metaEvents").select("regulationId").get();
       return new Set(snap.docs.map((doc) => doc.get("regulationId")).filter(Boolean));
+    },
+    /** Events uploaded by hand at /admin/meta-events (src/lib/meta/metaImport.ts). */
+    async imports() {
+      const snap = await db.collection("metaImports").get();
+      return snap.docs.map((doc) => doc.data());
+    },
+    async deleteImport(id) {
+      await db.collection("metaImports").doc(id).delete();
+    },
+    /** The events an admin left out (/admin/meta-events — src/lib/meta/excludedEvents.ts). */
+    async excludedIds() {
+      const snap = await db.collection("appConfig").doc("metaExcludedEvents").get();
+      return new Set(Object.keys(snap.data() ?? {}));
+    },
+    /** Every saved event's id, by regulation — ids only, not the players. */
+    async eventIdsByRegulation() {
+      const snap = await db.collection("metaEvents").select("regulationId").get();
+      const byRegulation = new Map();
+      for (const doc of snap.docs) {
+        const regulationId = doc.get("regulationId");
+        if (!regulationId) continue;
+        byRegulation.set(regulationId, [...(byRegulation.get(regulationId) ?? []), doc.id]);
+      }
+      return byRegulation;
+    },
+    /** The events a regulation's published summary covers, or null without one. */
+    async summaryTournamentIds(regulationId) {
+      const snap = await db.collection("meta").doc(regulationId).get();
+      const tournaments = snap.get("official.tournaments");
+      return tournaments ? tournaments.map((tournament) => tournament.id) : null;
     },
     async saveMeta(regulationId, data) {
       await db.collection("meta").doc(regulationId).set(data);
@@ -183,6 +226,35 @@ async function main() {
     throw new Error("No events found in the pokedata.ovh index");
   }
   const processed = await store.processedIds();
+  const changedRegulations = new Set();
+
+  // Uploaded by hand: already parsed and anonymous (the browser did it), so
+  // saved like a fetched event — under its pokedata.ovh id when it has one,
+  // which also keeps the job from fetching it again.
+  for (const upload of await store.imports()) {
+    if (!upload.regulationId || !upload.players?.length) {
+      console.warn(`  Upload ${upload.id}: no regulation or no players — left for an admin`);
+      continue;
+    }
+    await store.saveEvent(upload.id, {
+      id: upload.id,
+      title: upload.title,
+      startDate: upload.startDate,
+      endDate: upload.endDate,
+      regulationId: upload.regulationId,
+      division: upload.division,
+      players: upload.players,
+      fetchedAt: new Date().toISOString(),
+      uploadedBy: upload.uploadedBy,
+    });
+    await store.deleteImport(upload.id);
+    processed.add(upload.id);
+    changedRegulations.add(upload.regulationId);
+    console.log(
+      `  ${upload.title}: uploaded by ${upload.uploadedBy}, ${upload.players.length} teams`,
+    );
+  }
+
   const pending = listed
     .filter((event) => isVgcEvent(event) && isFinished(event, today))
     .filter((event) => regulationForDate(event.startDate) && !processed.has(event.id))
@@ -194,7 +266,6 @@ async function main() {
       (pending.length ? `: ${pending.map((event) => event.title).join("; ")}` : ""),
   );
 
-  const changedRegulations = new Set();
   for (const event of pending) {
     try {
       const roster = await source.roster(event.id);
@@ -250,11 +321,25 @@ async function main() {
   if (rebuild)
     for (const regulationId of await store.regulationIds()) changedRegulations.add(regulationId);
 
+  // An admin excluded or included an event since a summary was written: rebuild
+  // it, even with nothing new to fetch.
+  const excluded = await store.excludedIds();
+  for (const [regulationId, ids] of await store.eventIdsByRegulation()) {
+    const summaryIds = await store.summaryTournamentIds(regulationId);
+    const included = ids.filter((id) => !excluded.has(id));
+    if (summaryIds && summaryNeedsRebuild(summaryIds, included)) {
+      console.log(`meta/${regulationId}: exclusions changed — rebuilding`);
+      changedRegulations.add(regulationId);
+    }
+  }
+
   for (const regulationId of changedRegulations) {
     // Oldest first: each Pokémon's per-event history follows this order.
-    const events = (await store.eventsFor(regulationId)).sort((a, b) =>
-      a.startDate.localeCompare(b.startDate),
-    );
+    // Without the events an admin excluded (their saved copies stay, so
+    // including one again needs no re-fetch).
+    const events = (await store.eventsFor(regulationId))
+      .filter((event) => !excluded.has(event.id))
+      .sort((a, b) => a.startDate.localeCompare(b.startDate));
     const summary = aggregateOfficialMeta(events);
     if (summary.teams === 0) {
       console.warn(`meta/${regulationId}: no teams — left as it was`);

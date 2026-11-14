@@ -10,6 +10,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.16 — 2026-11-14
+
+### Added
+
+- Admin: a **Meta events** page (/admin/meta-events) listing each regulation's official events,
+  each one's most used Pokémon, and an Exclude / Include switch. The metagame job leaves excluded
+  events out of every number and rebuilds the summary on its next run (or a manual one). The same
+  page adds an event by hand from its pokedata.ovh files (read in the browser, only anonymous
+  teams uploaded) and starts the metagame job with **Run now**, showing its latest run.
+
 ## 0.3.15 — 2026-11-14
 
 ### Added

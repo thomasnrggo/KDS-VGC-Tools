@@ -262,5 +262,11 @@ service cloud.firestore {
     match /metaEvents/{eventId} {
       allow read, write: if false;
     }
+
+    // Events uploaded by hand at /admin/meta-events (src/lib/meta/metaImport.ts),
+    // already anonymous, waiting for the metagame job to save them as events.
+    match /metaImports/{eventId} {
+      allow read, create, update, delete: if isStaff();
+    }
   }
 }

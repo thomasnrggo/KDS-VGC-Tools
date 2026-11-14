@@ -235,6 +235,12 @@ export default function AdminMetaSetsPage() {
           </Link>
           <h1 className="text-lg font-semibold text-white">Admin: Meta sets</h1>
           <Link
+            href="/admin/meta-events"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
+            Meta events →
+          </Link>
+          <Link
             href="/admin/features"
             className="text-sm font-medium text-zinc-100 hover:text-white"
           >

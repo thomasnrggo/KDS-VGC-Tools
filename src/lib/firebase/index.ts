@@ -9,6 +9,8 @@ export { getPublicSets, savePublicSet, deletePublicSet } from "./publicSets";
 export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";
 export { getLearnsetOverrides, saveLearnsetOverride } from "./learnsetOverrides";
 export { getMetaSpreads, saveMetaSpread } from "./metaSpreads";
+export { getExcludedEvents, setEventExcluded } from "./metaExcludedEvents";
+export { getMetaImports, saveMetaImport, deleteMetaImport } from "./metaImports";
 export {
   publishSharedTeam,
   unpublishSharedTeam,
@@ -56,8 +58,4 @@ export {
   createCollabTeam,
   deleteCollabTeam,
 } from "./collabTeams";
-export {
-  logTeamActivity,
-  subscribeTeamActivity,
-  ACTIVITY_SHOWN,
-} from "./teamActivity";
+export { logTeamActivity, subscribeTeamActivity, ACTIVITY_SHOWN } from "./teamActivity";
