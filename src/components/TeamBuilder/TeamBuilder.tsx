@@ -24,7 +24,8 @@ import { useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { formatPokemonPaste, formatTeamPaste } from "@/lib/formatPokemonPaste";
 import { parseTeam } from "@/lib/parseTeam";
 import { getRegulationLegalityIssues } from "@/lib/regulationLegality";
-import { teamWithoutSlot } from "@/lib/rosterSlots";
+import { teamWithPokemonMoved, teamWithoutSlot } from "@/lib/rosterSlots";
+import { isEditableTarget } from "@/lib/isEditableTarget";
 import { cn } from "@/lib/utils";
 import type { ParsedPokemon, Team } from "@/types";
 
@@ -32,13 +33,6 @@ const MAX_SLOTS = 6;
 
 const PASTE_PLACEHOLDER =
   "Charizard @ Charizardite Y\nAbility: Blaze\nEVs: 17 HP / 25 Def / 11 SpA / 13 Spe\nModest Nature\n- Heat Wave\n- Weather Ball\n- Solar Beam\n- Protect";
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLElement &&
-    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
-  );
-}
 
 interface TeamBuilderProps {
   team: Team;
@@ -49,6 +43,12 @@ interface TeamBuilderProps {
    * unsaved draft, which nothing picks from yet, so it's removed in place.
    */
   onRemovePokemon?: (index: number) => void;
+  /**
+   * Moves the Pokémon at `from` to `to` in the saved team and everything that
+   * picks from it (see movePokemonEverywhere) — omitted for a new team's
+   * unsaved draft, which is reordered in place.
+   */
+  onMovePokemon?: (from: number, to: number) => void;
   /** The team's page, once it has one — where the back link goes (My Teams until then). */
   teamHref?: string;
   /** The page's heading, for screen readers — the back link and team name stand in for it visually. */
@@ -72,6 +72,7 @@ export function TeamBuilder({
   team,
   onChange,
   onRemovePokemon,
+  onMovePokemon,
   teamHref,
   heading,
   initialSlot = 0,
@@ -86,6 +87,9 @@ export function TeamBuilder({
   );
   const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
   const stripRef = useRef<HTMLDivElement>(null);
+  // Dragging a tile to reorder: the one dragged, and the tile it's over.
+  const [draggedTile, setDraggedTile] = useState<number | null>(null);
+  const [dropTile, setDropTile] = useState<number | null>(null);
   const panelRef = useRef<HTMLElement>(null);
 
   const pokemon = team.pokemon;
@@ -144,6 +148,28 @@ export function TeamBuilder({
     setSelectedIndex(Math.max(0, Math.min(removed, pokemon.length - 2)));
     setConfirmRemoveIndex(null);
     toast.success(t.teamBuilder.removed(name));
+  }
+
+  /** Moves the Pokémon at `from` to `to` (the ones between shift a place); it stays selected. */
+  function movePokemon(from: number, to: number) {
+    if (from === to || to < 0 || to >= pokemon.length || !pokemon[from]) return;
+    if (onMovePokemon) onMovePokemon(from, to);
+    else onChange((current) => teamWithPokemonMoved(current, from, to));
+    setSelectedIndex(to);
+  }
+
+  /** Alt+← / → moves the selected Pokémon a place (true if it was that key). */
+  function handleMoveKey(event: { key: string; altKey: boolean; preventDefault: () => void }) {
+    if (!event.altKey || !selected) return false;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return false;
+    event.preventDefault();
+    const to = index + (event.key === "ArrowLeft" ? -1 : 1);
+    movePokemon(index, to);
+    // Keep the focus on the moved tile, so the keys can keep moving it.
+    requestAnimationFrame(() =>
+      stripRef.current?.querySelector<HTMLElement>(`[data-tile="${to}"]`)?.focus(),
+    );
+    return true;
   }
 
   /** Opens Import / Export with the team's text, ready to copy or to paste over. */
@@ -276,6 +302,14 @@ export function TeamBuilder({
         focusSpeciesField();
         return;
       }
+      if (
+        !event.defaultPrevented &&
+        !isEditableTarget(event.target) &&
+        !(event.target instanceof Node && stripRef.current?.contains(event.target)) &&
+        handleMoveKey(event)
+      ) {
+        return;
+      }
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       if (event.shiftKey || isEditableTarget(event.target)) return;
@@ -331,6 +365,7 @@ export function TeamBuilder({
 
   // ← / → move along the Pokémon row, like tabs.
   function handleStripKeyDown(event: KeyboardEvent<HTMLButtonElement>, tileIndex: number) {
+    if (tileIndex === index && handleMoveKey(event)) return;
     const next = stepTile(tileIndex, event.key);
     if (next === null) return;
     event.preventDefault();
@@ -533,7 +568,38 @@ export function TeamBuilder({
                 const name = text.species(mon.species);
                 const isIllegal = issues.some((issue) => issue.index === tileIndex);
                 return (
-                  <div key={tileIndex} className="relative shrink-0">
+                  <div
+                    key={tileIndex}
+                    // Drag a tile onto another to move it there (desktop).
+                    draggable={!isPhone}
+                    onDragStart={(event) => {
+                      setDraggedTile(tileIndex);
+                      event.dataTransfer.effectAllowed = "move";
+                    }}
+                    onDragEnd={() => {
+                      setDraggedTile(null);
+                      setDropTile(null);
+                    }}
+                    onDragOver={(event) => {
+                      if (draggedTile === null) return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      if (dropTile !== tileIndex) setDropTile(tileIndex);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      if (draggedTile !== null) movePokemon(draggedTile, tileIndex);
+                      setDraggedTile(null);
+                      setDropTile(null);
+                    }}
+                    className={cn(
+                      "relative shrink-0 rounded-lg",
+                      draggedTile === tileIndex && "opacity-40",
+                      dropTile === tileIndex &&
+                        draggedTile !== tileIndex &&
+                        "outline outline-2 outline-offset-2 outline-zinc-500",
+                    )}
+                  >
                     <button
                       type="button"
                       role="tab"
@@ -543,11 +609,13 @@ export function TeamBuilder({
                       onClick={() => openTile(tileIndex)}
                       onKeyDown={(event) => handleStripKeyDown(event, tileIndex)}
                       aria-label={isIllegal ? `${name} — ${t.teamBuilder.illegalSlot(name)}` : name}
-                      title={mon.item ? `${name} @ ${text.item(mon.item)}` : name}
+                      title={`${mon.item ? `${name} @ ${text.item(mon.item)}` : name}${isPhone ? "" : ` — ${t.teamBuilder.dragHint}`}`}
                       className={cn(
                         "relative block h-12 w-12 overflow-hidden rounded-lg border-2 bg-zinc-500/20 transition-colors focus:ring-2 focus:ring-zinc-400 focus:outline-none",
                         isSelected ? "border-zinc-600" : "border-transparent hover:border-zinc-400",
                         isIllegal && "ring-2 ring-amber-500",
+                        // The tile itself shows it can be dragged (a button's cursor is the default).
+                        !isPhone && "cursor-grab active:cursor-grabbing",
                       )}
                     >
                       <PokemonSprite species={mon.species} item={mon.item} fill />
@@ -615,6 +683,29 @@ export function TeamBuilder({
             // The slot's own actions (like Showdown's Copy / Import / Delete), beside the stats heading.
             actions={
               <div className="flex items-center gap-1">
+                {/* Phones can't drag the tiles: a place left or right instead. */}
+                {selected && isPhone && pokemon.length > 1 && (
+                  <>
+                    <IconButton
+                      variant="ghost"
+                      onClick={() => movePokemon(index, index - 1)}
+                      disabled={index === 0}
+                      aria-label={t.teamBuilder.moveLeft(selectedName)}
+                      title={t.teamBuilder.moveLeft(selectedName)}
+                    >
+                      <Icon name={IconName.ChevronLeft} size={18} />
+                    </IconButton>
+                    <IconButton
+                      variant="ghost"
+                      onClick={() => movePokemon(index, index + 1)}
+                      disabled={index === pokemon.length - 1}
+                      aria-label={t.teamBuilder.moveRight(selectedName)}
+                      title={t.teamBuilder.moveRight(selectedName)}
+                    >
+                      <Icon name={IconName.ChevronRight} size={18} />
+                    </IconButton>
+                  </>
+                )}
                 {selected && (
                   <TextAction
                     onClick={() => void copyPokemon(selected)}

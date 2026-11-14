@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
 import { cn } from "@/lib/utils";
@@ -38,7 +37,6 @@ function setHidden(id: string, hidden: boolean) {
 const ACCENTS = {
   sky: {
     box: "border-sky-200 bg-sky-50/70 dark:border-sky-900/60 dark:bg-sky-950/30",
-    icon: "bg-sky-600 text-white",
     dot: "bg-sky-500",
     close: "hover:bg-sky-100 dark:hover:bg-sky-900/40",
   },
@@ -53,25 +51,30 @@ export interface PageTip {
   body: string;
 }
 
-/** A tip's body, with its `typed examples` as keys. */
+/** A banner's text: its `typed examples` as keys, its **words** bold. */
 function TipText({ text }: { text: string }) {
-  return text.split(/`([^`]+)`/).map((part, index) =>
-    index % 2 === 1 ? (
-      <kbd
-        key={index}
-        className="rounded border border-zinc-300 bg-raised px-1 py-px font-mono text-xs text-zinc-900"
-      >
-        {part}
-      </kbd>
-    ) : (
-      part
-    ),
-  );
+  return text.split(/(`[^`]+`|\*\*[^*]+\*\*)/).map((part, index) => {
+    if (part.startsWith("`") && part.endsWith("`") && part.length > 1)
+      return (
+        <kbd
+          key={index}
+          className="rounded border border-zinc-300 bg-raised px-1 py-px font-mono text-xs text-zinc-900"
+        >
+          {part.slice(1, -1)}
+        </kbd>
+      );
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4)
+      return (
+        <strong key={index} className="font-semibold text-zinc-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    return part;
+  });
 }
 
 export function PageTips({
   id,
-  icon,
   accent,
   title,
   body,
@@ -79,10 +82,10 @@ export function PageTips({
 }: {
   /** Which page — what's stored when it's hidden. */
   id: string;
-  icon: IconName;
   accent: PageTipsAccent;
   title: string;
-  body: ReactNode;
+  /** `keys` and **bold** like the tips. */
+  body: string;
   tips: PageTip[];
 }) {
   const t = useMessages();
@@ -111,19 +114,11 @@ export function PageTips({
       >
         <Icon name={IconName.Close} size={18} />
       </IconButton>
-      <div className="flex items-start gap-3 pr-8">
-        <span
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
-            colors.icon,
-          )}
-        >
-          <Icon name={icon} size={18} />
-        </span>
-        <div className="flex flex-col gap-0.5">
-          <p className="text-sm font-semibold text-zinc-900">{title}</p>
-          <p className="text-sm text-zinc-700">{body}</p>
-        </div>
+      <div className="flex flex-col gap-0.5 pr-8">
+        <p className="text-sm font-semibold text-zinc-900">{title}</p>
+        <p className="text-sm text-zinc-700">
+          <TipText text={body} />
+        </p>
       </div>
       <ul className="grid gap-x-6 gap-y-2 lg:grid-cols-3">
         {tips.map((tip) => (

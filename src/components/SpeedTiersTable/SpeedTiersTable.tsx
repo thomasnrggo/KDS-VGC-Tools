@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PageTips, PageTipsButton } from "../PageTips";
 import { computeSpeedTierRows, type SpeedTierRow } from "@/lib/stats/computeSpeedTiers";
 import {
   matchesSpeedQuery,
@@ -283,6 +284,15 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
 
   return (
     <div className="flex flex-col gap-3">
+      {/* What the view is and how to search it — closed for good with its ✕,
+          back with the "?" beside the search. */}
+      <PageTips
+        id="speed-by-pokemon"
+        accent="sky"
+        title={t.speedTiers.tipsTitle}
+        body={t.speedTiers.tableTipsBody}
+        tips={t.speedTiers.tableTips}
+      />
       <div className="flex flex-wrap items-center gap-3">
         <SearchField
           query={query}
@@ -291,6 +301,7 @@ export function SpeedTiersTable({ speciesKeys, megaStoneItemsForSpecies }: Speed
           ariaLabel={t.speedTable.searchLabel}
           className="w-full sm:w-64"
         />
+        <PageTipsButton id="speed-by-pokemon" />
         <GroupModeToggle grouped={groupMode} onChange={setGroupMode} className="ml-auto" />
       </div>
 

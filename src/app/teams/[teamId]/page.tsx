@@ -17,12 +17,13 @@ import { PokemonReportCard } from "@/components/PokemonReportCard";
 import { TeamCombinationCard } from "@/components/TeamCombinationCard";
 import { TeamCoverage } from "@/components/TeamCoverage";
 import { TeamThreats } from "@/components/TeamThreats";
+import { TeamSpeedTiers } from "@/components/TeamSpeedTiers";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { PokemonCalcsBox } from "@/components/TeamCalcs";
 import { TeamMatchupsList } from "@/components/TeamMatchups";
 import { ShareDialog } from "@/components/TeamPost";
-import { CollabDialog, TeamActivityList } from "@/components/CollabTeam";
+import { CollabDialog, CollabTeamMatchups, TeamActivityList } from "@/components/CollabTeam";
 import { MemberAvatar } from "@/components/PrepGroups";
 import { toast } from "@/components/Toast";
 import {
@@ -32,6 +33,7 @@ import {
   makeTeamCollaborative,
   removeCollabMember,
 } from "@/lib/collabTeamFlows";
+import { isEditableTarget } from "@/lib/isEditableTarget";
 import { timeAgo } from "@/lib/timeAgo";
 import { RowActionsMenu } from "@/components/RowActionsMenu";
 import { Icon } from "@/components/Icon";
@@ -59,13 +61,8 @@ import {
   iconButtonVariants,
 } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+import { SectionPicker } from "@/components/SectionPicker";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 interface TeamReportPageProps {
   params: Promise<{ teamId: string }>;
@@ -73,13 +70,15 @@ interface TeamReportPageProps {
   searchParams: Promise<{ tab?: string }>;
 }
 
-type ReportTab = "report" | "strategy" | "coverage" | "threats" | "calcs" | "matchups" | "stats";
+type ReportTab =
+  "report" | "strategy" | "coverage" | "threats" | "speed" | "calcs" | "matchups" | "stats";
 
 const ALL_TABS: ReportTab[] = [
   "report",
   "strategy",
   "coverage",
   "threats",
+  "speed",
   "calcs",
   "matchups",
   "stats",
@@ -229,13 +228,15 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   // report) — default the header switcher to whichever regulation this
   // team itself is tagged for, so it at least includes this team.
   const selectedRegulationId = team?.regulationIds[0] ?? REGULATIONS[0]?.id ?? "";
+  const speedRegulation = REGULATIONS.find(
+    (regulation) => regulation.id === team?.regulationIds[0],
+  );
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
   // Strategy tab below lg: which of its two sections the chips show.
   const [strategySection, setStrategySection] = useState<"combinations" | "notes">("combinations");
   // Phones: the sections' bottom sheet.
-  const [isSectionsOpen, setIsSectionsOpen] = useState(false);
   const shareLabel = team?.share ? t.teamPage.sharedLabel(team.share.sheet) : t.teamPage.share;
   // Calcs tab: narrows every Pokémon's calcs to the ones against the searched Pokémon.
   const [calcQuery, setCalcQuery] = useState("");
@@ -260,6 +261,30 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     else url.searchParams.set("tab", tab);
     window.history.replaceState(null, "", url);
   }
+
+  // ← / → switch tabs (desktop's tab row), unless the key belongs to a field,
+  // a menu or an open dialog.
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.shiftKey || isEditableTarget(event.target)) return;
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[role="slider"], [role="listbox"], [role="menu"], [role="dialog"]')
+      ) {
+        return;
+      }
+      if (document.querySelector('[aria-modal="true"], [role="dialog"][data-state="open"]')) return;
+      const at = visibleTabs.indexOf(activeTab);
+      const next = visibleTabs[at + (event.key === "ArrowLeft" ? -1 : 1)];
+      if (!next) return;
+      event.preventDefault();
+      selectTab(next);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  });
 
   function addCombination() {
     updateTeam(teamId, (t) => ({
@@ -351,47 +376,13 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </nav>
               {/* Phones: one button showing the current section, opening a bottom sheet with
                 all of them — instead of pill tabs wrapping onto two rows. */}
-              <Drawer open={isSectionsOpen} onOpenChange={setIsSectionsOpen} showSwipeHandle>
-                <DrawerTrigger
-                  render={
-                    <button
-                      type="button"
-                      aria-label={`${t.teamPage.sections}: ${t.teamPage.tabs[activeTab]}`}
-                      className="order-last flex basis-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-raised px-3 py-2 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 sm:hidden"
-                    />
-                  }
-                >
-                  {t.teamPage.tabs[activeTab]}
-                  <Icon name={IconName.ExpandMore} size={18} className="text-zinc-500" />
-                </DrawerTrigger>
-                <DrawerContent>
-                  <DrawerHeader>
-                    <DrawerTitle>{t.teamPage.sections}</DrawerTitle>
-                  </DrawerHeader>
-                  <div className="flex flex-col gap-1 p-3 pt-1 pb-6">
-                    {visibleTabs.map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        aria-current={activeTab === tab ? "page" : undefined}
-                        onClick={() => {
-                          selectTab(tab);
-                          setIsSectionsOpen(false);
-                        }}
-                        className={cn(
-                          "flex min-h-12 items-center justify-between rounded-lg px-3 text-left text-base font-medium",
-                          activeTab === tab
-                            ? "bg-chrome-600 text-white"
-                            : "text-zinc-800 active:bg-zinc-200",
-                        )}
-                      >
-                        {t.teamPage.tabs[tab]}
-                        {activeTab === tab && <Icon name={IconName.Check} size={18} />}
-                      </button>
-                    ))}
-                  </div>
-                </DrawerContent>
-              </Drawer>
+              <SectionPicker
+                title={t.teamPage.sections}
+                options={visibleTabs.map((tab) => ({ value: tab, label: t.teamPage.tabs[tab] }))}
+                value={activeTab}
+                onChange={selectTab}
+                className="order-last basis-full"
+              />
               <div
                 role="tablist"
                 aria-label={t.teamPage.sections}
@@ -731,6 +722,20 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               <TeamThreats pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
             )}
 
+            {/* Speed Tiers' My team view for this team (docs/team-speed-tiers.md), in
+              its first regulation. */}
+            {activeTab === "speed" && speedRegulation && (
+              <TeamSpeedTiers
+                teams={[team]}
+                hideTeamPicker
+                regulationId={speedRegulation.id}
+                regulationLabel={t.common.regulationLabel(speedRegulation.label)}
+                speciesKeys={speedRegulation.speciesKeys}
+                megaStoneItemsForSpecies={speedRegulation.megaStoneItemsForSpecies}
+                updateTeam={updateTeam}
+              />
+            )}
+
             {/* Each Pokémon's card (collapsed to its sprite header until clicked)
               with its saved calcs underneath. Columns are independent, so
               expanding one card or one list never stretches the others. */}
@@ -805,9 +810,17 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </div>
             )}
 
-            {activeTab === "matchups" && (
-              <TeamMatchupsList team={team} lists={matchupLists} isLoading={isMatchupsLoading} />
-            )}
+            {activeTab === "matchups" &&
+              // A collaborative team's matchups are its group's, managed right here.
+              (team.collab ? (
+                collabGroup ? (
+                  <CollabTeamMatchups team={team} group={collabGroup} />
+                ) : (
+                  <LoadingState />
+                )
+              ) : (
+                <TeamMatchupsList team={team} lists={matchupLists} isLoading={isMatchupsLoading} />
+              ))}
 
             {activeTab === "stats" && (
               <div className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-4">

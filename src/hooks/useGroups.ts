@@ -56,10 +56,19 @@ export function useGroups() {
     });
   }
 
+  // A collaborative team's group (PrepGroup.teamId) is that team's matchup
+  // list, managed from the team's page — never offered as a prep group.
+  const prepGroups = groups.filter((group) => !group.teamId);
+
   return {
+    /** Every group you're in, collaborative teams' included — for looking one up by id. */
     groups,
-    activeGroups: groups.filter((group) => !group.archivedAt),
-    archivedGroups: groups.filter((group) => !!group.archivedAt),
+    /** Prep groups only (not a collaborative team's): the planner's lists, copy targets… */
+    prepGroups,
+    activeGroups: prepGroups.filter((group) => !group.archivedAt),
+    archivedGroups: prepGroups.filter((group) => !!group.archivedAt),
+    /** Your collaborative teams' groups (still going — a stopped one is archived). */
+    teamGroups: groups.filter((group) => !!group.teamId && !group.archivedAt),
     isLoading,
     uid,
     createGroup,

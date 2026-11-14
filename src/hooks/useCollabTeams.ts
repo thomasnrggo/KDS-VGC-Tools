@@ -18,8 +18,8 @@ let cached: { key: string; teams: Team[] } | null = null;
 export function useCollabTeams(): { teams: Team[]; isLoading: boolean } {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
-  const { activeGroups, isLoading: isGroupsLoading } = useGroups();
-  const teamIds = activeGroups
+  const { teamGroups, isLoading: isGroupsLoading } = useGroups();
+  const teamIds = teamGroups
     .flatMap((group) => (group.teamId ? [group.teamId] : []))
     .sort()
     .join(",");

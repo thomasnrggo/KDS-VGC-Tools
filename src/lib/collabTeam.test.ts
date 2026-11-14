@@ -4,9 +4,10 @@ import {
   collabSubDocs,
   diffCollabTeam,
   hasCollabChanges,
-  sharedPlansWithoutSlot,
+  sharedPlansRemapped,
   teamToCollabDoc,
 } from "./collabTeam";
+import { removalMap } from "./rosterSlots";
 import { createTeam } from "./team";
 import { EMPTY_PLAN } from "@/constants/matchupPlan";
 import { REGULATIONS } from "@/data/regulations";
@@ -119,7 +120,7 @@ describe("diffCollabTeam", () => {
   });
 });
 
-describe("sharedPlansWithoutSlot", () => {
+describe("sharedPlansRemapped", () => {
   it("shifts the plans that pick past the removed Pokémon, and only those", () => {
     const moved = {
       opponentId: "o1",
@@ -131,7 +132,7 @@ describe("sharedPlansWithoutSlot", () => {
       plan: { ...EMPTY_PLAN, leadPair: [0, null] as [number, null] },
       updatedAt: "old",
     };
-    const changed = sharedPlansWithoutSlot([moved, untouched], 1, BY, NOW);
+    const changed = sharedPlansRemapped([moved, untouched], removalMap(1), BY, NOW);
     expect(changed).toHaveLength(1);
     expect(changed[0]).toMatchObject({
       opponentId: "o1",

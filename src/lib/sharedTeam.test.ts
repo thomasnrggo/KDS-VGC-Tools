@@ -99,6 +99,7 @@ describe("toSharedTeam sections", () => {
       },
     ] as Team["combinations"],
     calcs: [{ id: "k1", text: "a vs. b: 10-20%", species: "incineroar", side: "offensive" }],
+    speedPins: ["torkoal"],
   };
 
   it("shares notes and combinations only with strategy, calcs only with calcs", () => {
@@ -117,18 +118,25 @@ describe("toSharedTeam sections", () => {
     expect(calcs.calcs).toHaveLength(1);
     expect(calcs.notes).toBeUndefined();
     expect(calcs.sections).toEqual(["calcs", "matchups"]);
+    expect(calcs.speedPins).toBeUndefined();
+
+    // Speed: the table's added Pokémon go with it; sections keep the tabs' order.
+    const speed = toSharedTeam(full, { sheet: "closed", sections: ["calcs", "speed"] }, "uid-1");
+    expect(speed.speedPins).toEqual(["torkoal"]);
+    expect(speed.sections).toEqual(["speed", "calcs"]);
   });
 
   it("shares no sections with an open sheet", () => {
     const open = toSharedTeam(
       full,
-      { sheet: "open", sections: ["strategy", "calcs", "matchups"] },
+      { sheet: "open", sections: ["strategy", "speed", "calcs", "matchups"] },
       "uid-1",
     );
     expect(open.sections).toEqual([]);
     expect(open.notes).toBeUndefined();
     expect(open.combinations).toBeUndefined();
     expect(open.calcs).toBeUndefined();
+    expect(open.speedPins).toBeUndefined();
   });
 });
 

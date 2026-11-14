@@ -10,8 +10,8 @@ import { LoadingState } from "@/components/LoadingState";
 import { TeamBuilder } from "@/components/TeamBuilder";
 import { toast } from "@/components/Toast";
 import { REGULATIONS } from "@/data/regulations";
-import { removePokemonEverywhere } from "@/lib/removeTeamPokemon";
-import { teamWithoutSlot } from "@/lib/rosterSlots";
+import { movePokemonEverywhere, removePokemonEverywhere } from "@/lib/removeTeamPokemon";
+import { teamWithPokemonMoved, teamWithoutSlot } from "@/lib/rosterSlots";
 
 interface EditTeamPageProps {
   params: Promise<{ teamId: string }>;
@@ -39,15 +39,26 @@ export default function EditTeamPage({ params, searchParams }: EditTeamPageProps
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const team = teams.find((saved) => saved.id === teamId) ?? null;
 
+  // A collaborative team's shared plans are updated too, as you.
+  const collab =
+    team?.collab && user
+      ? { team: team.collab, by: { uid: user.uid, name: user.displayName ?? user.email ?? "?" } }
+      : undefined;
+
   function removePokemon(index: number) {
     updateTeam(teamId, (current) => teamWithoutSlot(current, index));
     // Plans against opponents and logged games live outside the team.
-    const collab =
-      team?.collab && user
-        ? { team: team.collab, by: { uid: user.uid, name: user.displayName ?? user.email ?? "?" } }
-        : undefined;
     removePokemonEverywhere(teamId, index, user?.uid ?? null, collab).catch((error) => {
       console.error("[team builder] updating picks after a removal failed:", error);
+      toast.error(t.teamBuilder.removeSyncFailed);
+    });
+  }
+
+  /** Moves a Pokémon to another place — and every plan, combination and game that picks it. */
+  function movePokemon(from: number, to: number) {
+    updateTeam(teamId, (current) => teamWithPokemonMoved(current, from, to));
+    movePokemonEverywhere(teamId, from, to, user?.uid ?? null, collab).catch((error) => {
+      console.error("[team builder] updating picks after a move failed:", error);
       toast.error(t.teamBuilder.removeSyncFailed);
     });
   }
@@ -87,6 +98,7 @@ export default function EditTeamPage({ params, searchParams }: EditTeamPageProps
             heading={`${team.name} — ${t.teamBuilder.editPokemon}`}
             onChange={(updater) => updateTeam(teamId, updater)}
             onRemovePokemon={removePokemon}
+            onMovePokemon={movePokemon}
             teamHref={`/teams/${teamId}`}
             initialSlot={initialSlot}
           />

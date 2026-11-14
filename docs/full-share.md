@@ -19,13 +19,14 @@ editing one team), is discussed at the end and not built yet.
 ## Data
 
 ```ts
-type ShareSection = "strategy" | "calcs" | "matchups";
+type ShareSection = "strategy" | "speed" | "calcs" | "matchups";
 interface TeamShare { sheet: "open" | "closed"; sections?: ShareSection[] }
 
 // sharedTeams/{teamId} — SharedTeam gains:
 sections?: ShareSection[];
 notes?: string; combinations?: TeamCombination[];  // with "strategy"
 calcs?: TeamCalc[];                                // with "calcs"
+speedPins?: string[];                              // with "speed" (docs/team-speed-tiers.md)
 
 // sharedTeams/{teamId}/matchups/{opponentId}
 interface SharedMatchup {

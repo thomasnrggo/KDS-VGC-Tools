@@ -40,6 +40,8 @@ type Tab = "active" | "archived";
 
 /** ?folder= for the teams in no folder. */
 const UNFILED = "none";
+/** ?folder= for the archived teams — the panel's last entry, once there are any. */
+const ARCHIVED = "archived";
 
 /** A team row's Duplicate button — tappable on phones, compact on desktop. */
 const rowActionClass = "h-10 w-10 text-zinc-500 hover:bg-zinc-50 md:h-8 md:w-8";
@@ -60,7 +62,6 @@ export function MyTeamsSection({
   const t = useMessages();
   const pokemonText = usePokemonText();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("active");
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -88,13 +89,15 @@ export function MyTeamsSection({
     .sort((a, b) => b.sortOrder - a.sortOrder);
   const activeRegulationTeams = regulationTeams.filter((team) => !isTeamArchived(team));
   const archivedRegulationTeams = regulationTeams.filter(isTeamArchived);
-  // Search is scoped to whichever tab is open, not both at once — the tabs
-  // are meant to be a hard partition of the list.
-  const tabTeams = tab === "active" ? activeRegulationTeams : archivedRegulationTeams;
+  // Archived teams are their own entry in the folder panel; everywhere else
+  // (All teams, a folder, No folder) shows active teams only.
+  const showingArchived = folderParam === ARCHIVED && archivedRegulationTeams.length > 0;
+  const tab: Tab = showingArchived ? "archived" : "active";
+  const tabTeams = showingArchived ? archivedRegulationTeams : activeRegulationTeams;
 
   const searchTerms = parseSearchTerms(searchQuery);
   const isSearching = searchTerms.length > 0;
-  // All the tab's teams, or the picked folder's; search looks within them.
+  // All active teams, the picked folder's, or the archived ones; search looks within them.
   const pickedTeams = openFolder
     ? teamsInFolder(tabTeams, teamFolders.folders, openFolder.id)
     : showingUnfiled
@@ -109,9 +112,9 @@ export function MyTeamsSection({
           ),
       )
     : pickedTeams;
-  const isFiltered = !!openFolder || showingUnfiled;
+  const isFiltered = !!openFolder || showingUnfiled || showingArchived;
 
-  /** Picks a folder in the panel (UNFILED: teams in none; null: all teams). */
+  /** Picks an entry in the panel (UNFILED: teams in none; ARCHIVED; null: all teams). */
   function pickFolder(folderId: string | null) {
     router.push(folderId ? `/teams?folder=${encodeURIComponent(folderId)}` : "/teams", {
       scroll: false,
@@ -136,11 +139,6 @@ export function MyTeamsSection({
     // Made from inside a folder, it's filed there (see the Team Builder page).
     if (openFolder) params.set("folder", openFolder.id);
     router.push(`/team-builder?${params}`);
-  }
-
-  function switchTab(next: Tab) {
-    setTab(next);
-    setSearchQuery("");
   }
 
   /**
@@ -203,39 +201,6 @@ export function MyTeamsSection({
     >
       <Icon name={IconName.Search} size={18} />
     </button>
-  );
-
-  const tabsControl = (
-    <div role="tablist" aria-label={t.myTeams.teamStatus} className="flex gap-1.5">
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === "active"}
-        onClick={() => switchTab("active")}
-        className={cn(
-          "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-          tab === "active"
-            ? "bg-chrome-600 text-white"
-            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-        )}
-      >
-        {t.myTeams.active(activeRegulationTeams.length)}
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={tab === "archived"}
-        onClick={() => switchTab("archived")}
-        className={cn(
-          "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-          tab === "archived"
-            ? "bg-chrome-600 text-white"
-            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-        )}
-      >
-        {t.myTeams.archived(archivedRegulationTeams.length)}
-      </button>
-    </div>
   );
 
   /** One team's row — `index` stripes the list. */
@@ -367,7 +332,7 @@ export function MyTeamsSection({
               team.collab
                 ? []
                 : [
-                    tab === "active"
+                    !isTeamArchived(team)
                       ? {
                           label: t.myTeams.archive,
                           icon: IconName.Archive,
@@ -388,9 +353,12 @@ export function MyTeamsSection({
     );
   }
 
-  /** A drop target that files the dragged team in `folderId` (null: no folder). */
+  /**
+   * A panel entry a team can be dropped on: a folder or No folder files it
+   * there (`folderId`, null: none); Archived (ARCHIVED) archives it.
+   */
   function folderDropProps(folderId: string | null) {
-    const dropKey = `folder:${folderId ?? "none"}`;
+    const dropKey = `folder:${folderId ?? UNFILED}`;
     return {
       isOver: dragOverId === dropKey,
       onDragOver: (event: React.DragEvent) => {
@@ -404,7 +372,13 @@ export function MyTeamsSection({
       },
       onDrop: (event: React.DragEvent) => {
         event.preventDefault();
-        if (draggedId) teamFolders.moveTeam(draggedId, folderId);
+        const dragged = draggedId ? teams.find((team) => team.id === draggedId) : undefined;
+        if (dragged && folderId === ARCHIVED) {
+          // A collaborative team is left or stopped from its page, not archived.
+          if (!dragged.collab && !isTeamArchived(dragged)) archiveTeam(dragged.id);
+        } else if (dragged) {
+          teamFolders.moveTeam(dragged.id, folderId);
+        }
         setDraggedId(null);
         setDragOverId(null);
       },
@@ -454,6 +428,9 @@ export function MyTeamsSection({
    */
   function renderPanelEntry(entry: {
     key: string;
+    /** What picking it sets ?folder= to (null: none — all teams). */
+    pick: string | null;
+    /** A folder's id (it has a ⋮), or what a drop does (see folderDropProps). */
     folderId: string | null;
     name: string;
     count: number;
@@ -474,7 +451,7 @@ export function MyTeamsSection({
       >
         <button
           type="button"
-          onClick={() => pickFolder(entry.key === "all" ? null : (entry.folderId ?? UNFILED))}
+          onClick={() => pickFolder(entry.pick)}
           aria-current={entry.isPicked ? "true" : undefined}
           className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left text-sm"
         >
@@ -489,7 +466,7 @@ export function MyTeamsSection({
           </span>
           <span className="shrink-0 text-xs text-zinc-500">{entry.count}</span>
         </button>
-        {entry.folderId && folderMenu(entry.folderId, entry.name)}
+        {entry.folderId && entry.folderId !== ARCHIVED && folderMenu(entry.folderId, entry.name)}
       </li>
     );
   }
@@ -497,18 +474,20 @@ export function MyTeamsSection({
   const panelEntries = [
     {
       key: "all",
+      pick: null,
       folderId: null,
       name: t.teamFolders.allTeams,
-      count: tabTeams.length,
+      count: activeRegulationTeams.length,
       isPicked: !isFiltered,
       icon: IconName.Folder,
       droppable: false,
     },
     ...orderedFolders.map((folder) => ({
       key: folder.id,
+      pick: folder.id,
       folderId: folder.id,
       name: folder.name,
-      count: teamsInFolder(tabTeams, teamFolders.folders, folder.id).length,
+      count: teamsInFolder(activeRegulationTeams, teamFolders.folders, folder.id).length,
       isPicked: openFolder?.id === folder.id,
       icon: IconName.Folder,
       droppable: true,
@@ -517,11 +496,26 @@ export function MyTeamsSection({
       ? [
           {
             key: UNFILED,
+            pick: UNFILED,
             folderId: null,
             name: t.teamFolders.noFolder,
-            count: teamsInFolder(tabTeams, teamFolders.folders, null).length,
+            count: teamsInFolder(activeRegulationTeams, teamFolders.folders, null).length,
             isPicked: showingUnfiled,
             icon: IconName.Close,
+            droppable: true,
+          },
+        ]
+      : []),
+    ...(archivedRegulationTeams.length > 0
+      ? [
+          {
+            key: ARCHIVED,
+            pick: ARCHIVED,
+            folderId: ARCHIVED,
+            name: t.teamFolders.archived,
+            count: archivedRegulationTeams.length,
+            isPicked: showingArchived,
+            icon: IconName.Archive,
             droppable: true,
           },
         ]
@@ -591,23 +585,23 @@ export function MyTeamsSection({
         {regulationControl}
       </div>
 
-      <div className="flex items-center justify-between gap-4">
-        {tabsControl}
-        {/* Desktop only — mobile has search and add in its header row above. */}
-        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 md:flex">
+      {/* Desktop only — mobile has search and add in its header row above. The
+          same columns as below: search across the list, Create team across the panel. */}
+      <div className="hidden items-center gap-6 md:grid md:grid-cols-[minmax(0,1fr)_15rem]">
+        <div className="min-w-0">
           {canSearch && (
             <SearchField
               query={searchQuery}
               onQueryChange={setSearchQuery}
               placeholder={t.myTeams.searchPlaceholder}
               ariaLabel={t.myTeams.searchLabel}
-              className="w-full max-w-xl"
+              className="w-full"
             />
           )}
-          <Button onClick={createTeam} className="shrink-0">
-            {t.myTeams.createTeam}
-          </Button>
         </div>
+        <Button onClick={createTeam} className="w-full">
+          {t.myTeams.createTeam}
+        </Button>
       </div>
 
       {folderDraft && (
@@ -734,7 +728,7 @@ export function MyTeamsSection({
               <button
                 key={entry.key}
                 type="button"
-                onClick={() => pickFolder(entry.key === "all" ? null : (entry.folderId ?? UNFILED))}
+                onClick={() => pickFolder(entry.pick)}
                 aria-current={entry.isPicked ? "true" : undefined}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap",

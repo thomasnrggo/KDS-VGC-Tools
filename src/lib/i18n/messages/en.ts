@@ -126,6 +126,7 @@ export const en = {
     delete: "Delete folder (keeps its teams)",
     folders: "Folders",
     allTeams: "All teams",
+    archived: "Archived",
     allFiled: "Every team here is in a folder.",
     empty: "No teams here yet — use a team's Move to folder, or drag one onto this folder.",
     moveTo: "Move to folder",
@@ -233,6 +234,7 @@ export const en = {
       strategy: "Strategy",
       coverage: "Coverage",
       threats: "Threats",
+      speed: "Speed",
       calcs: "Calcs",
       matchups: "Matchups",
       stats: "Tournament stats",
@@ -299,16 +301,19 @@ export const en = {
     alsoShare: "Also share",
     sections: {
       strategy: "Strategy",
+      speed: "Speed",
       calcs: "Calcs",
       matchups: "Matchups",
     },
     sectionHints: {
       strategy: "The team's notes and common combinations.",
+      speed:
+        "The Speed table: your team by base Speed, with its real Speeds and the Pokémon you added.",
       calcs: "Every benchmark calc on the Calcs tab.",
       matchups: "Each opponent you've prepped for this team: their team, your plans and notes.",
     },
     alsoShareClosedOnly:
-      "Strategy, calcs and matchups can only be shared with a closed team sheet — they'd give away the Stat Points and nature an open sheet hides.",
+      "Strategy, speed, calcs and matchups can only be shared with a closed team sheet — they'd give away the Stat Points and nature an open sheet hides.",
     matchupsLoading: "Your matchups are still loading — they'll be shared once they have.",
     publishing: "Publishing…",
     makingPrivate: "Making private…",
@@ -435,6 +440,7 @@ export const en = {
       pokemonNotes: "the Pokémon notes",
       weaknesses: "the weaknesses",
       regulationIds: "the regulation",
+      speedPins: "the Speed Tiers picks",
     } as Record<string, string>,
     otherField: "the team",
     added: (n: number) => `added ${n}`,
@@ -1058,21 +1064,74 @@ export const en = {
     table: "By Pokémon",
     tiers: "Ranking",
     speedLine: "SpeedLine",
-    tipsTitle: "Who's faster, at level 50",
-    tipsBody:
-      "Every Pokémon in the regulation at the Speeds people actually run — fastest, neutral and slowest, with and without a Choice Scarf.",
-    tips: [
+    team: "My team",
+    teamPicker: "Team",
+    noTeams: (regulation: string) => `You have no teams in ${regulation} yet.`,
+    addPokemon: "Add a Pokémon…",
+    addPokemonLabel: "Add a Pokémon to the table",
+    baseSpeedValue: (speed: number) => `Base Speed ${speed}`,
+    speedRange: (min: number, max: number) => `Speed ${min}–${max}`,
+    summary:
+      "See who moves first by comparing your team against common tournament Pokémon, ranked by **Base Speed** (fastest at the top and toward the left).",
+    teamTips: [
       {
-        lead: "Find your Speed:",
-        body: "in Ranking, type a number like `150` to see every Speed within 5 points of it — green is faster than you, red slower, amber a Speed tie.",
+        lead: "Your team (orange boxes) shows real Speed.",
+        body: "Because your team is already built, we calculate your exact battle Speed — including your Nature, training, and items like Choice Scarf.",
       },
       {
-        lead: "Compare Pokémon:",
-        body: "type several names, like `garchomp sneasler`, to see only those.",
+        lead: "Opponents have a Speed range.",
+        body: "Opposing Pokémon can be trained differently, so they don't have one fixed number. Items (Choice Scarf), Abilities (Swift Swim), or field effects (Tailwind, Trick Room) can also shift who moves first.",
       },
       {
-        lead: "Two views:",
-        body: "Ranking lists every Speed in order, with chips to choose which; By Pokémon gives each Pokémon a row with its Speeds in columns — click one to sort, and a number searches that column.",
+        lead: "Missing a matchup?",
+        body: "Search and add any Pokémon to pin it to its Speed row for this team.",
+      },
+    ],
+    legend: "Legend",
+    legendTies: "Between the lines: your Pokémon and the ones with its base Speed",
+    legendPinned: "Added by you",
+    legendMore: "More in that row",
+    legendYours: "Your Pokémon, with its real Speed",
+    baseSpeed: "Base",
+    showLess: "Show less",
+    bandLabel: (top: number, bottom: number) => `Base Speed ${top} to ${bottom}`,
+    showMoreHint: "Show the rest — less used, or not seen in tournaments",
+    pokemon: "Pokémon",
+    yourSpeed: (speed: number) => `Your Speed: ${speed}`,
+    pinnedHint: "Added by you",
+    unpin: (name: string) => `Remove ${name} from the table`,
+    noMeta: "No tournament data for this regulation yet — showing every legal Pokémon.",
+    tipsTitle: "How to read this table",
+    listTipsBody:
+      "Every Speed a Pokémon in the regulation can reach at level 50, ranked from fastest to slowest — so you can see exactly who moves before whom.",
+    listTips: [
+      {
+        lead: "Each row is one way to train it.",
+        body: "Max Speed is full Speed training with a Speed-boosting Nature, Neutral without one, Min Speed none at all; the chips above choose which you see, Choice Scarf included.",
+      },
+      {
+        lead: "Find your Speed.",
+        body: "Type a number like `150` to see every Speed close to it: green is faster than you, red slower, amber a Speed tie.",
+      },
+      {
+        lead: "Compare Pokémon.",
+        body: "Type several names, like `garchomp sneasler`, to see only those.",
+      },
+    ],
+    tableTipsBody:
+      "One row per Pokémon, with every Speed it can reach at level 50 side by side — handy to check how fast a single Pokémon can be.",
+    tableTips: [
+      {
+        lead: "Sort by any column.",
+        body: "Click a column's header to rank every Pokémon by that Speed — Max Speed, Neutral, Min Speed or with a Choice Scarf.",
+      },
+      {
+        lead: "Find your Speed.",
+        body: "Type a number like `150` to see who's close to it in the sorted column: green is faster than you, red slower, amber a Speed tie.",
+      },
+      {
+        lead: "Compare Pokémon.",
+        body: "Type several names, like `garchomp sneasler`, to see only those.",
       },
     ],
   },
@@ -1354,7 +1413,7 @@ export const en = {
     editStats: "Edit Stat Points and nature",
     resultsLabel: (field: string) => `${field} options`,
     keyboardHint:
-      "Pick from the list under the form: type to filter, ↑ / ↓ to move, Enter to pick and go on to the next field. Outside a text field, ← / → switch Pokémon, Ctrl/⌘+C and Ctrl/⌘+V copy and paste one, and Ctrl/⌘+Delete removes it.",
+      "Pick from the list under the form: type to filter, ↑ / ↓ to move, Enter to pick and go on to the next field. Outside a text field, ← / → switch Pokémon, Alt+← / → move it along the row (or drag its tile), Ctrl/⌘+C and Ctrl/⌘+V copy and paste one, and Ctrl/⌘+Delete removes it.",
     pasteShortcutHint:
       "Copied a Pokémon's Showdown text? Paste it here (Ctrl/⌘+V) to fill this slot.",
     copy: "Copy",
@@ -1377,6 +1436,9 @@ export const en = {
     confirmRemoveBody:
       "Plans, combinations and logged games that picked it lose that pick. Everything else keeps pointing at the same Pokémon.",
     removed: (name: string) => `Removed ${name}`,
+    moveLeft: (name: string) => `Move ${name} left`,
+    moveRight: (name: string) => `Move ${name} right`,
+    dragHint: "Drag to reorder",
     removeSyncFailed:
       "Couldn't update the plans and logged games that pick from this team — check your connection.",
     importExport: "Import / Export",

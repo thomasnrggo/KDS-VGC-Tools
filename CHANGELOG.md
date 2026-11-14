@@ -10,6 +10,39 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.15 — 2026-11-14
+
+### Added
+
+- Speed Tiers: a "My team" view for beginners — base Speed in bands of 10, fastest first, your
+  Pokémon (badged with their actual Speed; Megas as their Mega) among the others in their band,
+  a divider between base Speeds. The most used in the regulation's tournaments show ("+N" for the
+  rest, "Show less" to fold back); add any other with "Add a Pokémon…", saved with the team.
+- Team page: a **Speed** tab with the same table for that team (no team picker), between Threats
+  and Calcs.
+- Sharing: **Speed** is a new section to share (closed team sheet only, like Calcs) — the shared
+  page gets a read-only Speed tab, with the Pokémon you added.
+- Speed Tiers: each view (Ranking, By Pokémon, My team) opens with a "How to read this table"
+  banner; its ✕ hides it for good on that device, the "?" beside the search brings it back. My
+  team's legend sits behind the ⓘ in the table header.
+- Team Builder: reorder a team's Pokémon — drag a tile along the row, Alt+← / → from the keyboard,
+  or the ‹ › buttons on phones. Combinations, per-Pokémon notes, matchup plans (yours, prep
+  groups', and a collaborative team's shared ones) and logged games keep pointing at the same
+  Pokémon.
+- Team page: ← / → switch between its tabs (Overview, Strategy, Coverage…), outside text fields and
+  dialogs.
+
+### Changed
+
+- Speed Tiers on phones: the views are one button opening a sheet (like the team page's sections)
+  instead of wrapping pills, and My team's team picker is full width.
+- My Teams: the Active / Archived chips are gone — Archived is now the last entry of the Folders
+  panel (once you have archived teams), and All teams, each folder and No folder show active teams.
+  Drop a team on Archived to archive it.
+- A collaborative team's matchups are managed on its own Matchups tab (add opponents, plan,
+  add from another list), and its group no longer shows up as a prep group in the Matchup Planner
+  or other group pickers.
+
 ## 0.3.14 — 2026-11-11
 
 ### Added

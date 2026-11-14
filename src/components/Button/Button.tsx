@@ -71,13 +71,17 @@ export function TextAction({
   );
 }
 
-/** An on/off pill (Mega, Tailwind, Helping Hand…): filled while `active`. */
+/**
+ * An on/off pill (Mega, Tailwind, Helping Hand…): filled while `active`.
+ * `soft`: borderless grey while off — like Speed Tiers' filter chips.
+ */
 export function TogglePill({
   active,
+  variant = "outline",
   className,
   type = "button",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean; variant?: "outline" | "soft" }) {
   return (
     <button
       type={type}
@@ -86,7 +90,9 @@ export function TogglePill({
         "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
         active
           ? "border-zinc-600 bg-chrome-600 text-white"
-          : "border-zinc-300 text-zinc-700 hover:bg-zinc-100",
+          : variant === "soft"
+            ? "border-transparent bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
+            : "border-zinc-300 text-zinc-700 hover:bg-zinc-100",
         className,
       )}
       {...props}

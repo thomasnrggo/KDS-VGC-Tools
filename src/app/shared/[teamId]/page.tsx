@@ -13,6 +13,7 @@ import { PokemonCalcsBox } from "@/components/TeamCalcs";
 import { TeamMatchupsList } from "@/components/TeamMatchups";
 import { RichTextView } from "@/components/RichTextEditor";
 import { SearchField } from "@/components/SearchField";
+import { TeamSpeedTiers } from "@/components/TeamSpeedTiers";
 import { getSharedMatchups, getSharedTeam } from "@/lib/firebase";
 import { REGULATIONS } from "@/data/regulations";
 import type { Opponent, ShareSection, SharedTeam } from "@/types";
@@ -105,6 +106,10 @@ export default function SharedTeamPage({ params, searchParams }: SharedTeamPageP
   const shared = state.kind === "ready" ? state.team : null;
   const team = shared ? sharedTeamAsTeam(shared) : null;
   const tabs: SharedTab[] = ["report", ...(shared?.sections ?? [])];
+  // A copy published before regulationIds existed falls back to the first regulation.
+  const speedRegulation =
+    REGULATIONS.find((regulation) => regulation.id === shared?.regulationIds?.[0]) ??
+    REGULATIONS[0];
   const activeTab: SharedTab = tabs.find((tab) => tab === selectedTab) ?? "report";
   const sharesMore = tabs.length > 1;
 
@@ -303,6 +308,18 @@ export default function SharedTeamPage({ params, searchParams }: SharedTeamPageP
                 </div>
               </div>
             ))}
+
+          {/* The owner's Speed table, read only (docs/team-speed-tiers.md). */}
+          {activeTab === "speed" && speedRegulation && (
+            <TeamSpeedTiers
+              teams={[shared]}
+              hideTeamPicker
+              regulationId={speedRegulation.id}
+              regulationLabel={t.common.regulationLabel(speedRegulation.label)}
+              speciesKeys={speedRegulation.speciesKeys}
+              megaStoneItemsForSpecies={speedRegulation.megaStoneItemsForSpecies}
+            />
+          )}
 
           {activeTab === "matchups" && (
             <TeamMatchupsList

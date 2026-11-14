@@ -71,7 +71,7 @@ export type TeamSheetMode = "open" | "closed";
  * The parts of a Team Report its owner can choose to add to the shared copy
  * — the roster and overview always go out. See docs/full-share.md.
  */
-export type ShareSection = "strategy" | "calcs" | "matchups";
+export type ShareSection = "strategy" | "speed" | "calcs" | "matchups";
 
 /** Set when the team's report is shared (see src/lib/sharedTeam.ts); absent means private. */
 export interface TeamShare {
@@ -107,6 +107,8 @@ export interface SharedTeam {
   combinations?: TeamCombination[];
   /** With the "calcs" section: the team's benchmark calcs. */
   calcs?: TeamCalc[];
+  /** With the "speed" section: the Pokémon added to its Speed table (Team.speedPins). */
+  speedPins?: string[];
   updatedAt: string;
 }
 
@@ -175,6 +177,8 @@ export interface Team {
   collab?: TeamCollab;
   /** Benchmark damage calcs on the Team Report's Calcs tab, in pasted order. */
   calcs?: TeamCalc[];
+  /** Pokémon added by hand to the team's Speed Tiers table (SpeedTierRow ids — docs/team-speed-tiers.md). */
+  speedPins?: string[];
   /** ISO timestamp of when this team was archived, or absent/undefined if it's active. Archiving is reversible (see unarchiveTeam) — it just moves the team out of the switcher and the My Teams "Active" tab, it never deletes anything. */
   archivedAt?: string;
   /**

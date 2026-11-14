@@ -419,6 +419,11 @@ running` — worth actually reading the dev server's own log output when a chang
       the removed one. `removePokemonEverywhere` applies it to your opponents, tournaments and
       prep-group plans (`getMyGroupPlans`), pulling the cloud copies first when signed in. A
       saved team asks to confirm; a draft removes in place.
+    - **Reordering** (2026-11-13): the same remapping, generalized — a `SlotMap` (`removalMap` /
+      `moveMap` in rosterSlots.ts) applied by `teamWithPokemonMoved` and
+      `movePokemonEverywhere` (src/lib/removeTeamPokemon.ts; remaps run one at a time, so quick
+      moves each build on the last save). Drag a tile onto another (desktop), Alt+← / → on the
+      selected one, or ‹ › beside the Stats heading on phones; the moved Pokémon stays selected.
     - **Fixed on the way** (also in the calc): `SearchableSelect` opened highlighting the first row
       when the current pick's label carried a note ("(Hidden Ability)", "(Mega Stone)"), so Enter
       replaced it. It now takes `selectedId`, and keeps the current pick listed when unfiltered.

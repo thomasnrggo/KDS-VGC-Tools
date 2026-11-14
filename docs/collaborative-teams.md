@@ -59,9 +59,12 @@ groupId)`. Create only by the group's owner; `groupId` and `ownerUid` can't chan
 
 - `Team.collab?: { groupId; ownerUid }` marks a collaborative team in that list (badges, member
   avatars, what the menus offer).
-- **Matchups**: the Team Report's Matchups tab and the Matchup Planner (the team's group in the
-  list switcher) show the group's opponents with the shared plan. Its picks point into the team's
-  roster as usual.
+- **Matchups**: the team's Matchups tab is the group's opponent list (`CollabTeamMatchups`: the
+  planner's `OpponentsSection` on the team's group, planned with this team — add, edit, plan, Add
+  from another list, Copy to my opponents) with the shared plan. Its picks point into the team's
+  roster as usual. Since 2026-11-13 the Matchup Planner and every other prep-group picker leave a
+  team's group out (`useGroups().prepGroups` / `activeGroups`; `teamGroups` for the teams):
+  it isn't a prep group, and showed there as an empty list.
 - **Roster changes** (removing or reordering a Pokémon) shift every shared plan and the team's
   combinations in one batch (`rosterSlots.ts`), done by whoever made the change.
 
@@ -134,8 +137,7 @@ groupId)`. Create only by the group's owner; `groupId` and `ownerUid` can't chan
 - **Invites** carry `teamId`, so the join page explains it's a collaborative team and opens the team.
 - **UI**: member avatars in place of the Collaborate icon, "Collaborative · Edited by Rey · 5
   minutes ago" under the header (`timeAgo`), a Collaborative badge in My Teams. A collaborative
-  team has no Share, Archive or Remove, and its regulation can't be re-tagged. The planner's
-  group bar doesn't offer archiving a team's group.
+  team has no Share, Archive or Remove, and its regulation can't be re-tagged.
 - **Rules**: a team doc (or its subcollections) that doesn't exist reads as missing rather than
   denied, so members' listeners survive the moment between the group and the team being created.
 

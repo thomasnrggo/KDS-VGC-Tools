@@ -47,7 +47,8 @@ export default function MatchupPlanner() {
   const personal = useOpponents();
   const groupsApi = useGroups();
   const source = usePlannerSource();
-  const group = groupsApi.groups.find((g) => g.id === source) ?? null;
+  // Only prep groups: a collaborative team's matchups live on its own page.
+  const group = groupsApi.prepGroups.find((g) => g.id === source) ?? null;
   // The saved list is a prep group, but whether it's still yours isn't known
   // yet (sign-in or your groups still loading). Showing your own list meanwhile
   // made the page swap lists a moment later, so it waits instead.
@@ -236,7 +237,7 @@ export default function MatchupPlanner() {
             (o) => o.regulationId === selectedRegulationId,
           )}
           myOpponents={group ? personal.opponents : undefined}
-          groups={groupsApi.groups.filter(
+          groups={groupsApi.prepGroups.filter(
             (g) => g.id !== group?.id && g.regulationId === selectedRegulationId,
           )}
           onAdd={addFromList}

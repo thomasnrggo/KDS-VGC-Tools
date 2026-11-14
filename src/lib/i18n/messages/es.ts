@@ -129,6 +129,7 @@ export const es: Messages = {
     delete: "Eliminar carpeta (mantiene sus equipos)",
     folders: "Carpetas",
     allTeams: "Todos los equipos",
+    archived: "Archivados",
     allFiled: "Todos los equipos de aquí están en una carpeta.",
     empty: "Aún no hay equipos — usa Mover a carpeta en un equipo, o arrastra uno a esta carpeta.",
     moveTo: "Mover a carpeta",
@@ -234,6 +235,7 @@ export const es: Messages = {
       strategy: "Estrategia",
       coverage: "Cobertura",
       threats: "Amenazas",
+      speed: "Velocidad",
       calcs: "Cálculos",
       matchups: "Enfrentamientos",
       stats: "Estadísticas de torneos",
@@ -300,16 +302,19 @@ export const es: Messages = {
     alsoShare: "Compartir también",
     sections: {
       strategy: "Estrategia",
+      speed: "Velocidad",
       calcs: "Cálculos",
       matchups: "Enfrentamientos",
     },
     sectionHints: {
       strategy: "Las notas del equipo y sus combinaciones habituales.",
+      speed:
+        "La tabla de velocidad: tu equipo por velocidad base, con sus velocidades reales y los Pokémon que añadiste.",
       calcs: "Todos los cálculos de referencia de la pestaña Cálculos.",
       matchups: "Cada rival que has preparado para este equipo: su equipo, tus planes y tus notas.",
     },
     alsoShareClosedOnly:
-      "La estrategia, los cálculos y los enfrentamientos solo se pueden compartir con la hoja de equipo cerrada — revelarían los puntos de estadística y la naturaleza que la hoja abierta oculta.",
+      "La estrategia, la velocidad, los cálculos y los enfrentamientos solo se pueden compartir con la hoja de equipo cerrada — revelarían los puntos de estadística y la naturaleza que la hoja abierta oculta.",
     matchupsLoading:
       "Tus enfrentamientos aún se están cargando — se compartirán en cuanto terminen.",
     publishing: "Publicando…",
@@ -440,6 +445,7 @@ export const es: Messages = {
       pokemonNotes: "las notas de los Pokémon",
       weaknesses: "las debilidades",
       regulationIds: "la regulación",
+      speedPins: "las elecciones de Velocidades",
     },
     otherField: "el equipo",
     added: (n) => `añadió ${n}`,
@@ -1072,21 +1078,75 @@ export const es: Messages = {
     table: "Por Pokémon",
     tiers: "Ranking",
     speedLine: "SpeedLine",
-    tipsTitle: "Quién es más rápido, a nivel 50",
-    tipsBody:
-      "Todos los Pokémon de la regulación con las velocidades que de verdad se usan: la más rápida, la neutra y la más lenta, con y sin Pañuelo Elección.",
-    tips: [
+    team: "Mi equipo",
+    teamPicker: "Equipo",
+    noTeams: (regulation) => `Aún no tienes equipos en ${regulation}.`,
+    addPokemon: "Añadir un Pokémon…",
+    addPokemonLabel: "Añadir un Pokémon a la tabla",
+    baseSpeedValue: (speed) => `Velocidad base ${speed}`,
+    speedRange: (min, max) => `Velocidad ${min}–${max}`,
+    summary:
+      "Mira quién se mueve primero comparando tu equipo con los Pokémon más comunes en torneos, ordenados por **velocidad base** (los más rápidos arriba y a la izquierda).",
+    teamTips: [
       {
-        lead: "Encuentra tu velocidad:",
-        body: "en Ranking, escribe un número como `150` para ver cada velocidad a 5 puntos o menos — en verde lo más rápido que tú, en rojo lo más lento y en ámbar los empates.",
+        lead: "Tu equipo (casillas naranjas) muestra su velocidad real.",
+        body: "Como tu equipo ya está armado, calculamos su velocidad exacta en combate — con su naturaleza, su entrenamiento y objetos como el Pañuelo Elección.",
       },
       {
-        lead: "Compara Pokémon:",
-        body: "escribe varios nombres, como `garchomp sneasler`, para ver solo esos.",
+        lead: "Los rivales tienen un rango de velocidad.",
+        body: "Los Pokémon rivales pueden estar entrenados de forma distinta, así que no tienen un número fijo. Los objetos (Pañuelo Elección), las habilidades (Nado Rápido) o los efectos de campo (Viento Afín, Espacio Raro) también cambian quién se mueve primero.",
       },
       {
-        lead: "Dos vistas:",
-        body: "Ranking ordena todas las velocidades en una sola lista, con chips para elegir cuáles; Por Pokémon da a cada Pokémon una fila con sus velocidades en columnas — haz clic en una para ordenar, y un número busca en esa columna.",
+        lead: "¿Falta un enfrentamiento?",
+        body: "Busca y añade cualquier Pokémon para fijarlo en su fila de velocidad para este equipo.",
+      },
+    ],
+    legend: "Leyenda",
+    legendTies: "Entre las líneas: tu Pokémon y los que tienen su velocidad base",
+    legendPinned: "Añadido por ti",
+    legendMore: "Más en esa fila",
+    legendYours: "Tu Pokémon, con su velocidad real",
+    baseSpeed: "Base",
+    showLess: "Ver menos",
+    bandLabel: (top, bottom) => `Velocidad base de ${top} a ${bottom}`,
+    showMoreHint: "Mostrar el resto — menos usados, o no vistos en torneos",
+    pokemon: "Pokémon",
+    yourSpeed: (speed) => `Tu velocidad: ${speed}`,
+    pinnedHint: "Añadido por ti",
+    unpin: (name) => `Quitar ${name} de la tabla`,
+    noMeta:
+      "Aún no hay datos de torneos para esta regulación: se muestran todos los Pokémon legales.",
+    tipsTitle: "Cómo leer esta tabla",
+    listTipsBody:
+      "Todas las velocidades que puede alcanzar cada Pokémon de la regulación a nivel 50, de la más rápida a la más lenta — para ver exactamente quién se mueve antes que quién.",
+    listTips: [
+      {
+        lead: "Cada fila es una forma de entrenarlo.",
+        body: "Velocidad máxima es todo el entrenamiento en Velocidad con una naturaleza que la sube, Neutra sin ella, Velocidad mínima nada; los chips de arriba eligen cuáles ves, con Pañuelo Elección incluido.",
+      },
+      {
+        lead: "Encuentra tu velocidad.",
+        body: "Escribe un número como `150` para ver todas las velocidades cercanas: verde es más rápido que tú, rojo más lento, ámbar un empate.",
+      },
+      {
+        lead: "Compara Pokémon.",
+        body: "Escribe varios nombres, como `garchomp sneasler`, para ver solo esos.",
+      },
+    ],
+    tableTipsBody:
+      "Una fila por Pokémon, con todas las velocidades que puede alcanzar a nivel 50 una al lado de otra — útil para ver lo rápido que puede ser un Pokémon.",
+    tableTips: [
+      {
+        lead: "Ordena por cualquier columna.",
+        body: "Haz clic en el encabezado de una columna para ordenar todos los Pokémon por esa velocidad — máxima, neutra, mínima o con Pañuelo Elección.",
+      },
+      {
+        lead: "Encuentra tu velocidad.",
+        body: "Escribe un número como `150` para ver quién está cerca en la columna ordenada: verde es más rápido que tú, rojo más lento, ámbar un empate.",
+      },
+      {
+        lead: "Compara Pokémon.",
+        body: "Escribe varios nombres, como `garchomp sneasler`, para ver solo esos.",
       },
     ],
   },
@@ -1373,7 +1433,7 @@ export const es: Messages = {
     editStats: "Editar puntos de estadística y naturaleza",
     resultsLabel: (field) => `Opciones de ${field}`,
     keyboardHint:
-      "Elige de la lista bajo el formulario: escribe para filtrar, ↑ / ↓ para moverte e Intro para elegir y pasar al siguiente campo. Fuera de un campo de texto, ← / → cambian de Pokémon, Ctrl/⌘+C y Ctrl/⌘+V copian y pegan uno, y Ctrl/⌘+Supr lo quita.",
+      "Elige de la lista bajo el formulario: escribe para filtrar, ↑ / ↓ para moverte e Intro para elegir y pasar al siguiente campo. Fuera de un campo de texto, ← / → cambian de Pokémon, Alt+← / → lo mueven en la fila (o arrastra su casilla), Ctrl/⌘+C y Ctrl/⌘+V copian y pegan uno, y Ctrl/⌘+Supr lo quita.",
     pasteShortcutHint:
       "¿Copiaste el texto de Showdown de un Pokémon? Pégalo aquí (Ctrl/⌘+V) para llenar este hueco.",
     copy: "Copiar",
@@ -1396,6 +1456,9 @@ export const es: Messages = {
     confirmRemoveBody:
       "Los planes, combinaciones y partidas registradas que lo eligieron pierden esa elección. Todo lo demás sigue apuntando al mismo Pokémon.",
     removed: (name) => `${name} quitado`,
+    moveLeft: (name) => `Mover ${name} a la izquierda`,
+    moveRight: (name) => `Mover ${name} a la derecha`,
+    dragHint: "Arrastra para reordenar",
     removeSyncFailed:
       "No se pudieron actualizar los planes y partidas registradas que eligen de este equipo: revisa tu conexión.",
     importExport: "Importar / Exportar",

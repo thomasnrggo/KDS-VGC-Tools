@@ -1,4 +1,4 @@
-import { matchupPlanWithoutSlot } from "./rosterSlots";
+import { remapMatchupPlan, type SlotMap } from "./rosterSlots";
 import { sameValue } from "./sameValue";
 import type {
   CollabCalcDoc,
@@ -154,18 +154,18 @@ export function hasCollabChanges(changes: CollabTeamChanges): boolean {
 }
 
 /**
- * A collaborative team's shared plans after its roster lost the Pokémon at
- * `removed` — each shifted to keep pointing at the same Pokémon (see
- * matchupPlanWithoutSlot). Only the ones that change are returned.
+ * A collaborative team's shared plans after its roster changed (a Pokémon
+ * removed or moved) — each remapped to keep pointing at the same Pokémon
+ * (see SlotMap). Only the ones that change are returned.
  */
-export function sharedPlansWithoutSlot(
+export function sharedPlansRemapped(
   plans: SharedPlanDoc[],
-  removed: number,
+  map: SlotMap,
   by: EditedBy | undefined,
   now: string,
 ): SharedPlanDoc[] {
   return plans.flatMap((doc) => {
-    const plan = matchupPlanWithoutSlot(doc.plan, removed);
+    const plan = remapMatchupPlan(doc.plan, map);
     return same(plan, doc.plan) ? [] : [{ ...doc, plan, updatedBy: by, updatedAt: now }];
   });
 }

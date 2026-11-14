@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PageTips, PageTipsButton } from "../PageTips";
 import { computeSpeedTierRows, type SpeedTierRow } from "@/lib/stats/computeSpeedTiers";
 import {
   matchesSpeedQuery,
@@ -254,6 +255,15 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
 
   return (
     <div className="flex flex-col gap-3">
+      {/* What the view is and how to search it — closed for good with its ✕,
+          back with the "?" beside the search. */}
+      <PageTips
+        id="speed-ranking"
+        accent="sky"
+        title={t.speedTiers.tipsTitle}
+        body={t.speedTiers.listTipsBody}
+        tips={t.speedTiers.listTips}
+      />
       <div className="flex flex-wrap items-center gap-3">
         <SearchField
           query={query}
@@ -262,6 +272,7 @@ export function SpeedTiersList({ speciesKeys, megaStoneItemsForSpecies }: SpeedT
           ariaLabel={t.speedTable.searchLabel}
           className="w-full sm:w-64"
         />
+        <PageTipsButton id="speed-ranking" />
         <div role="group" aria-label={t.speedList.filterMetrics} className="flex flex-wrap gap-1.5">
           {METRICS.map((metric) => (
             <MetricFilterChip

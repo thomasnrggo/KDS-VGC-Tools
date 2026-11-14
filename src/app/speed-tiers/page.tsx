@@ -10,15 +10,25 @@ import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { SpeedTiersTable } from "@/components/SpeedTiersTable";
 import { SpeedTiersList } from "@/components/SpeedTiersList";
 import { SpeedLine } from "@/components/SpeedLine";
+import { TeamSpeedTiers } from "@/components/TeamSpeedTiers";
+import { SectionPicker } from "@/components/SectionPicker";
 import { REGULATIONS } from "@/data/regulations";
 import { cn } from "@/lib/utils";
 
-type View = "table" | "list" | "speedline";
+type View = "table" | "list" | "team" | "speedline";
 
 export default function SpeedTiersPage() {
   const t = useMessages();
-  const { activeTeams, activeTeamId, isLoading, addTeam, editTeam, removeTeam, setActiveTeamId } =
-    useMyTeams();
+  const {
+    activeTeams,
+    activeTeamId,
+    isLoading,
+    addTeam,
+    editTeam,
+    removeTeam,
+    setActiveTeamId,
+    updateTeam,
+  } = useMyTeams();
   const { user, isLoading: isAuthLoading, signInWithGoogle, signOut } = useAuth();
   const { isStaff } = useIsAdmin();
 
@@ -55,18 +65,20 @@ export default function SpeedTiersPage() {
         onSignOut={signOut}
       />
       <div className="flex w-full flex-col gap-4 px-3 py-4 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold text-zinc-900">{t.speedTiers.title}</h2>
-          {REGULATIONS.length > 1 ? (
-            <RegulationSelect value={selectedRegulationId} onChange={setSelectedRegulationId} />
-          ) : (
-            <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
-              {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
-            </span>
-          )}
-        </div>
+        {/* One row: the title and regulation, the views on the right (wrapping on phones). */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-semibold text-zinc-900">{t.speedTiers.title}</h2>
+            {REGULATIONS.length > 1 ? (
+              <RegulationSelect value={selectedRegulationId} onChange={setSelectedRegulationId} />
+            ) : (
+              <span className="shrink-0 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-xs font-medium text-zinc-500">
+                {REGULATIONS[0] && t.common.regulationLabel(REGULATIONS[0].label)}
+              </span>
+            )}
+          </div>
 
-        {/* Ranking ("list" internally, the default) = one row per (Pokémon,
+          {/* Ranking ("list" internally, the default) = one row per (Pokémon,
             config) record, all sorted together by real Speed value — the
             pikalytics-style true speed tier list. By Pokémon ("table"
             internally) = one row per Pokémon, every config as its own column.
@@ -74,51 +86,83 @@ export default function SpeedTiersPage() {
             reference data the other two views show — your active team's
             actual Speed (real pasted item/nature/Stat Points) against one
             saved opponent's, on a shared horizontal line. */}
-        <div role="tablist" aria-label={t.speedTiers.viewLabel} className="flex gap-1.5">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={effectiveView === "list"}
-            onClick={() => setView("list")}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-              effectiveView === "list"
-                ? "bg-chrome-600 text-white"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-            )}
+          {/* Phones: one button and a bottom sheet, like the team page's sections. */}
+          <SectionPicker
+            title={t.speedTiers.viewLabel}
+            options={[
+              { value: "list" as View, label: t.speedTiers.tiers },
+              { value: "table" as View, label: t.speedTiers.table },
+              { value: "team" as View, label: t.speedTiers.team },
+              ...(isStaff ? [{ value: "speedline" as View, label: t.speedTiers.speedLine }] : []),
+            ]}
+            value={effectiveView}
+            onChange={setView}
+            className="basis-full"
+          />
+          <div
+            role="tablist"
+            aria-label={t.speedTiers.viewLabel}
+            className="hidden flex-wrap gap-1.5 sm:ml-auto sm:flex"
           >
-            {t.speedTiers.tiers}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={effectiveView === "table"}
-            onClick={() => setView("table")}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-              effectiveView === "table"
-                ? "bg-chrome-600 text-white"
-                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-            )}
-          >
-            {t.speedTiers.table}
-          </button>
-          {isStaff && (
             <button
               type="button"
               role="tab"
-              aria-selected={view === "speedline"}
-              onClick={() => setView("speedline")}
+              aria-selected={effectiveView === "list"}
+              onClick={() => setView("list")}
               className={cn(
                 "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-                view === "speedline"
+                effectiveView === "list"
                   ? "bg-chrome-600 text-white"
                   : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
               )}
             >
-              {t.speedTiers.speedLine}
+              {t.speedTiers.tiers}
             </button>
-          )}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={effectiveView === "table"}
+              onClick={() => setView("table")}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                effectiveView === "table"
+                  ? "bg-chrome-600 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+              )}
+            >
+              {t.speedTiers.table}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={effectiveView === "team"}
+              onClick={() => setView("team")}
+              className={cn(
+                "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                effectiveView === "team"
+                  ? "bg-chrome-600 text-white"
+                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+              )}
+            >
+              {t.speedTiers.team}
+            </button>
+            {isStaff && (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={view === "speedline"}
+                onClick={() => setView("speedline")}
+                className={cn(
+                  "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
+                  view === "speedline"
+                    ? "bg-chrome-600 text-white"
+                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+                )}
+              >
+                {t.speedTiers.speedLine}
+              </button>
+            )}
+          </div>
         </div>
 
         {selectedRegulation && effectiveView === "table" && (
@@ -131,6 +175,19 @@ export default function SpeedTiersPage() {
           <SpeedTiersList
             speciesKeys={selectedRegulation.speciesKeys}
             megaStoneItemsForSpecies={selectedRegulation.megaStoneItemsForSpecies}
+          />
+        )}
+        {/* My team = your team by base Speed against the Pokémon around it
+            (docs/team-speed-tiers.md). */}
+        {selectedRegulation && effectiveView === "team" && (
+          <TeamSpeedTiers
+            teams={activeTeams.filter((team) => team.regulationIds.includes(selectedRegulation.id))}
+            defaultTeamId={activeTeamId ?? undefined}
+            regulationId={selectedRegulation.id}
+            regulationLabel={t.common.regulationLabel(selectedRegulation.label)}
+            speciesKeys={selectedRegulation.speciesKeys}
+            megaStoneItemsForSpecies={selectedRegulation.megaStoneItemsForSpecies}
+            updateTeam={updateTeam}
           />
         )}
         {isStaff && view === "speedline" && (

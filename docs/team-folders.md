@@ -36,6 +36,10 @@ on a folder panel beside the list (2026-11-11).
   No folder (once there are folders), each with its count, then **New folder**. Picking one shows
   just those teams (`/teams?folder=<id>` or `?folder=none`, so Back and returning from a team keep
   it). A folder's ⋮: Rename, Move up / down, Delete (its teams stay, in no folder).
+- **Archived** (2026-11-13) replaced the Active / Archived tabs: the panel's last entry, shown
+  once the regulation has archived teams (`?folder=archived`). Everything else shows active teams
+  only; dropping a team on Archived archives it (not a collaborative one), and archived teams keep
+  their folder for when they're unarchived.
 - **Phones**: the panel is a row of chips above the list, with the picked folder's ⋮ beside it.
 - **Move to folder** on every team row: pick a folder, No folder, or type a name to create one and
   move the team there.
@@ -43,5 +47,4 @@ on a folder panel beside the list (2026-11-11).
   list only reorders.
 - **Create team** with a folder picked files the new team in it (the Team Builder's `?folder=`,
   `fileNewTeam` in useTeamFolders).
-- **Search** looks within what's picked. Counts are for the tab (Active / Archived) and regulation
-  shown; folders don't depend on either.
+- **Search** looks within what's picked. Counts are for the regulation shown; folders don't depend on it.

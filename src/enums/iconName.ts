@@ -30,6 +30,7 @@ export enum IconName {
   Group = "group",
   Help = "help",
   History = "history",
+  Info = "info",
   LightMode = "light_mode",
   Link = "link",
   Logout = "logout",

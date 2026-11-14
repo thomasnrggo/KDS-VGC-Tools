@@ -13,7 +13,7 @@ import type {
 } from "@/types";
 
 /** Every section a share can add, in the Share dialog's order. */
-export const SHARE_SECTIONS: ShareSection[] = ["strategy", "calcs", "matchups"];
+export const SHARE_SECTIONS: ShareSection[] = ["strategy", "speed", "calcs", "matchups"];
 
 /**
  * Whether `share` includes `section` (a share made before sections existed
@@ -65,6 +65,7 @@ export function toSharedTeam(
     notes: strategy && hasRichText(team.notes) ? team.notes : undefined,
     combinations: strategy && team.combinations?.length ? team.combinations : undefined,
     calcs: sections.includes("calcs") && team.calcs?.length ? team.calcs : undefined,
+    speedPins: sections.includes("speed") && team.speedPins?.length ? team.speedPins : undefined,
     updatedAt: now,
   };
 }

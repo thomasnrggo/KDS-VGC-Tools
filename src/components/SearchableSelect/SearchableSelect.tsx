@@ -60,6 +60,11 @@ interface SearchableSelectProps {
    * the calculator's Status, which isn't part of filling in a set.
    */
   skipFlow?: boolean;
+  /**
+   * "search": looks like the app's SearchField (round, with a magnifier) —
+   * for a picker in a toolbar (Speed Tiers' Add a Pokémon) rather than a form.
+   */
+  variant?: "field" | "search";
 }
 
 const MAX_VISIBLE_RESULTS = 30;
@@ -98,6 +103,7 @@ export function SearchableSelect({
   narrow,
   onClear,
   skipFlow,
+  variant = "field",
 }: SearchableSelectProps) {
   const t = useMessages();
   const [query, setQuery] = useState(value ?? "");
@@ -223,6 +229,7 @@ export function SearchableSelect({
           setIsOpen(false);
         }}
         onPick={pick}
+        variant={variant}
         placeholder={placeholder}
         ariaLabel={ariaLabel}
         value={value}
@@ -316,11 +323,20 @@ export function SearchableSelect({
           aria-label={ariaLabel}
           autoFocus={autoFocus}
           className={
-            compact
-              ? `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1 pl-2 text-xs text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none ${onClear ? "pr-6" : "pr-2"}`
-              : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none ${onClear ? "pr-8" : "pr-2"}`
+            variant === "search"
+              ? "w-full rounded-full border border-zinc-300 bg-zinc-50 py-2 pr-4 pl-9 text-sm text-zinc-800 placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-400 focus:outline-none"
+              : compact
+                ? `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-1 pl-2 text-xs text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none ${onClear ? "pr-6" : "pr-2"}`
+                : `w-full rounded-lg border border-zinc-300 bg-zinc-50 py-2 pl-2 text-sm text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none ${onClear ? "pr-8" : "pr-2"}`
           }
         />
+        {variant === "search" && (
+          <Icon
+            name={IconName.Search}
+            size={16}
+            className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-zinc-400"
+          />
+        )}
         {onClear && value && (
           <button
             type="button"
@@ -397,6 +413,7 @@ export function SearchableSelect({
 }
 
 interface PhoneSelectProps {
+  variant: "field" | "search";
   options: SearchableSelectOption[];
   filtered: SearchableSelectOption[];
   query: string;
@@ -433,6 +450,7 @@ function PhoneSelect({
   compact,
   narrow,
   onClear,
+  variant,
 }: PhoneSelectProps) {
   const t = useMessages();
   const inlineClear = !!onClear && !!value && !narrow;
@@ -446,6 +464,7 @@ function PhoneSelect({
           aria-label={ariaLabel}
           className={cn(
             "flex w-full items-center rounded-lg border border-zinc-300 bg-zinc-50 pl-2 text-left text-zinc-900 focus:ring-2 focus:ring-zinc-400 focus:outline-none",
+            variant === "search" && "gap-2 rounded-full pl-3",
             compact
               ? "min-h-8 py-1 text-xs"
               : narrow
@@ -454,6 +473,9 @@ function PhoneSelect({
             inlineClear ? (compact ? "pr-7" : "pr-9") : "pr-2",
           )}
         >
+          {variant === "search" && (
+            <Icon name={IconName.Search} size={16} className="shrink-0 text-zinc-400" />
+          )}
           <span
             className={cn(
               "min-w-0 flex-1",
