@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useMessages } from "@/hooks/useLanguage";
 
@@ -124,6 +125,14 @@ export function AuthMenu({ user, isLoading, onSignIn, onSignOut }: AuthMenuProps
           {user.email && (
             <div className="truncate px-3 pb-2 text-xs text-zinc-500">{user.email}</div>
           )}
+          <Link
+            href="/profile"
+            role="menuitem"
+            onClick={() => setIsMenuOpen(false)}
+            className="block w-full border-t border-zinc-200 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100"
+          >
+            {t.playerProfile.menuLink}
+          </Link>
           <button
             type="button"
             onClick={() => {

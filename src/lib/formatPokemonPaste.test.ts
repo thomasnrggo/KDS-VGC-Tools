@@ -37,6 +37,13 @@ Level: 50
 Hardy Nature`);
   });
 
+  it("capitalizes a nature stored by its lowercase key (as the editor saves it)", () => {
+    const pokemon = { species: "Ditto", nature: "adamant" };
+    expect(formatPokemonPaste(pokemon)).toBe(`Ditto
+Level: 50
+Adamant Nature`);
+  });
+
   it("omits Ability and item lines when neither is set", () => {
     const pokemon = { species: "Ditto", nature: "Hardy", moves: ["Transform"] };
     expect(formatPokemonPaste(pokemon)).toBe(`Ditto

@@ -11,6 +11,12 @@ const EVS_LABEL: Record<StatKey, string> = {
 };
 const STAT_ORDER: StatKey[] = ["hp", "atk", "def", "spa", "spd", "spe"];
 
+/** The editor stores natures by their lowercase key ("adamant"); Showdown expects "Adamant". */
+function capitalize(name: string): string {
+  const trimmed = name.trim();
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
+
 /**
  * Serializes a single Pokémon back into Showdown export text — the inverse
  * of parseTeam.ts's parsePokemonBlock, for the Damage Calculator's
@@ -49,7 +55,7 @@ export function formatPokemonPaste(
     : [];
   if (nonZeroSp.length > 0) lines.push(`EVs: ${nonZeroSp.join(" / ")}`);
 
-  if (!isOpenSheet) lines.push(`${pokemon.nature ?? "Hardy"} Nature`);
+  if (!isOpenSheet) lines.push(`${capitalize(pokemon.nature ?? "Hardy")} Nature`);
 
   for (const move of pokemon.moves ?? []) {
     // The calc keeps an emptied move slot as "" so the others stay in place.

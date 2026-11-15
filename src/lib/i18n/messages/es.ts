@@ -224,6 +224,54 @@ export const es: Messages = {
     natureTitle: (nature) => `Naturaleza ${nature}`,
     base: (value) => `Base ${value}`,
   },
+  playerProfile: {
+    title: "Perfil de jugador",
+    menuLink: "Perfil de jugador",
+    intro:
+      "Tus datos de torneo, que se rellenan solos en la lista de equipo PDF. Se quedan en este dispositivo: inicia sesión para guardarlos también en tu cuenta.",
+    introSignedIn:
+      "Tus datos de torneo, que se rellenan solos en la lista de equipo PDF. Guardados en tu cuenta, donde solo tú puedes verlos: nunca se comparten ni se guardan con un equipo.",
+    saved: "Perfil guardado.",
+    saveFailed: "No se pudo guardar en tu cuenta. Revisa tu conexión e inténtalo de nuevo.",
+  },
+  teamList: {
+    button: "Lista de equipo PDF",
+    buttonHint: "Rellenar la lista de equipo oficial de Play! Pokémon para un torneo",
+    title: "Lista de equipo PDF",
+    description:
+      "Rellena la lista de equipo oficial de Play! Pokémon (Video Game Team List) con este equipo. Tus datos vienen de tu perfil de jugador y se quedan en este dispositivo: nunca se guardan con el equipo ni se comparten.",
+    descriptionSignedIn:
+      "Rellena la lista de equipo oficial de Play! Pokémon (Video Game Team List) con este equipo. Tus datos vienen de tu perfil de jugador, privado en tu cuenta: nunca se guardan con el equipo ni se comparten.",
+    editProfile: "Editar perfil",
+    pagesLabel: "Páginas",
+    pages: {
+      opponents: "Para rivales",
+      staff: "Para el staff del torneo",
+      both: "Ambas",
+    },
+    pagesHint: {
+      opponents: "Página 2: la que muestras a tu rival en cada ronda.",
+      staff:
+        "Página 1: se entrega al staff del evento, con tu Player ID, fecha de nacimiento y estadísticas.",
+      both: "Las dos páginas, como las imprimirías.",
+    },
+    playerName: "Nombre del jugador",
+    trainerName: "Nombre de entrenador en el juego",
+    battleTeam: "Número / nombre del Equipo de Combate",
+    battleTeamPlaceholder: "p. ej. 3 / Lluvia",
+    switchProfile: "Nombre del perfil de Switch",
+    division: "Categoría de edad",
+    divisions: { juniors: "Júnior", seniors: "Sénior", masters: "Máster" },
+    playerId: "Player ID",
+    birthDate: "Fecha de nacimiento",
+    supportId: "Support ID",
+    optional: "opcional",
+    download: "Descargar PDF",
+    downloading: "Preparando…",
+    failed: "No se pudo crear el PDF. Revisa tu conexión e inténtalo de nuevo.",
+    incomplete: (count: number) =>
+      `A ${count} Pokémon ${count === 1 ? "le" : "les"} falta habilidad, objeto, naturaleza o movimientos: esas casillas quedan en blanco.`,
+  },
   teamPage: {
     notFound: "Equipo no encontrado",
     notFoundBody: "Puede que se haya eliminado en otro dispositivo.",

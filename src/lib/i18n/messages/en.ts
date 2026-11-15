@@ -223,6 +223,53 @@ export const en = {
     natureTitle: (nature: string) => `${nature} nature`,
     base: (value: number) => `Base ${value}`,
   },
+  playerProfile: {
+    title: "Player profile",
+    menuLink: "Player profile",
+    intro:
+      "Your tournament details, filled in for you on the team list PDF. They stay on this device — sign in to keep them on your account too.",
+    introSignedIn:
+      "Your tournament details, filled in for you on the team list PDF. Saved to your account, where only you can see them — never shared or saved with a team.",
+    saved: "Profile saved.",
+    saveFailed: "Couldn't save to your account. Check your connection and try again.",
+  },
+  teamList: {
+    button: "Team list PDF",
+    buttonHint: "Fill in the official Play! Pokémon team list for a tournament",
+    title: "Team list PDF",
+    description:
+      "Fills in the official Play! Pokémon Video Game Team List with this team. Your details come from your player profile and stay on this device — never saved with the team or shared.",
+    descriptionSignedIn:
+      "Fills in the official Play! Pokémon Video Game Team List with this team. Your details come from your player profile, private to your account — never saved with the team or shared.",
+    editProfile: "Edit profile",
+    pagesLabel: "Pages",
+    pages: {
+      opponents: "For opponents",
+      staff: "For tournament staff",
+      both: "Both",
+    },
+    pagesHint: {
+      opponents: "Page 2 — the one you show your opponent each round.",
+      staff: "Page 1 — handed to event staff, with your Player ID, date of birth and stats.",
+      both: "Both pages, as you'd print them.",
+    },
+    playerName: "Player name",
+    trainerName: "Trainer name in game",
+    battleTeam: "Battle Team number / name",
+    battleTeamPlaceholder: "e.g. 3 / Rain",
+    switchProfile: "Switch profile name",
+    division: "Age division",
+    divisions: { juniors: "Juniors", seniors: "Seniors", masters: "Masters" },
+    playerId: "Player ID",
+    birthDate: "Date of birth",
+    supportId: "Support ID",
+    optional: "optional",
+    download: "Download PDF",
+    downloading: "Preparing…",
+    failed: "Couldn't make the PDF. Check your connection and try again.",
+    incomplete: (count: number) =>
+      `${count} Pokémon ${count === 1 ? "is" : "are"} missing an ability, item, nature or moves — those boxes stay blank.`,
+  },
   teamPage: {
     notFound: "Team not found",
     notFoundBody: "It may have been removed on another device.",

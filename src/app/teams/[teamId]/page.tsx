@@ -53,6 +53,7 @@ import { addPasteToOpponents } from "@/lib/teamExport";
 import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sharedTeam";
 import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamExportActions } from "@/components/TeamExportActions";
+import { TeamListPdfDialog } from "@/components/TeamListPdf";
 import {
   Button,
   IconButton,
@@ -234,6 +235,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
+  const [isTeamListOpen, setIsTeamListOpen] = useState(false);
   // Strategy tab below lg: which of its two sections the chips show.
   const [strategySection, setStrategySection] = useState<"combinations" | "notes">("combinations");
   // Phones: the sections' bottom sheet.
@@ -555,6 +557,15 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                       })
                     }
                   >
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsTeamListOpen(true)}
+                      title={t.teamList.buttonHint}
+                      className="flex items-center justify-center gap-2 px-4 py-1.5 text-sm"
+                    >
+                      <Icon name={IconName.Download} size={18} />
+                      {t.teamList.button}
+                    </Button>
                     <Link
                       href={`/teams/${teamId}/edit`}
                       title={t.teamBuilder.editPokemonHint}
@@ -569,6 +580,15 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   </TeamExportActions>
                 )}
               </div>
+            )}
+
+            {isTeamListOpen && (
+              <TeamListPdfDialog
+                teamId={team.id}
+                teamName={team.name}
+                pokemon={team.pokemon}
+                onClose={() => setIsTeamListOpen(false)}
+              />
             )}
 
             {isCollaborating && (

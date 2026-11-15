@@ -10,6 +10,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.17 — 2026-11-14
+
+### Added
+
+- **Team list PDF** on a team's Overview: fills in the official Play! Pokémon Video Game Team List
+  with the team and downloads it — the page for opponents (the default), the one for tournament
+  staff (with Player ID, date of birth and each Pokémon's Level 50 stats), or both. Filled in the
+  browser; your details come from your player profile, never saved with the team.
+- **Player profile** (/profile, in the account menu): your player name, trainer name, Switch
+  profile, age division, Player ID, date of birth and Support ID, filled in on the team list PDF.
+  Saved to your account where only you can read it (and kept on the device when signed out).
+
+### Fixed
+
+- Exported teams write the nature capitalized ("Adamant Nature", not "adamant Nature") when it
+  was picked in the Pokémon editor, so the paste imports cleanly into Showdown.
+
 ## 0.3.16 — 2026-11-14
 
 ### Added

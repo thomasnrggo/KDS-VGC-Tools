@@ -44,7 +44,8 @@ interface MyTeamHeaderProps {
     | "tournaments"
     | "speed-tiers"
     | "metagame"
-    | "team-library";
+    | "team-library"
+    | "profile";
   /**
    * The regulation currently selected on this page (each page owns its own
    * "Regulation" dropdown — see OpponentsSection/MyTeamsSection/
