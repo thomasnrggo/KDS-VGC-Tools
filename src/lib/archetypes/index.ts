@@ -20,3 +20,11 @@ export {
   type ArchetypeMatchup,
   type MetaArchetypes,
 } from "./aggregateArchetypes";
+export {
+  MIN_LABEL_TEAMS,
+  MIN_MATCHUP_GAMES,
+  archetypeMatchups,
+  primaryOfKey,
+  type ArchetypeMatchupReport,
+  type VersusArchetype,
+} from "./archetypeMatchups";

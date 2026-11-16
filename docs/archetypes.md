@@ -217,6 +217,26 @@ Each run that rebuilds a regulation's summary also classifies every tournament t
   the job (firestore.rules).
 - Ids, not names, so names can be translated in the app.
 
+## On the team page: tournament results (2026-11-15)
+
+Opening the archetype badge loads the regulation's archetype summary (`useMetaArchetypes`, one
+read per session, only once the panel opens) and shows, under "In official tournaments"
+(`archetypeMatchups`, `src/lib/archetypes/archetypeMatchups.ts`):
+
+- **Teams like yours**: the team's exact label when at least 20 tournament teams share it
+  (`MIN_LABEL_TEAMS`); otherwise **"All {primary} teams"**, every label with the same primary
+  archetype. A plain-primary label with few teams widens too: a team that's just "Sun" (13 teams)
+  is compared with all 289 Sun teams. Teams, win rate (ties count half) and top cuts.
+- **Struggles against / Does well against**: opponents grouped by **their primary archetype**,
+  so each matchup has games. Listed only with 15+ games (`MIN_MATCHUP_GAMES`), under 48% or over
+  52%, three each, never the team's own mirror or Balance.
+- A note when the data was built with an older archetype `version`, and a fallback when the job
+  hasn't written the data yet.
+
+Example (Sun, M-C): all Sun teams 289, 52%, 14 top cuts; struggles against Hard setup 32% (25
+games), Sun · Fire spam 38% (24), Rain · Screens 38% (52); does well against Tailwind 63% (63),
+Sun · Chlorophyll 57% (135), Perish trap 56% (112).
+
 ## Planned (not built)
 
 - **Storage:** `archetypeRoles/{id}` and `archetypes/{id}`, edited by admins. The metagame job

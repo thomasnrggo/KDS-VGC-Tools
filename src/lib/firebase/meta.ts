@@ -1,5 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "./firestore";
+import type { MetaArchetypes } from "@/lib/archetypes/aggregateArchetypes";
 import type { MetaDocument, MetaTournamentDocument } from "@/lib/meta/metaDocument";
 
 /**
@@ -21,4 +22,13 @@ export async function getMetaTournament(
 ): Promise<MetaTournamentDocument | null> {
   const snap = await getDoc(doc(db, META_COLLECTION, regulationId, "tournaments", tournamentId));
   return snap.exists() ? (snap.data() as MetaTournamentDocument) : null;
+}
+
+/**
+ * A regulation's archetype totals and label vs label results (the metagame
+ * job's `aggregateArchetypes`), or null before the job has written them.
+ */
+export async function getMetaArchetypes(regulationId: string): Promise<MetaArchetypes | null> {
+  const snap = await getDoc(doc(db, META_COLLECTION, regulationId, "archetypes", "summary"));
+  return snap.exists() ? (snap.data() as MetaArchetypes) : null;
 }

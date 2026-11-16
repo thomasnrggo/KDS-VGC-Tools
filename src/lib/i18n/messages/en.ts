@@ -245,6 +245,20 @@ export const en = {
     alsoHas: "Also has",
     includes: "Includes",
     preview: "Preview — archetype definitions are still being tuned.",
+    tournaments: "In official tournaments",
+    loading: "Loading tournament results…",
+    noData: "No tournament results for this regulation yet.",
+    noTeams: "No team like this one has played this regulation's official tournaments yet.",
+    likeYours: "Teams like yours",
+    allOf: (name: string) => `All ${name} teams`,
+    record: (teams: number, winRate: string, topCut: number) =>
+      `${teams} ${teams === 1 ? "team" : "teams"} · ${winRate} win rate · ${topCut} top ${topCut === 1 ? "cut" : "cuts"}`,
+    hard: "Struggles against",
+    good: "Does well against",
+    games: (games: number) => `${games} ${games === 1 ? "game" : "games"}`,
+    noneStandsOut: "No archetype stands out either way.",
+    outdated:
+      "These results use older archetype definitions; they update on the next metagame run.",
   },
   teamList: {
     button: "Team list PDF",

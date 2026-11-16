@@ -10,13 +10,22 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.20 — 2026-11-15
+
+### Added
+
+- **Team archetype: tournament results (preview)**: the archetype badge's panel now shows how
+  teams like yours did in the regulation's official tournaments (teams, win rate, top cuts) and the
+  archetypes they struggled with or beat, from the metagame job's archetype data. Teams with a
+  rare exact label are compared with every team of their main archetype.
+
 ## 0.3.19 — 2026-11-15
 
 ### Changed
 
 - **My Teams on phones**: a team's Duplicate moved into its ⋯ menu (the copy icon sat out of line
   beside it), and the folder chips became one dropdown (All teams, each folder, No folder, Archived,
-  + New folder), the same kind as the regulation filter. Desktop is unchanged.
+  - New folder), the same kind as the regulation filter. Desktop is unchanged.
 
 ## 0.3.18 — 2026-11-15
 

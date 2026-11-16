@@ -246,6 +246,20 @@ export const es: Messages = {
     alsoHas: "También tiene",
     includes: "Incluye",
     preview: "Vista previa: las definiciones de arquetipos aún se están ajustando.",
+    tournaments: "En torneos oficiales",
+    loading: "Cargando resultados de torneos…",
+    noData: "Aún no hay resultados de torneos para esta regulación.",
+    noTeams: "Ningún equipo como este ha jugado aún los torneos oficiales de esta regulación.",
+    likeYours: "Equipos como el tuyo",
+    allOf: (name: string) => `Todos los equipos ${name}`,
+    record: (teams: number, winRate: string, topCut: number) =>
+      `${teams} ${teams === 1 ? "equipo" : "equipos"} · ${winRate} de victorias · ${topCut} en top cut`,
+    hard: "Le cuesta contra",
+    good: "Le va bien contra",
+    games: (games: number) => `${games} ${games === 1 ? "partida" : "partidas"}`,
+    noneStandsOut: "Ningún arquetipo destaca a favor ni en contra.",
+    outdated:
+      "Estos resultados usan definiciones de arquetipos anteriores; se actualizan en la próxima ejecución del metajuego.",
   },
   teamList: {
     button: "Lista de equipo PDF",
