@@ -167,6 +167,12 @@ export default function AdminMetaEventsPage() {
           >
             Meta sets →
           </Link>
+          <Link
+            href="/admin/archetypes"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
+            Archetypes →
+          </Link>
         </div>
         <AuthMenu
           user={user}

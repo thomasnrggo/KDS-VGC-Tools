@@ -126,3 +126,42 @@ export function archetypeMatchups(
       .slice(0, LISTED),
   };
 }
+
+export interface ArchetypeTotals extends Record3 {
+  /** Teams with it as the primary archetype. */
+  teams: number;
+  topCut: number;
+  winRate: number | null;
+  /** Its teams per event, as a share of each event's teams — the trend. */
+  shareByEvent: number[];
+  /** Teams with it as the label's second part ("… + Tailwind"). */
+  asSecond: number;
+}
+
+/** One archetype's totals across the regulation's events, for /admin/archetypes. */
+export function archetypeTotals(meta: MetaArchetypes, id: string): ArchetypeTotals {
+  const own = meta.labels.filter((label) => primaryOfKey(label.key) === id);
+  const byEvent = meta.eventTeams.map((_, index) =>
+    own.reduce((sum, label) => sum + (label.byEvent[index] ?? 0), 0),
+  );
+  const record = own.reduce(
+    (sum, label) => ({
+      wins: sum.wins + label.wins,
+      losses: sum.losses + label.losses,
+      ties: sum.ties + label.ties,
+    }),
+    { wins: 0, losses: 0, ties: 0 },
+  );
+  return {
+    ...record,
+    teams: own.reduce((sum, label) => sum + label.teams, 0),
+    topCut: own.reduce((sum, label) => sum + label.topCut, 0),
+    winRate: winRate(record),
+    shareByEvent: byEvent.map((teams, index) =>
+      meta.eventTeams[index] ? teams / meta.eventTeams[index] : 0,
+    ),
+    asSecond: meta.labels
+      .filter((label) => label.key.split("+")[1] === id)
+      .reduce((sum, label) => sum + label.teams, 0),
+  };
+}

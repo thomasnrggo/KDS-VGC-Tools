@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { archetypeMatchups, type MetaArchetypes } from ".";
+import { archetypeMatchups, archetypeTotals, type MetaArchetypes } from ".";
 
 const label = (key: string, teams: number, wins = 0, losses = 0) => ({
   key,
@@ -66,5 +66,17 @@ describe("archetypeMatchups", () => {
 
   it("returns null when nothing like the team was played", () => {
     expect(archetypeMatchups(meta, "perish-trap")).toBeNull();
+  });
+});
+
+describe("archetypeTotals", () => {
+  it("sums the labels it leads, and counts the ones it's second in", () => {
+    expect(archetypeTotals(meta, "balance-setup")).toMatchObject({
+      teams: 45,
+      wins: 64,
+      losses: 46,
+      shareByEvent: [0.45],
+    });
+    expect(archetypeTotals(meta, "tailwind")).toMatchObject({ teams: 0, asSecond: 70 });
   });
 });

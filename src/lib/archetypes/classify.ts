@@ -27,9 +27,15 @@ export function rolesOf(facts: PokemonFacts, roles: RoleDefinition[]): string[] 
   return roles.filter((role) => matchesCheck(facts, role.match)).map((role) => role.id);
 }
 
-interface TeamContext {
+export interface TeamContext {
   facts: PokemonFacts[];
   roles: string[][];
+}
+
+/** A team's facts and each Pokémon's roles — what team conditions are tested against. */
+export function teamContext(team: ParsedPokemon[], set: ArchetypeSet): TeamContext {
+  const facts = team.map(pokemonFacts);
+  return { facts, roles: facts.map((f) => rolesOf(f, set.roles)) };
 }
 
 export function conditionPasses(condition: TeamCondition, team: TeamContext): boolean {
@@ -130,9 +136,8 @@ export function classifyTeam(
   set: ArchetypeSet,
   regulation?: string,
 ): TeamClassification {
-  const facts = team.map(pokemonFacts);
-  const roles = facts.map((f) => rolesOf(f, set.roles));
-  const context: TeamContext = { facts, roles };
+  const context = teamContext(team, set);
+  const { roles } = context;
   const archetypes = activeArchetypes(set, regulation);
   const byId = new Map(set.archetypes.map((a) => [a.id, a]));
 

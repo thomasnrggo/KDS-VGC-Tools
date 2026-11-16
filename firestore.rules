@@ -270,6 +270,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Sample teams for the archetype definitions (docs/archetypes.md), added and
+    // removed by staff at /admin/archetypes.
+    match /archetypeSamples/{sampleId} {
+      allow read, write: if isStaff();
+    }
+
     // Events uploaded by hand at /admin/meta-events (src/lib/meta/metaImport.ts),
     // already anonymous, waiting for the metagame job to save them as events.
     match /metaImports/{eventId} {

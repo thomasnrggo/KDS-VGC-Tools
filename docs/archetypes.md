@@ -237,6 +237,42 @@ Example (Sun, M-C): all Sun teams 289, 52%, 14 top cuts; struggles against Hard 
 games), Sun · Fire spam 38% (24), Rain · Screens 38% (52); does well against Tailwind 63% (63),
 Sun · Chlorophyll 57% (135), Perish trap 56% (112).
 
+## Admin: /admin/archetypes (read-only, 2026-11-16)
+
+The definitions as they stand, for reviewing the logic without reading code (linked from the
+Features and Meta events admin pages; staff only, English-only like the other admin pages):
+
+- A header line with the definitions' version, counts, and `validateArchetypeSet`'s problems (or
+  "The definitions are valid").
+- **Archetypes**, grouped by family, one card each: name and id, tempo color (inherited when a
+  variant has none), priority, draft status, description, "Refines" (parents), "Needs" (its own
+  conditions plus the inherited ones, marked "from {parent}"), "Never with" (excludes), "Boosted
+  by" (with weights), "Only in" (regulations); and, from the regulation's tournament data
+  (`archetypeTotals`), the teams it's the main archetype of, their share, win rate, top cuts,
+  share by event, and how many more teams have it as the label's second part.
+- **Roles**: each role's checks in plain English and the archetypes that use it.
+- Rules are written out by `describeCheck` / `describeCondition` (`src/lib/archetypes/describe.ts`).
+
+### Sample teams (2026-11-16)
+
+Optional teams the admin knows belong to an archetype (owner: "they're not necessary but nice to
+have"). Each card has "+ Add sample" (a Showdown paste or a PokéPaste link, a name and a note) and
+lists its samples with sprites. They're **checks, never rules**: classification doesn't use them.
+Each is classified live with the current definitions (`checkSample`, `src/lib/archetypes/samples.ts`):
+
+- **✓ Main archetype**, or **✓ As a variant** (a Sun sample that's Sun · Fire spam);
+- **≈ Only as a tag** (it matched, but another archetype leads);
+- **✗ Doesn't match**, with each needed condition ✓/✗ (inherited ones marked) and any exclude it
+  hit, so the failing rule is visible.
+
+The Add dialog shows the result while you paste. The header counts samples that don't pass.
+Stored in Firestore `archetypeSamples/{id}` (`archetypeId`, `name`, `paste`, `note`, `addedBy`,
+`addedAt`), staff read and write only (firestore.rules). Not classifying by similarity to samples
+is deliberate: it would tie archetypes to species and break when a regulation changes.
+
+Editing (definitions in Firestore, a form with a live preview against tournament teams) is the
+next step; until then, change `defaultArchetypes.ts` and bump `version`.
+
 ## Planned (not built)
 
 - **Storage:** `archetypeRoles/{id}` and `archetypes/{id}`, edited by admins. The metagame job

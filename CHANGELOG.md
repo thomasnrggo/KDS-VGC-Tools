@@ -10,6 +10,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.21 — 2026-11-16
+
+### Added
+
+- **Archetype sample teams** on Admin → Archetypes: add teams you know belong to an archetype
+  (a paste or a PokéPaste link); each is checked live against the definitions — ✓ main archetype,
+  ≈ only as a tag, ✗ no match with the conditions it missed. Optional; classification doesn't use
+  them.
+- **Admin → Archetypes** (`/admin/archetypes`, read-only): every archetype and role as it's defined
+  today, in plain English (what it needs, what it can't have, what boosts it, its tempo and
+  priority), each archetype with its tournament numbers for the chosen regulation, and a check that
+  the definitions are valid.
+
 ## 0.3.20 — 2026-11-15
 
 ### Added

@@ -12,6 +12,11 @@ export { getMetaSpreads, saveMetaSpread } from "./metaSpreads";
 export { getExcludedEvents, setEventExcluded } from "./metaExcludedEvents";
 export { getMetaImports, saveMetaImport, deleteMetaImport } from "./metaImports";
 export {
+  getArchetypeSamples,
+  saveArchetypeSample,
+  deleteArchetypeSample,
+} from "./archetypeSamples";
+export {
   publishSharedTeam,
   unpublishSharedTeam,
   getSharedTeam,

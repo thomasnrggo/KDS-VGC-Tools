@@ -133,6 +133,12 @@ export default function AdminFeaturesPage() {
           >
             Meta sets →
           </Link>
+          <Link
+            href="/admin/archetypes"
+            className="text-sm font-medium text-zinc-100 hover:text-white"
+          >
+            Archetypes →
+          </Link>
           <Link href="/admin/users" className="text-sm font-medium text-zinc-100 hover:text-white">
             Users →
           </Link>

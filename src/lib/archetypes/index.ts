@@ -24,7 +24,22 @@ export {
   MIN_LABEL_TEAMS,
   MIN_MATCHUP_GAMES,
   archetypeMatchups,
+  archetypeTotals,
+  type ArchetypeTotals,
   primaryOfKey,
   type ArchetypeMatchupReport,
   type VersusArchetype,
 } from "./archetypeMatchups";
+export {
+  COMPUTED_DESCRIPTIONS,
+  conditionRoleIds,
+  describeCheck,
+  describeCondition,
+} from "./describe";
+export {
+  checkSample,
+  type ArchetypeSample,
+  type ConditionCheck,
+  type SampleCheck,
+  type SampleStatus,
+} from "./samples";
