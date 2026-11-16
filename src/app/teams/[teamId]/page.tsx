@@ -53,6 +53,7 @@ import { addPasteToOpponents } from "@/lib/teamExport";
 import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sharedTeam";
 import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamExportActions } from "@/components/TeamExportActions";
+import { TeamArchetype } from "@/components/TeamArchetype";
 import { TeamListPdfDialog } from "@/components/TeamListPdf";
 import {
   Button,
@@ -521,27 +522,31 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </Modal>
             )}
 
-            {/* Who's editing it (a collaborative team) on the left, on every tab; the
-                team's actions on the right, on the Overview only — Edit opens the Team Builder. */}
+            {/* Left: the team's archetype (a preview, Overview only) and who's editing it (a
+                collaborative team, every tab). Right: the team's actions, on the Overview only —
+                Edit opens the Team Builder. */}
             {(team.collab || activeTab === "report") && (
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                {team.collab ? (
-                  <p className="flex items-center gap-1.5 text-xs text-zinc-500">
-                    <Icon name={IconName.Group} size={14} />
-                    {t.collab.collaborativeBadge}
-                    {team.collab.updatedBy && (
-                      <>
-                        {" · "}
-                        {t.collab.editedBy(
-                          team.collab.updatedBy.name,
-                          timeAgo(team.updatedAt, appLanguage),
-                        )}
-                      </>
-                    )}
-                  </p>
-                ) : (
-                  <span aria-hidden="true" />
-                )}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  {activeTab === "report" && (flags.teamArchetype || isStaff) && (
+                    <TeamArchetype pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
+                  )}
+                  {team.collab && (
+                    <p className="flex items-center gap-1.5 text-xs text-zinc-500">
+                      <Icon name={IconName.Group} size={14} />
+                      {t.collab.collaborativeBadge}
+                      {team.collab.updatedBy && (
+                        <>
+                          {" · "}
+                          {t.collab.editedBy(
+                            team.collab.updatedBy.name,
+                            timeAgo(team.updatedAt, appLanguage),
+                          )}
+                        </>
+                      )}
+                    </p>
+                  )}
+                </div>
                 {activeTab === "report" && (
                   <TeamExportActions
                     layout="inline"

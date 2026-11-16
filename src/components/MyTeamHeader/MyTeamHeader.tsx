@@ -399,15 +399,7 @@ export function MyTeamHeader({
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
-            {isLoading ? null : teams.length === 0 ? (
-              <button
-                type="button"
-                onClick={openAddModal}
-                className="rounded-full bg-chrome-900 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-chrome-950"
-              >
-                {t.header.addYourTeam}
-              </button>
-            ) : (
+            {isLoading || teams.length === 0 ? null : (
               <>
                 {activeTeam && (
                   <>
@@ -581,7 +573,7 @@ export function MyTeamHeader({
         a bottom-sheet drawer, instead of the small avatar-row/chevron next
         to the logo — narrow widths don't have room for both that and the
         page nav (see PLANNING.md). Only shown once there's a team to
-        preview; with zero teams the "Add your team" button above covers it.
+        preview.
         Same zinc-600 as the header so it reads as one matching bar. Scoped
         to the Matchup Planner — that's the only page where switching teams
         mid-task is useful; elsewhere it's just a redundant control. */}

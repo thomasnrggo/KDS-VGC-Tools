@@ -544,7 +544,8 @@ so the URL says what the page is, while a bare root still works for anyone's old
   always visible while scrolling the opponents list below it. Left: the app title. Right: a row of
   **team tabs**, one per saved team (mini sprite row + name), the active one highlighted; each tab has
   its own edit (pencil) and remove (trash) icon, plus a **+** button to add another team. With zero
-  teams saved, the row collapses to a single "Add your team" button. Add/edit both open the same
+  teams saved, the header shows nothing there (the "Add your team" button was removed 2026-11-15 —
+  teams are added from My Teams). Add/edit both open the same
   `Modal` containing `TeamPasteForm` (now with a **name** field alongside the paste) — pasting a team
   is always a dialog, never inline on the page.
 - **Opponents** (below the header) — "Add opponent" (paste + label + optional Poképaste link) above a
@@ -2933,6 +2934,11 @@ megaStoneItemsForSpecies)` → `SpeedTierRow[]`) is the only new computation —
       writing it up and calling calc tools), but this is a free project and paying per analysis for
       every user isn't affordable. So everything is computed in the browser. A prototype against the
       real M-C data and the owner's team came first, to see how far that gets. It got far.
+  - **v2: archetypes instead of one-on-one threats** (2026-11-14/15, the owner: "a one to one
+    comparative is not really useful on a VGC context where we focus on a team composition"). See
+    **[docs/archetypes.md](./docs/archetypes.md)**: archetypes as data (checks → roles → recipes),
+    a measured tempo, the engine in `src/lib/archetypes/` (built, not used by a page yet), the
+    first M-C results, and what's open. v2 goes on a new route; v1 below stays until it's replaced.
   - **Engine** — `src/lib/threats/`, pure and unit-tested:
     - **Meta sets** (`metaThreatSets`): each of the 40 most-used Pokémon split by common item
       (≥15% of its teams, up to 3). The item is what changes the threat: Choice Scarf

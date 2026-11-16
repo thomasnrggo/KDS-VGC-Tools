@@ -34,6 +34,21 @@ const listeners = new Set<() => void>();
 /** Read once, then kept here — also keeps a choice working for this page load when localStorage is unavailable. */
 let cached: LanguageSettings | null = null;
 
+/**
+ * The first of the browser's preferred languages (navigator.languages, e.g.
+ * ["es-MX", "es", "en"]) the app has text for — matched on the primary tag,
+ * so any Spanish picks "es" — else English. Used until a language is picked
+ * in the menu; it isn't saved, so it keeps following the browser until then.
+ */
+export function browserAppLanguage(): AppLanguage {
+  const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const tag of preferred) {
+    const primary = tag?.toLowerCase().split("-")[0];
+    if (isAppLanguage(primary)) return primary;
+  }
+  return DEFAULT_APP_LANGUAGE;
+}
+
 function readStorage(key: string): string | null {
   try {
     return window.localStorage.getItem(key);
@@ -57,7 +72,7 @@ export function getLanguageSettings(): LanguageSettings {
     const app = readStorage(STORAGE_KEYS.appLanguage);
     const pokemon = readStorage(STORAGE_KEYS.pokemonLanguage);
     cached = {
-      appLanguage: isAppLanguage(app) ? app : DEFAULT_APP_LANGUAGE,
+      appLanguage: isAppLanguage(app) ? app : browserAppLanguage(),
       pokemonLanguage: isPokemonLanguage(pokemon) ? pokemon : DEFAULT_POKEMON_LANGUAGE,
     };
   }

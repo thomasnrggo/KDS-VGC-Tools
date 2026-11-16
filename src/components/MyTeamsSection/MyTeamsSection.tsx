@@ -89,6 +89,9 @@ export function MyTeamsSection({
     .sort((a, b) => b.sortOrder - a.sortOrder);
   const activeRegulationTeams = regulationTeams.filter((team) => !isTeamArchived(team));
   const archivedRegulationTeams = regulationTeams.filter(isTeamArchived);
+  // No teams at all in this regulation: the "No teams yet" empty state has the
+  // page to itself — no folder panel/chips, and no toolbar (it has its own Create team).
+  const isEmpty = !isLoading && regulationTeams.length === 0;
   // Archived teams are their own entry in the folder panel; everywhere else
   // (All teams, a folder, No folder) shows active teams only.
   const showingArchived = folderParam === ARCHIVED && archivedRegulationTeams.length > 0;
@@ -587,7 +590,12 @@ export function MyTeamsSection({
 
       {/* Desktop only — mobile has search and add in its header row above. The
           same columns as below: search across the list, Create team across the panel. */}
-      <div className="hidden items-center gap-6 md:grid md:grid-cols-[minmax(0,1fr)_15rem]">
+      <div
+        className={cn(
+          "hidden items-center gap-6 md:grid md:grid-cols-[minmax(0,1fr)_15rem]",
+          isEmpty && "md:hidden",
+        )}
+      >
         <div className="min-w-0">
           {canSearch && (
             <SearchField
@@ -721,7 +729,7 @@ export function MyTeamsSection({
 
       {/* Phones: the folder panel as a row of chips above the list, the picked
           folder's ⋮ beside it (outside the scrolling row, so its menu isn't cut off). */}
-      {!isLoading && (
+      {!isLoading && !isEmpty && (
         <div className="flex items-center gap-1 md:hidden">
           <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
             {panelEntries.map((entry) => (
@@ -750,7 +758,12 @@ export function MyTeamsSection({
       )}
 
       {/* The teams (left), and on desktop the folder panel (right). */}
-      <div className="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,1fr)_15rem] md:items-start">
+      <div
+        className={cn(
+          "flex flex-col gap-6",
+          !isEmpty && "md:grid md:grid-cols-[minmax(0,1fr)_15rem] md:items-start",
+        )}
+      >
         <div className="min-w-0">
           {isLoading ? (
             <LoadingState />
@@ -783,7 +796,7 @@ export function MyTeamsSection({
           )}
         </div>
 
-        {!isLoading && (
+        {!isLoading && !isEmpty && (
           <aside
             aria-label={t.teamFolders.folders}
             className="hidden flex-col gap-1 md:sticky md:top-4 md:flex"

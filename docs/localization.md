@@ -4,14 +4,17 @@ Status: **phase 1 shipped** (2026-10-13): English (default) and Spanish.
 
 ## Two separate settings
 
-| Setting | Values | What it changes |
-|---|---|---|
-| **App language** | English, Español | The app's own text: buttons, labels, messages, errors |
+| Setting           | Values                                             | What it changes                                                              |
+| ----------------- | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **App language**  | English, Español                                   | The app's own text: buttons, labels, messages, errors                        |
 | **Pokémon names** | English, Español (España), Español (Latinoamérica) | Official game terms: Pokémon, forms, moves, items, abilities, types, natures |
 
 They're independent, e.g. an English interface with Spanish game terms. Both are picked from the
 header's language menu (`LanguageMenu`) and stored per browser in localStorage (`appLanguage`,
-`pokemonLanguage`), read through `useSyncExternalStore` like the theme. The server always renders
+`pokemonLanguage`), read through `useSyncExternalStore` like the theme. Until a language is picked,
+the app language follows the browser: the first of `navigator.languages` the app has text for
+(any `es-*` → Spanish), else English (`browserAppLanguage` in `settings.ts`). That fallback isn't
+saved, so it keeps following the browser until a pick is made. Pokémon names stay English by default. The server always renders
 English; the client switches right after hydration. `<html lang>` follows the app language,
 including before paint (layout.tsx's init script).
 

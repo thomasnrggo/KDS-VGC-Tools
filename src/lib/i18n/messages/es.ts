@@ -32,7 +32,6 @@ export const es: Messages = {
     back: "Volver",
   },
   header: {
-    addYourTeam: "Añade tu equipo",
     addTeam: "Crear equipo",
     editTeam: "Editar equipo",
     selectTeam: "Seleccionar equipo",
@@ -233,6 +232,20 @@ export const es: Messages = {
       "Tus datos de torneo, que se rellenan solos en la lista de equipo PDF. Guardados en tu cuenta, donde solo tú puedes verlos: nunca se comparten ni se guardan con un equipo.",
     saved: "Perfil guardado.",
     saveFailed: "No se pudo guardar en tu cuenta. Revisa tu conexión e inténtalo de nuevo.",
+  },
+  teamArchetype: {
+    label: "Arquetipo",
+    balance: "Balance",
+    balanceDescription:
+      "Ningún motor —clima, campo, control de velocidad o setup— domina este equipo.",
+    tempo: {
+      offense: "Ofensivo: golpea rápido y fuerte",
+      positioning: "Posicional: espera el momento justo",
+      patient: "Paciente: gana a lo largo de muchos turnos",
+    },
+    alsoHas: "También tiene",
+    includes: "Incluye",
+    preview: "Vista previa: las definiciones de arquetipos aún se están ajustando.",
   },
   teamList: {
     button: "Lista de equipo PDF",

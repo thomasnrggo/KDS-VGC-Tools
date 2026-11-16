@@ -31,7 +31,6 @@ export const en = {
     back: "Back",
   },
   header: {
-    addYourTeam: "Add your team",
     addTeam: "Create team",
     editTeam: "Edit team",
     selectTeam: "Select team",
@@ -232,6 +231,20 @@ export const en = {
       "Your tournament details, filled in for you on the team list PDF. Saved to your account, where only you can see them — never shared or saved with a team.",
     saved: "Profile saved.",
     saveFailed: "Couldn't save to your account. Check your connection and try again.",
+  },
+  teamArchetype: {
+    label: "Archetype",
+    balance: "Balance",
+    balanceDescription:
+      "No single engine — weather, terrain, speed control or setup — leads this team.",
+    tempo: {
+      offense: "Offense: hits fast and hard",
+      positioning: "Positioning: waits for the right moment",
+      patient: "Patient: wins over many turns",
+    },
+    alsoHas: "Also has",
+    includes: "Includes",
+    preview: "Preview — archetype definitions are still being tuned.",
   },
   teamList: {
     button: "Team list PDF",

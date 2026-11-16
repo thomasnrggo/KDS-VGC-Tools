@@ -17,7 +17,8 @@ import { SITE_DESCRIPTION, SITE_NAME, SITE_URL, TAGLINE } from "@/lib/site";
  * (localStorage "theme" if the user's picked one before, else the OS-level
  * prefers-color-scheme) so the class this sets is never immediately
  * contradicted once useTheme's effect runs on mount. Also sets <html lang>
- * from the app language (see useLanguage), for screen readers and spelling,
+ * from the app language (see useLanguage) — the saved pick, else the browser's
+ * first language the app has text for, matching browserAppLanguage — for screen readers and spelling,
  * and marks a closed home intro (see MetaIntro) and closed page tips (see
  * PageTips) so they never flash.
  */
@@ -28,6 +29,13 @@ const THEME_INIT_SCRIPT = `
       var isDark = stored ? stored === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
       if (isDark) document.documentElement.classList.add("dark");
       var language = localStorage.getItem("appLanguage");
+      if (!language) {
+        var preferred = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+        for (var i = 0; i < preferred.length; i++) {
+          var primary = String(preferred[i] || "").toLowerCase().split("-")[0];
+          if (primary === "en" || primary === "es") { language = primary; break; }
+        }
+      }
       if (language === "es") document.documentElement.lang = language;
       if (localStorage.getItem("homeIntroDismissed")) document.documentElement.dataset.introDismissed = "";
       var hiddenTips = localStorage.getItem("hiddenTips");

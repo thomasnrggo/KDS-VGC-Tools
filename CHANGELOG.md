@@ -10,6 +10,30 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## Unreleased
+
+### Added
+
+- **Team archetype (preview)** on the team page's Overview: what the team is, as people say it
+  ("Sun + Tailwind", "Trick Room + Hard setup", "Double weather"), with its tempo color, the game
+  plan, and the other engines it has. It's detected from the team sheet by a new archetype engine
+  (`src/lib/archetypes/`, [docs/archetypes.md](./docs/archetypes.md)). Behind the
+  `teamArchetype` flag: off for everyone until it's switched on in Admin → Features, always shown
+  to the admin.
+- **App language follows your browser** until you pick one: a browser set to Spanish (any region)
+  opens the app in Spanish, anything else in English. Picking a language in the menu still saves it
+  and takes precedence.
+
+### Changed
+
+- **My Teams** with no teams yet shows just the "No teams yet" empty state, full width — the folder
+  panel (and the phone folder chips) and the toolbar above it appear once there's a team.
+
+### Removed
+
+- The header's **Add your team** button (shown before you had any team) — teams are added from
+  My Teams.
+
 ## 0.3.17 — 2026-11-14
 
 ### Added

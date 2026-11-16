@@ -19,6 +19,8 @@ export interface FeatureFlags {
    * designed (see PLANNING.md's "Team analysis from the metagame").
    */
   teamThreats: boolean;
+  /** Not a section: the team page's archetype badge, a preview (docs/archetypes.md). */
+  teamArchetype: boolean;
 }
 
 /**
@@ -35,4 +37,5 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   metagame: true,
   teamLibrary: false,
   teamThreats: false,
+  teamArchetype: false,
 };

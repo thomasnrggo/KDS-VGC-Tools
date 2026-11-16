@@ -17,6 +17,7 @@ const SECTION_FLAGS: { flagKey: keyof FeatureFlags; label: string }[] = [
   { flagKey: "metagame", label: "Metagame" },
   { flagKey: "teamLibrary", label: "Team Library (VGCPastes teams)" },
   { flagKey: "teamThreats", label: "Team analysis: Threats tab + Team Builder panel (preview)" },
+  { flagKey: "teamArchetype", label: "Team archetype on the team page (preview)" },
 ];
 
 function FlagToggle({
