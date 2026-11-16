@@ -1,6 +1,6 @@
 "use client";
 
-import { RegulationSelect } from "@/components/Select";
+import { RegulationSelect, Select } from "@/components/Select";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Team } from "@/types";
@@ -43,8 +43,10 @@ const UNFILED = "none";
 /** ?folder= for the archived teams — the panel's last entry, once there are any. */
 const ARCHIVED = "archived";
 
-/** A team row's Duplicate button — tappable on phones, compact on desktop. */
-const rowActionClass = "h-10 w-10 text-zinc-500 hover:bg-zinc-50 md:h-8 md:w-8";
+/** The phone folder dropdown's value for "All teams" (its other values are `pick`s). */
+const ALL_TEAMS = "all";
+/** The phone folder dropdown's last option, which opens the New folder dialog instead of picking. */
+const NEW_FOLDER = "__new-folder";
 
 /** "My Teams" list page's content — search, regulation switcher, active/archived tabs, add/edit/archive/delete, each row navigating to /teams/[id] on click. Mirrors OpponentsSection's structure, simplified (no bulk import/mass-clear — these are your own handful of teams, not a big opponent list). */
 export function MyTeamsSection({
@@ -303,7 +305,8 @@ export function MyTeamsSection({
             />
           </div>
         </div>
-        {/* The row's actions: Duplicate, and a ⋯ with the rest. Clicks and
+        {/* The row's actions: Duplicate (desktop; on phones it's in the ⋯, so
+            the ⋯ sits alone in the corner), and a ⋯ with the rest. Clicks and
             Enter/Space stop here so they don't also open the team. */}
         <div
           role="group"
@@ -317,7 +320,7 @@ export function MyTeamsSection({
             onClick={() => duplicateTeam(team.id)}
             aria-label={t.myTeams.duplicate}
             title={t.myTeams.duplicate}
-            className={rowActionClass}
+            className="hidden h-8 w-8 text-zinc-500 hover:bg-zinc-50 md:flex"
           >
             <Icon name={IconName.ContentCopy} size={18} />
           </IconButton>
@@ -330,9 +333,15 @@ export function MyTeamsSection({
               icon: IconName.Folder,
               onClick: () => setMovingTeamId(team.id),
             }}
-            // A collaborative team is left or stopped from its page (Collaborate).
-            extraActions={
-              team.collab
+            extraActions={[
+              {
+                label: t.myTeams.duplicate,
+                icon: IconName.ContentCopy,
+                onClick: () => duplicateTeam(team.id),
+                className: "md:hidden",
+              },
+              // A collaborative team is left or stopped from its page (Collaborate).
+              ...(team.collab
                 ? []
                 : [
                     !isTeamArchived(team)
@@ -346,8 +355,8 @@ export function MyTeamsSection({
                           icon: IconName.Unarchive,
                           onClick: () => unarchiveTeam(team.id),
                         },
-                  ]
-            }
+                  ]),
+            ]}
             onRemove={team.collab ? undefined : () => setConfirmRemoveId(team.id)}
             removeLabel={t.myTeams.removeTeam}
           />
@@ -727,32 +736,26 @@ export function MyTeamsSection({
         </Modal>
       )}
 
-      {/* Phones: the folder panel as a row of chips above the list, the picked
-          folder's ⋮ beside it (outside the scrolling row, so its menu isn't cut off). */}
+      {/* Phones: the folder panel as a dropdown above the list (the same
+          Select as the regulation filter), the picked folder's ⋮ beside it. */}
       {!isLoading && !isEmpty && (
         <div className="flex items-center gap-1 md:hidden">
-          <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
-            {panelEntries.map((entry) => (
-              <button
-                key={entry.key}
-                type="button"
-                onClick={() => pickFolder(entry.pick)}
-                aria-current={entry.isPicked ? "true" : undefined}
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm whitespace-nowrap",
-                  entry.isPicked
-                    ? "bg-chrome-600 font-medium text-white"
-                    : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-                )}
-              >
-                {entry.name}
-                <span className={entry.isPicked ? "text-white/70" : "text-zinc-500"}>
-                  {entry.count}
-                </span>
-              </button>
-            ))}
-            {newFolderButton}
-          </div>
+          <Select
+            value={panelEntries.find((entry) => entry.isPicked)?.pick ?? ALL_TEAMS}
+            onChange={(value) => {
+              if (value === NEW_FOLDER) setFolderDraft({ name: "" });
+              else pickFolder(value === ALL_TEAMS ? null : value);
+            }}
+            options={[
+              ...panelEntries.map((entry) => ({
+                value: entry.pick ?? ALL_TEAMS,
+                label: `${entry.name} · ${entry.count}`,
+              })),
+              { value: NEW_FOLDER, label: `+ ${t.teamFolders.newFolder}` },
+            ]}
+            ariaLabel={t.teamFolders.folders}
+            className="min-w-0 text-sm"
+          />
           {openFolder && folderMenu(openFolder.id, openFolder.name)}
         </div>
       )}

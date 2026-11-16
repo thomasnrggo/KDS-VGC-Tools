@@ -40,7 +40,8 @@ on a folder panel beside the list (2026-11-11).
   once the regulation has archived teams (`?folder=archived`). Everything else shows active teams
   only; dropping a team on Archived archives it (not a collaborative one), and archived teams keep
   their folder for when they're unarchived.
-- **Phones**: the panel is a row of chips above the list, with the picked folder's ⋮ beside it.
+- **Phones**: the panel is a `Select` dropdown above the list (each entry with its count, then
+  "+ New folder", which opens the dialog instead of picking), with the picked folder's ⋮ beside it.
 - **Move to folder** on every team row: pick a folder, No folder, or type a name to create one and
   move the team there.
 - **Drag** a team onto a folder (or No folder) in the panel to file it there; dragging within the

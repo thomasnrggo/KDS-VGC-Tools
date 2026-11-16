@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "../Icon";
 import { IconName } from "@/enums";
 import { useMessages } from "@/hooks/useLanguage";
+import { cn } from "@/lib/utils";
 
 interface RowActionsMenuProps {
   /** Omit to leave out the Edit item — e.g. My Teams rows, edited on the team's own page. */
@@ -31,6 +32,8 @@ export interface RowAction {
   icon: IconName;
   onClick: () => void;
   disabled?: boolean;
+  /** Merged onto the item — e.g. `md:hidden` for one that has its own button on wider screens. */
+  className?: string;
 }
 
 /** A "..." button that opens a small Edit/Remove dropdown (plus an optional middle item) — shared by any row that used to show separate edit/delete icon buttons (opponents, teams). */
@@ -137,7 +140,10 @@ export function RowActionsMenu({
                 action.onClick();
                 setIsOpen(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent"
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:text-zinc-300 disabled:hover:bg-transparent",
+                action.className,
+              )}
             >
               <Icon name={action.icon} size={16} />
               {action.label}
