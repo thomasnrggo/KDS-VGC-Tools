@@ -73,18 +73,38 @@ export function effectiveRequires(
 /**
  * The team's archetype as people say it: the primary plus one more engine —
  * its speed mode ("Sun + Tail/room"), or, when the primary is the speed
- * mode, its next tag ("Tailwind + Hard setup"). No match is "Balance".
+ * mode, its next tag ("Tailwind + Hard setup"). No primary is Balance.
  */
+export function classificationParts(result: TeamClassification): [string | null, string | null] {
+  if (!result.primary) return [null, null];
+  const second =
+    result.speedMode && result.speedMode !== result.primary ? result.speedMode : result.tags[0];
+  return [result.primary, second ?? null];
+}
+
+/** No primary: Balance. Its key in the published data. */
+export const BALANCE_KEY = "balance";
+
+/** A stable id for the label, for counting and storing: "balance-setup+tailwind", "sun", "balance". */
+export function classificationKey(result: TeamClassification): string {
+  const [primary, second] = classificationParts(result);
+  if (!primary) return BALANCE_KEY;
+  return second ? `${primary}+${second}` : primary;
+}
+
+/** A key from classificationKey → its name ("Balance setup + Tailwind"). */
+export function labelForKey(key: string, set: ArchetypeSet, balanceName = "Balance"): string {
+  if (key === BALANCE_KEY) return balanceName;
+  const name = (id: string) => set.archetypes.find((a) => a.id === id)?.name ?? id;
+  return key.split("+").map(name).join(" + ");
+}
+
 export function classificationLabel(
   result: TeamClassification,
   set: ArchetypeSet,
   balanceName = "Balance",
 ): string {
-  const name = (id: string) => set.archetypes.find((a) => a.id === id)?.name ?? id;
-  if (!result.primary) return balanceName;
-  const second =
-    result.speedMode && result.speedMode !== result.primary ? result.speedMode : result.tags[0];
-  return second ? `${name(result.primary)} + ${name(second)}` : name(result.primary);
+  return labelForKey(classificationKey(result), set, balanceName);
 }
 
 /** An archetype's tempo, or its nearest ancestor's; undefined = no fixed tempo. */

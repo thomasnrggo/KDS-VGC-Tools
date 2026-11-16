@@ -23,6 +23,8 @@ import { aggregateCombinations, aggregateOfficialMeta } from "../src/lib/meta/ag
 import { RECENT_EVENTS } from "../src/lib/meta/metaDocument.ts";
 import { summaryNeedsRebuild } from "../src/lib/meta/excludedEvents.ts";
 import { MIN_JOIN } from "../src/lib/meta/metaImport.ts";
+import { aggregateArchetypes } from "../src/lib/archetypes/aggregateArchetypes.ts";
+import { DEFAULT_ARCHETYPE_SET } from "../src/lib/archetypes/defaultArchetypes.ts";
 import {
   isFinished,
   isVgcEvent,
@@ -127,6 +129,12 @@ async function openStore() {
       async saveTournamentMeta(regulationId, id, data) {
         written.set(`meta/${regulationId}/tournaments/${id}`, data);
       },
+      async archetypesVersion() {
+        return null;
+      },
+      async saveArchetypes(regulationId, data) {
+        written.set(`meta/${regulationId}/archetypes/summary`, data);
+      },
       written,
     };
   }
@@ -191,6 +199,24 @@ async function openStore() {
     },
     async saveTournamentMeta(regulationId, id, data) {
       await db.collection("meta").doc(regulationId).collection("tournaments").doc(id).set(data);
+    },
+    /** The archetype definitions' version a regulation's archetype summary was built with, or null. */
+    async archetypesVersion(regulationId) {
+      const snap = await db
+        .collection("meta")
+        .doc(regulationId)
+        .collection("archetypes")
+        .doc("summary")
+        .get();
+      return snap.exists ? (snap.get("version") ?? null) : null;
+    },
+    async saveArchetypes(regulationId, data) {
+      await db
+        .collection("meta")
+        .doc(regulationId)
+        .collection("archetypes")
+        .doc("summary")
+        .set(data);
     },
   };
 }
@@ -331,6 +357,15 @@ async function main() {
       console.log(`meta/${regulationId}: exclusions changed — rebuilding`);
       changedRegulations.add(regulationId);
     }
+    // The archetype definitions changed (docs/archetypes.md): reclassify every team.
+    const archetypesVersion = await store.archetypesVersion(regulationId);
+    if (summaryIds && archetypesVersion !== DEFAULT_ARCHETYPE_SET.version) {
+      console.log(
+        `meta/${regulationId}: archetype definitions v${DEFAULT_ARCHETYPE_SET.version} ` +
+          `(summary has ${archetypesVersion ?? "none"}) — rebuilding`,
+      );
+      changedRegulations.add(regulationId);
+    }
   }
 
   for (const regulationId of changedRegulations) {
@@ -408,13 +443,24 @@ async function main() {
         combos: aggregateCombinations([event]),
       });
     }
+    // Archetypes: every team classified only to be counted — totals per label and
+    // label vs label results, never a team (src/lib/archetypes/aggregateArchetypes.ts).
+    // Its own document: ~150KB, read only by the team page.
+    const archetypes = aggregateArchetypes(events, DEFAULT_ARCHETYPE_SET, regulationId);
+    await store.saveArchetypes(regulationId, {
+      regulationId,
+      updatedAt: new Date().toISOString(),
+      tournamentIds: events.map((event) => event.id),
+      ...archetypes,
+    });
     const top = recent.pokemon
       .slice(0, 5)
       .map((mon) => `${mon.species} ${(mon.usage * 100).toFixed(1)}%`)
       .join(", ");
     console.log(
       `meta/${regulationId}: ${summary.events} event(s), ${summary.teams} teams; ` +
-        `recent ${recent.events}: ${top}`,
+        `recent ${recent.events}: ${top}; ${archetypes.labels.length} archetype labels, ` +
+        `${archetypes.matchups.length} pairings`,
     );
   }
 
@@ -425,6 +471,16 @@ async function main() {
         console.log(
           `(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB — ` +
             `${value.teams} teams, ${value.pokemon.length} Pokémon`,
+        );
+        continue;
+      }
+      if (key.endsWith("/archetypes/summary")) {
+        const [first, second] = value.labels;
+        console.log(
+          `(dry run) ${key}: ${(JSON.stringify(value).length / 1024).toFixed(0)} KB — ` +
+            `v${value.version}, ${value.teams} teams, ${value.labels.length} labels, ` +
+            `${value.matchups.length} pairings; most common: ${first?.key} (${first?.teams}), ` +
+            `${second?.key} (${second?.teams})`,
         );
         continue;
       }

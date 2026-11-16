@@ -255,6 +255,13 @@ service cloud.firestore {
         allow read: if true;
         allow write: if false;
       }
+
+      // Archetype totals per label and label vs label results (docs/archetypes.md),
+      // written by the metagame job — counts only, never a team.
+      match /archetypes/{docId} {
+        allow read: if true;
+        allow write: if false;
+      }
     }
 
     // The job's anonymized copy of each official event it has processed —

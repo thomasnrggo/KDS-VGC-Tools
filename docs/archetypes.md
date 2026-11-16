@@ -196,6 +196,27 @@ on the user's own teams.
   /admin/features. Staff always see it, like the Threats tab.
 - Archetype names are English data for now; the surrounding text is translated (en/es).
 
+## In the metagame job (2026-11-15)
+
+Each run that rebuilds a regulation's summary also classifies every tournament team and writes
+`meta/{regulationId}/archetypes/summary` (`aggregateArchetypes`, `src/lib/archetypes/aggregateArchetypes.ts`):
+
+- **Counts only**, never a team or a player (owner: "I want to apply this to my teams, not all the
+  teams"; tournament teams are classified for the data only).
+- **`labels`**: per `classificationKey` (archetype ids joined by `+`, e.g.
+  `balance-setup+tailwind`, or `balance`): teams, top cuts, wins / losses / ties (byes left out),
+  and teams per event (`byEvent`, aligned with `eventTeams` and `tournamentIds`) for the trend.
+- **`matchups`**: games between two labels, stored once per pairing from `a`'s side (`a` ≤ `b`);
+  swap wins and losses to read it from `b`'s side. A mirror counts each game from both sides. The
+  app can sum labels up to their primary archetype when a label has too few games.
+- **`version`**: the archetype set's version (`DEFAULT_ARCHETYPE_SET.version`). The job rebuilds a
+  regulation whose stored version differs, so **bump `version` whenever the definitions change**
+  and the next run reclassifies every event.
+- Its own document (~150 KB for M-C's five events: 102 labels, 1,765 pairings) rather than inside
+  `meta/{regulationId}`, which every Metagame visit downloads. Readable by everyone, written only by
+  the job (firestore.rules).
+- Ids, not names, so names can be translated in the app.
+
 ## Planned (not built)
 
 - **Storage:** `archetypeRoles/{id}` and `archetypes/{id}`, edited by admins. The metagame job
@@ -206,8 +227,6 @@ on the user's own teams.
     sample teams and near-misses (teams that miss one condition);
   - unclassified-core suggestions with a "rising" trend;
   - a per-event trend chart.
-- **The job:** classify every tournament team, then aggregate per archetype (share, win rate,
-  trend) and **archetype × archetype** from round records.
 - **v2 analysis** on a new route, with v1 Threats untouched until v2 is preferred:
   - your team's archetype (and its tempo), and the roles it's missing compared with the archetype's
     typical teams;
