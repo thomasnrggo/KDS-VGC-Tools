@@ -294,9 +294,9 @@ export function TopTeams({
                 key={event.id}
                 className="flex flex-col gap-1 px-3 py-2.5 lg:flex-row lg:items-center lg:gap-4"
               >
-                <span className="flex shrink-0 items-baseline gap-2 lg:w-28 lg:flex-col lg:gap-0">
+                <span className="flex min-w-0 shrink-0 items-baseline gap-2 lg:w-28 lg:flex-col lg:gap-0">
                   <span
-                    className="truncate text-sm font-semibold text-zinc-900"
+                    className="line-clamp-2 max-w-full min-w-0 text-sm font-semibold break-words text-zinc-900"
                     title={event.title}
                   >
                     {shortTournamentName(event.title)}

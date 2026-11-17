@@ -72,7 +72,7 @@ export function shortTournamentName(title: string): string {
   return (
     title
       .replace(/^\d{4}\s+/, "")
-      .replace(/\s*Pokémon VGC\s*/i, " ")
+      .replace(/\s*Pok[eé]mon VGC?\s*/i, " ")
       .replace(/\s*(Regional|International|Special) Championships?\s*$/i, (match) =>
         /International/i.test(match) ? " IC" : /Special/i.test(match) ? " SPE" : "",
       )

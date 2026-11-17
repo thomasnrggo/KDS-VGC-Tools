@@ -10,5 +10,9 @@ describe("shortTournamentName", () => {
     );
     expect(shortTournamentName("2026 Turin Pokémon VGC Special Championships")).toBe("Turin SPE");
     expect(shortTournamentName("2026 Pokémon VGC World Championship")).toBe("Worlds");
+    // A title typed by hand, "VG" for "VGC".
+    expect(shortTournamentName("Buenos Aires Pokémon VG Special Championship")).toBe(
+      "Buenos Aires SPE",
+    );
   });
 });

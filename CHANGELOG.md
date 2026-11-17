@@ -10,6 +10,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.23 — 2026-11-16
+
+### Fixed
+
+- Metagame → Top teams: a long event title ran into the "Winner" label; it wraps to two lines now.
+  Short names also drop "Pokémon VG" from a title typed by hand ("Buenos Aires SPE").
+
 ## 0.3.22 — 2026-11-16
 
 ### Added
