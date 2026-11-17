@@ -109,10 +109,27 @@ function resolveMove(name: string): MoveData | undefined {
   return MOVES[normalizeSpeciesKey(name)];
 }
 
-/** Gravity removes the Flying-type's chart immunity to Ground-type moves — the only 0x entry Ground has — so this ignores the Flying type in that one case rather than looking up the chart normally. */
-function typeEffectiveness(moveType: string, defenderTypes: string[], gravity = false): number {
-  const types =
-    gravity && moveType === "Ground" ? defenderTypes.filter((t) => t !== "Flying") : defenderTypes;
+/** Abilities that let Normal and Fighting moves hit Ghost types (Mega Lopunny's Scrappy, Mega Ursaluna's Mind's Eye). */
+const HITS_GHOSTS = new Set(["Scrappy", "Mind's Eye", "Mind’s Eye"]);
+
+/**
+ * Gravity removes the Flying-type's chart immunity to Ground-type moves — the
+ * only 0x entry Ground has — and Scrappy / Mind's Eye remove the Ghost type's
+ * to Normal and Fighting moves, so this ignores that type in those cases
+ * rather than looking up the chart normally (a Ghost/Dark target still takes
+ * Fighting's ×2 from Dark).
+ */
+function typeEffectiveness(
+  moveType: string,
+  defenderTypes: string[],
+  gravity = false,
+  hitsGhosts = false,
+): number {
+  const types = defenderTypes.filter(
+    (t) =>
+      !(gravity && moveType === "Ground" && t === "Flying") &&
+      !(hitsGhosts && (moveType === "Normal" || moveType === "Fighting") && t === "Ghost"),
+  );
   return types.reduce(
     (multiplier, defendingType) => multiplier * (TYPE_CHART[moveType]?.[defendingType] ?? 1),
     1,
@@ -764,7 +781,11 @@ export function calculateDamage(
     };
   }
 
-  const typeMultiplier = typeEffectiveness(move.type, defenderTypes, options.gravity);
+  const hitsGhosts = !!attackerAbility && HITS_GHOSTS.has(attackerAbility);
+  const typeMultiplier = typeEffectiveness(move.type, defenderTypes, options.gravity, hitsGhosts);
+  // Scrappy / Mind's Eye changed this result: named in the calc line.
+  const ghostImmunityIgnored =
+    hitsGhosts && typeMultiplier !== typeEffectiveness(move.type, defenderTypes, options.gravity);
   const ctx: ModifierContext = {
     move,
     flags,
@@ -780,7 +801,7 @@ export function calculateDamage(
   // Which side's ability changed this result, for the calc line ("Tough Claws
   // Mega Metagross", "… Multiscale Dragonite") — set by abilityMod below and
   // by the special cases (Guts, Technician, Adaptability, …) further down.
-  const abilityUsed = { attacker: false, defender: false };
+  const abilityUsed = { attacker: ghostImmunityIgnored, defender: false };
   function abilityMod(
     side: "attacker" | "defender",
     stage: AbilityDamageModifierSide["stage"],

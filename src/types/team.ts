@@ -59,6 +59,38 @@ export interface TeamCalc {
   side: TeamCalcSide | null;
 }
 
+/** The parts of a team a snapshot keeps (see src/lib/teamSnapshots.ts): its build and strategy. */
+export interface TeamSnapshotData {
+  rawPaste: string;
+  pokemon: ParsedPokemon[];
+  notes?: string;
+  weaknesses?: string;
+  pokemonNotes?: Record<number, string>;
+  combinations?: TeamCombination[];
+  overview?: string;
+  calcs?: TeamCalc[];
+  speedPins?: string[];
+  pokepasteUrl?: string;
+  replicaCode?: string;
+}
+
+/**
+ * A saved version of a team — "Before Puebla" — to look back at or restore.
+ * Not its identity (name, folder, sharing, collaboration): a version of the
+ * build, not a second team. See src/lib/teamSnapshots.ts.
+ */
+export interface TeamSnapshot {
+  id: string;
+  name: string;
+  /** ISO timestamp. */
+  createdAt: string;
+  /** Who saved it, on a collaborative team. */
+  createdBy?: string;
+  /** Saved by the app rather than by hand: the team as it was before a restore. */
+  auto?: "beforeRestore";
+  data: TeamSnapshotData;
+}
+
 /**
  * What a shared Team Report reveals. "open" follows VGC open team sheets —
  * Pokémon, items, abilities and moves, but no Stat Points or nature (and so
@@ -175,6 +207,8 @@ export interface Team {
    * when the team is read (see collabDocToTeam).
    */
   collab?: TeamCollab;
+  /** Saved versions, newest first (src/lib/teamSnapshots.ts) — never in a shared copy. */
+  snapshots?: TeamSnapshot[];
   /** Benchmark damage calcs on the Team Report's Calcs tab, in pasted order. */
   calcs?: TeamCalc[];
   /** Pokémon added by hand to the team's Speed Tiers table (SpeedTierRow ids — docs/team-speed-tiers.md). */

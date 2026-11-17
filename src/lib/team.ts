@@ -77,7 +77,8 @@ export function unarchiveTeam(team: Team): Team {
 /**
  * A copy of `team` under `name` — same roster, notes, combinations and calcs,
  * but a new id, active (even when copying an archived team), unshared (the
- * share link stays with the original) and at the top of the list.
+ * share link stays with the original), without its snapshots, and at the top
+ * of the list.
  */
 export function duplicateTeam(team: Team, name: string): Team {
   // `delete`, not `undefined` — see unarchiveTeam.
@@ -92,6 +93,8 @@ export function duplicateTeam(team: Team, name: string): Team {
   delete copy.archivedAt;
   // A copy of a collaborative team is your own (see docs/collaborative-teams.md).
   delete copy.collab;
+  // A new team starts its own history (src/lib/teamSnapshots.ts).
+  delete copy.snapshots;
   return copy;
 }
 

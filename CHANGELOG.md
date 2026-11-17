@@ -10,6 +10,26 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.25 — 2026-11-16
+
+### Added
+
+- **Team versions**: save a team as it is now ("Before Puebla") from its page's ⋯ → Versions, and
+  later see what changed since each one (Pokémon added or removed, items, abilities, natures, moves,
+  stat points, strategy), view it, restore it, duplicate it as a new team, or delete it. A version
+  keeps the build and the strategy (combinations, notes, calcs, Speed pins), not the team's name,
+  regulations, folder or sharing. Restoring saves the current team first as an automatic version,
+  so it can be undone, and plans and logged games that pick from the roster follow each Pokémon. Up
+  to 20 per team; synced, and shared with the members of a collaborative team. A shared link never
+  includes them, and a duplicated team starts without them.
+
+### Fixed
+
+- **Damage calculator**: Scrappy (Mega Lopunny) and Mind's Eye (Mega Ursaluna) now let Normal and
+  Fighting moves hit Ghost types — they showed "immune". Close Combat into Gengar is resisted
+  (Poison), not ×0, and the calc line names the ability. The Threats and Meta matchups tabs, which
+  use the same calcs, follow.
+
 ## 0.3.24 — 2026-11-16
 
 ### Added

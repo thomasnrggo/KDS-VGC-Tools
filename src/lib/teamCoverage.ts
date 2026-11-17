@@ -199,7 +199,7 @@ function offensiveMultiplier(
   if (
     defendingType === "Ghost" &&
     (attackType === "Normal" || attackType === "Fighting") &&
-    (ability === "Scrappy" || ability === "Mind's Eye")
+    (ability === "Scrappy" || ability === "Mind's Eye" || ability === "Mind’s Eye")
   ) {
     return 1;
   }

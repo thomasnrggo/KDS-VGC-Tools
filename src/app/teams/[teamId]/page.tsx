@@ -54,6 +54,8 @@ import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sha
 import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamArchetype } from "@/components/TeamArchetype";
 import { TeamMetaMatchups } from "@/components/TeamMetaMatchups";
+import { TeamVersions } from "@/components/TeamVersions";
+import { restorePokemonEverywhere } from "@/lib/removeTeamPokemon";
 import { TeamListPdfDialog } from "@/components/TeamListPdf";
 import { Button, IconButton, TogglePill, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
@@ -128,6 +130,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     archiveTeam,
     unarchiveTeam,
     duplicateTeam,
+    addTeamCopy,
     dropPersonalCopy,
     restorePersonalTeam,
   } = useMyTeams();
@@ -262,6 +265,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
+  const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   const [isTeamListOpen, setIsTeamListOpen] = useState(false);
   // Strategy tab below lg: which of its two sections the chips show.
   const [strategySection, setStrategySection] = useState<"combinations" | "notes">("combinations");
@@ -637,6 +641,11 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                           onClick: duplicateAndOpen,
                         },
                         {
+                          label: t.versions.menu,
+                          icon: IconName.History,
+                          onClick: () => setIsVersionsOpen(true),
+                        },
+                        {
                           label: t.teamPage.addToOpponents,
                           icon: IconName.PersonAdd,
                           onClick: () =>
@@ -678,6 +687,38 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   </div>
                 )}
               </div>
+            )}
+
+            {isVersionsOpen && (
+              <TeamVersions
+                team={team}
+                onUpdate={(updater) => updateTeam(teamId, updater)}
+                onCopy={(copyOf, name) => {
+                  const copy = addTeamCopy(copyOf, name);
+                  toast.success(t.myTeams.duplicated(copy.name));
+                  router.push(`/teams/${copy.id}`);
+                }}
+                onRemap={(map) =>
+                  restorePokemonEverywhere(
+                    teamId,
+                    map,
+                    user?.uid ?? null,
+                    team.collab && user
+                      ? {
+                          team: team.collab,
+                          by: { uid: user.uid, name: user.displayName ?? user.email ?? "?" },
+                        }
+                      : undefined,
+                  ).catch((error) => {
+                    console.error("[versions] updating picks after a restore failed:", error);
+                    toast.error(t.teamBuilder.removeSyncFailed);
+                  })
+                }
+                createdBy={
+                  team.collab ? (user?.displayName ?? user?.email ?? undefined) : undefined
+                }
+                onClose={() => setIsVersionsOpen(false)}
+              />
             )}
 
             {isTeamListOpen && (

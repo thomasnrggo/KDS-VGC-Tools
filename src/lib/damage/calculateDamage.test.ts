@@ -97,6 +97,45 @@ describe("calculateDamage", () => {
     });
   });
 
+  it("lets Scrappy and Mind's Eye hit Ghost types with Normal and Fighting moves", () => {
+    const defender = { species: "Gengar", nature: "Hardy" };
+    const plain = {
+      species: "Kangaskhan",
+      ability: "Inner Focus",
+      nature: "Adamant",
+      evs: "32 Atk",
+    };
+    const scrappy = { ...plain, ability: "Scrappy" };
+
+    expect(calculateDamage(plain, defender, "Double-Edge")!.koChanceText).toBe("immune");
+    const normal = calculateDamage(scrappy, defender, "Double-Edge")!;
+    expect(normal.maxPercent).toBeGreaterThan(0);
+    expect(normal.attackerAbilityApplied).toBe(true);
+    // Neutral, like any other neutral target: Fighting on Ghost/Poison is ×0.5 from Poison.
+    const fighting = calculateDamage(scrappy, defender, "Close Combat")!;
+    const fightingVsPoison = calculateDamage(
+      scrappy,
+      { species: "Toxapex", nature: "Hardy" },
+      "Close Combat",
+    )!;
+    expect(fighting.maxPercent).toBeGreaterThan(0);
+    expect(fightingVsPoison.maxPercent).toBeGreaterThan(0);
+    // Mind's Eye, either apostrophe.
+    for (const ability of ["Mind's Eye", "Mind’s Eye"]) {
+      expect(calculateDamage({ ...plain, ability }, defender, "Close Combat")!.maxPercent).toBe(
+        fighting.maxPercent,
+      );
+    }
+    // Other types are unaffected: Scrappy doesn't change a Ghost move's ×0 on Normal.
+    expect(
+      calculateDamage(
+        { species: "Gengar", ability: "Scrappy", nature: "Modest" },
+        { species: "Kangaskhan", nature: "Hardy" },
+        "Shadow Ball",
+      )!.koChanceText,
+    ).toBe("immune");
+  });
+
   it("uses the Mega form's own ability, not the pasted (base form) one, when Mega toggled on", () => {
     // Real bug report: base Raichu's Lightning Rod (Electric immunity) was
     // incorrectly still being used for Mega Raichu Y, which actually has No

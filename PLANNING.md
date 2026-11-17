@@ -3214,3 +3214,16 @@ membership **reuses prep groups** (a collaborative team is a team plus its own g
 editors** only, last write wins with an "editing" marker on rich text, online-only. Phases:
 groundwork (`useMyTeams` behind two stores), v1, presence, then CRDTs/history only if needed. Full
 spec: [docs/collaborative-teams.md](./docs/collaborative-teams.md).
+
+## Team versions (2026-11-16)
+
+Save a team as it is ("Before Puebla") and later compare, view, restore, duplicate or delete that
+version. Decided: a version is a **full snapshot of the build and strategy** — roster, paste,
+combinations, notes, calcs, Speed pins (combinations point at roster slots, so restoring the roster
+alone could misdirect them) — but **not the team's identity** (name, regulations, folder, sharing,
+collaboration). Stored on the team itself as `Team.snapshots` (newest first, max 20, automatic ones
+dropped first), so it syncs with no new store and is shared on a collaborative team; never in a
+shared copy, not copied by Duplicate, and left out of the collaborative activity log. Restoring
+saves the current team first as an automatic version and remaps plans and logged games by species
+(`restoreSlotMap`). Linking tournaments to the version they were played with is deferred. Code:
+`src/lib/teamSnapshots.ts`, `src/components/TeamVersions/`.

@@ -273,6 +273,17 @@ export function useMyTeams() {
   };
 
   /**
+   * Saves `team` — a version of one of yours (teamFromSnapshot) — as a new
+   * team named `name`, like duplicateTeam. Returns the copy.
+   */
+  const addTeamCopy = (team: Team, name: string): Team => {
+    const copy = toDuplicate(team, name);
+    setTeams((prev) => [...prev, copy]);
+    void saveMyTeam(copy);
+    return copy;
+  };
+
+  /**
    * After a team became collaborative (makeTeamCollaborative): drops its
    * personal copy — and its public share, which a collaborative team
    * doesn't have yet. The collaborative one keeps the same id.
@@ -422,6 +433,7 @@ export function useMyTeams() {
     addTeam,
     addBuiltTeam,
     duplicateTeam,
+    addTeamCopy,
     dropPersonalCopy,
     restorePersonalTeam,
     editTeam,

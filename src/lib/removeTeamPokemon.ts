@@ -58,6 +58,16 @@ export function movePokemonEverywhere(
   return remapPokemonEverywhere(teamId, moveMap(from, to), uid, collab);
 }
 
+/** The rest of restoring a version of the team (src/lib/teamSnapshots.ts — restoreSlotMap). */
+export function restorePokemonEverywhere(
+  teamId: string,
+  map: SlotMap,
+  uid: string | null,
+  collab?: Collab,
+): Promise<void> {
+  return remapPokemonEverywhere(teamId, map, uid, collab);
+}
+
 function remapPokemonEverywhere(
   teamId: string,
   map: SlotMap,

@@ -231,7 +231,9 @@ function fieldDetails(
 /** The activity of one edit of a collaborative team (see diffCollabTeam): its fields, combinations and calcs. */
 export function activityFromTeamChanges(before: Team, changes: CollabTeamChanges): ActivityDraft[] {
   const drafts: ActivityDraft[] = [];
-  const changedKeys = Object.keys(changes.fields);
+  // Snapshots are a history of their own (src/lib/teamSnapshots.ts): copying the
+  // list into an entry to undo it would make every entry as big as all of them.
+  const changedKeys = Object.keys(changes.fields).filter((key) => key !== "snapshots");
   // The paste is the roster written out: it's the roster that changed.
   const fields = changedKeys.flatMap((key) =>
     key === "rawPaste" ? (changedKeys.includes("pokemon") ? [] : ["pokemon"]) : [key],
@@ -239,7 +241,9 @@ export function activityFromTeamChanges(before: Team, changes: CollabTeamChanges
   const previous = before as unknown as Record<string, unknown>;
   if (fields.length > 0) {
     const undoFields = Object.fromEntries(changedKeys.map((key) => [key, previous[key] ?? null]));
-    const afterFields = changes.fields as Record<string, unknown>;
+    const afterFields = Object.fromEntries(
+      changedKeys.map((key) => [key, (changes.fields as Record<string, unknown>)[key]]),
+    );
     drafts.push({
       change: { kind: "fields", fields, ...fieldDetails(fields, previous, afterFields) },
       undo: { fields: undoFields },
