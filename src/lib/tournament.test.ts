@@ -9,6 +9,7 @@ import {
   isTournamentCompleted,
   parseRoundOpponentTeam,
   reopenTournament,
+  teamTournamentSummary,
 } from "./tournament";
 import { REGULATIONS } from "@/data/regulations";
 import type { Team, Tournament, TournamentRound } from "@/types";
@@ -46,7 +47,11 @@ function roundWithGameResults(
 }
 
 /** A round with `wins` game wins and `losses` game losses set, rest left unplayed. */
-function roundWithResults(wins: number, losses: number, myPicksPerGame: number[][] = []): TournamentRound {
+function roundWithResults(
+  wins: number,
+  losses: number,
+  myPicksPerGame: number[][] = [],
+): TournamentRound {
   return roundWithGameResults(
     [...Array(wins).fill("win" as const), ...Array(losses).fill("loss" as const)],
     myPicksPerGame,
@@ -168,7 +173,10 @@ describe("computeTeamUsageStats", () => {
     const tournament: Tournament = {
       ...createTournament("Regionals", team.id, REG_ID),
       rounds: [
-        roundWithResults(2, 0, [[0, 1], [0, 2]]),
+        roundWithResults(2, 0, [
+          [0, 1],
+          [0, 2],
+        ]),
         roundWithResults(0, 2, [[0, 1], [1]]),
       ],
     };
@@ -202,5 +210,49 @@ describe("computeTeamUsageStats", () => {
     };
     const stats = computeTeamUsageStats([tournament], team);
     expect(stats[0]).toMatchObject({ timesPicked: 3, wins: 1, losses: 1 });
+  });
+});
+
+describe("teamTournamentSummary", () => {
+  const event = (teamId: string, rounds: TournamentRound[], extra: Partial<Tournament> = {}) => ({
+    ...createTournament("Event", teamId, "regulation-m-c"),
+    rounds,
+    ...extra,
+  });
+
+  it("is null without a tournament for the team", () => {
+    expect(teamTournamentSummary([event("other", [roundWithResults(2, 0)])], "mine")).toBeNull();
+  });
+
+  it("adds up decided matches and keeps the best placing", () => {
+    const summary = teamTournamentSummary(
+      [
+        event("mine", [roundWithResults(2, 0), roundWithResults(1, 2), createRound("R3")], {
+          placement: 12,
+          participantCount: 128,
+        }),
+        event("mine", [roundWithResults(2, 1), { ...createRound("R2"), roundOutcome: "bye" }], {
+          placement: 5,
+          participantCount: 64,
+        }),
+        event("other", [roundWithResults(0, 2)], { placement: 1 }),
+      ],
+      "mine",
+    );
+    expect(summary).toEqual({
+      tournaments: 2,
+      matches: 4,
+      wins: 3,
+      losses: 1,
+      ties: 0,
+      winRate: 0.75,
+      best: { placement: 5, participantCount: 64 },
+    });
+  });
+
+  it("has no win rate or best placing before either is known", () => {
+    const summary = teamTournamentSummary([event("mine", [createRound("R1")])], "mine");
+    expect(summary?.winRate).toBeNull();
+    expect(summary?.best).toBeNull();
   });
 });

@@ -2,6 +2,7 @@
 
 import { RegulationSelect, Select } from "@/components/Select";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Team } from "@/types";
 import { useTeamFolders } from "@/hooks/useTeamFolders";
@@ -10,6 +11,8 @@ import { RowActionsMenu } from "../RowActionsMenu";
 import { toast } from "../Toast";
 import { REGULATIONS } from "@/data/regulations";
 import { isTeamArchived, addRegulationTag, removeRegulationTag } from "@/lib/team";
+import { teamTournamentSummary, type TeamTournamentSummary } from "@/lib/tournament";
+import { useTournaments } from "@/hooks/useTournaments";
 import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { TeamRoster } from "../TeamRoster";
 import { Modal, ModalDescription, ModalTitle } from "../Modal";
@@ -64,6 +67,7 @@ export function MyTeamsSection({
   const t = useMessages();
   const pokemonText = usePokemonText();
   const router = useRouter();
+  const { tournaments } = useTournaments();
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -209,7 +213,45 @@ export function MyTeamsSection({
   );
 
   /** One team's row — `index` stripes the list. */
+  /** The team's tournament record, on its name's line — opens its Tournament stats. */
+  function renderTournamentStats(team: Team, summary: TeamTournamentSummary) {
+    const stats = t.myTeams.tournamentStats;
+    const { wins, losses, ties } = summary;
+    const record = ties ? `${wins}–${losses}–${ties}` : `${wins}–${losses}`;
+    const parts = [
+      summary.best && stats.best(summary.best.placement, summary.best.participantCount),
+      summary.winRate !== null && stats.winRate(`${Math.round(summary.winRate * 100)}%`),
+      summary.matches > 0 && stats.matches(summary.matches, record),
+      stats.tournaments(summary.tournaments),
+    ].filter(Boolean);
+    return (
+      <Link
+        href={`/teams/${team.id}?tab=stats`}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+        draggable={false}
+        aria-label={`${stats.label}: ${parts.join(" · ")}`}
+        className="flex w-fit items-center gap-1.5 rounded text-xs text-zinc-600 hover:text-zinc-900 hover:underline"
+      >
+        <Icon name={IconName.BarChart} size={14} className="shrink-0 text-zinc-500" />
+        <span>
+          {parts.map((part, at) => (
+            <span key={at}>
+              {at > 0 && " · "}
+              <span
+                className={at === 0 && summary.best ? "font-semibold text-zinc-800" : undefined}
+              >
+                {part}
+              </span>
+            </span>
+          ))}
+        </span>
+      </Link>
+    );
+  }
+
   function renderTeamRow(team: Team, index: number) {
+    const summary = teamTournamentSummary(tournaments, team.id);
     return (
       <li
         key={team.id}
@@ -290,6 +332,8 @@ export function MyTeamsSection({
                 updateTeam(team.id, (current) => removeRegulationTag(current, regulationId))
               }
             />
+            {/* The team's tournament record beside its tags, in the row's spare width. */}
+            {summary && <span className="ml-2">{renderTournamentStats(team, summary)}</span>}
           </div>
           {/* Natural width at md+: TeamRoster switches to fixed-px
               tiles there, and stretching this wrapper would space them
@@ -305,8 +349,8 @@ export function MyTeamsSection({
             />
           </div>
         </div>
-        {/* The row's actions: Duplicate (desktop; on phones it's in the ⋯, so
-            the ⋯ sits alone in the corner), and a ⋯ with the rest. Clicks and
+        {/* The row's actions: Duplicate (its own icon on desktop, and in the ⋯ on every
+            screen), and a ⋯ with the rest. Clicks and
             Enter/Space stop here so they don't also open the team. */}
         <div
           role="group"
@@ -326,8 +370,6 @@ export function MyTeamsSection({
           </IconButton>
           <RowActionsMenu
             label={t.myTeams.teamOptions(team.name)}
-            onEdit={() => router.push(`/teams/${team.id}/edit`)}
-            editLabel={t.myTeams.editTeam}
             middleAction={{
               label: t.teamFolders.moveTo,
               icon: IconName.Folder,
@@ -338,7 +380,6 @@ export function MyTeamsSection({
                 label: t.myTeams.duplicate,
                 icon: IconName.ContentCopy,
                 onClick: () => duplicateTeam(team.id),
-                className: "md:hidden",
               },
               // A collaborative team is left or stopped from its page (Collaborate).
               ...(team.collab

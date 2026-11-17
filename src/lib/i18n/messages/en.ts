@@ -136,6 +136,15 @@ export const en = {
     moved: (team: string, folder: string) => `Moved "${team}" to ${folder}`,
   },
   myTeams: {
+    tournamentStats: {
+      label: "Tournament results — open them",
+      best: (placement: number, of?: number) =>
+        of ? `Best #${placement} of ${of}` : `Best #${placement}`,
+      winRate: (percent: string) => `${percent} wins`,
+      matches: (count: number, record: string) =>
+        `${count} match${count === 1 ? "" : "es"} (${record})`,
+      tournaments: (count: number) => `${count} tournament${count === 1 ? "" : "s"}`,
+    },
     title: "My Teams",
     createTeam: "Create team",
     searchTeams: "Search teams",
@@ -163,6 +172,7 @@ export const en = {
     unarchive: "Unarchive",
     editTeam: "Edit team",
     duplicate: "Duplicate",
+    duplicated: (name: string) => `Duplicated as “${name}”`,
     copyName: (name: string) => `${name} (copy)`,
   },
   regulationTags: {
@@ -261,9 +271,9 @@ export const en = {
       "These results use older archetype definitions; they update on the next metagame run.",
   },
   teamList: {
-    button: "Team list PDF",
+    button: "Generate team list",
     buttonHint: "Fill in the official Play! Pokémon team list for a tournament",
-    title: "Team list PDF",
+    title: "Generate team list",
     description:
       "Fills in the official Play! Pokémon Video Game Team List with this team. Your details come from your player profile and stay on this device — never saved with the team or shared.",
     descriptionSignedIn:
@@ -303,6 +313,14 @@ export const en = {
     backToMyTeams: "← Back to My Teams",
     breadcrumb: "Breadcrumb",
     sections: "Team sections",
+    tabGroups: {
+      report: "Overview",
+      strategy: "Strategy",
+      analysis: "Analysis",
+      meta: "Meta",
+      matchups: "Matchups",
+    },
+    subsections: (group: string) => `${group} views`,
     tabs: {
       report: "Overview",
       strategy: "Strategy",
@@ -319,8 +337,8 @@ export const en = {
     copyTeamHint: "Copy the team as Showdown export text",
     addToMyTeams: "Add to my teams",
     addToMyTeamsHint: "Save a copy of this team in My Teams",
-    addToOpponents: "Add to opponents",
-    addToOpponentsHint: "Add this team to your opponents in the Matchup Planner",
+    addToOpponents: "Add to Matchup Planner",
+    addToOpponentsHint: "Save this team to your opponents list in the Matchup Planner",
     addedToMyTeams: (name: string) => `Added "${name}" to your teams`,
     alreadyInMyTeams: (name: string) => `Already in your teams as "${name}"`,
     addedToOpponents: (name: string) => `Added "${name}" to your opponents`,

@@ -100,7 +100,7 @@ export function RowActionsMenu({
           role="menu"
           aria-label={label}
           onClick={(event) => event.stopPropagation()}
-          className="absolute top-full right-0 z-20 mt-1 w-40 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
+          className="absolute top-full right-0 z-20 mt-1 w-max min-w-40 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 py-1 shadow-lg"
         >
           {onEdit && (
             <button

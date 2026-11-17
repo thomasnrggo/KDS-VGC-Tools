@@ -139,6 +139,13 @@ export const es: Messages = {
     moved: (team, folder) => `"${team}" movido a ${folder}`,
   },
   myTeams: {
+    tournamentStats: {
+      label: "Resultados en torneos — ábrelos",
+      best: (placement, of) => (of ? `Mejor #${placement} de ${of}` : `Mejor #${placement}`),
+      winRate: (percent) => `${percent} de victorias`,
+      matches: (count, record) => `${count} ronda${count === 1 ? "" : "s"} (${record})`,
+      tournaments: (count) => `${count} torneo${count === 1 ? "" : "s"}`,
+    },
     title: "Mis equipos",
     createTeam: "Crear equipo",
     searchTeams: "Buscar equipos",
@@ -167,6 +174,7 @@ export const es: Messages = {
     unarchive: "Desarchivar",
     editTeam: "Editar equipo",
     duplicate: "Duplicar",
+    duplicated: (name) => `Duplicado como «${name}»`,
     copyName: (name) => `${name} (copia)`,
   },
   regulationTags: {
@@ -262,9 +270,9 @@ export const es: Messages = {
       "Estos resultados usan definiciones de arquetipos anteriores; se actualizan en la próxima ejecución del metajuego.",
   },
   teamList: {
-    button: "Lista de equipo PDF",
+    button: "Generar lista de equipo",
     buttonHint: "Rellenar la lista de equipo oficial de Play! Pokémon para un torneo",
-    title: "Lista de equipo PDF",
+    title: "Generar lista de equipo",
     description:
       "Rellena la lista de equipo oficial de Play! Pokémon (Video Game Team List) con este equipo. Tus datos vienen de tu perfil de jugador y se quedan en este dispositivo: nunca se guardan con el equipo ni se comparten.",
     descriptionSignedIn:
@@ -305,6 +313,14 @@ export const es: Messages = {
     backToMyTeams: "← Volver a Mis equipos",
     breadcrumb: "Ruta de navegación",
     sections: "Secciones del equipo",
+    tabGroups: {
+      report: "Resumen",
+      strategy: "Estrategia",
+      analysis: "Análisis",
+      meta: "Meta",
+      matchups: "Enfrentamientos",
+    },
+    subsections: (group: string) => `Vistas de ${group}`,
     tabs: {
       report: "Resumen",
       strategy: "Estrategia",
@@ -321,8 +337,8 @@ export const es: Messages = {
     copyTeamHint: "Copiar el equipo como texto de Showdown",
     addToMyTeams: "Añadir a mis equipos",
     addToMyTeamsHint: "Guardar una copia de este equipo en Mis equipos",
-    addToOpponents: "Añadir a rivales",
-    addToOpponentsHint: "Añadir este equipo a tus rivales del Planificador",
+    addToOpponents: "Añadir al Planificador",
+    addToOpponentsHint: "Guarda este equipo en tu lista de rivales del Planificador",
     addedToMyTeams: (name) => `"${name}" añadido a tus equipos`,
     alreadyInMyTeams: (name) => `Ya está en tus equipos como "${name}"`,
     addedToOpponents: (name) => `"${name}" añadido a tus rivales`,

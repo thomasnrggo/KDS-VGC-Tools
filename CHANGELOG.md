@@ -10,6 +10,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.24 — 2026-11-16
+
+### Added
+
+- **My Teams: tournament results** beside each team's name when it has tournaments logged — best placing, win
+  rate, matches (with the record) and how many tournaments, e.g. "Best #1 of 10 · 83% wins · 6
+  matches (5–1) · 1 tournament". It opens the team's Tournament stats.
+
+### Changed
+
+- **Team page sections**: the nine pill tabs are now five underline tabs on their own row —
+  Overview, Strategy, **Analysis** (Coverage · Threats · Speed · Calcs), **Meta** (Meta matchups ·
+  Tournament stats) and Matchups — with a group's views as sub-tabs. They no longer look like the
+  action buttons, and new views go into a group instead of growing the row. Phones scroll the row
+  sideways instead of the section picker. `?tab=` links still open the same view.
+- **Team page actions**: just **Copy team** and a ⋯ menu — Duplicate (a copy without the share
+  link or collaboration, opened right away), Add to Matchup Planner (was "Add to opponents"),
+  Generate team list (was "Team list PDF"), Archive and Remove team. No Edit: each Pokémon card
+  opens it in the Team Builder.
+- **My Teams**: a team's ⋯ has Duplicate on every screen and no longer has Edit — the row opens
+  the team.
+
 ## 0.3.23 — 2026-11-16
 
 ### Fixed

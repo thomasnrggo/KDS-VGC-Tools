@@ -80,9 +80,11 @@ export function getRoundResult(round: TournamentRound): "win" | "loss" | "tie" |
 }
 
 /** Overall round record across a tournament, e.g. "3-1-0" (win-loss-tie) — only counts decided rounds. */
-export function getTournamentRecord(
-  tournament: Tournament,
-): { wins: number; losses: number; ties: number } {
+export function getTournamentRecord(tournament: Tournament): {
+  wins: number;
+  losses: number;
+  ties: number;
+} {
   let wins = 0;
   let losses = 0;
   let ties = 0;
@@ -114,15 +116,13 @@ export interface PokemonUsageStat {
  * MatchupPlan's leadPair/backPair already make.
  */
 export function computeTeamUsageStats(tournaments: Tournament[], team: Team): PokemonUsageStat[] {
-  const stats = team.pokemon.map(
-    (pokemon, index): PokemonUsageStat => ({
-      index,
-      pokemon,
-      timesPicked: 0,
-      wins: 0,
-      losses: 0,
-    }),
-  );
+  const stats = team.pokemon.map((pokemon, index): PokemonUsageStat => ({
+    index,
+    pokemon,
+    timesPicked: 0,
+    wins: 0,
+    losses: 0,
+  }));
 
   for (const tournament of tournaments) {
     if (tournament.teamId !== team.id) continue;
@@ -142,4 +142,54 @@ export function computeTeamUsageStats(tournaments: Tournament[], team: Team): Po
   }
 
   return stats;
+}
+
+export interface TeamTournamentSummary {
+  /** Tournaments logged with the team. */
+  tournaments: number;
+  /** Decided rounds (Bo3 matches) across them — byes and walkovers count as wins. */
+  matches: number;
+  wins: number;
+  losses: number;
+  ties: number;
+  /** Wins per decided match, or null before one is decided. */
+  winRate: number | null;
+  /** The best final standing given, with its event's size if known. */
+  best: { placement: number; participantCount?: number } | null;
+}
+
+/**
+ * A team's record across every tournament logged with it — for the My Teams
+ * list. Null when none is logged.
+ */
+export function teamTournamentSummary(
+  tournaments: Tournament[],
+  teamId: string,
+): TeamTournamentSummary | null {
+  const own = tournaments.filter((tournament) => tournament.teamId === teamId);
+  if (own.length === 0) return null;
+  let wins = 0;
+  let losses = 0;
+  let ties = 0;
+  let best: TeamTournamentSummary["best"] = null;
+  for (const tournament of own) {
+    const record = getTournamentRecord(tournament);
+    wins += record.wins;
+    losses += record.losses;
+    ties += record.ties;
+    const { placement, participantCount } = tournament;
+    if (placement && placement > 0 && (!best || placement < best.placement)) {
+      best = { placement, participantCount };
+    }
+  }
+  const matches = wins + losses + ties;
+  return {
+    tournaments: own.length,
+    matches,
+    wins,
+    losses,
+    ties,
+    winRate: matches > 0 ? wins / matches : null,
+    best,
+  };
 }

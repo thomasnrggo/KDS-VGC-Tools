@@ -49,22 +49,14 @@ import { Modal, ModalDescription, ModalTitle } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
-import { addPasteToOpponents } from "@/lib/teamExport";
+import { addPasteToOpponents, copyTeamExport } from "@/lib/teamExport";
 import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sharedTeam";
 import { reconcileSharedMatchups } from "@/lib/storage/db";
-import { TeamExportActions } from "@/components/TeamExportActions";
 import { TeamArchetype } from "@/components/TeamArchetype";
 import { TeamMetaMatchups } from "@/components/TeamMetaMatchups";
 import { TeamListPdfDialog } from "@/components/TeamListPdf";
-import {
-  Button,
-  IconButton,
-  TogglePill,
-  buttonVariants,
-  iconButtonVariants,
-} from "@/components/Button";
+import { Button, IconButton, TogglePill, iconButtonVariants } from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
-import { SectionPicker } from "@/components/SectionPicker";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
 interface TeamReportPageProps {
@@ -97,6 +89,21 @@ const ALL_TABS: ReportTab[] = [
 ];
 // Matchups is on hold — see TEAM_REPORT_PREP_ENABLED.
 const TABS = TEAM_REPORT_PREP_ENABLED ? ALL_TABS : ALL_TABS.filter((tab) => tab !== "matchups");
+
+/**
+ * The tabs grouped into a few top-level sections, so the row doesn't grow with
+ * every new view: Analysis is the calc views of your own team, Meta your team
+ * against the real metagame. A group with more than one tab shows them as
+ * sub-tabs. `?tab=` still names the tab itself, so old links keep working.
+ */
+type TabGroup = "report" | "strategy" | "analysis" | "meta" | "matchups";
+const TAB_GROUPS: { id: TabGroup; tabs: ReportTab[] }[] = [
+  { id: "report", tabs: ["report"] },
+  { id: "strategy", tabs: ["strategy"] },
+  { id: "analysis", tabs: ["coverage", "threats", "speed", "calcs"] },
+  { id: "meta", tabs: ["meta", "stats"] },
+  { id: "matchups", tabs: ["matchups"] },
+];
 
 function isReportTab(value: string | undefined): value is ReportTab {
   return TABS.some((tab) => tab === value);
@@ -193,6 +200,15 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     if (added.length + updated.length > 0) personal.addOpponents([...added, ...updated]);
   }
 
+  /** Duplicate (the ⋯): a copy without the share link or collaboration (duplicateTeam), opened. */
+  function duplicateAndOpen() {
+    if (!team) return;
+    const copy = duplicateTeam(team.id);
+    if (!copy) return;
+    toast.success(t.myTeams.duplicated(copy.name));
+    router.push(`/teams/${copy.id}`);
+  }
+
   async function keepCopy() {
     if (!team) return;
     const copy = duplicateTeam(team.id);
@@ -269,9 +285,26 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   );
   // A tab from the URL that isn't shown (yet — the flags and admin load after) opens the report.
   const activeTab = visibleTabs.includes(selectedTab) ? selectedTab : "report";
+  const visibleGroups = TAB_GROUPS.map((group) => ({
+    ...group,
+    tabs: group.tabs.filter((tab) => visibleTabs.includes(tab)),
+  })).filter((group) => group.tabs.length > 0);
+  const activeGroup =
+    visibleGroups.find((group) => group.tabs.includes(activeTab)) ?? visibleGroups[0];
+  // The tab last open in each group, so going back to a group reopens it.
+  const [lastInGroup, setLastInGroup] = useState<Partial<Record<TabGroup, ReportTab>>>({});
+
+  function selectGroup(id: TabGroup) {
+    const group = visibleGroups.find((candidate) => candidate.id === id);
+    if (!group) return;
+    const last = lastInGroup[id];
+    selectTab(last && group.tabs.includes(last) ? last : group.tabs[0]);
+  }
 
   function selectTab(tab: ReportTab) {
     setActiveTab(tab);
+    const group = TAB_GROUPS.find((candidate) => candidate.tabs.includes(tab));
+    if (group) setLastInGroup((current) => ({ ...current, [group.id]: tab }));
     // Keep the tab in the URL so Back from a matchup page (or a reload)
     // returns to it. The native History API is synced with Next's router.
     const url = new URL(window.location.href);
@@ -280,7 +313,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
     window.history.replaceState(null, "", url);
   }
 
-  // ← / → switch tabs (desktop's tab row), unless the key belongs to a field,
+  // ← / → switch sections (the tab row), unless the key belongs to a field,
   // a menu or an open dialog.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -294,11 +327,11 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
         return;
       }
       if (document.querySelector('[aria-modal="true"], [role="dialog"][data-state="open"]')) return;
-      const at = visibleTabs.indexOf(activeTab);
-      const next = visibleTabs[at + (event.key === "ArrowLeft" ? -1 : 1)];
+      const at = visibleGroups.indexOf(activeGroup);
+      const next = visibleGroups[at + (event.key === "ArrowLeft" ? -1 : 1)];
       if (!next) return;
       event.preventDefault();
-      selectTab(next);
+      selectGroup(next.id);
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
@@ -392,37 +425,33 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   {team.name}
                 </h1>
               </nav>
-              {/* Phones: one button showing the current section, opening a bottom sheet with
-                all of them — instead of pill tabs wrapping onto two rows. */}
-              <SectionPicker
-                title={t.teamPage.sections}
-                options={visibleTabs.map((tab) => ({ value: tab, label: t.teamPage.tabs[tab] }))}
-                value={activeTab}
-                onChange={selectTab}
-                className="order-last basis-full"
-              />
+              {/* The sections as underline tabs on their own row (pills are for actions and
+                filters): a few groups, scrolling sideways on a phone rather than wrapping. */}
               <div
                 role="tablist"
                 aria-label={t.teamPage.sections}
-                className="order-last hidden basis-full flex-wrap gap-1.5 sm:flex lg:order-none lg:basis-auto"
+                className="order-last -mx-3 flex basis-full gap-1 overflow-x-auto border-b border-zinc-200 px-3 sm:mx-0 sm:gap-4 sm:px-0"
               >
-                {visibleTabs.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === tab}
-                    onClick={() => selectTab(tab)}
-                    className={cn(
-                      "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
-                      activeTab === tab
-                        ? "bg-chrome-600 text-white"
-                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
-                    )}
-                  >
-                    {t.teamPage.tabs[tab]}
-                  </button>
-                ))}
+                {visibleGroups.map((group) => {
+                  const isActive = activeGroup.id === group.id;
+                  return (
+                    <button
+                      key={group.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => selectGroup(group.id)}
+                      className={cn(
+                        "-mb-px shrink-0 border-b-2 px-2 pt-1 pb-2 text-sm font-medium whitespace-nowrap transition-colors sm:px-0.5",
+                        isActive
+                          ? "border-zinc-900 text-zinc-900"
+                          : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
+                      )}
+                    >
+                      {t.teamPage.tabGroups[group.id]}
+                    </button>
+                  );
+                })}
               </div>
               <div className="flex items-center gap-1.5">
                 {team.collab && (
@@ -484,9 +513,11 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                     )}
                   </button>
                 )}
-                {/* Phones: My Teams rows only show Edit and Duplicate, so Archive and
-                  Remove are here instead (a collaborative team's are in Collaborate). */}
-                <div className={cn("md:hidden", team.collab && "hidden")}>
+                {/* Phones, outside the Overview: Archive and Remove (a collaborative team's are
+                  in Collaborate). On the Overview they're in the actions' ⋯, so there's one ⋯. */}
+                <div
+                  className={cn("md:hidden", (team.collab || activeTab === "report") && "hidden")}
+                >
                   <RowActionsMenu
                     label={t.myTeams.teamOptions(team.name)}
                     triggerClassName={iconButtonVariants({ variant: "round" })}
@@ -537,6 +568,28 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               </Modal>
             )}
 
+            {/* A group's own views (Analysis: Coverage · Threats · Speed · Calcs) as sub-tabs. */}
+            {activeGroup.tabs.length > 1 && (
+              <div
+                role="tablist"
+                aria-label={t.teamPage.subsections(t.teamPage.tabGroups[activeGroup.id])}
+                className="-mt-3 flex flex-wrap gap-1.5"
+              >
+                {activeGroup.tabs.map((tab) => (
+                  <TogglePill
+                    key={tab}
+                    role="tab"
+                    aria-selected={activeTab === tab}
+                    active={activeTab === tab}
+                    onClick={() => selectTab(tab)}
+                    className="px-3 py-1 text-sm"
+                  >
+                    {t.teamPage.tabs[tab]}
+                  </TogglePill>
+                ))}
+              </div>
+            )}
+
             {/* Left: the team's archetype (a preview, Overview only) and who's editing it (a
                 collaborative team, every tab). Right: the team's actions, on the Overview only —
                 Edit opens the Team Builder. */}
@@ -563,41 +616,66 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   )}
                 </div>
                 {activeTab === "report" && (
-                  <TeamExportActions
-                    layout="inline"
-                    pokemon={team.pokemon}
-                    onAddToOpponents={() =>
-                      addPasteToOpponents({
-                        name: team.name,
-                        paste: team.rawPaste,
-                        regulationId: selectedRegulationId,
-                        pokepasteUrl: team.pokepasteUrl,
-                        opponents: personal.opponents,
-                        addOpponents: personal.addOpponents,
-                      })
-                    }
-                  >
+                  // Copy team, the everyday action, as the one button; the rest in a ⋯.
+                  // Edit team stays there even though each card opens its Pokémon: it's
+                  // the way to the whole team (name, paste).
+                  <div className="flex items-center gap-2">
                     <Button
-                      variant="outline"
-                      onClick={() => setIsTeamListOpen(true)}
-                      title={t.teamList.buttonHint}
+                      onClick={() => copyTeamExport(team.pokemon, "closed")}
+                      title={t.teamPage.copyTeamHint}
                       className="flex items-center justify-center gap-2 px-4 py-1.5 text-sm"
                     >
-                      <Icon name={IconName.Download} size={18} />
-                      {t.teamList.button}
+                      <Icon name={IconName.ContentCopy} size={18} />
+                      {t.teamPage.copyTeam}
                     </Button>
-                    <Link
-                      href={`/teams/${teamId}/edit`}
-                      title={t.teamBuilder.editPokemonHint}
-                      className={cn(
-                        buttonVariants({ variant: "outline" }),
-                        "flex items-center justify-center gap-2 px-4 py-1.5 text-sm",
-                      )}
-                    >
-                      <Icon name={IconName.Edit} size={18} />
-                      {t.common.edit}
-                    </Link>
-                  </TeamExportActions>
+                    <RowActionsMenu
+                      label={t.myTeams.teamOptions(team.name)}
+                      extraActions={[
+                        {
+                          label: t.myTeams.duplicate,
+                          icon: IconName.ContentCopy,
+                          onClick: duplicateAndOpen,
+                        },
+                        {
+                          label: t.teamPage.addToOpponents,
+                          icon: IconName.PersonAdd,
+                          onClick: () =>
+                            addPasteToOpponents({
+                              name: team.name,
+                              paste: team.rawPaste,
+                              regulationId: selectedRegulationId,
+                              pokepasteUrl: team.pokepasteUrl,
+                              opponents: personal.opponents,
+                              addOpponents: personal.addOpponents,
+                            }),
+                        },
+                        {
+                          label: t.teamList.button,
+                          icon: IconName.Download,
+                          onClick: () => setIsTeamListOpen(true),
+                        },
+                        // A collaborative team is archived, left or stopped from Collaborate.
+                        ...(team.collab
+                          ? []
+                          : [
+                              isTeamArchived(team)
+                                ? {
+                                    label: t.myTeams.unarchive,
+                                    icon: IconName.Unarchive,
+                                    onClick: () => unarchiveTeam(team.id),
+                                  }
+                                : {
+                                    label: t.myTeams.archive,
+                                    icon: IconName.Archive,
+                                    onClick: () => archiveTeam(team.id),
+                                  },
+                            ]),
+                      ]}
+                      onRemove={team.collab ? undefined : () => setIsConfirmingRemove(true)}
+                      removeLabel={t.myTeams.removeTeam}
+                      triggerClassName={iconButtonVariants({ variant: "round" })}
+                    />
+                  </div>
                 )}
               </div>
             )}
