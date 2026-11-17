@@ -308,6 +308,7 @@ export const en = {
       strategy: "Strategy",
       coverage: "Coverage",
       threats: "Threats",
+      meta: "Meta matchups",
       speed: "Speed",
       calcs: "Calcs",
       matchups: "Matchups",
@@ -807,6 +808,39 @@ export const en = {
     metaSource: (tournaments: number, teams: number, date: string, source: string) =>
       `Metagame: ${tournaments} official tournament${tournaments === 1 ? "" : "s"}, ${teams.toLocaleString("en")} teams · updated ${date} · via ${source}`,
     empty: "Add Pokémon to the team to see its coverage.",
+  },
+  metaMatchups: {
+    intro:
+      "Your team against the metagame's most common teams and Pokémon combinations, from the calcs: each of their Pokémon with its most common set against each of yours, both ways — who knocks out whom, and who moves first.",
+    basis: (teams: number, events: number) =>
+      `${teams} teams from the ${events} most recent official ${events === 1 ? "tournament" : "tournaments"}.`,
+    caveat:
+      "Normal Speed only (no Tailwind or Trick Room), their most common set, and all six of theirs against all six of yours. Meta Pokémon without a known spread use an estimate.",
+    teams: "Full teams",
+    cores: "Combinations",
+    strong: "Strong against",
+    weak: "Weak against",
+    none: "Nothing clearly in either direction.",
+    showAll: (count: number) => `Show all ${count}`,
+    showLess: "Show less",
+    level: {
+      strong: "Strong",
+      favored: "Favored",
+      even: "Even",
+      unfavored: "Unfavored",
+      weak: "Weak",
+    },
+    played: (teams: number, winRate: string) => `${teams} teams · ${winRate} win rate`,
+    threat: "Their threats",
+    answer: "Your best",
+    ohkos: (names: string) => `OHKOs ${names}`,
+    noOhko: "no OHKOs",
+    answeredBy: (names: string) => `answered by ${names}`,
+    unanswered: "nothing answers it",
+    results: (archetype: string, winRate: string, games: number) =>
+      `Teams like yours vs ${archetype}: ${winRate} (${games} games)`,
+    noMeta: "No metagame data for this team's regulation yet.",
+    empty: "Add Pokémon to see your meta matchups.",
   },
   threats: {
     summary: "In short",

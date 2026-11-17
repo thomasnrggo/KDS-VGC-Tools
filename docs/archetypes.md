@@ -273,6 +273,31 @@ is deliberate: it would tie archetypes to species and break when a regulation ch
 Editing (definitions in Firestore, a form with a live preview against tournament teams) is the
 next step; until then, change `defaultArchetypes.ts` and bump `version`.
 
+## Meta matchups tab (2026-11-16)
+
+The owner: "I would like to see teams which my team has strong or weak matchups against … this
+meta team or this specific Pokémon combination". A **Meta matchups** tab on the team page (behind
+the `teamArchetype` preview flag, always shown to staff), from the calcs, for the exact team:
+
+- **What's compared**: the metagame summary's 20 most common full teams (from the 4 most recent
+  events) and its most common cores (quads, then trios), skipping a core that shares 3+ Pokémon
+  with a more common listed one.
+- **How** (`metaTeamMatchups`, `src/lib/threats/metaTeamMatchups.ts`): each meta Pokémon gets its
+  most common set (item, moves, ability, nature; the admin's spread where set, else estimated) and
+  is calced once against your team both ways (`threatMatchups`), reused by every team and core
+  (~35 ms for M-C). Per team: their pressure (v1's danger per Pokémon, summed) and yours (the same
+  from your side); **score = (yours − theirs) / their Pokémon**. Levels: Strong ≥ 0.75, Favored ≥
+  0.25, Even, Unfavored ≤ −0.25, Weak ≤ −0.75.
+- **Shown**: "Strong against" and "Weak against" (5 each; "Show all" lists everything ranked),
+  with Full teams / Combinations pills. Each card: sprites, archetype label (full teams), teams and
+  win rate, their two biggest threats (whom they OHKO, who answers them, or "nothing answers
+  it"), your two best Pokémon (whom they OHKO), and the real result of teams like yours against
+  that archetype when there are 15+ games.
+- **Limits**: normal Speed only (no Tailwind / Trick Room modes), one set per meta Pokémon, all
+  six against all six (no team preview). Estimated spreads make some KOs generous, and v1's
+  "answer" (a KO, or a 2HKO taking under half) rarely credits bulky support, so a Pokémon like
+  Incineroar can read "nothing answers it". Candidates for tuning.
+
 ## Planned (not built)
 
 - **Storage:** `archetypeRoles/{id}` and `archetypes/{id}`, edited by admins. The metagame job

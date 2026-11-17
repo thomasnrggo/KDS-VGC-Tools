@@ -10,6 +10,7 @@ export { getFeatureFlags, saveFeatureFlags } from "./featureFlags";
 export { getLearnsetOverrides, saveLearnsetOverride } from "./learnsetOverrides";
 export { getMetaSpreads, saveMetaSpread } from "./metaSpreads";
 export { getExcludedEvents, setEventExcluded } from "./metaExcludedEvents";
+export { getEventTitles, setEventTitle } from "./metaEventTitles";
 export { getMetaImports, saveMetaImport, deleteMetaImport } from "./metaImports";
 export {
   getArchetypeSamples,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   officialSpeciesName,
+  withOfficialSpeciesNames,
   parseOfficialEvent,
   type PokedataRosterEntry,
   type PokedataStandings,
@@ -28,6 +29,32 @@ describe("officialSpeciesName", () => {
     expect(officialSpeciesName("Lycanroc [Dusk Form]")).toBe("Lycanroc-Dusk");
     expect(officialSpeciesName("Sinistcha [Masterpiece Form]")).toBe("Sinistcha");
     expect(officialSpeciesName("Garchomp")).toBe("Garchomp");
+  });
+
+  it("reads forms in parentheses too, and leaves Showdown names alone", () => {
+    const names: Record<string, string> = {
+      "Basculegion (Male)": "Basculegion",
+      "Basculegion (Female)": "Basculegion-F",
+      "Floette (Eternal Flower)": "Floette-Eternal",
+      "Indeedee (Female)": "Indeedee-F",
+      "Sinistcha (Unremarkable Form)": "Sinistcha",
+      "Sinistcha (Masterpiece Form)": "Sinistcha",
+      "Arcanine (Hisuian Form)": "Arcanine-Hisui",
+      "Lycanroc (Dusk Form)": "Lycanroc-Dusk",
+      "Ninetales (Alolan Form)": "Ninetales-Alola",
+      "Aegislash (Shield Forme)": "Aegislash",
+    };
+    for (const [official, showdown] of Object.entries(names)) {
+      expect(officialSpeciesName(official)).toBe(showdown);
+      expect(resolveTypes(showdown)).toBeDefined();
+      expect(officialSpeciesName(showdown)).toBe(showdown);
+    }
+    expect(officialSpeciesName("Aegislash [Shield Forme]")).toBe("Aegislash");
+  });
+
+  it("renames a saved event's species", () => {
+    const players = [{ placing: 1, team: [{ species: "Basculegion (Male)", moves: [] }] }];
+    expect(withOfficialSpeciesNames(players)[0].team[0].species).toBe("Basculegion");
   });
 
   it("gives every species at Puebla a name the app resolves", () => {

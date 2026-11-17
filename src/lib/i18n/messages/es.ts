@@ -310,6 +310,7 @@ export const es: Messages = {
       strategy: "Estrategia",
       coverage: "Cobertura",
       threats: "Amenazas",
+      meta: "Enfrentamientos del meta",
       speed: "Velocidad",
       calcs: "Cálculos",
       matchups: "Enfrentamientos",
@@ -817,6 +818,39 @@ export const es: Messages = {
     metaSource: (tournaments, teams, date, source) =>
       `Metajuego: ${tournaments} torneo${tournaments === 1 ? "" : "s"} oficial${tournaments === 1 ? "" : "es"}, ${teams.toLocaleString("es")} equipos · actualizado el ${date} · vía ${source}`,
     empty: "Añade Pokémon al equipo para ver su cobertura.",
+  },
+  metaMatchups: {
+    intro:
+      "Tu equipo contra los equipos y combinaciones de Pokémon más comunes del metajuego, según los cálculos: cada uno de sus Pokémon con su set más común contra cada uno de los tuyos, en ambos sentidos — quién debilita a quién y quién se mueve primero.",
+    basis: (teams: number, events: number) =>
+      `${teams} equipos de ${events === 1 ? "el torneo oficial más reciente" : `los ${events} torneos oficiales más recientes`}.`,
+    caveat:
+      "Solo velocidad normal (sin Viento Afín ni Espacio Raro), su set más común, y sus seis contra tus seis. Los Pokémon del meta sin una distribución conocida usan una estimación.",
+    teams: "Equipos completos",
+    cores: "Combinaciones",
+    strong: "Fuerte contra",
+    weak: "Débil contra",
+    none: "Nada destaca claramente en ningún sentido.",
+    showAll: (count: number) => `Ver los ${count}`,
+    showLess: "Ver menos",
+    level: {
+      strong: "Fuerte",
+      favored: "Favorable",
+      even: "Parejo",
+      unfavored: "Desfavorable",
+      weak: "Débil",
+    },
+    played: (teams: number, winRate: string) => `${teams} equipos · ${winRate} de victorias`,
+    threat: "Sus amenazas",
+    answer: "Tus mejores",
+    ohkos: (names: string) => `debilita de un golpe a ${names}`,
+    noOhko: "no debilita de un golpe",
+    answeredBy: (names: string) => `lo responde ${names}`,
+    unanswered: "nada lo responde",
+    results: (archetype: string, winRate: string, games: number) =>
+      `Equipos como el tuyo vs ${archetype}: ${winRate} (${games} partidas)`,
+    noMeta: "Aún no hay datos del metajuego para la regulación de este equipo.",
+    empty: "Añade Pokémon para ver tus enfrentamientos del meta.",
   },
   threats: {
     summary: "En resumen",

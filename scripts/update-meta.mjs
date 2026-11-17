@@ -18,7 +18,12 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseOfficialEvent } from "../src/lib/meta/officialTournament.ts";
+import {
+  officialSpeciesName,
+  parseOfficialEvent,
+  withOfficialSpeciesNames,
+} from "../src/lib/meta/officialTournament.ts";
+import { eventTitle, titlesNeedRebuild } from "../src/lib/meta/eventTitles.ts";
 import { aggregateCombinations, aggregateOfficialMeta } from "../src/lib/meta/aggregateMeta.ts";
 import { RECENT_EVENTS } from "../src/lib/meta/metaDocument.ts";
 import { summaryNeedsRebuild } from "../src/lib/meta/excludedEvents.ts";
@@ -113,6 +118,9 @@ async function openStore() {
       async excludedIds() {
         return new Set();
       },
+      async eventTitles() {
+        return {};
+      },
       async imports() {
         return [];
       },
@@ -120,7 +128,7 @@ async function openStore() {
       async eventIdsByRegulation() {
         return new Map();
       },
-      async summaryTournamentIds() {
+      async publishedSummary() {
         return null;
       },
       async saveMeta(regulationId, data) {
@@ -177,22 +185,34 @@ async function openStore() {
       const snap = await db.collection("appConfig").doc("metaExcludedEvents").get();
       return new Set(Object.keys(snap.data() ?? {}));
     },
-    /** Every saved event's id, by regulation — ids only, not the players. */
+    /** Event titles an admin renamed (/admin/meta-events — src/lib/meta/eventTitles.ts). */
+    async eventTitles() {
+      const snap = await db.collection("appConfig").doc("metaEventTitles").get();
+      return snap.data() ?? {};
+    },
+    /** Every saved event's id and own title, by regulation — not the players. */
     async eventIdsByRegulation() {
-      const snap = await db.collection("metaEvents").select("regulationId").get();
+      const snap = await db.collection("metaEvents").select("regulationId", "title").get();
       const byRegulation = new Map();
       for (const doc of snap.docs) {
         const regulationId = doc.get("regulationId");
         if (!regulationId) continue;
-        byRegulation.set(regulationId, [...(byRegulation.get(regulationId) ?? []), doc.id]);
+        byRegulation.set(regulationId, [
+          ...(byRegulation.get(regulationId) ?? []),
+          { id: doc.id, title: doc.get("title") },
+        ]);
       }
       return byRegulation;
     },
-    /** The events a regulation's published summary covers, or null without one. */
-    async summaryTournamentIds(regulationId) {
+    /** A regulation's published summary: its events and Pokémon names, or null without one. */
+    async publishedSummary(regulationId) {
       const snap = await db.collection("meta").doc(regulationId).get();
       const tournaments = snap.get("official.tournaments");
-      return tournaments ? tournaments.map((tournament) => tournament.id) : null;
+      if (!tournaments) return null;
+      return {
+        tournaments: tournaments.map(({ id, title }) => ({ id, title })),
+        species: (snap.get("official.pokemon") ?? []).map((mon) => mon.species),
+      };
     },
     async saveMeta(regulationId, data) {
       await db.collection("meta").doc(regulationId).set(data);
@@ -350,11 +370,26 @@ async function main() {
   // An admin excluded or included an event since a summary was written: rebuild
   // it, even with nothing new to fetch.
   const excluded = await store.excludedIds();
-  for (const [regulationId, ids] of await store.eventIdsByRegulation()) {
-    const summaryIds = await store.summaryTournamentIds(regulationId);
-    const included = ids.filter((id) => !excluded.has(id));
+  const titles = await store.eventTitles();
+  for (const [regulationId, saved] of await store.eventIdsByRegulation()) {
+    const summary = await store.publishedSummary(regulationId);
+    const summaryIds = summary?.tournaments.map((event) => event.id) ?? null;
+    const included = saved.map((event) => event.id).filter((id) => !excluded.has(id));
     if (summaryIds && summaryNeedsRebuild(summaryIds, included)) {
       console.log(`meta/${regulationId}: exclusions changed — rebuilding`);
+      changedRegulations.add(regulationId);
+    }
+    // An admin renamed an event (or undid it): publish the new title.
+    const savedTitles = new Map(saved.map((event) => [event.id, event.title]));
+    if (summary && titlesNeedRebuild(summary.tournaments, savedTitles, titles)) {
+      console.log(`meta/${regulationId}: event titles changed — rebuilding`);
+      changedRegulations.add(regulationId);
+    }
+    // A Pokémon published under a name the app doesn't use ("Basculegion (Male)",
+    // from an upload saved before the naming fix): count it under its own name.
+    const misnamed = (summary?.species ?? []).filter((name) => officialSpeciesName(name) !== name);
+    if (misnamed.length) {
+      console.log(`meta/${regulationId}: renaming ${misnamed.join(", ")} — rebuilding`);
       changedRegulations.add(regulationId);
     }
     // The archetype definitions changed (docs/archetypes.md): reclassify every team.
@@ -372,8 +407,15 @@ async function main() {
     // Oldest first: each Pokémon's per-event history follows this order.
     // Without the events an admin excluded (their saved copies stay, so
     // including one again needs no re-fetch).
+    // Each event under the title an admin gave it, and every Pokémon under the
+    // app's name for it (an older upload may have saved the game's own).
     const events = (await store.eventsFor(regulationId))
       .filter((event) => !excluded.has(event.id))
+      .map((event) => ({
+        ...event,
+        title: eventTitle(event, titles),
+        players: withOfficialSpeciesNames(event.players),
+      }))
       .sort((a, b) => a.startDate.localeCompare(b.startDate));
     const summary = aggregateOfficialMeta(events);
     if (summary.teams === 0) {

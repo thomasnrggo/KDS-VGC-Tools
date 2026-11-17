@@ -7,7 +7,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useMeta, useMetaTournament } from "@/hooks/useMeta";
 import { useExcludedEvents } from "@/hooks/useExcludedEvents";
 import { AuthMenu } from "@/components/AuthMenu";
-import { Button } from "@/components/Button";
+import { Button, TextAction } from "@/components/Button";
 import { Icon } from "@/components/Icon";
 import { PokemonSprite } from "@/components/PokemonSprite";
 import { RegulationSelect } from "@/components/Select";
@@ -16,8 +16,16 @@ import { IconName } from "@/enums";
 import { REGULATIONS } from "@/data/regulations";
 import type { MetaTournament } from "@/lib/meta/metaDocument";
 import { cn } from "@/lib/utils";
-import { deleteMetaImport, getMetaImports, saveMetaImport } from "@/lib/firebase";
+import {
+  deleteMetaImport,
+  getEventTitles,
+  getMetaImports,
+  saveMetaImport,
+  setEventTitle,
+} from "@/lib/firebase";
+import { eventTitle, type EventTitles } from "@/lib/meta/eventTitles";
 import type { MetaImport } from "@/lib/meta/metaImport";
+import { EventTitleEditor } from "./EventTitleEditor";
 import { MetaEventUpload } from "./MetaEventUpload";
 import { MetaJobStatus } from "./MetaJobStatus";
 
@@ -33,7 +41,8 @@ const dateRange = (event: Pick<MetaTournament, "startDate" | "endDate">) =>
 /**
  * Each official event behind a regulation's metagame, with a switch to leave
  * one out (src/lib/meta/excludedEvents.ts) — the metagame job rebuilds the
- * summary without it on its next run. Open an event to see its own most
+ * summary without it on its next run. Rename one (src/lib/meta/eventTitles.ts)
+ * when its file's title is wrong or bare. Open an event to see its own most
  * used Pokémon. Admin-only, so English-only like the other admin pages.
  */
 export default function AdminMetaEventsPage() {
@@ -50,6 +59,11 @@ export default function AdminMetaEventsPage() {
   const { tournamentMeta, isLoading: tournamentLoading } = useMetaTournament(regulationId, openId);
   // Uploaded by hand, waiting for the job (src/lib/meta/metaImport.ts).
   const [uploads, setUploads] = useState<MetaImport[]>([]);
+  // Renamed by an admin (src/lib/meta/eventTitles.ts); the summary picks them up on the next run.
+  const [titles, setTitles] = useState<EventTitles>({});
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  // Given back their own title this visit: the summary still shows the old one until the job runs.
+  const [restoredIds, setRestoredIds] = useState<string[]>([]);
   const canLoadUploads = !!user;
   useEffect(() => {
     if (!canLoadUploads) return;
@@ -59,6 +73,11 @@ export default function AdminMetaEventsPage() {
         if (!cancelled) setUploads(loaded);
       })
       .catch((error) => console.error("[metaImports] loading failed:", error));
+    getEventTitles()
+      .then((loaded) => {
+        if (!cancelled) setTitles(loaded);
+      })
+      .catch((error) => console.error("[metaEventTitles] loading failed:", error));
     return () => {
       cancelled = true;
     };
@@ -101,9 +120,18 @@ export default function AdminMetaEventsPage() {
     ...reincluded.filter((event) => !inSummary.has(event.id) && !excluded[event.id]),
   ].sort((a, b) => b.startDate.localeCompare(a.startDate));
   const regulationUploads = uploads.filter((upload) => upload.regulationId === regulationId);
+  const summaryTitles = new Map(
+    (meta?.official.tournaments ?? []).map((event) => [event.id, event.title]),
+  );
+  const titleOf = (event: MetaTournament) => eventTitle(event, titles);
   const pending =
     regulationUploads.length > 0 ||
-    events.some((event) => !!excluded[event.id] === inSummary.has(event.id));
+    events.some((event) => !!excluded[event.id] === inSummary.has(event.id)) ||
+    events.some(
+      (event) =>
+        summaryTitles.has(event.id) &&
+        (restoredIds.includes(event.id) || summaryTitles.get(event.id) !== titleOf(event)),
+    );
   const uploader = user?.displayName ?? user?.email ?? "an admin";
 
   async function addUpload(entry: MetaImport) {
@@ -122,6 +150,28 @@ export default function AdminMetaEventsPage() {
     }
   }
 
+  async function rename(event: MetaTournament, title: string | null) {
+    const renamed = titles[event.id];
+    const original = renamed?.original ?? event.title;
+    try {
+      const entry = title
+        ? { title, original, renamedAt: new Date().toISOString(), renamedBy: uploader }
+        : null;
+      await setEventTitle(event.id, entry);
+      setTitles((current) => {
+        const next = { ...current };
+        if (entry) next[event.id] = entry;
+        else delete next[event.id];
+        return next;
+      });
+      if (!entry) setRestoredIds((current) => [...current, event.id]);
+    } catch (error) {
+      console.error("[metaEventTitles] save failed:", error);
+      toast.error("Couldn't save the title. Check your connection and try again.");
+      throw error;
+    }
+  }
+
   async function toggle(event: MetaTournament) {
     const isExcluded = !!excluded[event.id];
     setSavingId(event.id);
@@ -132,7 +182,7 @@ export default function AdminMetaEventsPage() {
           ? null
           : {
               id: event.id,
-              title: event.title,
+              title: titleOf(event),
               regulationId,
               startDate: event.startDate,
               endDate: event.endDate,
@@ -252,36 +302,53 @@ export default function AdminMetaEventsPage() {
               const isExcluded = !!excluded[event.id];
               const counted = inSummary.has(event.id);
               const isOpen = openId === event.id;
+              const renamed = titles[event.id];
               return (
                 <li key={event.id} className="border-b border-zinc-100 last:border-b-0">
                   <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => setOpenId(isOpen ? null : event.id)}
-                      aria-expanded={isOpen}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                    >
-                      <Icon
-                        name={IconName.ExpandMore}
-                        size={18}
-                        className={cn("text-zinc-500 transition-transform", isOpen && "rotate-180")}
+                    {renamingId === event.id ? (
+                      <EventTitleEditor
+                        title={titleOf(event)}
+                        original={renamed?.original}
+                        onSave={(title) => rename(event, title)}
+                        onClose={() => setRenamingId(null)}
                       />
-                      <span className="flex min-w-0 flex-col">
-                        <span
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setOpenId(isOpen ? null : event.id)}
+                        aria-expanded={isOpen}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      >
+                        <Icon
+                          name={IconName.ExpandMore}
+                          size={18}
                           className={cn(
-                            "truncate text-sm font-semibold text-zinc-900",
-                            isExcluded && "text-zinc-500 line-through",
+                            "text-zinc-500 transition-transform",
+                            isOpen && "rotate-180",
                           )}
-                        >
-                          {event.title}
+                        />
+                        <span className="flex min-w-0 flex-col">
+                          <span
+                            className={cn(
+                              "truncate text-sm font-semibold text-zinc-900",
+                              isExcluded && "text-zinc-500 line-through",
+                            )}
+                          >
+                            {titleOf(event)}
+                          </span>
+                          <span className="text-xs text-zinc-500">
+                            {dateRange(event)} · {event.teams} teams
+                            {renamed?.original && ` · renamed from “${renamed.original}”`}
+                            {isExcluded &&
+                              ` · excluded by ${excluded[event.id].excludedBy}, ${excluded[event.id].excludedAt.slice(0, 10)}`}
+                          </span>
                         </span>
-                        <span className="text-xs text-zinc-500">
-                          {dateRange(event)} · {event.teams} teams
-                          {isExcluded &&
-                            ` · excluded by ${excluded[event.id].excludedBy}, ${excluded[event.id].excludedAt.slice(0, 10)}`}
-                        </span>
-                      </span>
-                    </button>
+                      </button>
+                    )}
+                    {renamingId !== event.id && (
+                      <TextAction onClick={() => setRenamingId(event.id)}>Rename</TextAction>
+                    )}
                     <span
                       className={cn(
                         "rounded-full px-2.5 py-0.5 text-xs font-medium",

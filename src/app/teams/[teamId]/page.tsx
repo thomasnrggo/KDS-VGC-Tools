@@ -54,6 +54,7 @@ import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sha
 import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamExportActions } from "@/components/TeamExportActions";
 import { TeamArchetype } from "@/components/TeamArchetype";
+import { TeamMetaMatchups } from "@/components/TeamMetaMatchups";
 import { TeamListPdfDialog } from "@/components/TeamListPdf";
 import {
   Button,
@@ -73,13 +74,22 @@ interface TeamReportPageProps {
 }
 
 type ReportTab =
-  "report" | "strategy" | "coverage" | "threats" | "speed" | "calcs" | "matchups" | "stats";
+  | "report"
+  | "strategy"
+  | "coverage"
+  | "threats"
+  | "meta"
+  | "speed"
+  | "calcs"
+  | "matchups"
+  | "stats";
 
 const ALL_TABS: ReportTab[] = [
   "report",
   "strategy",
   "coverage",
   "threats",
+  "meta",
   "speed",
   "calcs",
   "matchups",
@@ -251,7 +261,12 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   // The Threats tab is a preview: behind its flag, always there for the admin.
   const { flags } = useFeatureFlags();
   const { isStaff } = useIsAdmin();
-  const visibleTabs = TABS.filter((tab) => tab !== "threats" || flags.teamThreats || isStaff);
+  // Meta matchups is part of the archetype preview (docs/archetypes.md).
+  const visibleTabs = TABS.filter(
+    (tab) =>
+      (tab !== "threats" || flags.teamThreats || isStaff) &&
+      (tab !== "meta" || flags.teamArchetype || isStaff),
+  );
   // A tab from the URL that isn't shown (yet — the flags and admin load after) opens the report.
   const activeTab = visibleTabs.includes(selectedTab) ? selectedTab : "report";
 
@@ -745,6 +760,10 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
             {/* The metagame's common sets calced against the team — see src/lib/threats/. */}
             {activeTab === "threats" && (
               <TeamThreats pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
+            )}
+
+            {activeTab === "meta" && (
+              <TeamMetaMatchups pokemon={team.pokemon} regulationId={team.regulationIds[0]} />
             )}
 
             {/* Speed Tiers' My team view for this team (docs/team-speed-tiers.md), in

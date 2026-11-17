@@ -10,6 +10,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.22 — 2026-11-16
+
+### Added
+
+- **Admin → Meta events: Rename** an event (a hand-uploaded file may title it just "Buenos
+  Aires"). The metagame job publishes the new title on its next run; "Use the original" undoes it.
+- **Meta matchups (preview)**: a team page tab listing the metagame's most common teams and
+  Pokémon combinations your team is strong or weak against, from the calcs — with their Pokémon that
+  knock out yours (and whether you answer them), yours that knock out theirs, and how teams like
+  yours did against that archetype in real games. Behind the `teamArchetype` flag, always shown to
+  the admin.
+
+### Fixed
+
+- Pokémon from hand-uploaded events whose file writes forms in parentheses ("Basculegion (Male)",
+  "Floette (Eternal Flower)", "Sinistcha (Unremarkable Form)", …) showed no sprite and were counted
+  apart from the same Pokémon at other events. They're read like the bracketed names now, and the
+  metagame job renames already-saved events and rebuilds the summary by itself.
+
 ## 0.3.21 — 2026-11-16
 
 ### Added

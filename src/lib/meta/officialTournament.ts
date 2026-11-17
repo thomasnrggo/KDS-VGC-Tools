@@ -96,6 +96,8 @@ const FORM_SPECIES: Record<string, string> = {
   "Lycanroc [Midday Form]": "Lycanroc",
   "Lycanroc [Midnight Form]": "Lycanroc-Midnight",
   "Lycanroc [Dusk Form]": "Lycanroc-Dusk",
+  "Aegislash [Shield Forme]": "Aegislash",
+  "Aegislash [Blade Forme]": "Aegislash",
 };
 
 const REGIONAL_SUFFIX: Record<string, string> = {
@@ -110,14 +112,16 @@ const REGIONAL_SUFFIX: Record<string, string> = {
  * [Hisuian Form]", "Tauros [Paldean Form - Blaze Breed]", "Rotom [Wash
  * Rotom]") in Showdown's spelling, which the rest of the app resolves
  * ("Basculegion-F", "Arcanine-Hisui", "Tauros-Paldea-Blaze", "Rotom-Wash").
- * A name without a bracket is returned as is.
+ * Some files put the form in parentheses instead ("Basculegion (Male)"), read
+ * the same. A name without a form — a Showdown name included — is returned as
+ * is, so running it twice changes nothing.
  */
 export function officialSpeciesName(name: string): string {
-  const known = FORM_SPECIES[name];
-  if (known) return known;
-  const match = /^(.+?) \[(.+)\]$/.exec(name);
+  const match = /^(.+?) [[(](.+)[\])]$/.exec(name.trim());
   if (!match) return name;
   const [, base, form] = match;
+  const known = FORM_SPECIES[`${base} [${form}]`];
+  if (known) return known;
   if (form === "Female") return `${base}-F`;
   if (form === "Male") return base;
   const regional = /^(Alolan|Galarian|Hisuian|Paldean) Form(?: - (\w+) Breed)?$/.exec(form);
@@ -149,6 +153,18 @@ function toParsedPokemon([
     ...(nature ? { nature } : {}),
     moves: moves.filter(Boolean),
   };
+}
+
+/**
+ * A saved event's players with every species in Showdown's spelling — for
+ * events saved before a naming fix (an upload whose file wrote "Basculegion
+ * (Male)"), so the metagame job counts them with everyone else's.
+ */
+export function withOfficialSpeciesNames<T extends { team: ParsedPokemon[] }>(players: T[]): T[] {
+  return players.map((player) => ({
+    ...player,
+    team: player.team.map((mon) => ({ ...mon, species: officialSpeciesName(mon.species) })),
+  }));
 }
 
 const RESULTS: Record<number, RoundResult> = { 3: "win", 0: "loss", 1: "tie" };
