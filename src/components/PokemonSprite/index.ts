@@ -1,1 +1,1 @@
-export { PokemonSprite } from "./PokemonSprite";
+export { NoSpriteTitles, PokemonSprite } from "./PokemonSprite";

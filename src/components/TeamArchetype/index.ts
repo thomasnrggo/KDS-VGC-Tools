@@ -1,1 +1,1 @@
-export { TeamArchetype } from "./TeamArchetype";
+export { ArchetypeChip, TeamArchetype } from "./TeamArchetype";

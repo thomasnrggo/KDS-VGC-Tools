@@ -209,6 +209,8 @@ export interface MetaCombo {
   topUsage: number;
   winRate: number | null;
   rounds: number;
+  /** A full team's best finish (MetaTeam); pairs to quads have none. */
+  best?: { placing: number; tournament: string };
 }
 
 /** A full team: also its best finish. */

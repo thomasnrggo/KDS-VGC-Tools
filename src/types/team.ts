@@ -33,6 +33,10 @@ export type TeamPokemonSlot = number | null;
  */
 export interface TeamCombination {
   id: string;
+  /** What you call it ("Default") — "Combination 1" when unset. */
+  name?: string;
+  /** What it's for: "vs Trick Room", "vs Sun", anything you type. */
+  labels?: string[];
   leadPair: [TeamPokemonSlot, TeamPokemonSlot];
   backPair: [TeamPokemonSlot, TeamPokemonSlot];
   leadMega: [boolean, boolean];
@@ -72,6 +76,8 @@ export interface TeamSnapshotData {
   speedPins?: string[];
   pokepasteUrl?: string;
   replicaCode?: string;
+  watchPokemon?: string[];
+  watchTeams?: string[];
 }
 
 /**
@@ -207,6 +213,10 @@ export interface Team {
    * when the team is read (see collabDocToTeam).
    */
   collab?: TeamCollab;
+  /** Meta Pokémon added by hand to the Strategy tab's "Be careful with" (species, as the metagame names them — src/lib/teamWatchouts.ts). */
+  watchPokemon?: string[];
+  /** Common meta teams added by hand to the Strategy tab's "Prep for" (teamKey — src/lib/teamWatchouts.ts). */
+  watchTeams?: string[];
   /** Saved versions, newest first (src/lib/teamSnapshots.ts) — never in a shared copy. */
   snapshots?: TeamSnapshot[];
   /** Benchmark damage calcs on the Team Report's Calcs tab, in pasted order. */

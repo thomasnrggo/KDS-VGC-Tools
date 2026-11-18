@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import type { ParsedPokemon } from "@/types";
 
 /** The owner's tempo colors (docs/archetypes.md): red offense, blue positioning, green patient. */
-const TEMPO_DOT: Record<Tempo, string> = {
+export const TEMPO_DOT: Record<Tempo, string> = {
   offense: "bg-red-500",
   positioning: "bg-blue-500",
   patient: "bg-green-600",
@@ -152,5 +152,37 @@ export function TeamArchetype({ pokemon, regulationId }: TeamArchetypeProps) {
         <p className="text-zinc-400">{t.teamArchetype.preview}</p>
       </div>
     </details>
+  );
+}
+
+/**
+ * An archetype as a chip — its tempo dot and name, `detail` and its game plan on hover —
+ * for one named by its classification primary (archetypeMatchups' opponent
+ * ids), like "perish-trap".
+ */
+export function ArchetypeChip({
+  id,
+  label,
+  detail,
+}: {
+  id: string;
+  label: string;
+  /** Shown on hover first, before the game plan. */
+  detail?: string;
+}) {
+  const set = DEFAULT_ARCHETYPE_SET;
+  const tempo = archetypeTempo(id, set);
+  const description = set.archetypes.find((archetype) => archetype.id === id)?.description;
+  return (
+    <span
+      className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-raised px-3 py-1 text-sm"
+      title={[detail, description].filter(Boolean).join("\n\n") || undefined}
+    >
+      <span
+        aria-hidden="true"
+        className={cn("size-2.5 shrink-0 rounded-full", tempo ? TEMPO_DOT[tempo] : "bg-zinc-400")}
+      />
+      <span className="font-semibold text-zinc-900">{label}</span>
+    </span>
   );
 }

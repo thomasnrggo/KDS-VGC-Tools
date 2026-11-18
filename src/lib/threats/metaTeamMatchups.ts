@@ -3,13 +3,18 @@ import { withMetaSpread, type MetaSpreads } from "@/lib/meta/metaSpreads";
 import type { MetaCombo, MetaPokemon } from "@/lib/meta/aggregateMeta";
 import type { ParsedPokemon } from "@/types";
 import {
+  fieldFor,
   rankThreats,
   threatMatchups,
   threatMovesFirst,
+  WALL_HITS_BACK,
+  WALL_TAKES,
   type Hit,
   type Matchup,
   type ThreatMatchups,
+  type ThreatResult,
 } from "./analyzeThreats";
+import { withSpread } from "./estimateSpread";
 import { metaBaseSet, metaSetItems, type MetaThreatSet } from "./metaSets";
 
 /**
@@ -19,7 +24,9 @@ import { metaBaseSet, metaSetItems, type MetaThreatSet } from "./metaSets";
  * Each meta Pokémon is built once — its most common set: item, moves,
  * ability, nature, and the admin's spread where there is one — and calced
  * against your team both ways (threatMatchups: who KOs whom, who moves
- * first). A team or core is then scored from those duels:
+ * first), in the field it fights in beside its partners (their weather and
+ * terrain — a Chlorophyll Venusaur beside Charizard Y is in sun). A team or
+ * core is then scored from those duels:
  *
  * - their pressure: v1's danger for each of their Pokémon (OHKO 1 / roll 0.75
  *   / 2HKO 0.4 per one of yours, ×accuracy, ×1.3 moving first, reduced by
@@ -43,7 +50,7 @@ function koLevel(hit: Hit | null): KoLevel | null {
   return null;
 }
 
-/** How well `defender` answers `attacker`: KOs it (moving first, or surviving its hit), or 2HKOs it barely scratched. */
+/** How well `defender` answers `attacker`: KOs it (moving first, or surviving its hit), 2HKOs it barely scratched, or walls it. */
 function answerWeight(
   attackerHit: Hit | null,
   defenderHit: Hit | null,
@@ -55,6 +62,10 @@ function answerWeight(
   if (defenderHit.minPercent >= 100) return ANSWER_WEIGHT.ko * defenderHit.accuracy;
   if (defenderHit.maxPercent >= 100) return ANSWER_WEIGHT.rollKo * defenderHit.accuracy;
   if (defenderHit.minPercent >= 50 && (attackerHit?.maxPercent ?? 0) < 50) {
+    return ANSWER_WEIGHT.check;
+  }
+  // Walls it (as analyzeThreats' answerLevel).
+  if (defenderHit.minPercent >= WALL_HITS_BACK && (attackerHit?.maxPercent ?? 0) <= WALL_TAKES) {
     return ANSWER_WEIGHT.check;
   }
   return 0;
@@ -86,6 +97,17 @@ export function comboSets(
   });
 }
 
+/** How a meta team's score reads: strong ≥ 0.75, favored ≥ 0.25, even, unfavored ≤ −0.25, weak ≤ −0.75. */
+export type MatchupLevel = "strong" | "favored" | "even" | "unfavored" | "weak";
+
+export function matchupLevel(score: number): MatchupLevel {
+  if (score >= 0.75) return "strong";
+  if (score >= 0.25) return "favored";
+  if (score > -0.25) return "even";
+  if (score > -0.75) return "unfavored";
+  return "weak";
+}
+
 /** One of their Pokémon in the matchup. */
 export interface TheirPokemon {
   set: MetaThreatSet;
@@ -95,6 +117,8 @@ export interface TheirPokemon {
   ohkos: number[];
   /** Indexes of yours that answer it. */
   answeredBy: number[];
+  /** Its duels against your team, in the field it fights in beside its partners — for a threat card. */
+  result: ThreatResult;
 }
 
 /** One of yours in the matchup. */
@@ -120,17 +144,16 @@ export interface MetaTeamMatchup {
 }
 
 /**
- * Scores one meta team or core against your team from precomputed duels
- * (`duels`: each of their sets' threatMatchups against your team, by set id).
+ * Scores one meta team or core against your team from its Pokémon's
+ * precomputed duels (`theirs`: each one's threatMatchups against your team,
+ * in the field it fights in beside its partners).
  */
 export function scoreCombo(
   combo: MetaCombo,
   kind: MetaTeamMatchup["kind"],
-  sets: MetaThreatSet[],
-  duels: Map<string, ThreatMatchups>,
+  theirs: ThreatMatchups[],
   teamSize: number,
 ): MetaTeamMatchup | null {
-  const theirs = sets.flatMap((set) => duels.get(set.id) ?? []);
   if (theirs.length === 0) return null;
 
   // Their side: v1's danger, from rankThreats (normal Speed), in their order.
@@ -139,6 +162,7 @@ export function scoreCombo(
     const result = ranked.find((r) => r.set.id === set.id)!;
     return {
       set,
+      result,
       danger: result.danger,
       ohkos: result.duels.flatMap((duel, index) =>
         duel.ko === "ohko" || duel.ko === "rollOhko" ? [index] : [],
@@ -178,6 +202,44 @@ export function scoreCombo(
   };
 }
 
+/**
+ * Your team against any team — an opponent from the Matchup Planner, with its
+ * own sets (Stat Points estimated where it has none) — scored like a meta
+ * team (scoreCombo), each Pokémon in its partners' weather and terrain.
+ * Null when none of its Pokémon can be calced.
+ */
+export function teamMatchup(
+  team: ParsedPokemon[],
+  theirs: ParsedPokemon[],
+): MetaTeamMatchup | null {
+  const pokemon = theirs.map((mon) => withSpread(mon).pokemon);
+  const sets: MetaThreatSet[] = pokemon.map((mon, index) => ({
+    id: `${mon.species}|${mon.item ?? ""}|${index}`,
+    species: mon.species,
+    pokemon: mon,
+    spreadFromAdmin: false,
+    share: 1,
+    usage: 1,
+    winRate: null,
+  }));
+  const duels = sets.flatMap((set) =>
+    threatMatchups(
+      team,
+      [set],
+      pokemon.filter((mon) => mon !== set.pokemon),
+    ),
+  );
+  const combo: MetaCombo = {
+    species: pokemon.map((mon) => stripMegaSuffix(mon.species)).sort(),
+    teams: 0,
+    usage: 0,
+    topUsage: 0,
+    winRate: null,
+    rounds: 0,
+  };
+  return scoreCombo(combo, "team", duels, team.length);
+}
+
 /** Shares this many Pokémon with a core already listed, and a core adds nothing new. */
 const CORE_OVERLAP = 3;
 
@@ -206,21 +268,26 @@ export function metaTeamMatchups(
     if (!overlaps) cores.push(core);
   }
 
-  const setsOf = new Map<MetaCombo, MetaThreatSet[]>();
-  const unique = new Map<string, MetaThreatSet>();
-  for (const combo of [...combos.teams, ...cores]) {
+  // Each meta Pokémon calced once per field it fights in — its partners' weather
+  // and terrain count (a Chlorophyll Venusaur beside Charizard Y is in sun) —
+  // and reused by every team and core that puts it there.
+  const duels = new Map<string, ThreatMatchups | null>();
+  const fieldKey = (field: { weather?: string; terrain?: string }) =>
+    `${field.weather ?? ""}|${field.terrain ?? ""}`;
+  function duelsOf(combo: MetaCombo): ThreatMatchups[] {
     const sets = comboSets(combo.species, metaPokemon, spreads);
-    setsOf.set(combo, sets);
-    for (const set of sets) unique.set(set.id, set);
+    const all = sets.map((set) => set.pokemon);
+    return sets.flatMap((set) => {
+      const partners = all.filter((mon) => mon !== set.pokemon);
+      const key = `${set.id}#${fieldKey(fieldFor(set.pokemon, team, partners))}`;
+      if (!duels.has(key)) duels.set(key, threatMatchups(team, [set], partners)[0] ?? null);
+      return duels.get(key) ?? [];
+    });
   }
-  // Each meta Pokémon calced once against your team, reused by every team and core it's in.
-  const duels = new Map(threatMatchups(team, [...unique.values()]).map((m) => [m.set.id, m]));
 
   const score = (list: MetaCombo[], kind: MetaTeamMatchup["kind"]) =>
     list
-      .flatMap(
-        (combo) => scoreCombo(combo, kind, setsOf.get(combo) ?? [], duels, team.length) ?? [],
-      )
+      .flatMap((combo) => scoreCombo(combo, kind, duelsOf(combo), team.length) ?? [])
       .sort((a, b) => b.score - a.score);
 
   return { teams: score(combos.teams, "team"), cores: score(cores, "core") };

@@ -13,6 +13,7 @@ import { REGULATIONS } from "@/data/regulations";
 import { isTeamArchived, addRegulationTag, removeRegulationTag } from "@/lib/team";
 import { teamTournamentSummary, type TeamTournamentSummary } from "@/lib/tournament";
 import { useTournaments } from "@/hooks/useTournaments";
+import { copyTeamExport } from "@/lib/teamExport";
 import { foldForSearch, parseSearchTerms, pokemonMatchesQuery } from "@/lib/pokemonMatchesQuery";
 import { TeamRoster } from "../TeamRoster";
 import { Modal, ModalDescription, ModalTitle } from "../Modal";
@@ -349,8 +350,8 @@ export function MyTeamsSection({
             />
           </div>
         </div>
-        {/* The row's actions: Duplicate (its own icon on desktop, and in the ⋯ on every
-            screen), and a ⋯ with the rest. Clicks and
+        {/* The row's actions: Duplicate (its own icon on desktop; in the ⋯ on phones),
+            and a ⋯ with the rest — Copy team among them. Clicks and
             Enter/Space stop here so they don't also open the team. */}
         <div
           role="group"
@@ -377,9 +378,16 @@ export function MyTeamsSection({
             }}
             extraActions={[
               {
+                label: t.teamPage.copyTeam,
+                icon: IconName.ContentPaste,
+                onClick: () => copyTeamExport(team.pokemon, "closed"),
+              },
+              // Desktop has its own Duplicate button beside the ⋯.
+              {
                 label: t.myTeams.duplicate,
                 icon: IconName.ContentCopy,
                 onClick: () => duplicateTeam(team.id),
+                className: "md:hidden",
               },
               // A collaborative team is left or stopped from its page (Collaborate).
               ...(team.collab

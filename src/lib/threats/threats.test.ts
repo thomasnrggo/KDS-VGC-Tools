@@ -12,6 +12,7 @@ import {
   speedControlReport,
   speedControlSetters,
   teamRoles,
+  teamMatchup,
   teamStyle,
   threatMatchups,
   withSpread,
@@ -245,6 +246,61 @@ describe("analyzeThreats", () => {
     const [tailwind] = analyzeThreats([TEAM[3]], metaThreatSets([GARCHOMP]).slice(1), "tailwind");
     expect(normal.duels[0].theyMoveFirst).toBe(true);
     expect(tailwind.duels[0].theyMoveFirst).toBe(false);
+  });
+});
+
+describe("setup answers", () => {
+  // Incineroar in Charizard Y's sun: Sneasler's Close Combat after Intimidate doesn't KO it…
+  const INCINEROAR = metaPokemon({
+    species: "Incineroar",
+    usage: 0.3,
+    items: [{ name: "Sitrus Berry", share: 1 }],
+    abilities: [{ name: "Intimidate", share: 1 }],
+    natures: [{ name: "Careful", share: 1 }],
+    moves: [
+      { name: "Fake Out", share: 1 },
+      { name: "Flare Blitz", share: 1 },
+      { name: "Parting Shot", share: 1 },
+      { name: "Throat Chop", share: 1 },
+    ],
+  });
+  const [incineroar] = analyzeThreats(TEAM, metaThreatSets([INCINEROAR]));
+  const sneasler = incineroar.duels[4];
+
+  it("counts a Swords Dance Sneasler covered by Fake Out — +1 after Intimidate — as an answer", () => {
+    expect(sneasler.yours!.minPercent).toBeLessThan(100);
+    expect(sneasler.answer).toBe("setup");
+    expect(sneasler.setup).toMatchObject({ setup: "Swords Dance", stage: 1, move: "Close Combat" });
+    expect(sneasler.setup!.minPercent).toBeGreaterThanOrEqual(100);
+    expect(sneasler.setup!.support).toEqual(["Raichu", "Rillaboom", "Volcarona"]);
+  });
+
+  it("needs a partner to cover the setup turn", () => {
+    const [alone] = analyzeThreats([TEAM[4]], metaThreatSets([INCINEROAR]));
+    expect(alone.duels[0].answer).toBeNull();
+  });
+});
+
+describe("teamMatchup", () => {
+  it("scores an opponent with its own sets, Stat Points estimated where it has none", () => {
+    const matchup = teamMatchup(TEAM, [
+      {
+        species: "Charizard",
+        item: "Charizardite Y",
+        ability: "Blaze",
+        moves: ["Heat Wave", "Solar Beam"],
+      },
+      {
+        species: "Venusaur",
+        item: "Life Orb",
+        ability: "Chlorophyll",
+        moves: ["Leaf Storm", "Sludge Bomb"],
+      },
+    ])!;
+    expect(matchup.their.map((mon) => mon.set.species)).toEqual(["Charizard", "Venusaur"]);
+    expect(matchup.combo.species).toEqual(["Charizard", "Venusaur"]);
+    // Venusaur fights in its partner's sun (Mega Charizard Y's Drought).
+    expect(matchup.their[1].result.weather).toBe("Sun");
   });
 });
 

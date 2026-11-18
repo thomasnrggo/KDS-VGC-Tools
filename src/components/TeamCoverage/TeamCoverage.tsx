@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import type { ParsedPokemon } from "@/types";
-import { analyzeTeamCoverage, coverageGaps, weakSpots, type DefenseCell } from "@/lib/teamCoverage";
+import {
+  analyzeTeamCoverage,
+  coverageGaps,
+  weakSpots,
+  type DefenseCell,
+  type DefenseRow,
+} from "@/lib/teamCoverage";
 import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { useMeta } from "@/hooks/useMeta";
 import { cn } from "@/lib/utils";
@@ -217,36 +223,11 @@ export function TeamCoverage({ pokemon, regulationId }: TeamCoverageProps) {
           <p className="text-sm text-zinc-500">{t.coverage.noWeakSpots}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-zinc-50">
-            {spots.map((row) => {
-              const hit = memberIndexes(row.cells, (value) => value > 1);
-              const covers = memberIndexes(row.cells, (value) => value < 1);
-              return (
-                <li
-                  key={row.type}
-                  className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5"
-                >
-                  <TypeName type={row.type} className="w-28 shrink-0" />
-                  <MemberGroup
-                    label={t.coverage.weak}
-                    tone="bad"
-                    members={hit.map((index) => ({
-                      mon: pokemon[index],
-                      badge: badgeFor(row.cells[index].multiplier),
-                    }))}
-                    emptyLabel={t.coverage.nobody}
-                  />
-                  <MemberGroup
-                    label={t.coverage.resist}
-                    tone="good"
-                    members={covers.map((index) => ({
-                      mon: pokemon[index],
-                      badge: badgeFor(row.cells[index].multiplier),
-                    }))}
-                    emptyLabel={t.coverage.nobody}
-                  />
-                </li>
-              );
-            })}
+            {spots.map((row) => (
+              <li key={row.type} className="px-3 py-2.5">
+                <WeakSpotRow row={row} pokemon={pokemon} />
+              </li>
+            ))}
           </ul>
         )}
       </section>
@@ -446,6 +427,40 @@ export function TeamCoverage({ pokemon, regulationId }: TeamCoverageProps) {
 
 const SECTION_TITLE = "text-xs font-semibold tracking-wide text-zinc-500 uppercase";
 
+/**
+ * A type the team is weak to, as a row: the type, then who's weak to it and
+ * who resists it, as sprites (a corner badge on 4×, ¼× and immunities) — the
+ * Coverage tab's "Watch out" and the Strategy tab's Auto-detected Typing.
+ */
+export function WeakSpotRow({ row, pokemon }: { row: DefenseRow; pokemon: ParsedPokemon[] }) {
+  const t = useMessages();
+  const hit = memberIndexes(row.cells, (value) => value > 1);
+  const covers = memberIndexes(row.cells, (value) => value < 1);
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <TypeName type={row.type} className="w-28 shrink-0" />
+      <MemberGroup
+        label={t.coverage.weak}
+        tone="bad"
+        members={hit.map((index) => ({
+          mon: pokemon[index],
+          badge: badgeFor(row.cells[index].multiplier),
+        }))}
+        emptyLabel={t.coverage.nobody}
+      />
+      <MemberGroup
+        label={t.coverage.resist}
+        tone="good"
+        members={covers.map((index) => ({
+          mon: pokemon[index],
+          badge: badgeFor(row.cells[index].multiplier),
+        }))}
+        emptyLabel={t.coverage.nobody}
+      />
+    </div>
+  );
+}
+
 /** The members (by index) whose value passes `test`. */
 function memberIndexes<T>(values: T[], test: (value: number) => boolean): number[] {
   return values.flatMap((value, index) => {
@@ -469,7 +484,7 @@ function badgeFor(multiplier: number): string | undefined {
   return undefined;
 }
 
-function TypeName({
+export function TypeName({
   type,
   small = false,
   className,

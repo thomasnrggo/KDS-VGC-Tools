@@ -30,6 +30,8 @@ export const SNAPSHOT_FIELDS = [
   "speedPins",
   "pokepasteUrl",
   "replicaCode",
+  "watchPokemon",
+  "watchTeams",
 ] as const satisfies readonly (keyof TeamSnapshotData)[];
 
 /** Snapshots kept per team; past it, the oldest go — automatic ones first. */

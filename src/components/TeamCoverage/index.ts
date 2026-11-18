@@ -1,1 +1,1 @@
-export { TeamCoverage } from "./TeamCoverage";
+export { TeamCoverage, TypeName, WeakSpotRow } from "./TeamCoverage";

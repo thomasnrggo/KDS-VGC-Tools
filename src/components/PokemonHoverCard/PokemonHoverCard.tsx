@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { calculateFinalStats } from "@/lib/stats/calculateFinalStats";
 import { candidateFormKeys } from "@/lib/species/candidateFormKeys";
 import { speciesNamesMegaForm, stripMegaSuffix } from "@/lib/species/megaForm";
@@ -17,11 +18,15 @@ import {
 } from "@/lib/stats/estimateOpponentSpeedRange";
 import { useViewportSafePosition } from "@/hooks/useViewportSafePosition";
 import { useMessages, usePokemonText } from "@/hooks/useLanguage";
+import { NoSpriteTitles } from "../PokemonSprite";
 import { TypeIcon } from "../TypeIcon";
 import movesData from "@/data/moves.json";
 import type { ParsedPokemon } from "@/types";
 import type { MoveData } from "@/types/damage";
 import { cn } from "@/lib/utils";
+
+/** How long the pointer rests on a Pokémon before its hover card opens (keyboard focus opens it at once). */
+const HOVER_OPEN_DELAY = 1000;
 
 const MOVES = movesData as unknown as Record<string, MoveData>;
 
@@ -135,6 +140,9 @@ export function PokemonHoverCard({
 
   const [hoverOpen, setHoverOpen] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Hover opens only once the pointer rests on the Pokémon (HOVER_OPEN_DELAY),
+  // so passing over a row of them doesn't flash a card for each.
+  const openTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentOpenId = useSyncExternalStore(
     subscribe,
     () => openId,
@@ -236,6 +244,7 @@ export function PokemonHoverCard({
   useEffect(() => {
     return () => {
       if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
+      if (openTimeoutRef.current !== null) clearTimeout(openTimeoutRef.current);
     };
   }, []);
 
@@ -295,9 +304,20 @@ export function PokemonHoverCard({
               clearTimeout(closeTimeoutRef.current);
               closeTimeoutRef.current = null;
             }
-            openHover();
+            // Back from the card (or still open): stays open. Otherwise it
+            // opens once the pointer has rested here.
+            if (isOpen) return;
+            if (openTimeoutRef.current !== null) clearTimeout(openTimeoutRef.current);
+            openTimeoutRef.current = setTimeout(() => {
+              openTimeoutRef.current = null;
+              openHover();
+            }, HOVER_OPEN_DELAY);
           },
           onMouseLeave: () => {
+            if (openTimeoutRef.current !== null) {
+              clearTimeout(openTimeoutRef.current);
+              openTimeoutRef.current = null;
+            }
             if (closeTimeoutRef.current !== null) clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = setTimeout(closeHover, 200);
           },
@@ -314,140 +334,147 @@ export function PokemonHoverCard({
       className={cn("relative inline-flex", triggerClassName ?? "")}
       {...interactionProps}
     >
-      {resolvedChildren}
-      {isOpen && (
-        <div
-          ref={tooltipRef}
-          role="tooltip"
-          style={style}
-          className="pointer-events-auto z-30 flex w-[22rem] cursor-auto overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 text-left shadow-lg"
-        >
-          <div className="min-w-0 flex-1 p-3">
-            <div className="mb-0.5 flex items-center justify-between gap-2">
-              <p className="truncate text-base font-bold text-zinc-900">
-                {text.species(effectivePokemon.species)}
-              </p>
-              {hasMegaForm && (
-                // A real <button> here can end up nested inside another
-                // <button> — PokemonSlotPicker's selected-slot trigger is a
-                // <button> that wraps this whole card via PokemonHoverCard —
-                // which is invalid HTML and causes a hydration mismatch. A
-                // span with button semantics avoids that while staying
-                // keyboard-accessible.
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleMega();
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
+      {/* The card names it: no browser name tooltip on top of it. */}
+      <NoSpriteTitles>{resolvedChildren}</NoSpriteTitles>
+      {/* Portaled to the body: a trigger inside a clipped tile (an "A or B" slot's
+        diagonal half — clip-path clips fixed descendants too) would cut the card
+        to its triangle. Still a React child, so hovering and clicking it behave
+        as before. */}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={tooltipRef}
+            role="tooltip"
+            style={style}
+            className="pointer-events-auto z-30 flex w-[22rem] cursor-auto overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 text-left shadow-lg"
+          >
+            <div className="min-w-0 flex-1 p-3">
+              <div className="mb-0.5 flex items-center justify-between gap-2">
+                <p className="truncate text-base font-bold text-zinc-900">
+                  {text.species(effectivePokemon.species)}
+                </p>
+                {hasMegaForm && (
+                  // A real <button> here can end up nested inside another
+                  // <button> — PokemonSlotPicker's selected-slot trigger is a
+                  // <button> that wraps this whole card via PokemonHoverCard —
+                  // which is invalid HTML and causes a hydration mismatch. A
+                  // span with button semantics avoids that while staying
+                  // keyboard-accessible.
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(event) => {
                       event.stopPropagation();
                       toggleMega();
-                    }
-                  }}
-                  aria-pressed={showMega}
-                  className={cn(
-                    "shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors select-none",
-                    showMega
-                      ? "border-zinc-600 bg-chrome-600 text-white"
-                      : "border-zinc-300 text-zinc-500 hover:bg-zinc-100",
-                  )}
-                >
-                  {t.pokemonCard.mega}
-                </span>
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        toggleMega();
+                      }
+                    }}
+                    aria-pressed={showMega}
+                    className={cn(
+                      "shrink-0 cursor-pointer rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors select-none",
+                      showMega
+                        ? "border-zinc-600 bg-chrome-600 text-white"
+                        : "border-zinc-300 text-zinc-500 hover:bg-zinc-100",
+                    )}
+                  >
+                    {t.pokemonCard.mega}
+                  </span>
+                )}
+                {holdsUnsupportedMegaStone && (
+                  <span
+                    title={t.hoverCard.unsupportedMega(text.item(pokemon.item ?? ""))}
+                    className="shrink-0 cursor-help rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-400"
+                  >
+                    Mega?
+                  </span>
+                )}
+              </div>
+              {ability && <p className="truncate text-sm text-zinc-500">{text.ability(ability)}</p>}
+              {pokemon.item && (
+                <p className="truncate text-sm text-zinc-500">{text.item(pokemon.item)}</p>
               )}
-              {holdsUnsupportedMegaStone && (
-                <span
-                  title={t.hoverCard.unsupportedMega(text.item(pokemon.item ?? ""))}
-                  className="shrink-0 cursor-help rounded-full border border-zinc-200 px-2.5 py-0.5 text-xs font-semibold text-zinc-400"
+              {pokemon.nature && (
+                <p className="truncate text-sm text-zinc-700">
+                  {text.nature(pokemon.nature)}
+                  {nature?.increased && nature.decreased && (
+                    <>
+                      {"  "}
+                      <span className="font-semibold text-red-600">
+                        +{t.stats.short[nature.increased]}
+                      </span>{" "}
+                      <span className="font-semibold text-blue-600">
+                        −{t.stats.short[nature.decreased]}
+                      </span>
+                    </>
+                  )}
+                </p>
+              )}
+              {speed && (
+                <div
+                  title={
+                    speedMode === "range"
+                      ? t.quickCard.rangeHint
+                      : speedBoostedByScarf
+                        ? t.hoverCard.choiceScarfSpeed(text.item("Choice Scarf"))
+                        : undefined
+                  }
+                  className="mt-2 flex flex-col"
                 >
-                  Mega?
-                </span>
+                  <span className="flex items-baseline gap-2">
+                    <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                      {t.quickCard.speed}
+                    </span>
+                    <span className="text-lg font-bold text-zinc-900 tabular-nums">
+                      {formatSpeed(speed)}
+                    </span>
+                  </span>
+                  {speedDoubler && (
+                    <span className="text-xs text-zinc-500">
+                      {speedDoubler.weather
+                        ? t.quickCard.doubledInWeather(
+                            t.quickCard.weather[speedDoubler.weather],
+                            formatSpeed(doubled(speed)),
+                          )
+                        : t.quickCard.doubledByAbility(
+                            text.ability("Unburden"),
+                            formatSpeed(doubled(speed)),
+                          )}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
-            {ability && <p className="truncate text-sm text-zinc-500">{text.ability(ability)}</p>}
-            {pokemon.item && (
-              <p className="truncate text-sm text-zinc-500">{text.item(pokemon.item)}</p>
-            )}
-            {pokemon.nature && (
-              <p className="truncate text-sm text-zinc-700">
-                {text.nature(pokemon.nature)}
-                {nature?.increased && nature.decreased && (
-                  <>
-                    {"  "}
-                    <span className="font-semibold text-red-600">
-                      +{t.stats.short[nature.increased]}
-                    </span>{" "}
-                    <span className="font-semibold text-blue-600">
-                      −{t.stats.short[nature.decreased]}
-                    </span>
-                  </>
-                )}
-              </p>
-            )}
-            {speed && (
-              <div
-                title={
-                  speedMode === "range"
-                    ? t.quickCard.rangeHint
-                    : speedBoostedByScarf
-                      ? t.hoverCard.choiceScarfSpeed(text.item("Choice Scarf"))
-                      : undefined
-                }
-                className="mt-2 flex flex-col"
-              >
-                <span className="flex items-baseline gap-2">
-                  <span className="text-xs font-semibold tracking-wide text-zinc-500 uppercase">
-                    {t.quickCard.speed}
-                  </span>
-                  <span className="text-lg font-bold text-zinc-900 tabular-nums">
-                    {formatSpeed(speed)}
-                  </span>
-                </span>
-                {speedDoubler && (
-                  <span className="text-xs text-zinc-500">
-                    {speedDoubler.weather
-                      ? t.quickCard.doubledInWeather(
-                          t.quickCard.weather[speedDoubler.weather],
-                          formatSpeed(doubled(speed)),
-                        )
-                      : t.quickCard.doubledByAbility(
-                          text.ability("Unburden"),
-                          formatSpeed(doubled(speed)),
+            {pokemon.moves && pokemon.moves.length > 0 && (
+              <>
+                <div className="w-px shrink-0 bg-zinc-200" />
+                <div className="flex w-40 shrink-0 flex-col gap-1.5 p-3">
+                  {pokemon.moves.map((move) => {
+                    const type = MOVES[normalizeSpeciesKey(move)]?.type;
+                    return (
+                      <div
+                        key={move}
+                        className="flex h-7 min-w-0 items-center overflow-hidden rounded-md bg-zinc-100 text-xs text-zinc-700"
+                      >
+                        {type ? (
+                          <TypeIcon type={type} size={28} />
+                        ) : (
+                          <span className="h-7 w-7 shrink-0 bg-zinc-300" />
                         )}
-                  </span>
-                )}
-              </div>
+                        <span className="min-w-0 truncate px-2">{text.move(move)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
-          </div>
-          {pokemon.moves && pokemon.moves.length > 0 && (
-            <>
-              <div className="w-px shrink-0 bg-zinc-200" />
-              <div className="flex w-40 shrink-0 flex-col gap-1.5 p-3">
-                {pokemon.moves.map((move) => {
-                  const type = MOVES[normalizeSpeciesKey(move)]?.type;
-                  return (
-                    <div
-                      key={move}
-                      className="flex h-7 min-w-0 items-center overflow-hidden rounded-md bg-zinc-100 text-xs text-zinc-700"
-                    >
-                      {type ? (
-                        <TypeIcon type={type} size={28} />
-                      ) : (
-                        <span className="h-7 w-7 shrink-0 bg-zinc-300" />
-                      )}
-                      <span className="min-w-0 truncate px-2">{text.move(move)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

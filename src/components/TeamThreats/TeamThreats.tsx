@@ -27,6 +27,7 @@ import { useMeta } from "@/hooks/useMeta";
 import { useMetaSpreads } from "@/hooks/useMetaSpreads";
 import { resolveEffectiveAbility } from "@/lib/species/resolveEffectiveAbility";
 import { speciesLabel } from "@/lib/species/speciesLabel";
+import { signedStage } from "@/lib/threats/signedStage";
 import { shortTournamentName } from "@/lib/meta/metaDocument";
 import { cn } from "@/lib/utils";
 import { IconName } from "@/enums";
@@ -818,6 +819,21 @@ function ThreatDetails({ result, pokemon }: { result: ThreatResult; pokemon: Par
               {duel.answer && (
                 <span className="text-[11px] font-semibold text-green-700 dark:text-green-300">
                   {t.threats.answerLong[duel.answer]}
+                </span>
+              )}
+              {/* Answers only after setting up: the boosted hit, and who covers the turn. */}
+              {duel.setup && (
+                <span className="text-[11px] text-zinc-500">
+                  {t.threats.setupHit(
+                    text.move(duel.setup.setup),
+                    signedStage(duel.setup.stage),
+                    text.move(duel.setup.move),
+                    `${duel.setup.minPercent.toFixed(1)}–${duel.setup.maxPercent.toFixed(1)}%`,
+                  )}{" "}
+                  ·{" "}
+                  {t.threats.setupCover(
+                    duel.setup.support.map((s) => speciesLabel(text, s)).join(", "),
+                  )}
                 </span>
               )}
             </span>

@@ -293,10 +293,67 @@ the `teamArchetype` preview flag, always shown to staff), from the calcs, for th
   win rate, their two biggest threats (whom they OHKO, who answers them, or "nothing answers
   it"), your two best Pokémon (whom they OHKO), and the real result of teams like yours against
   that archetype when there are 15+ games.
+- **Partners' field (2026-11-17)**: each meta Pokémon fights in its own weather and terrain, else
+  its partners' in that team or core, else yours — a Chlorophyll Venusaur beside Charizard Y is in
+  sun, and outspeeds accordingly. Calcs are cached per Pokémon and field.
 - **Limits**: normal Speed only (no Tailwind / Trick Room modes), one set per meta Pokémon, all
-  six against all six (no team preview). Estimated spreads make some KOs generous, and v1's
-  "answer" (a KO, or a 2HKO taking under half) rarely credits bulky support, so a Pokémon like
-  Incineroar can read "nothing answers it". Candidates for tuning.
+  six against all six (no team preview), best single hit only — no status (sleep); setup only for
+  your answers (below), not the meta's Pokémon. Estimated spreads make some KOs generous. The "answer" rule (a KO, a 2HKO
+  taking under half, or since 2026-11-17 a wall: taking ≤ 25% and 3HKOing back) still rarely
+  credits bulky support. Candidates for tuning.
+- **Setup answers (2026-11-17)**: one of yours with a setup move (Swords Dance, Nasty Plot, Calm
+  Mind, Dragon Dance, Quiver Dance, Shell Smash, …) and a partner to cover the turn (Fake Out,
+  Follow Me, Rage Powder) is also calced at the boosted stage — Intimidate included (Swords Dance
+  into Incineroar is +1) and with its boosted Speed. When that hit surely KOs and lands (it moves
+  first, or survives), it answers the threat "after setting up" (`Duel.setup`, answer `"setup"`,
+  weight 0.5 like a wall) — only when it has no direct answer. Be careful with shows it ("Sneasler
+  (after Swords Dance)") but doesn't count it toward a threat being handled: it costs a turn and
+  can be played around. The meta's own setup isn't modeled.
+
+## Strategy → Auto-detected watch-outs (2026-11-16, tuned 2026-11-17)
+
+A live card in the Strategy tab, in place of the free-text notes (`src/lib/teamWatchouts.ts`,
+`src/components/TeamWatchouts/`), picked from the other tabs' results — no calcs of its own:
+
+- **Threats**: of the top 15 ranked sets, each Pokémon once, when **nothing answers it** (and it
+  OHKOs or 2HKOs something), or **only one** of yours does and it OHKOs something — "only Raichu
+  answers it": lose that one and there's no answer left. Threats two or more of yours answer
+  aren't listed, however hard they hit: tuned after a review of a real team where Mega Charizard
+  Y and Mega Staraptor (each answered twice) and Mega Dragonite (walled by Floette) were listed.
+  Plus the ones added by hand (`Team.watchPokemon`). (An "outspeeds your whole team" line was
+  tried and dropped 2026-11-17.)
+- **Prep for** (2026-11-17): the archetypes worth preparing for — a common team of it the calcs
+  score Unfavored (≤ −0.25), or teams like yours lost to it in real games (archetypeMatchups'
+  hard) — up to 3, worst first (calc score and real win rate together). Each shows the common
+  team of that archetype that scores worst for you as roster tiles with items; its key members
+  (`prepKeyThreats`: the ones isNotableThreat — Be careful with's rule — picks, unanswered first,
+  up to 2, else its most dangerous) stand out, the rest fade, and every tile opens
+  the threat card (`TheirPokemon.result`, calced beside its partners). Its card says why first: what it OHKOs,
+  who answers it, what the field does (`fieldChange`: "Charizard's Sun powers up its Flare Blitz and weakens
+  your Wave Crash.", or that it only changes who moves first), who it moves before — Incineroar
+  on its own 2HKOs Ychutte's Rillaboom (84–99%) and Basculegion answers it, so it isn't in Be careful
+  with; in Charizard's sun Flare Blitz OHKOs (125–147%) and Basculegion's Wave Crash no longer
+  answers.
+  And
+  "Prep in Matchup Planner" adds it as an opponent (its meta sets as a paste). An archetype
+  among none of the 20 most common teams shows from real results only, as its archetype chip (why on
+  hover). Teams added by hand (`Team.watchTeams`, `prepWithPinned`) come first, whatever their
+  score: a common meta team (`teamKey`: species, Megas as their base, sorted) or a Matchup Planner
+  opponent of the selected regulation (`opponentWatchKey`, calced with its own sets by
+  `teamMatchup` — Stat Points estimated where it has none — and shown under its name). The picker
+  lists both as sprite rows (opponents first). "Prep in
+  Matchup Planner" becomes "In Matchup Planner" when an opponent in the selected regulation has
+  the same six Pokémon (any sets). Plus weak cores.
+  No count or win rate under the team (tried and dropped 2026-11-17): the team's overall win rate
+  says nothing about how it does against you, and the count read as noise.
+- **Typing**: weak types (Coverage's "Watch out"), types nothing hits super effectively.
+- **Sets**: set issues (a Choice item with Protect, …).
+
+Threat and set lines follow the Threats preview flag, matchup lines the archetype preview flag.
+
+The free-text notes (`Team.notes`) are no longer offered (2026-11-17): a team that already has
+some keeps its editor below the card — latched for the visit, so clearing it doesn't pull it away
+mid-edit — and only then does each line get "+ Add to notes".
 
 ## Planned (not built)
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { createContext, useContext, type ReactNode } from "react";
 import Image from "next/image";
 import { resolveSpeciesImage } from "@/lib/species/resolveSpeciesImage";
 import { usePokemonText } from "@/hooks/useLanguage";
@@ -24,15 +25,23 @@ interface PokemonSpriteProps {
  * invocations per unique size, subject to Vercel's optimization rate limits),
  * and was the main cause of slow-to-appear sprites in production.
  */
-export function PokemonSprite({
-  species,
-  item,
-  size = 96,
-  fill = false,
-}: PokemonSpriteProps) {
+/** Whether sprites show their name on hover (the browser's tooltip) — off inside a Pokémon card's trigger. */
+const SpriteTitleContext = createContext(true);
+
+/**
+ * Sprites inside it don't show their name on hover: they open a Pokémon card
+ * that already names it (PokemonHoverCard, the watch-outs' threat tiles), and
+ * the browser's tooltip would sit on top of it.
+ */
+export function NoSpriteTitles({ children }: { children: ReactNode }) {
+  return <SpriteTitleContext.Provider value={false}>{children}</SpriteTitleContext.Provider>;
+}
+
+export function PokemonSprite({ species, item, size = 96, fill = false }: PokemonSpriteProps) {
   const resolved = resolveSpeciesImage(species, item);
   // Only the label is translated — `species` itself stays the English name the sprite lookup needs.
   const label = usePokemonText().species(species);
+  const title = useContext(SpriteTitleContext) ? label : undefined;
 
   if (!resolved) {
     return (
@@ -45,7 +54,7 @@ export function PokemonSprite({
             : "flex shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-500"
         }
         style={fill ? undefined : { width: size, height: size }}
-        title={label}
+        title={title}
       >
         <span aria-hidden="true" className="text-xs">
           ?
@@ -59,7 +68,7 @@ export function PokemonSprite({
       <Image
         src={resolved.imageUrl}
         alt={label}
-        title={label}
+        title={title}
         fill
         unoptimized
         sizes="(max-width: 768px) 15vw, 80px"
@@ -72,7 +81,7 @@ export function PokemonSprite({
     <Image
       src={resolved.imageUrl}
       alt={label}
-      title={label}
+      title={title}
       width={size}
       height={size}
       unoptimized

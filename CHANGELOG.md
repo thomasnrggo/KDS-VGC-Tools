@@ -10,6 +10,89 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.26 — 2026-11-18
+
+### Added
+
+- **Strategy → Auto-detected watch-outs**: in place of the free-text notes, a live list of what the team's data says
+  to watch for — threats nothing answers or that hit hardest (with the Pokémon they OHKO), meta teams the calcs say you're weak against, archetypes teams like
+  yours lost to in real games, types you're weak to or can't hit, and set problems. It updates as the
+  team changes and each group links to its tab. The
+  threat, set and matchup lines follow the Threats and archetype previews' flags. Its threats
+  group is **Be careful with** (tiles with each set's item), and you can add any meta Pokémon to it by hand (the "+" tile): it
+  gets the same card from the calcs, marked with a star and "Added by you", and stays until you
+  remove it (saved with the team, and in its versions). Its matchups group is **Prep for**: the
+  archetypes the calcs score unfavored for you or teams like yours lost to in real games, each with
+  a specific common team of it — the one that scores worst for you — shown as roster tiles with
+  items. The members that make it a challenge (the same rule as Be careful with) stand out, the
+  rest fade. Any tile opens its threat card, calced in the field it fights in beside its partners
+  (Incineroar in Charizard's Sun) — which says why it's a threat, most important first: what it
+  OHKOs, who answers it (and who covers a setup answer's turn), what the weather or terrain does
+  ("Charizard's Sun powers up its Flare Blitz and weakens your Wave Crash."), who it
+  moves before; then each of yours on one line, its hit and yours back.
+  A **Prep in Matchup Planner** button adds the team to your opponents.
+  The Strategy tab's free-text notes ("Weaknesses &
+  watch-outs") are gone: a team that already has some keeps them, editable, below the card, with
+  "+ Add to notes" on each line to copy it there.
+- **Auto-detected groups collapse**: click Be careful with, Prep for or Typing to fold it (with
+  its count); remembered on this device. An archetype to prep for with no common team of it
+  shows as its archetype chip (tempo color; why, and its game plan, on hover).
+  Typing shows each weak type like the Coverage tab's Watch out: the type, then who's weak to it
+  and who resists it as sprites (4×, ¼× and immunities badged); types nothing hits super
+  effectively as type chips.
+- **Add teams to Prep for by hand**: "+ Add a team" lists your Matchup Planner opponents (this
+  regulation's) and the common meta teams, each with its six sprites and items and its archetype,
+  searchable by name, archetype or Pokémon. One added is listed first, starred, with what the
+  calcs say ("the calcs say Even") and its tiles and cards — an opponent calced with its own sets,
+  under its name — until you remove it; saved with the team and its versions. An archetype listed
+  only from real results (its chip) folds into a team of it you added, its real results with it.
+- **Prep in Matchup Planner knows a team you already have**: when an opponent there has the same
+  six Pokémon (any sets), the button reads "✓ In Matchup Planner" (its name on hover) and opens
+  the planner instead of adding a near copy.
+
+### Changed
+
+- **Pokémon cards wait for you**: a Pokémon's hover card (sets, Speed, moves) opens once the
+  pointer has rested on it for a second, so passing over a row of picks doesn't flash a card
+  for each; keyboard focus still opens it at once.
+- **Team page tabs stay in view**: the tabs bar, with Collaborate and Share now on its right,
+  stays pinned below the site header as you scroll; the breadcrumb sits above it.
+- **Common combinations say more**: white cards that stand out from the page; name each one in
+  place of "Combination 1", with **labels** for what it's for beside it — "vs Trick Room", "vs
+  Sun" (every main archetype suggested) or anything you type; its **record** in the tournament
+  games you logged with those four ("Record 7–2 (78% win rate)" — picks aren't logged as lead or
+  back, so any order counts). Each one collapses (its chevron, or "Collapse all") to its title,
+  labels, record and picks in one row — the notes hidden — remembered on this device.
+- **My Teams**: a team's ⋯ has **Copy team** (its Showdown export text, to paste anywhere) instead
+  of Duplicate on desktop, which has its own button beside the ⋯. Phones keep Duplicate in the ⋯.
+
+### Fixed
+
+- **"A or B" slots show their Pokémon card**: hovering the first Pokémon of a split slot
+  (Back 2 with an alternative) showed a white triangle — the card was cut to the slot's diagonal
+  half. It now opens in full, like any other slot's.
+- **Answers after setting up**: the threat calcs now count one of yours that KOs a threat after a
+  setup move — Swords Dance, Nasty Plot, Calm Mind, Dragon Dance and more — when a partner can cover
+  the turn with Fake Out, Follow Me or Rage Powder, at the boosted stage (Intimidate included: a
+  Swords Dance Sneasler is +1 into Incineroar, and its Close Combat KOs). It shows as "Sneasler
+  (after Swords Dance)", and in the cards as "KOs it after setting up" with the boosted hit and who
+  covers the turn. It counts as half an answer, so a threat answered directly once and by setup
+  stays in Be careful with.
+- **Threats and watch-outs read more like a player would**:
+  - A Pokémon that walls a threat (takes a quarter at most and 3HKOs it back) now counts as an
+    answer — Floette against Mega Dragonite.
+  - Auto-detected lists only threats nothing answers, or only one of yours does ("only Raichu
+    answers it") — not ones two of yours handle. They show as Pokémon tiles — a red dot on one nothing
+    answers; hovering a tile (tapping, on a phone) opens its card: who answers it, its
+    set, the weather or terrain the calcs ran in — only when it changed a hit, a Speed or a
+    priority, credited to who sets it ("Calced in your Grassy Terrain (Rillaboom)"; a threat with
+    none of its own fights in your team's), with an asterisk on the hits it changed — and against each of yours its best hit, whether that's an
+    OHKO, an OHKO on a high roll or a 2HKO, who moves first, and your best hit back. Its "+ Add to
+    notes" copies the full detail.
+  - In Meta matchups and the watch-outs, a meta Pokémon fights in its partners' weather and
+    terrain: Chlorophyll Venusaur beside Charizard Y is in sun and outspeeds accordingly. Weak
+    cores ("Charizard Y + Venusaur") are listed too.
+
 ## 0.3.25 — 2026-11-16
 
 ### Added

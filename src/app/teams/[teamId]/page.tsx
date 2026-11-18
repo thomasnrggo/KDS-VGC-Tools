@@ -50,14 +50,26 @@ import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
 import { addPasteToOpponents, copyTeamExport } from "@/lib/teamExport";
+import { formatTeamPaste } from "@/lib/formatPokemonPaste";
 import { importSharedMatchups, opponentsToShare, sharesSection } from "@/lib/sharedTeam";
 import { reconcileSharedMatchups } from "@/lib/storage/db";
 import { TeamArchetype } from "@/components/TeamArchetype";
 import { TeamMetaMatchups } from "@/components/TeamMetaMatchups";
 import { TeamVersions } from "@/components/TeamVersions";
+import { TeamWatchouts } from "@/components/TeamWatchouts";
+import { combinationRecord } from "@/lib/combinationInsights";
+import { useCollapsedCombinations } from "@/hooks/useCollapsedCombinations";
+import { hasRichText } from "@/lib/richText";
+import { teamKey } from "@/lib/teamWatchouts";
 import { restorePokemonEverywhere } from "@/lib/removeTeamPokemon";
 import { TeamListPdfDialog } from "@/components/TeamListPdf";
-import { Button, IconButton, TogglePill, iconButtonVariants } from "@/components/Button";
+import {
+  Button,
+  IconButton,
+  TextAction,
+  TogglePill,
+  iconButtonVariants,
+} from "@/components/Button";
 import { LoadingState } from "@/components/LoadingState";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 
@@ -269,6 +281,17 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const [isTeamListOpen, setIsTeamListOpen] = useState(false);
   // Strategy tab below lg: which of its two sections the chips show.
   const [strategySection, setStrategySection] = useState<"combinations" | "notes">("combinations");
+  // The free-text notes are gone — the Auto-detected watch-outs replace them —
+  // but a team that has some keeps its editor, so nothing written is lost.
+  // Latched for the visit, so clearing the text doesn't pull the editor away
+  // mid-edit.
+  const { collapsed: collapsedCombinations, setCollapsed: setCollapsedCombinations } =
+    useCollapsedCombinations();
+  const allCombinationsCollapsed =
+    !!team?.combinations?.length &&
+    team.combinations.every((entry) => collapsedCombinations.includes(entry.id));
+  const [hasOldNotes, setHasOldNotes] = useState(false);
+  if (!hasOldNotes && hasRichText(team?.notes)) setHasOldNotes(true);
   // Phones: the sections' bottom sheet.
   const shareLabel = team?.share ? t.teamPage.sharedLabel(team.share.sheet) : t.teamPage.share;
   // Calcs tab: narrows every Pokémon's calcs to the ones against the searched Pokémon.
@@ -407,34 +430,33 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
       ) : (
         <div className="w-full px-3 py-4 sm:p-6">
           <div className="flex flex-col gap-6">
-            {/* "< My Teams / team" left (the team's name is the page's h1), the tabs then
-              Share and Edit right. Narrower screens: Share and Edit stay on the breadcrumb's
-              line and the tabs wrap below it. */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <nav
-                aria-label={t.teamPage.breadcrumb}
-                className="mr-auto flex min-w-0 items-center gap-1 text-sm"
+            {/* "< My Teams / team" (the team's name is the page's h1). */}
+            <nav
+              aria-label={t.teamPage.breadcrumb}
+              className="flex min-w-0 items-center gap-1 text-sm"
+            >
+              <Link
+                href="/teams"
+                className="flex shrink-0 items-center gap-1 rounded-full py-1 pr-1 font-medium text-zinc-500 hover:text-zinc-800"
               >
-                <Link
-                  href="/teams"
-                  className="flex shrink-0 items-center gap-1 rounded-full py-1 pr-1 font-medium text-zinc-500 hover:text-zinc-800"
-                >
-                  <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
-                  {t.nav.myTeams}
-                </Link>
-                <span aria-hidden="true" className="text-zinc-400">
-                  /
-                </span>
-                <h1 aria-current="page" className="truncate font-semibold text-zinc-900">
-                  {team.name}
-                </h1>
-              </nav>
-              {/* The sections as underline tabs on their own row (pills are for actions and
-                filters): a few groups, scrolling sideways on a phone rather than wrapping. */}
+                <Icon name={IconName.ExpandMore} size={18} className="rotate-90" />
+                {t.nav.myTeams}
+              </Link>
+              <span aria-hidden="true" className="text-zinc-400">
+                /
+              </span>
+              <h1 aria-current="page" className="truncate font-semibold text-zinc-900">
+                {team.name}
+              </h1>
+            </nav>
+            {/* The sections as underline tabs (pills are for actions and filters) with the
+              team's Collaborate and Share beside them, pinned below the site header as you
+              scroll. A few groups, scrolling sideways on a phone rather than wrapping. */}
+            <div className="sticky top-[var(--site-header-height,0px)] z-20 -mx-3 -mt-4 flex items-end gap-3 border-b border-zinc-200 bg-zinc-50 px-3 pt-2 sm:-mx-6 sm:px-6">
               <div
                 role="tablist"
                 aria-label={t.teamPage.sections}
-                className="order-last -mx-3 flex basis-full gap-1 overflow-x-auto border-b border-zinc-200 px-3 sm:mx-0 sm:gap-4 sm:px-0"
+                className="-mb-px flex min-w-0 flex-1 [scrollbar-width:none] gap-1 overflow-x-auto overflow-y-hidden sm:gap-4 [&::-webkit-scrollbar]:hidden"
               >
                 {visibleGroups.map((group) => {
                   const isActive = activeGroup.id === group.id;
@@ -446,7 +468,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                       aria-selected={isActive}
                       onClick={() => selectGroup(group.id)}
                       className={cn(
-                        "-mb-px shrink-0 border-b-2 px-2 pt-1 pb-2 text-sm font-medium whitespace-nowrap transition-colors sm:px-0.5",
+                        "shrink-0 border-b-2 px-2 pt-1 pb-2 text-sm font-medium whitespace-nowrap transition-colors sm:px-0.5",
                         isActive
                           ? "border-zinc-900 text-zinc-900"
                           : "border-transparent text-zinc-500 hover:border-zinc-300 hover:text-zinc-800",
@@ -457,7 +479,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   );
                 })}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex shrink-0 items-center gap-1.5 pb-1.5">
                 {team.collab && (
                   <button
                     type="button"
@@ -820,9 +842,25 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                     strategySection === "combinations" ? "flex" : "hidden",
                   )}
                 >
-                  <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
-                    {t.teamPage.combinations}
-                  </h2>
+                  <div className="flex items-center justify-between gap-2 lg:h-8">
+                    <h2 className="hidden text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:block">
+                      {t.teamPage.combinations}
+                    </h2>
+                    {/* Collapse all (notes hidden, picks in a row) — or expand all once they all are. */}
+                    {(team.combinations ?? []).length > 1 && (
+                      <TextAction
+                        className="ml-auto text-xs"
+                        onClick={() => {
+                          const ids = (team.combinations ?? []).map((entry) => entry.id);
+                          setCollapsedCombinations(ids, !allCombinationsCollapsed);
+                        }}
+                      >
+                        {allCombinationsCollapsed
+                          ? t.combination.expandAll
+                          : t.combination.collapseAll}
+                      </TextAction>
+                    )}
+                  </div>
                   {(team.combinations ?? []).length === 0 ? (
                     <p className="text-sm text-zinc-500">{t.teamPage.noCombinations}</p>
                   ) : (
@@ -833,6 +871,7 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                         index={index}
                         total={all.length}
                         teamPokemon={team.pokemon}
+                        record={combinationRecord(combination, tournaments, team.id)}
                         onUpdate={(updater) => updateCombination(combination.id, updater)}
                         onMove={(direction) => moveCombination(combination.id, direction)}
                         onRemove={() => removeCombination(combination.id)}
@@ -860,13 +899,76 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                   <h2 className="hidden h-8 items-center text-xs font-semibold tracking-wide text-zinc-500 uppercase lg:flex">
                     {t.teamPage.notes}
                   </h2>
-                  <RichTextEditor
-                    value={team.notes ?? ""}
-                    onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
-                    placeholder={t.teamPage.notesPlaceholder}
-                    ariaLabel={t.teamPage.notesLabel}
-                    size="tall"
+                  {/* What the team's data says, live; a team's notes from before below it. */}
+                  <TeamWatchouts
+                    pokemon={team.pokemon}
+                    regulationId={team.regulationIds[0]}
+                    showThreats={flags.teamThreats || isStaff}
+                    showMeta={flags.teamArchetype || isStaff}
+                    onOpenTab={selectTab}
+                    onPrepTeam={(name, members) =>
+                      addPasteToOpponents({
+                        name,
+                        paste: formatTeamPaste(members),
+                        regulationId: selectedRegulationId,
+                        opponents: personal.opponents,
+                        addOpponents: personal.addOpponents,
+                      })
+                    }
+                    opponents={personal.opponents
+                      .filter((opponent) => opponent.regulationId === selectedRegulationId)
+                      .map((opponent) => ({
+                        id: opponent.id,
+                        label: opponent.label,
+                        pokemon: opponent.team.pokemon,
+                      }))}
+                    findOpponent={(members) => {
+                      // The same six Pokémon (Megas as their base), whatever their sets.
+                      const key = teamKey(members.map((mon) => mon.species));
+                      return personal.opponents.find(
+                        (opponent) =>
+                          opponent.regulationId === selectedRegulationId &&
+                          teamKey(opponent.team.pokemon.map((mon) => mon.species)) === key,
+                      );
+                    }}
+                    pinnedTeams={team.watchTeams ?? []}
+                    onPinnedTeamsChange={(keys) =>
+                      updateTeam(teamId, (current) => {
+                        const next = { ...current };
+                        // `delete`, not `undefined` — Firestore rejects undefined values.
+                        if (keys.length) next.watchTeams = keys;
+                        else delete next.watchTeams;
+                        return next;
+                      })
+                    }
+                    pinned={team.watchPokemon ?? []}
+                    onPinnedChange={(species) =>
+                      updateTeam(teamId, (current) => {
+                        const next = { ...current };
+                        // `delete`, not `undefined` — Firestore rejects undefined values.
+                        if (species.length) next.watchPokemon = species;
+                        else delete next.watchPokemon;
+                        return next;
+                      })
+                    }
+                    onAddToNotes={
+                      hasOldNotes
+                        ? (html) =>
+                            updateTeam(teamId, (current) => ({
+                              ...current,
+                              notes: !hasRichText(current.notes) ? html : `${current.notes}${html}`,
+                            }))
+                        : undefined
+                    }
                   />
+                  {hasOldNotes && (
+                    <RichTextEditor
+                      value={team.notes ?? ""}
+                      onChange={(notes) => updateTeam(teamId, (t) => ({ ...t, notes }))}
+                      placeholder={t.teamPage.notesPlaceholder}
+                      ariaLabel={t.teamPage.notesLabel}
+                    />
+                  )}
                 </section>
               </div>
             )}

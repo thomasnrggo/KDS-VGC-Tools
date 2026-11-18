@@ -17,7 +17,13 @@ import {
   labelForKey,
   primaryOfKey,
 } from "@/lib/archetypes";
-import { metaTeamMatchups, withSpread, type MetaTeamMatchup } from "@/lib/threats";
+import {
+  matchupLevel,
+  metaTeamMatchups,
+  withSpread,
+  type MatchupLevel,
+  type MetaTeamMatchup,
+} from "@/lib/threats";
 import { cn } from "@/lib/utils";
 import type { ParsedPokemon } from "@/types";
 
@@ -25,15 +31,7 @@ import type { ParsedPokemon } from "@/types";
 const LISTED_FROM = 0.25;
 const SHOWN = 5;
 
-type Level = "strong" | "favored" | "even" | "unfavored" | "weak";
-
-function levelOf(score: number): Level {
-  if (score >= 0.75) return "strong";
-  if (score >= LISTED_FROM) return "favored";
-  if (score > -LISTED_FROM) return "even";
-  if (score > -0.75) return "unfavored";
-  return "weak";
-}
+type Level = MatchupLevel;
 
 const LEVEL_CLASS: Record<Level, string> = {
   strong: "bg-green-500/20 text-green-800 dark:text-green-200",
@@ -105,7 +103,7 @@ export function TeamMetaMatchups({ pokemon: current, regulationId }: TeamMetaMat
     const names = (values: string[]) => values.join(", ");
     const threats = [...matchup.their].sort((a, b) => b.danger - a.danger).slice(0, 2);
     const answers = [...matchup.yours].sort((a, b) => b.danger - a.danger).slice(0, 2);
-    const level = levelOf(matchup.score);
+    const level = matchupLevel(matchup.score);
 
     return (
       <li
