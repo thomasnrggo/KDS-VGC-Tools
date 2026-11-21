@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useStaffPreview } from "@/hooks/useStaffPreview";
 import { SectionDisabledNotice } from "../SectionDisabledNotice";
 import type { FeatureFlags } from "@/types";
 
@@ -37,6 +38,8 @@ interface FeatureGateProps {
 export function FeatureGate({ flagKey, children }: FeatureGateProps) {
   const { flags } = useFeatureFlags();
   const { isStaff } = useIsAdmin();
+  // Staff seeing a switched-off section: the header's "in development" banner.
+  useStaffPreview(!flags[flagKey] && isStaff);
 
   if (flags[flagKey] || isStaff) {
     return <>{children}</>;

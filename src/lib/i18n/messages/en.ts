@@ -31,6 +31,7 @@ export const en = {
     back: "Back",
   },
   header: {
+    staffPreview: "In development — only moderators and admins can see this.",
     addTeam: "Create team",
     editTeam: "Edit team",
     selectTeam: "Select team",

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMyTeams } from "@/hooks/useMyTeams";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useStaffPreview } from "@/hooks/useStaffPreview";
 import { useMessages } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { SpeedTiersTable } from "@/components/SpeedTiersTable";
@@ -46,6 +47,8 @@ export default function SpeedTiersPage() {
   // UI — computed here instead of synced via an effect, so there's no
   // separate "wrong view for a tick" render to worry about.
   const effectiveView: View = view === "speedline" && !isStaff ? "list" : view;
+  // The Speed line view is staff-only: the header's "in development" banner.
+  useStaffPreview(effectiveView === "speedline");
 
   return (
     <div className="flex flex-1 flex-col">

@@ -11,6 +11,7 @@ import { useAllGroupOpponents } from "@/hooks/useAllGroupOpponents";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useStaffPreview } from "@/hooks/useStaffPreview";
 import { useLanguageSettings, useMessages, usePokemonText } from "@/hooks/useLanguage";
 import { MyTeamHeader } from "@/components/MyTeamHeader";
 import { PokemonReportCard } from "@/components/PokemonReportCard";
@@ -45,7 +46,7 @@ import { speciesIdentity } from "@/lib/teamIdentity";
 import { calcMatchesSearch } from "@/lib/teamCalcs";
 import { parseSearchTerms } from "@/lib/pokemonMatchesQuery";
 import { SearchField } from "@/components/SearchField";
-import { Modal, ModalDescription, ModalTitle } from "@/components/Modal";
+import { Modal, ModalActions, ModalDescription, ModalTitle } from "@/components/Modal";
 import { REGULATIONS } from "@/data/regulations";
 import type { TeamCombination } from "@/types";
 import { cn } from "@/lib/utils";
@@ -61,7 +62,8 @@ import { combinationRecord } from "@/lib/combinationInsights";
 import { useCollapsedCombinations } from "@/hooks/useCollapsedCombinations";
 import { hasRichText } from "@/lib/richText";
 import { teamKey } from "@/lib/teamWatchouts";
-import { restorePokemonEverywhere } from "@/lib/removeTeamPokemon";
+import { removePokemonEverywhere, restorePokemonEverywhere } from "@/lib/removeTeamPokemon";
+import { teamWithoutSlot } from "@/lib/rosterSlots";
 import { TeamListPdfDialog } from "@/components/TeamListPdf";
 import {
   Button,
@@ -277,6 +279,8 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   const usageStats = team ? computeTeamUsageStats(tournaments, team) : [];
   const [isSharing, setIsSharing] = useState(false);
   const [isConfirmingRemove, setIsConfirmingRemove] = useState(false);
+  /** The Overview card whose Pokémon is being removed (asked first, like the Team Builder). */
+  const [removingSlot, setRemovingSlot] = useState<number | null>(null);
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   const [isTeamListOpen, setIsTeamListOpen] = useState(false);
   // Strategy tab below lg: which of its two sections the chips show.
@@ -312,6 +316,11 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
   );
   // A tab from the URL that isn't shown (yet — the flags and admin load after) opens the report.
   const activeTab = visibleTabs.includes(selectedTab) ? selectedTab : "report";
+  // A preview tab only staff can see (its flag off): the header's "in development" banner.
+  useStaffPreview(
+    (activeTab === "threats" && !flags.teamThreats) ||
+      (activeTab === "meta" && !flags.teamArchetype),
+  );
   const visibleGroups = TAB_GROUPS.map((group) => ({
     ...group,
     tabs: group.tabs.filter((tab) => visibleTabs.includes(tab)),
@@ -768,6 +777,52 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
               />
             )}
 
+            {removingSlot !== null && team.pokemon[removingSlot] && (
+              <Modal onClose={() => setRemovingSlot(null)} labelledBy="remove-pokemon-title">
+                <ModalTitle id="remove-pokemon-title">
+                  {t.teamBuilder.confirmRemoveTitle(
+                    pokemonText.species(team.pokemon[removingSlot].species),
+                  )}
+                </ModalTitle>
+                <ModalDescription>{t.teamBuilder.confirmRemoveBody}</ModalDescription>
+                <ModalActions>
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      const slot = removingSlot;
+                      const name = pokemonText.species(team.pokemon[slot].species);
+                      setRemovingSlot(null);
+                      // Like the Team Builder's remove: the team, then every plan,
+                      // combination and logged game that picks from it.
+                      updateTeam(teamId, (current) => teamWithoutSlot(current, slot));
+                      const collab =
+                        team.collab && user
+                          ? {
+                              team: team.collab,
+                              by: { uid: user.uid, name: user.displayName ?? user.email ?? "?" },
+                            }
+                          : undefined;
+                      removePokemonEverywhere(teamId, slot, user?.uid ?? null, collab).catch(
+                        (error) => {
+                          console.error(
+                            "[team page] updating picks after a removal failed:",
+                            error,
+                          );
+                          toast.error(t.teamBuilder.removeSyncFailed);
+                        },
+                      );
+                      toast.success(t.teamBuilder.removed(name));
+                    }}
+                  >
+                    {t.common.remove}
+                  </Button>
+                  <Button variant="outline" onClick={() => setRemovingSlot(null)}>
+                    {t.common.cancel}
+                  </Button>
+                </ModalActions>
+              </Modal>
+            )}
+
             {isSharing && (
               <ShareDialog
                 team={team}
@@ -807,8 +862,22 @@ export default function TeamReportPage({ params, searchParams }: TeamReportPageP
                     key={`${mon.species}-${index}`}
                     pokemon={mon}
                     href={`/teams/${teamId}/edit?slot=${index}`}
+                    onRemove={() => setRemovingSlot(index)}
                   />
                 ))}
+                {/* Under six: a dashed "+" card, like the Team Builder's "+" tile, which
+                    opens the builder on that tile (?slot= past the last Pokémon). */}
+                {team.pokemon.length < 6 && (
+                  <Link
+                    href={`/teams/${teamId}/edit?slot=${team.pokemon.length}`}
+                    aria-label={t.teamBuilder.addPokemon}
+                    title={t.teamBuilder.addPokemon}
+                    className="flex min-h-14 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-zinc-300 text-zinc-500 transition-colors hover:border-zinc-500 hover:text-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none sm:min-h-64"
+                  >
+                    <Icon name={IconName.Add} size={28} />
+                    <span className="text-sm font-medium">{t.teamBuilder.addPokemon}</span>
+                  </Link>
+                )}
               </div>
             )}
 

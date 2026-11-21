@@ -37,6 +37,8 @@ interface PokemonReportCardProps {
   collapsible?: boolean;
   /** Where clicking the card goes — your team's Pokémon in the Team Builder. Its own buttons keep their clicks. */
   href?: string;
+  /** Removes it from the team (asking first is the caller's) — only where you can edit the team. */
+  onRemove?: () => void;
 }
 
 /**
@@ -57,6 +59,7 @@ export function PokemonReportCard({
   sheet = "closed",
   collapsible = false,
   href,
+  onRemove,
 }: PokemonReportCardProps) {
   const t = useMessages();
   const text = usePokemonText();
@@ -195,17 +198,17 @@ export function PokemonReportCard({
             ))}
           </span>
         )}
-        {/* Copy this Pokémon's Showdown export (the Calcs tab's collapsible card
-            keeps that corner for its expand arrow). */}
-        {!collapsible && (
+        {/* Remove, a small icon in the corner — only on a team you can edit (it asks
+            first). Copy is the labelled button at the card's foot. */}
+        {!collapsible && onRemove && (
           <IconButton
             variant="ghost"
-            onClick={() => copyPokemonExport(pokemon, text.species(pokemon.species), sheet)}
-            aria-label={t.calcPanel.copyAsExport(text.species(pokemon.species))}
-            title={t.calcPanel.copyAsExportHint}
-            className="absolute top-2 right-2 z-10 h-7 w-7 hover:bg-zinc-200"
+            onClick={onRemove}
+            aria-label={t.teamBuilder.remove(text.species(pokemon.species))}
+            title={t.teamBuilder.remove(text.species(pokemon.species))}
+            className="absolute top-2 right-2 z-10 h-7 w-7 hover:bg-zinc-200 hover:text-red-600"
           >
-            <Icon name={IconName.ContentCopy} size={16} />
+            <Icon name={IconName.Delete} size={16} />
           </IconButton>
         )}
         <div className="pointer-events-none absolute inset-y-2 left-1/2 w-28 -translate-x-1/2">
@@ -261,29 +264,32 @@ export function PokemonReportCard({
           </p>
         )}
 
-        {pokemon.moves && pokemon.moves.length > 0 && (
-          <ul className="flex flex-col gap-2">
-            {pokemon.moves.map((move, index) => {
-              const type = MOVES[normalizeSpeciesKey(move)]?.type;
-              // A pill per move, its type icon filling the left edge.
-              return (
-                <li
-                  key={`${move}-${index}`}
-                  className="flex h-[22px] min-w-0 items-center overflow-hidden rounded bg-zinc-100"
-                >
-                  {type ? (
-                    <TypeIcon type={type} size={22} />
-                  ) : (
-                    <span className="h-[22px] w-[22px] shrink-0 bg-zinc-300" />
-                  )}
-                  <span className="truncate px-2 text-[13px] font-semibold text-zinc-900">
-                    {text.move(move)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        {/* Always four move slots — missing ones show as empty pills, so a Pokémon
+            with no moves yet looks like the others, not blank. */}
+        <ul className="flex flex-col gap-2">
+          {Array.from(
+            { length: Math.max(4, pokemon.moves?.length ?? 0) },
+            (_, index) => pokemon.moves?.[index] ?? "",
+          ).map((move, index) => {
+            const type = move ? MOVES[normalizeSpeciesKey(move)]?.type : undefined;
+            // A pill per move, its type icon filling the left edge.
+            return (
+              <li
+                key={`${move}-${index}`}
+                className="flex h-[22px] min-w-0 items-center overflow-hidden rounded bg-zinc-100"
+              >
+                {type ? (
+                  <TypeIcon type={type} size={22} />
+                ) : (
+                  <span className="h-[22px] w-[22px] shrink-0 bg-zinc-300" />
+                )}
+                <span className="truncate px-2 text-[13px] font-semibold text-zinc-900">
+                  {text.move(move)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
 
         {sheet === "open" ? null : breakdown ? (
           <div
@@ -359,6 +365,23 @@ export function PokemonReportCard({
           )
         )}
       </div>
+
+      {/* Copy this Pokémon's Showdown export, at the foot of the card (the Calcs tab's
+          collapsible card leaves it out). Above the card's link, so it keeps its own click. */}
+      {!collapsible && (
+        <div className="relative z-10 border-t border-zinc-200 px-1.5 py-1">
+          <button
+            type="button"
+            onClick={() => copyPokemonExport(pokemon, text.species(pokemon.species), sheet)}
+            aria-label={t.calcPanel.copyAsExport(text.species(pokemon.species))}
+            title={t.calcPanel.copyAsExportHint}
+            className="flex w-full items-center justify-center gap-1.5 rounded-md py-1.5 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none"
+          >
+            <Icon name={IconName.ContentCopy} size={16} />
+            {t.calcPanel.copyToClipboard}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

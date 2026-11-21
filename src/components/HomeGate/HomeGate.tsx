@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useStaffPreview } from "@/hooks/useStaffPreview";
 
 /**
  * The home page is the Metagame — while that section is switched off
@@ -14,6 +15,7 @@ export function HomeGate({ children }: { children: ReactNode }) {
   const { flags, isLoading } = useFeatureFlags();
   const { isStaff, isLoading: roleLoading } = useIsAdmin();
   const router = useRouter();
+  useStaffPreview(!isLoading && !flags.metagame && isStaff);
   const closed = !isLoading && !roleLoading && !flags.metagame && !isStaff;
 
   useEffect(() => {

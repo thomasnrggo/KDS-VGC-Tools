@@ -32,6 +32,7 @@ export const es: Messages = {
     back: "Volver",
   },
   header: {
+    staffPreview: "En desarrollo: solo los moderadores y administradores pueden ver esto.",
     addTeam: "Crear equipo",
     editTeam: "Editar equipo",
     selectTeam: "Seleccionar equipo",

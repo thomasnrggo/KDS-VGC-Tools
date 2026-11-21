@@ -10,6 +10,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com): **Added**
 renamed to that version and date, `package.json`'s version is bumped to match, and the commit is
 tagged `vX.Y.Z`. The minor or major number only changes when the project owner says so.
 
+## 0.3.27 — 2026-11-20
+
+### Added
+
+- **Team Overview: an "Add Pokémon" card.** A team with fewer than six Pokémon shows a dashed "+" card after the last one, like the Team Builder's "+" tile; it opens the builder ready to add one.
+- **Team Overview: remove a Pokémon.** Each card has a trash icon in its corner (on your own or a collaborative team, not a view-only sheet); it asks first, like the Team Builder, and updates the plans, combinations and logged games that picked it.
+- **"In development" banner for staff.** When a moderator or admin views a section or tab that's switched off for everyone else (a section whose flag is off, the team page's Threats or Meta tab while they're previews, Speed tiers' Speed line), a slim amber banner under the header says only moderators and admins can see it.
+
+### Changed
+
+- **Team Overview: Copy at the foot of each card.** Copying a Pokémon's Showdown export is now a labelled "Copy to clipboard" button at the bottom of its card (view-only sheets too), instead of an icon in the corner.
+- **Team Overview: empty move slots.** A Pokémon card always shows four move slots; ones without a move show as empty pills, so a Pokémon with no moves yet no longer leaves a blank gap.
+
 ## 0.3.26 — 2026-11-18
 
 ### Added

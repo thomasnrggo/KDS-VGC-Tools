@@ -18,6 +18,7 @@ import { IconName } from "@/enums";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useMessages } from "@/hooks/useLanguage";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsStaffPreview } from "@/hooks/useStaffPreview";
 import {
   Drawer,
   DrawerContent,
@@ -200,6 +201,7 @@ export function MyTeamHeader({
   // directly. Reuses the authUser prop this component already receives
   // rather than calling useAuth() a second time.
   const { isStaff } = useIsAdmin();
+  const isStaffPreview = useIsStaffPreview();
   const { flags } = useFeatureFlags();
   const visibleNavLinks = NAV_LINKS.filter(
     (link) => link.flagKey === null || flags[link.flagKey] || isStaff,
@@ -568,6 +570,19 @@ export function MyTeamHeader({
           </Modal>
         )}
       </header>
+
+      {/* A section or tab only moderators and admins can see (its flag is off, or it's
+          staff-only): a slim banner under the header, so what's still in development
+          is easy to tell apart (see useStaffPreview). */}
+      {isStaffPreview && (
+        <div
+          role="note"
+          className="flex items-center gap-1.5 border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-xs font-medium text-amber-900 lg:px-6 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200"
+        >
+          <Icon name={IconName.Info} size={16} className="text-amber-600 dark:text-amber-400" />
+          {t.header.staffPreview}
+        </div>
+      )}
 
       {/* Mobile: the team preview/switcher moves into a fixed footer that opens
         a bottom-sheet drawer, instead of the small avatar-row/chevron next
